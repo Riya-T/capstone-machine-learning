@@ -9,8 +9,10 @@ writer:
     kind: openai_compat
     model: qwen2.5-coder:7b-instruct
     base_url: http://localhost:11434/v1
+    fixtures: null           # clear the mock fixtures inherited from base.yaml
 editor:
   backend:
     kind: openai_compat
     model: qwen2.5-coder:7b-instruct   # stand-in editor
     base_url: http://localhost:11434/v1
+    fixtures: null

@@ -20,6 +20,7 @@ writer:
   backend:
     kind: mock
     model: mock-writer
+    fixtures: ../fixtures/mock/writer.yaml
     temperature: 0.8         # diverse candidates are the point of sampling
     max_tokens: 4096
 
@@ -34,6 +35,7 @@ editor:
   backend:
     kind: mock
     model: mock-editor
+    fixtures: ../fixtures/mock/editor.yaml
     temperature: 0.7         # > 0 so repetitions can differ
     max_tokens: 4096
 

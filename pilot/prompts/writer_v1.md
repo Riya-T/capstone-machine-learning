@@ -1,4 +1,5 @@
 Write a Python implementation of the specification below.
+Use Python 3.11 and only the standard library.
 
 Produce exactly these files: $entry_files
 

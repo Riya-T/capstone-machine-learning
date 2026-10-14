@@ -12,6 +12,7 @@ reference: reference/v0
 planted_bugs:
   - {path: bugs/v0_no_persist, must_fail: [initial, public]}
   - {path: bugs/v0_accepts_bool_age, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_accepts_bool_id, must_fail: [initial], must_pass: [public]}
 
 changes:
   - id: c_conflict

@@ -89,14 +89,29 @@ class BackendConfig:
     base_url: str | None = None
     api_key_env: str | None = None
     request_timeout_s: float = 600.0
+    # Retries cover transient failures only: connection errors, 429 and 5xx.
+    # The wait doubles after each attempt: backoff, 2 * backoff, ...
+    max_retries: int = 2
+    retry_backoff_s: float = 2.0
+    # mock only: YAML file of response rules (see backends.MockBackend).
+    fixtures: InputPath | None = None
 
     def __post_init__(self) -> None:
-        if self.kind == "openai_compat" and not self.base_url:
-            raise ConfigError("base_url: required when kind is openai_compat")
+        if self.kind == "openai_compat":
+            if not self.base_url:
+                raise ConfigError("base_url: required when kind is openai_compat")
+            if self.fixtures is not None:
+                raise ConfigError("fixtures: only valid when kind is mock")
+        if self.kind == "mock" and self.fixtures is None:
+            raise ConfigError("fixtures: required when kind is mock")
         if self.temperature < 0:
             raise ConfigError("temperature: must be >= 0")
         _require_positive(self.max_tokens, "max_tokens")
         _require_positive(self.request_timeout_s, "request_timeout_s")
+        if self.max_retries < 0:
+            raise ConfigError("max_retries: must be >= 0")
+        if self.retry_backoff_s < 0:
+            raise ConfigError("retry_backoff_s: must be >= 0")
 
 
 @dataclass(frozen=True)

@@ -16,7 +16,13 @@ CONFIGS_DIR = Path(__file__).resolve().parents[1] / "configs"
 
 def minimal() -> dict:
     """A small valid config; tests copy and mutate it."""
-    backend = {"kind": "mock", "model": "m", "temperature": 0.5, "max_tokens": 100}
+    backend = {
+        "kind": "mock",
+        "model": "m",
+        "temperature": 0.5,
+        "max_tokens": 100,
+        "fixtures": "mock.yaml",
+    }
     return {
         "schema_version": 1,
         "name": "t",
@@ -57,6 +63,7 @@ def write(directory: Path, data: dict, name: str = "exp.yaml") -> Path:
     directory.mkdir(parents=True, exist_ok=True)
     (directory / "tasks").mkdir(exist_ok=True)
     (directory / "writer.md").write_text("$entry_files $spec $public_checks")
+    (directory / "mock.yaml").write_text("rules: []\n")
     path = directory / name
     path.write_text(yaml.safe_dump(data, sort_keys=False))
     return path
@@ -112,6 +119,7 @@ def test_output_path_may_be_missing_but_input_path_must_exist(tmp_path):
         (lambda d: d["scorer"].update(reps=[]), r"scorer: reps: must be a non-empty"),
         (lambda d: d.update(schema_version=2), r"schema_version: expected 1"),
         (lambda d: d.update(base_dir="/x"), r"base_dir: unknown key"),
+        (lambda d: d["editor"]["backend"].update(max_retries=-1), r"max_retries: must be >= 0"),
         (
             lambda d: d["tasks"]["sequence_length"].update(eval=0),
             r"tasks\.sequence_length: eval: must be > 0",
@@ -132,7 +140,19 @@ def test_openai_compat_requires_base_url(tmp_path):
     with pytest.raises(ConfigError, match=r"editor\.backend: base_url: required"):
         load(tmp_path, data)
     data["editor"]["backend"]["base_url"] = "http://localhost:8000/v1"
+    with pytest.raises(
+        ConfigError, match=r"editor\.backend: fixtures: only valid when kind is mock"
+    ):
+        load(tmp_path, data)
+    del data["editor"]["backend"]["fixtures"]
     assert load(tmp_path, data).editor.backend.base_url == "http://localhost:8000/v1"
+
+
+def test_mock_requires_fixtures(tmp_path):
+    data = minimal()
+    del data["writer"]["backend"]["fixtures"]
+    with pytest.raises(ConfigError, match=r"writer\.backend: fixtures: required when kind is mock"):
+        load(tmp_path, data)
 
 
 def test_optional_fields_accept_null(tmp_path):
