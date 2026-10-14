@@ -10,9 +10,11 @@ writer:
     model: qwen2.5-coder:7b-instruct
     base_url: http://localhost:11434/v1
     fixtures: null           # clear the mock fixtures inherited from base.yaml
+    request_timeout_s: 600   # a 7B model on 8 GB can take minutes for a full answer
 editor:
   backend:
     kind: openai_compat
     model: qwen2.5-coder:7b-instruct   # stand-in editor
     base_url: http://localhost:11434/v1
     fixtures: null
+    request_timeout_s: 600
