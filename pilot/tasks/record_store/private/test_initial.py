@@ -1,3 +1,10 @@
+"""Hidden tests for the initial record_store spec. Never shown to the writer
+or the editor; they decide whether a candidate is initially correct.
+
+Usage (with records.py importable, e.g. in the task sandbox):
+    python -m pytest private/test_initial.py
+"""
+
 import pytest
 from records import RecordStore, ValidationError
 

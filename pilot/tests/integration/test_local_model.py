@@ -3,6 +3,9 @@
 Skipped unless pytest is run with --local-model. Slow (a full writer answer
 takes tens of seconds on the laptop) and dependent on the model, so these
 check the pipeline's contract with a real model, not the model's quality.
+
+Usage (needs the model server running):
+    uv run pytest --local-model -s tests/integration/test_local_model.py
 """
 
 import time

@@ -1,4 +1,9 @@
-"""Shared test helpers for building config files."""
+"""Shared test helpers for building config files.
+
+Usage:
+    from .helpers import minimal, write
+    path = write(tmp_path, minimal())   # a valid config file plus the files it names
+"""
 
 from pathlib import Path
 

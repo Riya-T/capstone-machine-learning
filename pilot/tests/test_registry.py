@@ -1,3 +1,13 @@
+"""Unit tests for pipeline.registry: task manifest rules (splits, families,
+sequences, shared references, supersedes, leak checks), cumulative test sets,
+task_version and prompt_version, and the writer prompt, including that later
+changes and private tests never reach it. Uses small synthetic tasks plus the
+real record_store task.
+
+Usage:
+    uv run pytest tests/test_registry.py
+"""
+
 import shutil
 import string
 from pathlib import Path

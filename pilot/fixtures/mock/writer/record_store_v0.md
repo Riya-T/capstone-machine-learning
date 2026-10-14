@@ -1,5 +1,15 @@
 ```python file=records.py
-"""File-backed record store with validation and JSON persistence."""
+"""File-backed record store with validation and JSON persistence.
+
+Reference solution for record_store before any change (the initial spec).
+Never shown to the writer or the editor; validate_task checks it passes
+every test set where it is used.
+
+Usage:
+    from records import RecordStore, ValidationError
+    store = RecordStore("records.json")
+    record_id = store.add({"name": "Ada", "email": "ada@example.com", "age": 36})
+"""
 
 import json
 import os

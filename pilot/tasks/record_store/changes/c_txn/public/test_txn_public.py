@@ -1,3 +1,10 @@
+"""Public checks for the c_txn change (transactions). Shown to the editor,
+never to the writer.
+
+Usage (with records.py importable, e.g. in the task sandbox):
+    python -m pytest changes/c_txn/public/test_txn_public.py
+"""
+
 import pytest
 from records import RecordStore
 

@@ -1,3 +1,10 @@
+"""Hidden new-feature tests for the c_txn change. Never shown to the writer
+or the editor.
+
+Usage (with records.py importable, e.g. in the task sandbox):
+    python -m pytest changes/c_txn/private/test_txn_new.py
+"""
+
 import pytest
 from records import RecordStore, ValidationError
 

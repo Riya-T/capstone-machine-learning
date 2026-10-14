@@ -6,6 +6,9 @@ CachedBackend per writer sample, seeds from derive_seed, answers parsed and
 stored. They check that a second pass replays everything with no model
 calls, both from an in-memory cache and from the SQLite store after closing
 and reopening it.
+
+Usage:
+    uv run pytest tests/integration/test_writer_replay.py
 """
 
 import time

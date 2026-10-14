@@ -10,6 +10,12 @@
 A backend is built for one seed (`make_backend(cfg, seed)`), so sampling
 settings never travel through `generate`. After each call, `last_usage` holds
 the token counts for that call.
+
+Usage:
+    seed = derive_seed(cfg.seed, task.id, "writer", sample_idx)
+    backend = CachedBackend(make_backend(cfg.writer.backend, seed), store)
+    text = backend.generate(prompt)
+    backend.last_usage, backend.model_calls          # tokens; calls that reached the model
 """
 
 from __future__ import annotations

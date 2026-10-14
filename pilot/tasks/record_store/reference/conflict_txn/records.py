@@ -1,5 +1,15 @@
 """File-backed record store with validation, JSON persistence, optimistic
-concurrency control and transactions."""
+concurrency control and transactions.
+
+Reference solution for record_store after c_conflict and c_txn.
+Never shown to the writer or the editor; validate_task checks it passes
+every test set where it is used.
+
+Usage:
+    from records import RecordStore, ValidationError
+    store = RecordStore("records.json")
+    record_id = store.add({"name": "Ada", "email": "ada@example.com", "age": 36})
+"""
 
 import json
 import os

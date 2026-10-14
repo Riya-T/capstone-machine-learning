@@ -1,3 +1,9 @@
+"""Public checks for records.py.
+
+Usage (with records.py importable, e.g. in the task sandbox):
+    python -m pytest public/test_public.py
+"""
+
 import pytest
 from records import RecordStore, ValidationError
 

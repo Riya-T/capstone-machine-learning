@@ -1,5 +1,15 @@
 """File-backed record store with validation (including unique emails), JSON
-persistence and optimistic concurrency control."""
+persistence and optimistic concurrency control.
+
+Reference solution for record_store after c_unique and c_conflict.
+Never shown to the writer or the editor; validate_task checks it passes
+every test set where it is used.
+
+Usage:
+    from records import RecordStore, ValidationError
+    store = RecordStore("records.json")
+    record_id = store.add({"name": "Ada", "email": "ada@example.com", "age": 36})
+"""
 
 import json
 import os

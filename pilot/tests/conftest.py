@@ -3,6 +3,10 @@
 - `docker` tests run only when a Docker daemon answers.
 - `local_model` tests call a real model server, so they are slow and need
   hardware; they run only with `pytest --local-model`.
+
+Usage (from pilot/):
+    uv run pytest -rs                   # -rs lists every skipped test and why
+    uv run pytest --local-model
 """
 
 import functools

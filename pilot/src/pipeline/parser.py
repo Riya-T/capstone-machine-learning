@@ -16,6 +16,13 @@ Failures fall into two categories reported separately:
 - "truncated": the backend stopped at max_tokens (finish_reason "length"),
   so the answer is incomplete however it parses;
 - "malformed": the model finished but the answer breaks the format.
+
+Usage:
+    result = parse_program(answer, task.entry_files, backend.last_usage.finish_reason)
+    if result.ok:
+        result.files                                 # {"records.py": b"..."}
+    else:
+        str(result.failure)                          # "malformed/unlabeled_block: line 40: ..."
 """
 
 from __future__ import annotations

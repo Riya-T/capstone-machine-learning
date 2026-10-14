@@ -1,3 +1,10 @@
+"""Hidden new-feature tests for the c_unique change. Never shown to the
+writer or the editor.
+
+Usage (with records.py importable, e.g. in the task sandbox):
+    python -m pytest changes/c_unique/private/test_unique_new.py
+"""
+
 import pytest
 from records import RecordStore, ValidationError
 

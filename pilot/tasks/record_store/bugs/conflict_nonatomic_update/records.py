@@ -1,5 +1,15 @@
 """File-backed record store with validation, JSON persistence and optimistic
-concurrency control."""
+concurrency control.
+
+Planted bug (after c_conflict): a failed update leaves the record half-changed.
+Never shown to the writer or the editor; validate_task checks it fails
+exactly the categories task.yaml declares.
+
+Usage:
+    from records import RecordStore, ValidationError
+    store = RecordStore("records.json")
+    record_id = store.add({"name": "Ada", "email": "ada@example.com", "age": 36})
+"""
 
 import json
 import os

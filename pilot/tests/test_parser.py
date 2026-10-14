@@ -1,3 +1,12 @@
+"""Unit tests for pipeline.parser: accepted answers (prose ignored, exact
+bytes, CRLF, long fences), truncation vs malformed categories, every
+malformed reason, the real 7B answer in tests/data, and a render/parse round
+trip.
+
+Usage:
+    uv run pytest tests/test_parser.py
+"""
+
 from pathlib import Path
 
 import pytest

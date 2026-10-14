@@ -40,7 +40,8 @@ editor:
     max_tokens: 4096
 
 sandbox:
-  image: pipeline-sandbox:dev   # replace with name@sha256:<digest> once the image is built
+  image: pipeline-sandbox:py3.11-v1   # change the tag whenever sandbox/Dockerfile changes
+  build_context: ../sandbox
   timeout_s: 60
   memory: 512m
   cpus: 1.0

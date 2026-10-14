@@ -7,6 +7,12 @@ back to a default would change an experiment without anyone noticing.
 
 The schema grows stage by stage; fields are added in the stage whose module
 first needs them, so the config never references files that don't exist yet.
+
+Usage:
+    from pipeline.config import load_config
+    cfg = load_config("configs/pilot_mock.yaml")     # follows `extends`, validates everything
+    cfg.writer.backend.model, cfg.tasks.dir          # typed, frozen settings
+    cfg.config_hash, cfg.component_hash(cfg.editor)  # for keying stored results
 """
 
 from __future__ import annotations
@@ -157,19 +163,26 @@ class EditorConfig:
 
 @dataclass(frozen=True)
 class SandboxConfig:
-    image: str  # pin by digest (name@sha256:...) for real runs
-    timeout_s: float
-    memory: str  # docker syntax, e.g. "512m"
+    # Image tag. Results are keyed by the image's content id, resolved by the
+    # runner at start-up, so rebuilding under the same tag can't reuse stale
+    # results.
+    image: str
+    timeout_s: float  # wall clock per run, container start-up included
+    memory: str  # docker syntax, e.g. "512m"; swap is disabled
     cpus: float
     pids_limit: int
-    tmpfs_size: str  # docker syntax, e.g. "64m"
-    output_cap_bytes: int
+    tmpfs_size: str  # docker syntax, e.g. "64m"; the only writable scratch space
+    output_cap_bytes: int  # stdout and stderr are each cut to this size
+    file_size_limit_bytes: int = 16 * 1024 * 1024  # largest file a run may write
+    # Directory with the Dockerfile; lets the runner build a missing image.
+    build_context: InputPath | None = None
 
     def __post_init__(self) -> None:
         _require_positive(self.timeout_s, "timeout_s")
         _require_positive(self.cpus, "cpus")
         _require_positive(self.pids_limit, "pids_limit")
         _require_positive(self.output_cap_bytes, "output_cap_bytes")
+        _require_positive(self.file_size_limit_bytes, "file_size_limit_bytes")
 
 
 @dataclass(frozen=True)

@@ -1,3 +1,10 @@
+"""Hidden new-feature tests for the c_conflict change. Never shown to the
+writer or the editor.
+
+Usage (with records.py importable, e.g. in the task sandbox):
+    python -m pytest changes/c_conflict/private/test_conflict_new.py
+"""
+
 import pytest
 from records import ConflictError, RecordStore, ValidationError
 

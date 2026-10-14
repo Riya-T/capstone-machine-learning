@@ -1,4 +1,14 @@
-"""File-backed record store with validation and JSON persistence."""
+"""File-backed record store with validation and JSON persistence.
+
+Planted bug (initial stage): never writes the file, so nothing survives reopening.
+Never shown to the writer or the editor; validate_task checks it fails
+exactly the categories task.yaml declares.
+
+Usage:
+    from records import RecordStore, ValidationError
+    store = RecordStore("records.json")
+    record_id = store.add({"name": "Ada", "email": "ada@example.com", "age": 36})
+"""
 
 import json
 from pathlib import Path

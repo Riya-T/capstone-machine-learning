@@ -1,3 +1,10 @@
+"""Public checks for the c_conflict change (optimistic concurrency). Shown
+to the editor, never to the writer.
+
+Usage (with records.py importable, e.g. in the task sandbox):
+    python -m pytest changes/c_conflict/public/test_conflict_public.py
+"""
+
 import pytest
 from records import ConflictError, RecordStore
 

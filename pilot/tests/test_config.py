@@ -1,3 +1,11 @@
+"""Unit tests for pipeline.config: strict YAML loading, type checks, path
+resolution, `extends` merging, and config hashes (stable under key order,
+field order and checkout location).
+
+Usage:
+    uv run pytest tests/test_config.py
+"""
+
 import copy
 import random
 import shutil

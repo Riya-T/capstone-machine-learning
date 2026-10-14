@@ -18,6 +18,13 @@ produced the row and the human failure label keep their first recorded
 values, since a replayed rerun legitimately measures them differently. The
 one exception is a checkpoint with status `infra_error`, which may be
 overwritten by a retry.
+
+Usage:
+    with Store(cfg.runs_dir) as store:
+        run_id = store.start_run(cfg)                # logs git commit and full config
+        blob = store.put_blob(files)                 # content-addressed program
+        store.record_candidate(Candidate(...))
+        point = resume_point(store.trial_steps(trial), length)  # where a trial continues
 """
 
 from __future__ import annotations
@@ -101,22 +108,27 @@ def writer_cfg_hash(cfg: ExperimentConfig) -> str:
     )
 
 
-def editor_cfg_hash(cfg: ExperimentConfig) -> str:
+def editor_cfg_hash(cfg: ExperimentConfig, image_id: str) -> str:
     """Keys editing results: the editor section, the contents of the files it
-    names, and the sandbox section, because the image and its limits decide
-    which tests pass as much as the editor does."""
+    names, and the sandbox (settings and image), because the image and its
+    limits decide which tests pass as much as the editor does."""
     return _hash_json(
         {
             "editor": canonical(cfg.editor, cfg.base_dir),
             "files": _input_file_hashes(cfg.editor, cfg.base_dir),
-            "sandbox": canonical(cfg.sandbox, cfg.base_dir),
+            "sandbox": sandbox_cfg_hash(cfg, image_id),
         }
     )
 
 
-def sandbox_cfg_hash(cfg: ExperimentConfig) -> str:
-    """Keys initial checks, which depend on the sandbox but not the editor."""
-    return cfg.component_hash(cfg.sandbox)
+def sandbox_cfg_hash(cfg: ExperimentConfig, image_id: str) -> str:
+    """Keys initial checks, which depend on the sandbox but not the editor.
+
+    `image_id` is the image's content id from SandboxRunner.image_id. The
+    config names the image only by tag, and rebuilding the Dockerfile under
+    the same tag must not reuse results from the old image.
+    """
+    return _hash_json({"sandbox": canonical(cfg.sandbox, cfg.base_dir), "image_id": image_id})
 
 
 # --- records ----------------------------------------------------------------

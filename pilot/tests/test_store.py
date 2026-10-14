@@ -1,3 +1,12 @@
+"""Unit tests for pipeline.store: key composition (writer, editor, sandbox),
+run logging against a real temporary git repository, blobs, write-once
+records, resume_point, persistence across reopening, and the SQLite call
+cache shared by several trials.
+
+Usage:
+    uv run pytest tests/test_store.py
+"""
+
 import json
 import shutil
 import sqlite3
@@ -76,9 +85,12 @@ def edit_config(path: Path, change) -> None:
 # --- key composition --------------------------------------------------------
 
 
+IMAGE = "sha256:" + "1" * 64
+
+
 def keys(path: Path) -> tuple[str, str, str]:
     cfg = load_config(path)
-    return writer_cfg_hash(cfg), editor_cfg_hash(cfg), sandbox_cfg_hash(cfg)
+    return writer_cfg_hash(cfg), editor_cfg_hash(cfg, IMAGE), sandbox_cfg_hash(cfg, IMAGE)
 
 
 def test_writer_key_changes_when_only_the_template_contents_change(repo):
@@ -96,6 +108,13 @@ def test_editor_key_changes_when_only_the_sandbox_changes(repo):
     assert new_writer == writer
     assert new_editor != editor
     assert new_sandbox != sandbox
+
+
+def test_rebuilt_image_under_the_same_tag_changes_editor_and_sandbox_keys(repo):
+    cfg = load_config(repo)
+    rebuilt = "sha256:" + "2" * 64
+    assert editor_cfg_hash(cfg, rebuilt) != editor_cfg_hash(cfg, IMAGE)
+    assert sandbox_cfg_hash(cfg, rebuilt) != sandbox_cfg_hash(cfg, IMAGE)
 
 
 def test_editor_key_changes_with_the_editor_section_only(repo):

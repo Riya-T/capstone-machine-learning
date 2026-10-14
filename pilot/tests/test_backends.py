@@ -1,3 +1,11 @@
+"""Unit tests for pipeline.backends: the OpenAI-compatible backend against a
+local stub HTTP server (request body, auth, retries, errors), the
+deterministic mock, CachedBackend replay, and derive_seed.
+
+Usage:
+    uv run pytest tests/test_backends.py
+"""
+
 import json
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer

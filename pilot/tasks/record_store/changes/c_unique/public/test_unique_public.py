@@ -1,3 +1,10 @@
+"""Public checks for the c_unique change (unique emails). Shown to the
+editor, never to the writer.
+
+Usage (with records.py importable, e.g. in the task sandbox):
+    python -m pytest changes/c_unique/public/test_unique_public.py
+"""
+
 import pytest
 from records import RecordStore, ValidationError
 

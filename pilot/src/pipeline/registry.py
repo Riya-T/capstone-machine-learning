@@ -10,6 +10,13 @@ manifest format.
 What the writer may see is enforced by a type: `build_writer_prompt` accepts
 only a `WriterView` (entry file names, spec, initial public checks). Later
 changes, private tests and references are not reachable from it.
+
+Usage:
+    tasks = load_tasks(cfg.tasks)                    # {task_id: Task}; all rules checked
+    task = tasks["record_store"]
+    prompt = build_writer_prompt(task.writer_view(), load_template(cfg.writer.prompt_template))
+    step = task.sequence("s1").steps[0]              # reference and test sets for one step
+    step.tests.public, step.tests.new_feature, step.tests.existing
 """
 
 from __future__ import annotations
