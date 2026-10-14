@@ -206,6 +206,19 @@ class ScorerConfig:
 
 
 @dataclass(frozen=True)
+class ExecutionConfig:
+    """How the work is run, not what it computes. Nothing here is part of a
+    result key, so changing it never invalidates stored results."""
+
+    # Sandbox containers run at the same time (each limited by the sandbox
+    # section's cpus and memory).
+    sandbox_workers: int = 1
+
+    def __post_init__(self) -> None:
+        _require_positive(self.sandbox_workers, "sandbox_workers")
+
+
+@dataclass(frozen=True)
 class ExperimentConfig:
     schema_version: int
     name: str
@@ -217,6 +230,7 @@ class ExperimentConfig:
     editor: EditorConfig
     sandbox: SandboxConfig
     scorer: ScorerConfig
+    execution: ExecutionConfig = field(default_factory=ExecutionConfig)
     # Directory of the entry config file; paths are hashed relative to it so
     # the same experiment hashes identically on the laptop and on the 5090.
     base_dir: Path = field(default=Path("."), metadata=_INTERNAL)

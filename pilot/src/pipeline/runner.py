@@ -47,6 +47,21 @@ Status = Literal["ok", "nonzero_exit", "timeout", "oom", "infra_error"]
 
 NOBODY = "65534:65534"  # nobody:nogroup in the Debian-based image
 LABEL = "pipeline.sandbox"  # every sandbox container carries this label
+SIGKILL_EXIT = 128 + 9  # exit status of a process killed by SIGKILL
+STATUS_FILE = ".sandbox_exit"  # written to /out by the wrapper; not a program output
+
+# Runs the program, then records its exit code and the cgroup's oom_kill
+# count in /out/.sandbox_exit. Docker's own OOMKilled flag is unreliable:
+# it comes from an asynchronous event that is lost when the container exits
+# and its cgroup disappears first (measured: 8 of 80 OOM kills unflagged with
+# 8 containers running). The kernel's counter in memory.events is exact.
+_WRAPPER = (
+    '"$@"; rc=$?; oom=0; '
+    '{ while read -r key value; do [ "$key" = oom_kill ] && oom=$value; done '
+    "< /sys/fs/cgroup/memory.events; } 2>/dev/null; "
+    'echo "$rc $oom" > /out/' + STATUS_FILE + "; "
+    'exit "$rc"'
+)
 # Seconds to wait for Docker housekeeping commands (inspect, kill, rm).
 _DOCKER_CMD_TIMEOUT = 60
 
@@ -147,6 +162,9 @@ class SandboxRunner:
         return [
             "docker", "create",
             "--name", name,
+            # Never fetch an image from a registry: a missing image is an
+            # infra_error at once, and nothing unexpected is downloaded.
+            "--pull", "never",
             "--label", f"{LABEL}=1",
             "--label", f"{LABEL}.owner={self.owner}",
             "--network", "none",
@@ -174,6 +192,7 @@ class SandboxRunner:
             "--env", "HOME=/tmp",
             "--env", "HYPOTHESIS_STORAGE_DIRECTORY=/tmp/.hypothesis",
             self.image_id,
+            "sh", "-c", _WRAPPER, "sandbox-wrapper",
             *command,
         ]  # fmt: skip
 
@@ -205,13 +224,22 @@ class SandboxRunner:
             return _infra(f"docker inspect failed: {state.stderr.strip()}", start, command)
         info = json.loads(state.stdout)
         exit_code = info.get("ExitCode")
+        out_files = _read_tree(out)
+        oom_kills = _oom_kills(out_files.pop(STATUS_FILE, None))
         if timed_out:
             status: Status = "timeout"
-        elif info.get("OOMKilled"):
+        elif info.get("OOMKilled") or (exit_code != 0 and oom_kills > 0):
             status = "oom"
         elif info.get("Error"):
             # The container never ran the command (e.g. it doesn't exist).
             return _infra(f"container error: {info['Error']}", start, command)
+        elif exit_code == SIGKILL_EXIT:
+            # Killed by SIGKILL, but not by our timeout and not by the memory
+            # limit: something outside the program did it (the host's OOM
+            # killer, a Docker restart, an operator). Exit 137 is ambiguous
+            # (a program could also call sys.exit(137)), so it is treated as
+            # infrastructure and never counted against the program.
+            return _infra("killed by SIGKILL (exit 137), not by timeout or OOM", start, command)
         elif exit_code == 0:
             status = "ok"
         else:
@@ -223,7 +251,7 @@ class SandboxRunner:
             stderr=stderr.text(),
             stdout_truncated=stdout.truncated,
             stderr_truncated=stderr.truncated,
-            out_files=_read_tree(out),
+            out_files=out_files,
             wall_s=wall,
             command=tuple(command),
         )
@@ -267,6 +295,15 @@ class _CappedReader:
 
     def text(self) -> str:
         return self.data.decode("utf-8", errors="replace")
+
+
+def _oom_kills(status: bytes | None) -> int:
+    """oom_kill count from the wrapper's status file ("<exit> <count>");
+    0 if the file is missing or unreadable."""
+    try:
+        return int(status.split()[1]) if status else 0
+    except (IndexError, ValueError):
+        return 0
 
 
 def _container_user() -> str:

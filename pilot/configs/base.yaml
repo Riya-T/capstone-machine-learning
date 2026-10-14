@@ -49,6 +49,9 @@ sandbox:
   tmpfs_size: 64m
   output_cap_bytes: 65536
 
+execution:                   # how work runs; never part of a result key
+  sandbox_workers: 4         # containers at once; 4 x (1 cpu, 512m) fits the 8-core laptop
+
 scorer:
   rule: weak_dominance       # primary; frozen after dev tasks
   pairing_mode: best_vs_worst

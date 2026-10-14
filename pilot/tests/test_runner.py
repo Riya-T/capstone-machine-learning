@@ -46,6 +46,7 @@ def test_create_command_has_every_isolation_flag(tmp_path):
     cmd = runner.create_command("n", tmp_path / "w", tmp_path / "o", ["python", "x.py"])
     joined = " ".join(cmd)
     for flag in [
+        "--pull never",
         "--network none",
         f"--user {os.getuid()}:{os.getgid()}",
         "--cap-drop ALL",
@@ -60,8 +61,11 @@ def test_create_command_has_every_isolation_flag(tmp_path):
         "PYTHONDONTWRITEBYTECODE=1",
     ]:
         assert flag in joined, flag
-    # The image is pinned by content id, and the program's command comes last.
-    assert cmd[-3:] == ["sha256:abc", "python", "x.py"]
+    # The image is pinned by content id; the program's command runs under the
+    # OOM-recording wrapper and comes last.
+    image = cmd.index("sha256:abc")
+    assert cmd[image + 1 : image + 3] == ["sh", "-c"]
+    assert cmd[-2:] == ["python", "x.py"]
 
 
 @pytest.mark.parametrize("name", ["/etc/x", "../x", "a/../../x", "a\\b", "./a", "", "a//b"])
@@ -258,6 +262,50 @@ def test_tmpfs_and_file_size_limits(tmp_path):
     assert too_big_file == "OSError"  # EFBIG: over file_size_limit_bytes
     assert tmpfs_full == "OSError"  # ENOSPC/EFBIG: /tmp holds only 8 MB
     assert len(result.out_files["big"]) <= 1024 * 1024
+
+
+@pytestmark_docker
+def test_memory_limit_status_comes_from_docker_oom_flag(runner):
+    # Same exit code (137) as an outside kill; only Docker's OOMKilled flag
+    # makes it "oom".
+    result = runner.run(py("x = bytearray(1 << 30)\n"))
+    assert (result.status, result.exit_code) == ("oom", 137)
+
+
+@pytestmark_docker
+@pytest.mark.parametrize(
+    "code",
+    [
+        "import os, signal\nos.kill(os.getpid(), signal.SIGKILL)\n",
+        # Indistinguishable from a kill, so also treated as infrastructure.
+        "raise SystemExit(137)\n",
+    ],
+)
+def test_unexplained_exit_137_is_an_infra_error(runner, code):
+    result = runner.run(py(code))
+    assert result.status == "infra_error"
+    assert "exit 137" in result.detail
+
+
+@pytestmark_docker
+def test_oom_is_detected_under_parallel_load():
+    # Docker's OOMKilled flag alone missed about 1 in 10 OOM kills with 8
+    # containers running; the kernel counter recorded by the wrapper must not.
+    from concurrent.futures import ThreadPoolExecutor
+
+    runner = SandboxRunner(sandbox_cfg(memory="128m"), owner=SESSION_OWNER)
+    hog = py("x = bytearray(1 << 30)\n")
+    busy = py("import time\ntime.sleep(1)\n")
+    with ThreadPoolExecutor(8) as pool:
+        results = list(pool.map(runner.run, [hog, busy] * 16))
+    assert [r.status for r in results[0::2]] == ["oom"] * 16
+    assert [r.status for r in results[1::2]] == ["ok"] * 16
+
+
+@pytestmark_docker
+def test_status_file_is_not_returned_as_program_output(runner):
+    result = runner.run(py("print('hi')"))
+    assert result.out_files == {}
 
 
 @pytestmark_docker

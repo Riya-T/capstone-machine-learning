@@ -133,6 +133,7 @@ def test_writer_key_changes_with_mock_fixture_contents(repo):
 def test_unrelated_sections_do_not_change_either_key(repo):
     before = keys(repo)
     edit_config(repo, lambda d: d["scorer"].update(pairing_mode="all_pairs"))
+    edit_config(repo, lambda d: d.update(execution={"sandbox_workers": 8}))
     edit_config(repo, lambda d: d.update(name="renamed", seed=99))
     assert keys(repo) == before
 
