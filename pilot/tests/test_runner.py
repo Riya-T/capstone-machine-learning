@@ -20,7 +20,15 @@ from pathlib import Path
 import pytest
 
 from pipeline.config import load_config
-from pipeline.runner import LABEL, RunRequest, SandboxRunner, _CappedReader, _docker
+from pipeline.runner import (
+    LABEL,
+    RunRequest,
+    SandboxRunner,
+    _CappedReader,
+    _docker,
+    _oom_kills,
+    classify,
+)
 
 PILOT = Path(__file__).resolve().parents[1]
 SESSION_OWNER = f"pytest-{uuid.uuid4().hex[:8]}"
@@ -82,6 +90,37 @@ def test_capped_reader_keeps_the_first_bytes_and_drains_the_rest():
     assert reader.data == b"x" * 10
     assert reader.truncated
     assert stream.closed  # read to the end, so a real writer never blocks
+
+
+@pytest.mark.parametrize(
+    ("timed_out", "state", "oom_kills", "status"),
+    [
+        (False, {"ExitCode": 0}, 0, "ok"),
+        (False, {"ExitCode": 1}, 0, "nonzero_exit"),
+        (True, {"ExitCode": 137}, None, "timeout"),
+        # OOM from either source; each covers the other's gap.
+        (False, {"ExitCode": 137, "OOMKilled": True}, 1, "oom"),
+        (False, {"ExitCode": 137, "OOMKilled": False}, 1, "oom"),  # Docker's flag missed it
+        (False, {"ExitCode": 137, "OOMKilled": True}, None, "oom"),  # counter unavailable
+        # Neither source explains the SIGKILL: infrastructure, never scored.
+        (False, {"ExitCode": 137, "OOMKilled": False}, 0, "infra_error"),
+        (False, {"ExitCode": 137, "OOMKilled": False}, None, "infra_error"),
+        # A program that survived an OOM kill of a child and exited 0 is ok.
+        (False, {"ExitCode": 0}, 2, "ok"),
+        (False, {"ExitCode": 127, "Error": "exec failed"}, None, "infra_error"),
+    ],
+)
+def test_classify(timed_out, state, oom_kills, status):
+    assert classify(timed_out, state, oom_kills) == status
+
+
+@pytest.mark.parametrize(
+    ("content", "expected"),
+    [(b"137 1\n", 1), (b"0 0\n", 0), (b"137 -\n", None), (None, None), (b"", None),
+     (b"garbage", None), (b"1 x", None)],
+)  # fmt: skip
+def test_oom_counter_parsing_never_raises(content, expected):
+    assert _oom_kills(content) == expected
 
 
 # --- with Docker ------------------------------------------------------------
@@ -300,6 +339,27 @@ def test_oom_is_detected_under_parallel_load():
         results = list(pool.map(runner.run, [hog, busy] * 16))
     assert [r.status for r in results[0::2]] == ["oom"] * 16
     assert [r.status for r in results[1::2]] == ["ok"] * 16
+
+
+class NoCgroupCounter(SandboxRunner):
+    """Simulates a host without the cgroup v2 counter (e.g. cgroup v1) by
+    hiding /sys/fs/cgroup inside the container."""
+
+    def create_command(self, name, work, out, command):
+        cmd = super().create_command(name, work, out, command)
+        image = cmd.index(self.image_id)
+        return [*cmd[:image], "--tmpfs", "/sys/fs/cgroup:ro", *cmd[image:]]
+
+
+@pytestmark_docker
+def test_without_the_cgroup_counter_docker_flag_is_the_fallback():
+    runner = NoCgroupCounter(sandbox_cfg(memory="128m"), owner=SESSION_OWNER)
+    probe = runner.run(py("import os\nprint(os.path.exists('/sys/fs/cgroup/memory.events'))\n"))
+    assert (probe.status, probe.stdout) == ("ok", "False\n")  # the counter is really hidden
+    hog = runner.run(py("x = bytearray(1 << 30)\n"))
+    assert hog.status == "oom"  # from Docker's OOMKilled flag alone
+    killed = runner.run(py("import os, signal\nos.kill(os.getpid(), signal.SIGKILL)\n"))
+    assert killed.status == "infra_error"  # still never scored
 
 
 @pytestmark_docker

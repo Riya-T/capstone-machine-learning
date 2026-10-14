@@ -55,8 +55,10 @@ STATUS_FILE = ".sandbox_exit"  # written to /out by the wrapper; not a program o
 # it comes from an asynchronous event that is lost when the container exits
 # and its cgroup disappears first (measured: 8 of 80 OOM kills unflagged with
 # 8 containers running). The kernel's counter in memory.events is exact.
+# Where the counter can't be read (e.g. cgroup v1 hosts) it writes "-" for
+# unknown, and the runner relies on Docker's flag alone.
 _WRAPPER = (
-    '"$@"; rc=$?; oom=0; '
+    '"$@"; rc=$?; oom=-; '
     '{ while read -r key value; do [ "$key" = oom_kill ] && oom=$value; done '
     "< /sys/fs/cgroup/memory.events; } 2>/dev/null; "
     'echo "$rc $oom" > /out/' + STATUS_FILE + "; "
@@ -226,24 +228,14 @@ class SandboxRunner:
         exit_code = info.get("ExitCode")
         out_files = _read_tree(out)
         oom_kills = _oom_kills(out_files.pop(STATUS_FILE, None))
-        if timed_out:
-            status: Status = "timeout"
-        elif info.get("OOMKilled") or (exit_code != 0 and oom_kills > 0):
-            status = "oom"
-        elif info.get("Error"):
-            # The container never ran the command (e.g. it doesn't exist).
-            return _infra(f"container error: {info['Error']}", start, command)
-        elif exit_code == SIGKILL_EXIT:
-            # Killed by SIGKILL, but not by our timeout and not by the memory
-            # limit: something outside the program did it (the host's OOM
-            # killer, a Docker restart, an operator). Exit 137 is ambiguous
-            # (a program could also call sys.exit(137)), so it is treated as
-            # infrastructure and never counted against the program.
-            return _infra("killed by SIGKILL (exit 137), not by timeout or OOM", start, command)
-        elif exit_code == 0:
-            status = "ok"
-        else:
-            status = "nonzero_exit"
+        status = classify(timed_out, info, oom_kills)
+        if status == "infra_error":
+            detail = (
+                f"container error: {info['Error']}"
+                if info.get("Error")
+                else "killed by SIGKILL (exit 137), not by timeout or OOM"
+            )
+            return _infra(detail, start, command)
         return RunResult(
             status=status,
             exit_code=exit_code,
@@ -297,13 +289,37 @@ class _CappedReader:
         return self.data.decode("utf-8", errors="replace")
 
 
-def _oom_kills(status: bytes | None) -> int:
-    """oom_kill count from the wrapper's status file ("<exit> <count>");
-    0 if the file is missing or unreadable."""
+def classify(timed_out: bool, state: dict, oom_kills: int | None) -> Status:
+    """A finished run's status from our timeout flag, Docker's final
+    container state, and the cgroup's oom_kill count (None = unknown).
+
+    Out of memory is decided by Docker's OOMKilled flag OR a positive kernel
+    counter: the flag alone misses kills under load, and the counter can be
+    unavailable (cgroup v1), so each covers the other's gap. A SIGKILL that
+    neither explains is infrastructure: exit 137 is ambiguous (a program can
+    also sys.exit(137)), so it is never counted against the program.
+    """
+    exit_code = state.get("ExitCode")
+    if timed_out:
+        return "timeout"
+    if state.get("OOMKilled") or (exit_code != 0 and oom_kills is not None and oom_kills > 0):
+        return "oom"
+    if state.get("Error"):
+        return "infra_error"  # the container never ran the command
+    if exit_code == SIGKILL_EXIT:
+        return "infra_error"
+    return "ok" if exit_code == 0 else "nonzero_exit"
+
+
+def _oom_kills(status: bytes | None) -> int | None:
+    """oom_kill count from the wrapper's status file ("<exit> <count>").
+    None (unknown) when the file is missing (e.g. after a timeout kill), the
+    wrapper wrote "-" (counter unavailable), or the content is garbled; never
+    an exception."""
     try:
-        return int(status.split()[1]) if status else 0
+        return int(status.split()[1]) if status else None
     except (IndexError, ValueError):
-        return 0
+        return None
 
 
 def _container_user() -> str:
