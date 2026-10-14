@@ -1,0 +1,16 @@
+# Laptop pilot (RTX 4060, 8 GB): local OpenAI-compatible server (Ollama) as writer,
+# and a small stand-in editor until the 14B editor runs on the 5090.
+extends: base.yaml
+name: pilot-local
+tasks:
+  include: []                # real tasks are added in stage (b) and step 11
+writer:
+  backend:
+    kind: openai_compat
+    model: qwen2.5-coder:7b-instruct
+    base_url: http://localhost:11434/v1
+editor:
+  backend:
+    kind: openai_compat
+    model: qwen2.5-coder:7b-instruct   # stand-in editor
+    base_url: http://localhost:11434/v1

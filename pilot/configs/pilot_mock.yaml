@@ -1,0 +1,7 @@
+# Deterministic mock writer and editor: integration tests and the end-to-end check.
+extends: base.yaml
+name: pilot-mock
+tasks:
+  include: []                # record_store is added in stage (b)
+writer:
+  samples_per_task: 3

@@ -1,0 +1,46 @@
+# Shared settings for the pilot. Variants extend this file and override
+# only what differs. Paths are relative to this directory.
+schema_version: 1
+name: pilot-base
+seed: 20261014
+allow_dirty: true            # pilot only; the frozen collection config sets false
+runs_dir: ../runs
+tasks:
+  dir: ../tasks
+  include: []                # each variant lists its tasks
+
+writer:
+  samples_per_task: 8        # proposal: up to eight candidates per task
+  backend:
+    kind: mock
+    model: mock-writer
+    temperature: 0.8         # diverse candidates are the point of sampling
+    max_tokens: 4096
+
+editor:
+  scaffold: turn_loop        # provisional, pending team sign-off
+  reps: 3                    # proposal: each sequence repeated three times
+  view_transform: none
+  budget:
+    max_turns: 8
+    max_total_tokens: 32000
+    wall_time_s: 600
+  backend:
+    kind: mock
+    model: mock-editor
+    temperature: 0.7         # > 0 so repetitions can differ
+    max_tokens: 4096
+
+sandbox:
+  image: pipeline-sandbox:dev   # replace with name@sha256:<digest> once the image is built
+  timeout_s: 60
+  memory: 512m
+  cpus: 1.0
+  pids_limit: 128
+  tmpfs_size: 64m
+  output_cap_bytes: 65536
+
+scorer:
+  rule: weak_dominance       # primary; frozen after dev tasks
+  pairing_mode: best_vs_worst
+  per_task_cap: null
