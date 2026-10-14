@@ -23,8 +23,17 @@ def minimal() -> dict:
         "seed": 1,
         "allow_dirty": False,
         "runs_dir": "runs",
-        "tasks": {"dir": "tasks", "include": ["a"]},
-        "writer": {"backend": dict(backend), "samples_per_task": 2},
+        "tasks": {
+            "dir": "tasks",
+            "include": ["a"],
+            "sequence_length": {"train": 2, "dev": 2, "eval": 3},
+            "sequences_per_task": 2,
+        },
+        "writer": {
+            "backend": dict(backend),
+            "samples_per_task": 2,
+            "prompt_template": "writer.md",
+        },
         "editor": {
             "backend": dict(backend),
             "scaffold": "turn_loop",
@@ -47,6 +56,7 @@ def minimal() -> dict:
 def write(directory: Path, data: dict, name: str = "exp.yaml") -> Path:
     directory.mkdir(parents=True, exist_ok=True)
     (directory / "tasks").mkdir(exist_ok=True)
+    (directory / "writer.md").write_text("$entry_files $spec $public_checks")
     path = directory / name
     path.write_text(yaml.safe_dump(data, sort_keys=False))
     return path
@@ -102,6 +112,11 @@ def test_output_path_may_be_missing_but_input_path_must_exist(tmp_path):
         (lambda d: d["scorer"].update(reps=[]), r"scorer: reps: must be a non-empty"),
         (lambda d: d.update(schema_version=2), r"schema_version: expected 1"),
         (lambda d: d.update(base_dir="/x"), r"base_dir: unknown key"),
+        (
+            lambda d: d["tasks"]["sequence_length"].update(eval=0),
+            r"tasks\.sequence_length: eval: must be > 0",
+        ),
+        (lambda d: d["writer"].pop("prompt_template"), r"writer\.prompt_template: missing"),
     ],
 )
 def test_invalid_configs_raise_with_location(tmp_path, mutate, message):

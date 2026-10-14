@@ -8,9 +8,15 @@ runs_dir: ../runs
 tasks:
   dir: ../tasks
   include: []                # each variant lists its tasks
+  sequences_per_task: 2      # proposal: two different change sequences
+  sequence_length:           # changes per sequence, by split
+    train: 2
+    dev: 2
+    eval: 3
 
 writer:
   samples_per_task: 8        # proposal: up to eight candidates per task
+  prompt_template: ../prompts/writer_v1.md
   backend:
     kind: mock
     model: mock-writer

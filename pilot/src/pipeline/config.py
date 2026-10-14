@@ -50,14 +50,31 @@ _INTERNAL = {"internal": True}
 
 
 @dataclass(frozen=True)
+class SequenceLengths:
+    """Number of changes per sequence, by split. Proposal: training uses
+    sequences of two changes; evaluation uses three."""
+
+    train: int
+    dev: int
+    eval: int
+
+    def __post_init__(self) -> None:
+        for split in ("train", "dev", "eval"):
+            _require_positive(getattr(self, split), split)
+
+
+@dataclass(frozen=True)
 class TasksConfig:
     dir: InputPath
     include: tuple[str, ...]
+    sequence_length: SequenceLengths
+    sequences_per_task: int  # proposal: two different change sequences
 
     def __post_init__(self) -> None:
         # Whether each listed task exists is checked by the registry.
         if len(set(self.include)) != len(self.include):
             raise ConfigError("include: contains duplicate task ids")
+        _require_positive(self.sequences_per_task, "sequences_per_task")
 
 
 @dataclass(frozen=True)
@@ -86,6 +103,10 @@ class BackendConfig:
 class WriterConfig:
     backend: BackendConfig
     samples_per_task: int  # proposal: up to 8 candidates per training task
+    # string.Template file with exactly $entry_files, $spec and $public_checks.
+    # The hash covers the path only; the store keys candidates by the template's
+    # contents (see registry.prompt_version).
+    prompt_template: InputPath
 
     def __post_init__(self) -> None:
         _require_positive(self.samples_per_task, "samples_per_task")
@@ -247,6 +268,13 @@ def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any
     return merged
 
 
+def parse_dataclass(cls: type, data: Any, *, base_dir: Path, where: str = "") -> Any:
+    """Build dataclass `cls` from YAML data with the same strict checks as
+    configs. Relative paths resolve against `base_dir`. The registry uses
+    this for task manifests."""
+    return _build(cls, data, where, base_dir)
+
+
 def _build(cls: type, data: Any, where: str, base_dir: Path) -> Any:
     """Construct dataclass `cls` from a mapping, checking keys and types."""
     if not isinstance(data, dict):
@@ -295,6 +323,13 @@ def _convert(value: Any, tp: Any, where: str, base_dir: Path) -> Any:
         if value not in allowed:
             raise ConfigError(f"{where}: must be one of {list(allowed)}, got {value!r}")
         return value
+
+    if origin is dict:
+        key_type, value_type = get_args(tp)
+        assert key_type is str, "only dict[str, X] is supported"
+        if not isinstance(value, dict):
+            raise ConfigError(f"{where}: expected a mapping")
+        return {str(k): _convert(v, value_type, f"{where}.{k}", base_dir) for k, v in value.items()}
 
     if origin is tuple:
         item_type, ellipsis = get_args(tp)

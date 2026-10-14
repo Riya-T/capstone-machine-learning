@@ -2,6 +2,6 @@
 extends: base.yaml
 name: pilot-mock
 tasks:
-  include: []                # record_store is added in stage (b)
+  include: [record_store]
 writer:
   samples_per_task: 3
