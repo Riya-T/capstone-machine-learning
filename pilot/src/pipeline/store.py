@@ -12,8 +12,12 @@ Layout under `runs_dir`:
 
 Rows are write-once. Recording the same result again is a no-op; recording a
 different result under an existing key raises, because that means some
-input changed without changing the key. The one exception is a checkpoint
-with status `infra_error`, which may be overwritten by a retry.
+input changed without changing the key. "Same result" compares outcomes
+only: measurements (wall time, token counts, call counts), the run that
+produced the row and the human failure label keep their first recorded
+values, since a replayed rerun legitimately measures them differently. The
+one exception is a checkpoint with status `infra_error`, which may be
+overwritten by a retry.
 """
 
 from __future__ import annotations
@@ -26,7 +30,7 @@ import platform
 import secrets
 import sqlite3
 import subprocess
-from collections.abc import Iterable, Iterator, Mapping, Sequence
+from collections.abc import Iterable, Iterator, Mapping
 from dataclasses import asdict, dataclass, fields
 from datetime import UTC, datetime
 from pathlib import Path
@@ -45,6 +49,19 @@ FAILED: frozenset[str] = frozenset({"fail_new", "fail_existing", "fail_both", "b
 
 class StoreError(RuntimeError):
     pass
+
+
+# Columns that describe how a result was obtained rather than what it is.
+# They are not compared when the same key is recorded again.
+_NOT_COMPARED = (
+    "wall_s",
+    "tokens_in",
+    "tokens_out",
+    "n_calls",
+    "run_id",
+    "failure_cause",
+    "created_at",
+)
 
 
 # --- keys -------------------------------------------------------------------
@@ -494,7 +511,7 @@ class Store:
             "usage_json": None if usage is None else json.dumps(usage, sort_keys=True),
             "created_at": datetime.now(UTC).isoformat(),
         }
-        self._insert_once("model_calls", row, key=["key"], ignore=["created_at"])
+        self._insert_once("model_calls", row, key=["key"])
 
     # -- helpers --
 
@@ -504,11 +521,9 @@ class Store:
             list(where.values()),
         ).fetchone()
 
-    def _insert_once(
-        self, table: str, row: dict[str, Any], key: list[str], ignore: Sequence[str] = ()
-    ) -> None:
+    def _insert_once(self, table: str, row: dict[str, Any], key: list[str]) -> None:
         """Insert a row; if its key exists, the stored row must be identical
-        (apart from `ignore` columns), otherwise raise."""
+        in every outcome column (all but _NOT_COMPARED), otherwise raise."""
         with self._transaction():
             existing = self._select_one(table, {k: row[k] for k in key})
             if existing is None:
@@ -518,8 +533,8 @@ class Store:
                     f"INSERT INTO {table} ({columns}) VALUES ({marks})", list(row.values())
                 )
                 return
-        stored = {k: existing[k] for k in row if k not in ignore}
-        new = {k: v for k, v in row.items() if k not in ignore}
+        stored = {k: existing[k] for k in row if k not in _NOT_COMPARED}
+        new = {k: v for k, v in row.items() if k not in _NOT_COMPARED}
         if stored != new:
             changed = sorted(k for k in new if stored[k] != new[k])
             raise StoreError(

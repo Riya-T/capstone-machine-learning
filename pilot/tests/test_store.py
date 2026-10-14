@@ -229,8 +229,30 @@ def test_recording_the_same_result_twice_is_a_no_op(store, run_id):
 
 def test_a_different_result_under_the_same_key_is_refused(store, run_id):
     store.record_candidate(candidate(run_id))
-    with pytest.raises(StoreError, match=r"differs in \['candidate_id', 'wall_s'\]"):
-        store.record_candidate(candidate(run_id, cid="c9", wall_s=2.0))
+    with pytest.raises(StoreError, match=r"differs in \['candidate_id', 'parse_error'\]"):
+        store.record_candidate(candidate(run_id, cid="c9", parse_error="x", wall_s=2.0))
+
+
+def test_measurements_are_not_compared_and_keep_their_first_values(store, run_id, repo):
+    # A replayed rerun takes ~0 s and belongs to a new run; that is not a
+    # different result.
+    store.record_candidate(candidate(run_id))
+    rerun = store.start_run(load_config(repo))
+    store.record_candidate(candidate(rerun, wall_s=0.01, tokens_in=1, tokens_out=2))
+    assert store.get_candidate(CandidateKey("t", "pv", "wh", 0)) == candidate(run_id)
+
+    store.record_checkpoint(step(run_id, 1, "fail_new", "b1", wall_s=9.0, n_calls=3))
+    store.set_failure_cause(TRIAL, 1, "editor_mistake")
+    store.record_checkpoint(step(rerun, 1, "fail_new", "b1", wall_s=0.1, n_calls=0))
+    (stored,) = store.trial_steps(TRIAL)
+    assert (stored.wall_s, stored.n_calls, stored.run_id) == (9.0, 3, run_id)
+    assert stored.failure_cause == "editor_mistake"
+
+
+def test_outcome_columns_of_checkpoints_are_compared(store, run_id):
+    store.record_checkpoint(step(run_id, 1, "success", "b1", new_pass=3, new_total=3))
+    with pytest.raises(StoreError, match=r"differs in \['new_pass'\]"):
+        store.record_checkpoint(step(run_id, 1, "success", "b1", new_pass=2, new_total=3))
 
 
 def test_initial_checks_are_keyed_by_task_version_and_sandbox(store, run_id):

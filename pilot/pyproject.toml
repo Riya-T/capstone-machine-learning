@@ -27,6 +27,7 @@ testpaths = ["tests"]
 addopts = "-ra --strict-markers"
 markers = [
     "docker: needs a running Docker daemon (skipped otherwise)",
+    "local_model: calls the model server in configs/pilot_local.yaml (skipped unless --local-model)",
 ]
 
 [tool.ruff]
