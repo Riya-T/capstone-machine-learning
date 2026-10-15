@@ -3,10 +3,13 @@
 - `docker` tests run only when a Docker daemon answers.
 - `local_model` tests call a real model server, so they are slow and need
   hardware; they run only with `pytest --local-model`.
+- `slow` tests (full collection, task validation, stress tests) take tens of
+  seconds each; they run only with `pytest --slow`.
 
 Usage (from pilot/):
     uv run pytest -rs                   # -rs lists every skipped test and why
     uv run pytest --local-model
+    uv run pytest --slow                # everything, including the slow tests
 """
 
 import functools
@@ -22,6 +25,7 @@ def pytest_addoption(parser):
         action="store_true",
         help="run tests marked local_model against the server in configs/pilot_local.yaml",
     )
+    parser.addoption("--slow", action="store_true", help="run tests marked slow")
 
 
 @functools.cache
@@ -37,7 +41,10 @@ def docker_available() -> bool:
 
 def pytest_collection_modifyitems(config, items):
     run_local = config.getoption("--local-model")
+    run_slow = config.getoption("--slow")
     for item in items:
+        if "slow" in item.keywords and not run_slow:
+            item.add_marker(pytest.mark.skip(reason="slow; run with --slow"))
         if "local_model" in item.keywords and not run_local:
             item.add_marker(pytest.mark.skip(reason="needs --local-model"))
         if "docker" in item.keywords and not docker_available():

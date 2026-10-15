@@ -35,7 +35,7 @@ from pipeline.parser import render_program
 from pipeline.registry import load_tasks
 
 PILOT = Path(__file__).resolve().parents[2]
-pytestmark = pytest.mark.docker
+pytestmark = [pytest.mark.docker, pytest.mark.slow]
 
 TASK = load_tasks(load_config(PILOT / "configs" / "pilot_mock.yaml").tasks)["record_store"]
 S1, S2 = TASK.sequence("s1").steps, TASK.sequence("s2").steps
@@ -222,3 +222,33 @@ def test_report_rebuilds_the_files_without_any_backend(setup, tmp_path, monkeypa
 def test_validate_tasks_command(setup):
     path, _, _ = setup
     assert main(["validate-tasks", "--config", str(path)]) == 0
+
+
+def test_staged_run_stops_after_each_stage(setup, tmp_path):
+    path, _, _ = setup
+    staged = tmp_path / "staged.yaml"
+    data = yaml.safe_load(path.read_text())
+    data["runs_dir"] = str(tmp_path / "runs")
+    staged.write_text(yaml.safe_dump(data, sort_keys=False))
+    db = tmp_path / "runs" / "pipeline.sqlite"
+
+    def count(table):
+        conn = sqlite3.connect(db)
+        (n,) = conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()
+        conn.close()
+        return n
+
+    writer = collect(load_config(staged), until="writer")
+    assert (count("candidates"), count("initial_checks"), count("checkpoints")) == (3, 0, 0)
+    _, report = outputs(writer.run_dir)
+    assert report["candidates"]["record_store"]["flag"] == "initial checks pending"
+    assert (writer.run_dir / "summary.txt").read_text().startswith("Candidates")
+
+    initial = collect(load_config(staged), until="initial")
+    assert initial.model_calls == 0  # the samples were already collected
+    assert (count("initial_checks"), count("checkpoints")) == (2, 0)
+    _, report = outputs(initial.run_dir)
+    stats = report["candidates"]["record_store"]
+    assert (stats["distinct"], stats["passed_initial"]) == (2, 2)
+    assert stats["distinct_normalized"] == 1  # modular and tangled differ only in a comment
+    assert stats["flag"] == "fewer than 3 distinct passing programs"

@@ -25,8 +25,11 @@ from pipeline.scorer import (
     CandidateRecord,
     Scorer,
     TaskRecord,
+    candidate_stats,
     load_task_record,
     strict,
+    structure_key,
+    summary_table,
     trial_score,
     weak_dominance,
     write_outputs,
@@ -424,3 +427,88 @@ def test_infra_cause_is_loaded_from_the_store(tmp_path):
         .report
     )
     assert report["samples_detail"] == {"infra_error": {"docker_create": 1}}
+
+
+# --- candidate diversity ----------------------------------------------------
+
+
+def test_structure_key_ignores_comments_docstrings_and_formatting():
+    a = {"m.py": b'"""Module doc."""\n\ndef f(x):\n    """Doc."""\n    return x + 1  # add one\n'}
+    b = {"m.py": b"def f(x):\n\n    return (x+1)\n"}
+    c = {"m.py": b"def f(x):\n    return x + 2\n"}
+    assert structure_key(a) == structure_key(b)
+    assert structure_key(a) != structure_key(c)
+    assert structure_key({"m.py": b"def ("}) != structure_key({"m.py": b"def ( "})  # raw text
+
+
+def test_candidate_stats_and_flag():
+    # Programs a and b differ only in a comment; c differs in code. a has two
+    # samples; e fails initially; one answer was cut off.
+    texts = {
+        "a": b"def f():\n    return 1\n",
+        "b": b"def f():\n    return 1  # one\n",
+        "c": b"def f():\n    return 2\n",
+        "e": b"def f():\n    return 0\n",
+    }
+    task = TaskRecord(
+        "t",
+        "p",
+        ("s1", "s2"),
+        2,
+        ("truncated/max_tokens",),
+        (
+            CandidateRecord("a", (0, 3), True),
+            CandidateRecord("b", (1,), True),
+            CandidateRecord("c", (2,), True),
+            CandidateRecord("e", (4,), False),
+        ),
+    )
+    stats = candidate_stats(task, lambda cid: {"m.py": texts[cid]})
+    assert stats == {
+        "samples": 6,
+        "parse_failures": {"truncated/max_tokens": 1},
+        "distinct": 4,
+        "distinct_normalized": 3,  # a and b collapse
+        "initial_checked": 4,
+        "passed_initial": 3,
+        "passed_initial_samples": 4,
+        "passed_initial_normalized": 2,
+        "flag": None,
+    }
+    fewer = TaskRecord("t", "p", ("s1",), 2, (), task.candidates[:2])
+    assert candidate_stats(fewer, lambda cid: {"m.py": texts[cid]})["flag"] == (
+        "fewer than 3 distinct passing programs"
+    )
+    pending = TaskRecord("t", "p", ("s1",), 2, (), (CandidateRecord("a", (0,), None),))
+    assert candidate_stats(pending, lambda cid: {"m.py": texts[cid]})["flag"] == (
+        "initial checks pending"
+    )
+    empty = TaskRecord("t", "p", ("s1",), 2, (), ())
+    assert candidate_stats(empty, lambda cid: {})["flag"] == "no samples yet"
+
+
+def test_report_has_candidates_and_the_summary_table_shows_them():
+    report = build().report
+    assert report["candidates"]["t"]["samples"] == 8
+    assert report["candidates"]["t"]["parse_failures"] == {"truncated/max_tokens": 1}
+    text = summary_table(report)
+    for expected in [
+        "Candidates\n",
+        "parse failures: truncated/max_tokens 1",
+        "weak_dominance/best_vs_worst",
+        "Rep agreement: 0.94",
+        "Step endings: fail_new 10, success 23",
+        "Samples: eligible 3, initially_failing 2, duplicate 1, infra_error 1, incomplete 1",
+    ]:
+        assert expected in text, expected
+
+
+def test_max_sequences_limits_the_loaded_sequences(tmp_path):
+    cfg = load_config(PILOT / "configs" / "pilot_mock.yaml")
+    task = load_tasks(cfg.tasks)["record_store"]
+    with Store(tmp_path / "runs") as store:
+        record = load_task_record(
+            store, task, "P", writer_hash="w", sandbox_hash="s", editor_hash="e",
+            editor_reps=3, max_sequences=1,
+        )  # fmt: skip
+    assert record.sequence_ids == ("s1",)

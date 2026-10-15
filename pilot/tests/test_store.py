@@ -137,6 +137,15 @@ def test_writer_key_changes_with_mock_fixture_contents(repo):
     assert keys(repo)[0] != writer
 
 
+def test_sample_and_rep_counts_are_not_part_of_the_keys(repo):
+    # Sample i and rep k don't depend on the totals, so growing either keeps
+    # what was already collected.
+    before = keys(repo)
+    edit_config(repo, lambda d: d["writer"].update(samples_per_task=32))
+    edit_config(repo, lambda d: d["editor"].update(reps=5))
+    assert keys(repo) == before
+
+
 def test_unrelated_sections_do_not_change_either_key(repo):
     before = keys(repo)
     edit_config(repo, lambda d: d["scorer"].update(pairing_mode="all_pairs"))

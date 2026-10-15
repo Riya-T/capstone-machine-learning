@@ -97,12 +97,21 @@ def _input_file_hashes(section: Any, base_dir: Path) -> dict[str, str]:
     return found
 
 
+def _without(section: dict, *fields: str) -> dict:
+    return {k: v for k, v in section.items() if k not in fields}
+
+
 def writer_cfg_hash(cfg: ExperimentConfig) -> str:
     """Keys writer samples: the writer section plus the contents of the files
-    it names (prompt template, mock fixtures)."""
+    it names (prompt template, mock fixtures).
+
+    samples_per_task is left out: sample i is the same whatever the total
+    (its seed depends only on i), so raising the count keeps every sample
+    already collected and only adds new ones.
+    """
     return _hash_json(
         {
-            "writer": canonical(cfg.writer, cfg.base_dir),
+            "writer": _without(canonical(cfg.writer, cfg.base_dir), "samples_per_task"),
             "files": _input_file_hashes(cfg.writer, cfg.base_dir),
         }
     )
@@ -111,10 +120,14 @@ def writer_cfg_hash(cfg: ExperimentConfig) -> str:
 def editor_cfg_hash(cfg: ExperimentConfig, image_id: str) -> str:
     """Keys editing results: the editor section, the contents of the files it
     names, and the sandbox (settings and image), because the image and its
-    limits decide which tests pass as much as the editor does."""
+    limits decide which tests pass as much as the editor does.
+
+    reps is left out, like samples_per_task for the writer: rep k is the same
+    trial whatever the number of reps, so adding reps keeps existing trials.
+    """
     return _hash_json(
         {
-            "editor": canonical(cfg.editor, cfg.base_dir),
+            "editor": _without(canonical(cfg.editor, cfg.base_dir), "reps"),
             "files": _input_file_hashes(cfg.editor, cfg.base_dir),
             "sandbox": sandbox_cfg_hash(cfg, image_id),
         }

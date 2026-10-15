@@ -28,6 +28,7 @@ addopts = "-ra --strict-markers"
 markers = [
     "docker: needs a running Docker daemon (skipped otherwise)",
     "local_model: calls the model server in configs/pilot_local.yaml (skipped unless --local-model)",
+    "slow: takes tens of seconds or more (skipped unless --slow)",
 ]
 
 [tool.ruff]

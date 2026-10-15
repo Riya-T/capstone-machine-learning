@@ -1,20 +1,31 @@
-# Laptop pilot (RTX 4060, 8 GB): local OpenAI-compatible server (Ollama) as writer,
-# and a small stand-in editor until the 14B editor runs on the 5090.
+# Laptop pilot (RTX 4060, 8 GB) on record_store: the same local 7B model as
+# writer and as stand-in editor, through Ollama's OpenAI-compatible endpoint.
+# The model is qwen2.5-coder:7b-instruct with an 8192-token context; create it
+# first (see ollama/README.md). Staged runs: collect --until writer, then
+# --until initial, then the full collect.
 extends: base.yaml
 name: pilot-local
+runs_dir: ../runs/local      # its own store, apart from mock runs
 tasks:
-  include: []                # real tasks are added in stage (b) and step 11
+  include: [record_store]
+  max_sequences: null        # all sequences; set 1 to edit only s1
 writer:
+  samples_per_task: 16       # raising this later keeps the samples already collected
   backend:
     kind: openai_compat
-    model: qwen2.5-coder:7b-instruct
+    model: qwen2.5-coder-7b-ctx8k        # num_ctx 8192
     base_url: http://localhost:11434/v1
     fixtures: null           # clear the mock fixtures inherited from base.yaml
     request_timeout_s: 600   # a 7B model on 8 GB can take minutes for a full answer
+    # max_tokens 4096 (base) + a ~1,100-token prompt fits the 8192 context
 editor:
+  reps: 3                    # raising this later keeps the trials already collected
   backend:
     kind: openai_compat
-    model: qwen2.5-coder:7b-instruct   # stand-in editor
+    model: qwen2.5-coder-7b-ctx8k        # stand-in editor; the 14B runs on the 5090
     base_url: http://localhost:11434/v1
     fixtures: null
     request_timeout_s: 600
+    # max_tokens 3072 (base) + max_prompt_chars 16000 (~4.5k tokens) fits 8192
+execution:
+  sandbox_workers: 4         # leaves CPU for Ollama

@@ -45,6 +45,8 @@ Usage:
 
 from __future__ import annotations
 
+import ast
+import hashlib
 import json
 from collections import Counter
 from collections.abc import Callable, Mapping, Sequence
@@ -143,8 +145,11 @@ def load_task_record(
     sandbox_hash: str,
     editor_hash: str,
     editor_reps: int,
+    max_sequences: int | None = None,
 ) -> TaskRecord:
-    """Gather a task's candidates, initial checks and trials from the store."""
+    """Gather a task's candidates, initial checks and trials from the store.
+    Only the first `max_sequences` sequences are used (None: all)."""
+    sequences = task.sequences[:max_sequences]
     samples = store.candidates(task.id, prompt_version(prompt), writer_hash)
     by_program: dict[str, list] = {}
     parse_failures = []
@@ -160,7 +165,7 @@ def load_task_record(
         group.sort(key=lambda sample: sample.key.sample_idx)
         check = store.get_initial_check(task.id, task.task_version, cid, sandbox_hash)
         trials, causes, reasons = {}, {}, {}
-        for sequence in task.sequences:
+        for sequence in sequences:
             for rep in range(editor_reps):
                 key = TrialKey(task.id, task.task_version, cid, sequence.id, rep, editor_hash)
                 steps = store.trial_steps(key)
@@ -184,7 +189,7 @@ def load_task_record(
     return TaskRecord(
         task_id=task.id,
         prompt=prompt,
-        sequence_ids=tuple(s.id for s in task.sequences),
+        sequence_ids=tuple(s.id for s in sequences),
         sequence_length=len(task.sequences[0].steps),
         parse_failures=tuple(sorted(parse_failures)),
         candidates=tuple(candidates),
@@ -376,6 +381,7 @@ class Scorer:
             "step_endings": Counter(),
             "combinations": {},
             "tasks": {},
+            "candidates": {},
         }
         per_task = []
         agreements: list[float] = []
@@ -396,6 +402,7 @@ class Scorer:
                 "score_histogram": _histograms(scored, task),
             }
             per_task.append((task, scored))
+            report["candidates"][task.task_id] = candidate_stats(task, load_program)
 
         pairs: list[dict] = []
         for rule in RULES:
@@ -470,9 +477,113 @@ def _histograms(scored: list[CandidateScores], task: TaskRecord) -> dict[str, li
     return out
 
 
+MIN_DISTINCT_PASSING = 3  # fewer gives the editor too little to tell apart
+
+
+def candidate_stats(task: TaskRecord, load_program) -> dict:
+    """How a task's writer samples turned out, for judging candidate
+    diversity. distinct_normalized ignores comments, docstrings and
+    formatting; it is a diagnostic only and never removes a candidate."""
+    checked = [c for c in task.candidates if c.initially_passed is not None]
+    passing = [c for c in task.candidates if c.initially_passed]
+    stats = {
+        "samples": len(task.parse_failures) + sum(len(c.sample_indices) for c in task.candidates),
+        "parse_failures": dict(sorted(Counter(task.parse_failures).items())),
+        "distinct": len(task.candidates),
+        "distinct_normalized": len(
+            {structure_key(load_program(c.candidate_id)) for c in task.candidates}
+        ),
+        "initial_checked": len(checked),
+        "passed_initial": len(passing),  # distinct programs
+        "passed_initial_samples": sum(len(c.sample_indices) for c in passing),
+        "passed_initial_normalized": len(
+            {structure_key(load_program(c.candidate_id)) for c in passing}
+        ),
+    }
+    if not stats["samples"]:
+        stats["flag"] = "no samples yet"
+    elif len(checked) < len(task.candidates):
+        stats["flag"] = "initial checks pending"
+    elif len(passing) < MIN_DISTINCT_PASSING:
+        stats["flag"] = f"fewer than {MIN_DISTINCT_PASSING} distinct passing programs"
+    else:
+        stats["flag"] = None
+    return stats
+
+
+def structure_key(program: Mapping[str, bytes]) -> str:
+    """A hash of the program's syntax trees with docstrings removed, so two
+    programs that differ only in comments, docstrings or formatting get the
+    same key. A file that doesn't parse is compared as raw text."""
+    parts = []
+    for path in sorted(program):
+        source = program[path]
+        try:
+            tree = ast.parse(source)
+        except (SyntaxError, ValueError):
+            parts.append(f"{path}\0{source.decode('utf-8', 'replace')}")
+            continue
+        for node in ast.walk(tree):
+            body = getattr(node, "body", None)
+            if (
+                isinstance(node, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef))
+                and body
+                and isinstance(body[0], ast.Expr)
+                and isinstance(body[0].value, ast.Constant)
+                and isinstance(body[0].value.value, str)
+            ):
+                node.body = body[1:] or [ast.Pass()]
+        parts.append(f"{path}\0{ast.dump(tree, include_attributes=False)}")
+    return hashlib.sha256("\n".join(parts).encode("utf-8")).hexdigest()
+
+
+def summary_table(report: dict) -> str:
+    """The numbers to look at first, as plain text."""
+    out = ["Candidates"]
+    out.append(
+        f"  {'task':<20}{'samples':>8}{'parse fail':>11}{'distinct':>9}{'(norm.)':>8}"
+        f"{'passed':>7}{'(norm.)':>8}  flag"
+    )
+    for task_id, c in sorted(report["candidates"].items()):
+        fails = sum(c["parse_failures"].values())
+        out.append(
+            f"  {task_id:<20}{c['samples']:>8}{fails:>11}{c['distinct']:>9}"
+            f"{c['distinct_normalized']:>8}{c['passed_initial']:>7}"
+            f"{c['passed_initial_normalized']:>8}  {c['flag'] or ''}"
+        )
+        if c["parse_failures"]:
+            reasons = ", ".join(f"{k} {v}" for k, v in c["parse_failures"].items())
+            out.append(f"  {'':<20}parse failures: {reasons}")
+    samples = ", ".join(f"{k} {v}" for k, v in report["samples"].items())
+    out += ["", f"Samples: {samples}"]
+
+    primary = "{rule}/{pairing_mode}".format(**report["primary"])
+    out += ["", f"Preference pairs (primary: {primary})"]
+    out.append(
+        f"  {'rule/pairing':<30}{'pairs':>6}{'compared':>9}{'tie rate':>10}{'inconsistent':>13}"
+    )
+    for name, combo in report["combinations"].items():
+
+        def rate(value):
+            return "-" if value is None else f"{value:.2f}"
+
+        out.append(
+            f"  {name:<30}{combo['pair_yield']:>6}{combo['compared']:>9}"
+            f"{rate(combo['tie_rate']):>10}{rate(combo['inconsistent_rate']):>13}"
+        )
+    agreement = report["rep_agreement"]
+    out += ["", f"Rep agreement: {'-' if agreement is None else f'{agreement:.2f}'}"]
+    endings = ", ".join(f"{k} {v}" for k, v in report["step_endings"].items()) or "-"
+    out.append(f"Step endings: {endings}")
+    for task_id, t in sorted(report["tasks"].items()):
+        histograms = "; ".join(f"{seq} {counts}" for seq, counts in t["score_histogram"].items())
+        out.append(f"Score histogram {task_id} (trials scoring 0, 1, ...): {histograms or '-'}")
+    return "\n".join(out)
+
+
 def write_outputs(result: ScoreResult, run_dir: Path) -> None:
-    """preferences.jsonl (one training pair per line) and
-    preferences_report.json (yields, rates and exclusion counts)."""
+    """preferences.jsonl (one training pair per line), preferences_report.json
+    (yields, rates and exclusion counts) and summary.txt (summary_table)."""
     run_dir.mkdir(parents=True, exist_ok=True)
     with open(run_dir / "preferences.jsonl", "w", encoding="utf-8") as f:
         for pair in result.pairs:
@@ -480,3 +591,4 @@ def write_outputs(result: ScoreResult, run_dir: Path) -> None:
     (run_dir / "preferences_report.json").write_text(
         json.dumps(result.report, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
+    (run_dir / "summary.txt").write_text(summary_table(result.report) + "\n", encoding="utf-8")

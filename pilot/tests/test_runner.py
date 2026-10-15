@@ -328,6 +328,7 @@ def test_unexplained_exit_137_is_an_infra_error(runner, code):
 
 
 @pytestmark_docker
+@pytest.mark.slow
 def test_oom_is_detected_under_parallel_load():
     # Docker's OOMKilled flag alone missed about 1 in 10 OOM kills with 8
     # containers running; the kernel counter recorded by the wrapper must not.

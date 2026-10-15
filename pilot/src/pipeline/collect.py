@@ -39,7 +39,7 @@ from .parser import parse_program
 from .registry import ChangeSequence, Program, Task, build_writer_prompt, load_tasks, load_template
 from .registry import prompt_version as prompt_version_of
 from .runner import SandboxError, SandboxRunner
-from .scorer import Scorer, ScoreResult, load_task_record, write_outputs
+from .scorer import Scorer, ScoreResult, load_task_record, summary_table, write_outputs
 from .store import (
     Candidate,
     CandidateKey,
@@ -89,7 +89,15 @@ def sandbox_owner(cfg: ExperimentConfig) -> str:
     return f"collect-{cfg.component_hash(cfg.runs_dir)[:12]}"
 
 
-def collect(cfg: ExperimentConfig) -> CollectStats:
+STAGES = ("writer", "initial", "edit")
+
+
+def collect(cfg: ExperimentConfig, until: str = "edit") -> CollectStats:
+    """Run the stages up to and including `until` (writer, initial or edit),
+    then write the preference files and summary for whatever is collected.
+    Running again with a later stage continues from there."""
+    if until not in STAGES:
+        raise ValueError(f"until must be one of {STAGES}, got {until!r}")
     scorer = Scorer(cfg.scorer, cfg.editor.reps)  # fail on a bad scorer config before any work
     tasks = load_tasks(cfg.tasks)
     stats = CollectStats()
@@ -106,17 +114,23 @@ def collect(cfg: ExperimentConfig) -> CollectStats:
     with Store(cfg.runs_dir) as store:
         stats.run_id = store.start_run(cfg)
         stats.run_dir = store.runs_dir / stats.run_id
-        log.info("run %s: %d tasks, image %s", stats.run_id, len(tasks), image_id[:19])
+        log.info(
+            "run %s: %d tasks, image %s, until %s", stats.run_id, len(tasks), image_id[:19], until
+        )
         for task in tasks.values():
             prompt = build_writer_prompt(task.writer_view(), template)
             _write_samples(cfg, store, task, prompt, keys, stats)
+            if until == "writer":
+                continue
             programs = _distinct_programs(store, task, prompt, keys)
             passed = _initial_checks(store, evaluator, task, programs, keys, stats)
             log.info(
                 "%s: %d distinct programs, %d passed initially", task.id, len(programs), len(passed)
             )
+            if until == "initial":
+                continue
             for n, cid in enumerate(passed, start=1):
-                for sequence in task.sequences:
+                for sequence in task.sequences[: cfg.tasks.max_sequences]:
                     for rep in range(cfg.editor.reps):
                         _run_trial(
                             cfg, store, editor, evaluator, task, cid, sequence, rep, keys, stats
@@ -124,6 +138,7 @@ def collect(cfg: ExperimentConfig) -> CollectStats:
                 log.info("%s: trials done for candidate %d/%d", task.id, n, len(passed))
         result = score(cfg, store, tasks, keys, stats.run_dir, scorer)
         stats.pairs = len(result.pairs)
+    print(summary_table(result.report), flush=True)
     log.info(
         "run %s finished: %d model calls, %d samples, %d checks and %d steps recorded, "
         "%d infra errors, %d pairs",
@@ -145,6 +160,7 @@ def report(cfg: ExperimentConfig, out_dir: Path | None = None) -> ScoreResult:
     with Store(cfg.runs_dir) as store:
         result = score(cfg, store, load_tasks(cfg.tasks), Keys.of(cfg, image_id), out)
     log.info("report written to %s: %d pairs", out, len(result.pairs))
+    print(summary_table(result.report), flush=True)
     return result
 
 
@@ -160,6 +176,7 @@ def score(cfg, store: Store, tasks: dict[str, Task], keys: Keys, out_dir: Path, 
             sandbox_hash=keys.sandbox,
             editor_hash=keys.editor,
             editor_reps=cfg.editor.reps,
+            max_sequences=cfg.tasks.max_sequences,
         )
         for task in tasks.values()
     ]

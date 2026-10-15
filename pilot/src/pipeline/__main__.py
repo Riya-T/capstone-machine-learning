@@ -2,14 +2,15 @@
 
 Commands (all take --config):
     collect         run writer sampling, initial checks, editing trials and
-                    scoring; resumable, and a complete rerun makes no model calls
+                    scoring; resumable, and a complete rerun makes no model calls.
+                    --until writer|initial|edit stops after that stage
     validate-tasks  check each task's tests against its references and
                     planted bugs in the sandbox; exit status 1 on any problem
     report          rebuild preferences.jsonl and preferences_report.json from
                     the store, with no model calls (default: <runs_dir>/report)
 
 Usage (from pilot/):
-    uv run python -m pipeline collect --config configs/pilot_mock.yaml
+    uv run python -m pipeline collect --config configs/pilot_mock.yaml [--until initial]
     uv run python -m pipeline validate-tasks --config configs/pilot_mock.yaml
     uv run python -m pipeline report --config configs/pilot_mock.yaml [--out DIR]
 """
@@ -42,6 +43,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     ]:
         sub = commands.add_parser(name, help=text)
         sub.add_argument("--config", required=True, type=Path)
+        if name == "collect":
+            sub.add_argument(
+                "--until",
+                choices=("writer", "initial", "edit"),
+                default="edit",
+                help="stop after this stage (default: edit, the whole pipeline)",
+            )
         if name == "report":
             sub.add_argument("--out", type=Path, help="output directory")
     args = parser.parse_args(argv)
@@ -51,7 +59,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         cfg = load_config(args.config)
         if args.command == "collect":
-            collect(cfg)
+            collect(cfg, until=args.until)
         elif args.command == "report":
             report(cfg, args.out)
         else:

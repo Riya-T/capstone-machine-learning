@@ -270,6 +270,7 @@ def test_supersedes_matches_exact_test_ids_only(evaluator):
 
 
 @pytest.mark.docker
+@pytest.mark.slow
 def test_categories_run_separately(evaluator, tmp_path):
     # A hang in the new-feature tests can't affect the existing-behavior run.
     fast = dataclasses.replace(evaluator.runner.cfg, timeout_s=8.0)
@@ -350,11 +351,13 @@ def validate(evaluator, tasks_dir, overrides=None) -> list[str]:
 
 
 @pytest.mark.docker
+@pytest.mark.slow
 def test_sound_task_has_no_problems(evaluator, tmp_path):
     assert validate(evaluator, tmp_path) == []
 
 
 @pytest.mark.docker
+@pytest.mark.slow
 def test_change_tests_that_the_old_program_already_passes_are_flagged(evaluator, tmp_path):
     # cb's new test no longer needs c(): doing nothing would pass it.
     problems = validate(
@@ -367,6 +370,7 @@ def test_change_tests_that_the_old_program_already_passes_are_flagged(evaluator,
 
 
 @pytest.mark.docker
+@pytest.mark.slow
 def test_reference_that_drops_earlier_behavior_is_flagged(evaluator, tmp_path):
     # The {ca, cb} reference forgot b(): it fails the existing tests in s1
     # (ca came first) and the new-feature tests in s2 (ca came second).
@@ -380,12 +384,14 @@ def test_reference_that_drops_earlier_behavior_is_flagged(evaluator, tmp_path):
 
 
 @pytest.mark.docker
+@pytest.mark.slow
 def test_planted_bug_that_passes_is_flagged(evaluator, tmp_path):
     problems = validate(evaluator, tmp_path, {"bugs/b0/m.py": FUNCTIONAL["ref/v0/m.py"]})
     assert problems == ["bugs/b0: should fail initial but passed (2/2; failing [])"]
 
 
 @pytest.mark.docker
+@pytest.mark.slow
 def test_record_store_task_is_sound(evaluator):
     cfg = load_config(PILOT / "configs" / "pilot_mock.yaml")
     task = load_tasks(cfg.tasks)["record_store"]

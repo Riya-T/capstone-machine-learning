@@ -75,12 +75,17 @@ class TasksConfig:
     include: tuple[str, ...]
     sequence_length: SequenceLengths
     sequences_per_task: int  # proposal: two different change sequences
+    # Edit and score only each task's first N sequences (None: all). Not part
+    # of any result key: a trial on s1 is the same whether s2 also runs.
+    max_sequences: int | None = None
 
     def __post_init__(self) -> None:
         # Whether each listed task exists is checked by the registry.
         if len(set(self.include)) != len(self.include):
             raise ConfigError("include: contains duplicate task ids")
         _require_positive(self.sequences_per_task, "sequences_per_task")
+        if self.max_sequences is not None:
+            _require_positive(self.max_sequences, "max_sequences")
 
 
 @dataclass(frozen=True)
