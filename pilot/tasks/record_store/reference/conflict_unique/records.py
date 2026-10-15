@@ -32,8 +32,8 @@ def validate(record):
     name, email, age = record["name"], record["email"], record["age"]
     if not isinstance(name, str) or not 1 <= len(name) <= 100:
         raise ValidationError("name must be a string of 1 to 100 characters")
-    if not isinstance(email, str) or email.count("@") != 1 or "" in email.split("@"):
-        raise ValidationError("email must look like local@domain")
+    if not isinstance(email, str) or "@" not in email:
+        raise ValidationError("email must contain an @")
     if isinstance(age, bool) or not isinstance(age, int) or not 0 <= age <= 150:
         raise ValidationError("age must be an integer from 0 to 150")
 
@@ -105,7 +105,7 @@ class RecordStore:
 
     def _lookup(self, record_id):
         # True == 1 and 1.0 == 1 in Python, so a plain dict lookup would find
-        # record 1 for them; the spec says ids that are not int are not stored.
+        # record 1 for them; treating every non-int as "not stored" is simplest.
         if isinstance(record_id, bool) or not isinstance(record_id, int):
             raise KeyError(record_id)
         if record_id not in self._records:

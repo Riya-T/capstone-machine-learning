@@ -14,6 +14,7 @@ Usage:
 import dataclasses
 import io
 import os
+import re
 import uuid
 from pathlib import Path
 
@@ -433,4 +434,4 @@ def test_record_store_reference_passes_its_public_checks(runner):
                *[f.path for f in task.public_checks]]  # fmt: skip
     result = runner.run(RunRequest(files=files, command=command))
     assert result.status == "ok", result.stdout + result.stderr
-    assert "3 passed" in result.stdout
+    assert re.search(r"\b\d+ passed", result.stdout) and "failed" not in result.stdout

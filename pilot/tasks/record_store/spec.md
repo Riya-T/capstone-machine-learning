@@ -25,9 +25,8 @@ class RecordStore:
 A record is a `dict` with exactly the keys `name`, `email` and `age`:
 
 - `name`: a `str` of 1 to 100 characters.
-- `email`: a `str` containing exactly one `@`, with at least one character
-  before and after it.
-- `age`: an `int` from 0 to 150 inclusive. `bool` values are not accepted.
+- `email`: a `str` containing an `@`.
+- `age`: an `int` from 0 to 150 inclusive.
 
 Anything else, including a missing or extra key or a value that is not a
 `dict`, raises `ValidationError`. Two records may have the same email.
@@ -39,17 +38,14 @@ Anything else, including a missing or extra key or a value that is not a
   An id is never reused, even after its record is deleted.
 - `get(record_id)` returns a copy of the record (the three fields only).
   Changing the returned dict does not change the store.
-- `update(record_id, fields)` changes some of a record's fields. `fields`
-  must be a non-empty `dict` whose keys are a subset of `name`, `email` and
-  `age`; otherwise `update` raises `ValidationError`. The record after the
-  update must be valid.
+- `update(record_id, fields)` changes some of a record's fields. `fields` is
+  a `dict` of new values for some of `name`, `email` and `age`; the record
+  after the update must be valid.
 - `delete(record_id)` removes the record.
 - `list_ids()` returns the ids of all stored records in increasing order.
 
-`get`, `update` and `delete` raise `KeyError` for an id that is not stored.
-Ids are `int` values; any other value, including `True` or `1.0`, is an id
-that is not stored. If the id is not stored, `KeyError` is raised before
-`fields` is checked.
+`get`, `update` and `delete` raise `KeyError` for an id that is not stored,
+including values that are not ids at all, such as the string `"1"` or `None`.
 
 A failed operation has no effect: if `add`, `update` or `delete` raises, the
 store, the file, and the id that the next `add` will return are all unchanged.

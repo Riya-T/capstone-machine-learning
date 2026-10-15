@@ -12,6 +12,7 @@ tasks:
 writer:
   samples_per_task: 16       # raising this later keeps the samples already collected
   backend:
+    temperature: 0.4         # 0.8 gave 16/16 distinct programs but 0 passing; trade diversity for care
     kind: openai_compat
     model: qwen2.5-coder-7b-ctx8k        # num_ctx 8192
     base_url: http://localhost:11434/v1

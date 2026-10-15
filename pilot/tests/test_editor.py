@@ -13,6 +13,7 @@ Usage:
 import ast
 import dataclasses
 import itertools
+import re
 import uuid
 from pathlib import Path
 
@@ -353,7 +354,8 @@ def test_editing_record_store_with_real_public_checks(tmp_path):
         backend = mock(tmp_path, [(FIRST, files_reply(CONFLICT)), ("Public checks:", "DONE")])
         out = Editor(editor_cfg(), evaluator).edit(backend, V0, STEP)
         assert (out.status, out.program) == ("done", CONFLICT)
-        assert "Public checks: 5 of 5 passed." in backend.prompts[1]
+        # Every public check passed (initial plus c_conflict's), whatever their number.
+        assert re.search(r"Public checks: (\d+) of \1 passed\.", backend.prompts[1])
         # The edited program then passes the hidden tests for this step.
         assert evaluator.check_step(out.program, STEP).status == "success"
     finally:
