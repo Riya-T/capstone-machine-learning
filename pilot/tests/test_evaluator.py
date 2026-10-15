@@ -49,9 +49,9 @@ def junit(*cases: str) -> bytes:
     ).encode()
 
 
-def run(status="ok", exit_code=0, report=None, detail="") -> RunResult:
+def run(status="ok", exit_code=0, report=None, detail="", cause="") -> RunResult:
     out = {} if report is None else {"report.xml": report}
-    return RunResult(status, exit_code, "", "", False, False, out, 1.0, detail)
+    return RunResult(status, exit_code, "", "", False, False, out, 1.0, detail, infra_cause=cause)
 
 
 PASS_A = '<testcase classname="tests.test_a" name="test_one"/>'
@@ -119,6 +119,23 @@ def test_unreadable_report_raises():
 )
 def test_category_status(result, status):
     assert category_result("existing", result, CHECKS).status == status
+
+
+@pytest.mark.parametrize(
+    ("result", "cause"),
+    [
+        (run("infra_error", None, cause="docker_create"), "docker_create"),  # from the runner
+        (run("nonzero_exit", 4, junit()), "pytest_harness"),
+        (run("ok", 0, None), "missing_report"),
+        (run("ok", 0, b"not xml"), "unreadable_report"),
+        (run("nonzero_exit", 1, junit(PASS_A, FAIL_B)), ""),  # not an infra error
+    ],
+)
+def test_infra_cause_codes(result, cause):
+    got = category_result("existing", result, CHECKS)
+    assert got.infra_cause == cause
+    if cause:
+        assert StepEvaluation(got, got).infra_cause == cause
 
 
 def test_category_counts():

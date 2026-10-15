@@ -121,13 +121,14 @@ def statuses(score: int, length: int = 2) -> dict[int, str]:
     return steps
 
 
-def cand(cid, s1, s2, samples=(0,), passed=True, override=None) -> CandidateRecord:
+def cand(cid, s1, s2, samples=(0,), passed=True, override=None, causes=None) -> CandidateRecord:
     trials = {}
     for seq, reps in (("s1", s1), ("s2", s2)):
         for rep, score in enumerate(reps):
             trials[(seq, rep)] = statuses(score)
     trials.update(override or {})
-    return CandidateRecord(cid, tuple(samples), passed, trials)
+    keys = tuple(f"call-{cid}-{i}" for i in samples)
+    return CandidateRecord(cid, tuple(samples), passed, trials, keys, causes or {})
 
 
 def scenario(b_id="b", c_id="c") -> TaskRecord:
@@ -136,13 +137,20 @@ def scenario(b_id="b", c_id="c") -> TaskRecord:
         prompt="WRITER PROMPT",
         sequence_ids=("s1", "s2"),
         sequence_length=2,
-        unparseable_samples=1,
+        parse_failures=("truncated/max_tokens",),
         candidates=(
             cand("a", [2, 2, 2], [2, 1, 2], samples=(0, 3)),  # sample 3 duplicates sample 0
             cand(b_id, [1, 1, 1], [1, 1, 1], samples=(1,)),
             cand(c_id, [2, 2, 2], [0, 0, 0], samples=(2,)),
             cand("e", [2, 2, 2], [2, 2, 2], samples=(4,), passed=False),
-            cand("f", [2, 2, 2], [2, 2, 2], samples=(5,), override={("s2", 1): {1: "infra_error"}}),
+            cand(
+                "f",
+                [2, 2, 2],
+                [2, 2, 2],
+                samples=(5,),
+                override={("s2", 1): {1: "infra_error"}},
+                causes={("s2", 1): "backend_error"},
+            ),
             # h's trial (s1, rep 1) never ran: incomplete under every ablation.
             cand("h", [2, 2, 2], [2, 2, 2], samples=(6,), override={("s1", 1): {}}),
         ),
@@ -169,6 +177,11 @@ def test_samples_get_exactly_one_fate():
         "incomplete": 1,  # h
     }
     assert sum(report["samples"].values()) == 8  # every sample accounted for
+    assert report["samples_detail"] == {
+        "initially_failing": {"failed_initial_tests": 1, "truncated/max_tokens": 1},
+        "infra_error": {"backend_error": 1},
+    }
+    assert report["tasks"]["t"]["excluded_detail"] == report["samples_detail"]
 
 
 def test_all_pairs_under_each_rule():
@@ -203,6 +216,9 @@ def test_primary_pairs_carry_programs_scores_and_strict_flag():
     pairs = build(rule="weak_dominance", pairing_mode="all_pairs").pairs
     first = pairs[0]
     assert first["prompt"] == "WRITER PROMPT"
+    # Both samples behind program a (sample 3 duplicated sample 0).
+    assert first["chosen_call_keys"] == ["call-a-0", "call-a-3"]
+    assert first["rejected_call_keys"] == ["call-b-1"]
     assert parse_program(first["chosen"], ["records.py"]).files == programs(first["chosen_id"])
     assert first["chosen_scores"] == [[2, 2, 2], [2, 1, 2]]
 
@@ -262,7 +278,7 @@ def test_results_do_not_depend_on_input_order():
 
 
 def test_single_eligible_candidate_gives_no_pairs():
-    task = TaskRecord("t", "p", ("s1", "s2"), 2, 0, (cand("a", [2, 2, 2], [2, 2, 2]),))
+    task = TaskRecord("t", "p", ("s1", "s2"), 2, (), (cand("a", [2, 2, 2], [2, 2, 2]),))
     result = build(task)
     assert result.pairs == []
     assert result.report["combinations"]["weak_dominance/best_vs_worst"]["compared"] == 0
@@ -311,6 +327,7 @@ def test_load_task_record_from_the_store(tmp_path):
                     1,
                     0.1,
                     run,
+                    call_key=f"k{idx}",
                 )
             )
         store.record_initial_check(
@@ -335,10 +352,11 @@ def test_load_task_record_from_the_store(tmp_path):
             editor_reps=3,
         )
 
-    assert record.unparseable_samples == 1
+    assert record.parse_failures == ("malformed/no_code",)
     assert record.sequence_ids == ("s1", "s2") and record.sequence_length == 2
     by_id = {c.candidate_id: c for c in record.candidates}
     assert by_id[good].sample_indices == (0, 1)
+    assert by_id[good].call_keys == ("k0", "k1")
     assert by_id[good].initially_passed is True
     assert by_id[good].trials[("s2", 2)] == {1: "success", 2: "fail_new"}
     assert by_id[bad].initially_passed is False and by_id[bad].trials == {}
@@ -349,4 +367,35 @@ def test_load_task_record_from_the_store(tmp_path):
         .report
     )
     assert report["samples"] == {"eligible": 1, "duplicate": 1, "initially_failing": 2}
+    assert report["samples_detail"] == {
+        "initially_failing": {"failed_initial_tests": 1, "malformed/no_code": 1}
+    }
     assert report["tasks"]["record_store"]["score_histogram"] == {"s1": [0, 3, 0], "s2": [0, 3, 0]}
+
+
+def test_infra_cause_is_loaded_from_the_store(tmp_path):
+    cfg = load_config(PILOT / "configs" / "pilot_mock.yaml")
+    task = load_tasks(cfg.tasks)["record_store"]
+    from pipeline.registry import prompt_version
+
+    with Store(tmp_path / "runs") as store:
+        run = store.start_run(cfg)
+        cid = store.put_blob({"records.py": b"x\n"})
+        key = CandidateKey(task.id, prompt_version("P"), "wh", 0)
+        store.record_candidate(Candidate(key, cid, None, 1, 1, 0.1, run))
+        store.record_initial_check(
+            InitialCheck(task.id, task.task_version, cid, "sb", True, {}, run)
+        )
+        trial = TrialKey(task.id, task.task_version, cid, "s1", 0, "eh")
+        store.record_checkpoint(
+            Checkpoint(trial, 1, "c", "infra_error", None, run_id=run, infra_cause="docker_create")
+        )
+        record = load_task_record(
+            store, task, "P", writer_hash="wh", sandbox_hash="sb", editor_hash="eh", editor_reps=3
+        )
+    report = (
+        Scorer(ScorerConfig(rule="strict", pairing_mode="all_pairs"), 3)
+        .build([record], programs)
+        .report
+    )
+    assert report["samples_detail"] == {"infra_error": {"docker_create": 1}}

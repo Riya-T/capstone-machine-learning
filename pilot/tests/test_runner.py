@@ -324,6 +324,7 @@ def test_unexplained_exit_137_is_an_infra_error(runner, code):
     result = runner.run(py(code))
     assert result.status == "infra_error"
     assert "exit 137" in result.detail
+    assert result.infra_cause == "unexplained_sigkill"
 
 
 @pytestmark_docker
@@ -400,6 +401,7 @@ def test_missing_image_is_an_infra_error(runner):
     result = broken.run(py("print(1)"))
     assert result.status == "infra_error"
     assert "docker create failed" in result.detail
+    assert result.infra_cause == "docker_create"
 
 
 @pytestmark_docker

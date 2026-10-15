@@ -152,13 +152,25 @@ class EditorConfig:
     scaffold: Literal["turn_loop"]
     budget: EditorBudget
     reps: int  # repetitions per (candidate, sequence); proposal: 3
-    # What the editor sees. "strip_comments" is the comment ablation; making
-    # it part of the editor config puts it in the editor config hash, so
-    # ablation results never collide with main results.
-    view_transform: Literal["none", "strip_comments"] = "none"
+    # Editor instructions: a string.Template file using exactly $request,
+    # $files, $feedback, $allowed_files and $turns_left. The editor key hashes
+    # its contents.
+    prompt_template: InputPath
+    # Each turn's prompt is rebuilt from scratch and must stay under this many
+    # characters (the model's context is limited); a program too large to fit
+    # ends the step as budget_exhausted.
+    max_prompt_chars: int
+    # Check output shown to the editor is cut to this many characters.
+    max_check_output_chars: int
+    # What the editor sees of the program. Only "none" is implemented;
+    # "strip_comments" (the comment ablation) will be added as a new value,
+    # and being in this section puts it in the editor key.
+    view_transform: Literal["none"] = "none"
 
     def __post_init__(self) -> None:
         _require_positive(self.reps, "reps")
+        _require_positive(self.max_prompt_chars, "max_prompt_chars")
+        _require_positive(self.max_check_output_chars, "max_check_output_chars")
 
 
 @dataclass(frozen=True)

@@ -30,7 +30,10 @@ Every excluded sample or comparison is counted by reason. Samples:
 initially_failing (including answers that didn't parse), duplicate (same
 program as an earlier sample), infra_error (a trial with an unresolved
 infrastructure failure), incomplete (a trial or check not finished yet).
-Comparisons: tie, inconsistent, over_cap.
+Comparisons: tie, inconsistent, over_cap. The report also breaks
+initially_failing down by parse category and reason (e.g.
+truncated/max_tokens, malformed/unlabeled_block, failed_initial_tests) and
+infra_error by cause (e.g. backend_error, docker_create).
 
 Usage:
     scorer = Scorer(cfg.scorer, editor_reps=cfg.editor.reps)
@@ -108,6 +111,10 @@ class CandidateRecord:
     initially_passed: bool | None  # None: no initial check recorded yet
     # (sequence_id, rep) -> {step: status}; a missing trial is incomplete.
     trials: Mapping[tuple[str, int], Mapping[int, str]] = field(default_factory=dict)
+    # model_calls keys of the writer answers, in sample order.
+    call_keys: tuple[str, ...] = ()
+    # (sequence_id, rep) -> cause code, for trials with an infra_error step.
+    infra_causes: Mapping[tuple[str, int], str] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -116,7 +123,9 @@ class TaskRecord:
     prompt: str  # the writer prompt, the DPO prompt
     sequence_ids: tuple[str, ...]
     sequence_length: int
-    unparseable_samples: int
+    # One entry per writer answer that didn't parse: its parse category and
+    # reason, e.g. "truncated/max_tokens" or "malformed/unlabeled_block".
+    parse_failures: tuple[str, ...]
     candidates: tuple[CandidateRecord, ...]
 
 
@@ -132,33 +141,45 @@ def load_task_record(
 ) -> TaskRecord:
     """Gather a task's candidates, initial checks and trials from the store."""
     samples = store.candidates(task.id, prompt_version(prompt), writer_hash)
-    by_program: dict[str, list[int]] = {}
-    unparseable = 0
+    by_program: dict[str, list] = {}
+    parse_failures = []
     for sample in samples:
         if sample.candidate_id is None:
-            unparseable += 1
+            # Stored as "category/reason: detail" (parser.ParseFailure).
+            parse_failures.append((sample.parse_error or "unknown").split(":", 1)[0])
         else:
-            by_program.setdefault(sample.candidate_id, []).append(sample.key.sample_idx)
+            by_program.setdefault(sample.candidate_id, []).append(sample)
 
     candidates = []
-    for cid, indices in by_program.items():
+    for cid, group in by_program.items():
+        group.sort(key=lambda sample: sample.key.sample_idx)
         check = store.get_initial_check(task.id, task.task_version, cid, sandbox_hash)
-        trials = {}
+        trials, causes = {}, {}
         for sequence in task.sequences:
             for rep in range(editor_reps):
                 key = TrialKey(task.id, task.task_version, cid, sequence.id, rep, editor_hash)
                 steps = store.trial_steps(key)
                 if steps:
                     trials[(sequence.id, rep)] = {c.step: c.status for c in steps}
+                for c in steps:
+                    if c.status == "infra_error":
+                        causes[(sequence.id, rep)] = c.infra_cause or "unknown"
         candidates.append(
-            CandidateRecord(cid, tuple(sorted(indices)), check and check.passed, trials)
+            CandidateRecord(
+                cid,
+                tuple(sample.key.sample_idx for sample in group),
+                check and check.passed,
+                trials,
+                call_keys=tuple(sample.call_key for sample in group if sample.call_key),
+                infra_causes=causes,
+            )
         )
     return TaskRecord(
         task_id=task.id,
         prompt=prompt,
         sequence_ids=tuple(s.id for s in task.sequences),
         sequence_length=len(task.sequences[0].steps),
-        unparseable_samples=unparseable,
+        parse_failures=tuple(sorted(parse_failures)),
         candidates=tuple(candidates),
     )
 
@@ -237,11 +258,15 @@ class Scorer:
 
     # -- per task --
 
-    def score_task(self, task: TaskRecord) -> tuple[list[CandidateScores], Counter]:
-        """Eligible candidates with their scores, and per-sample exclusion
-        counts. Each writer sample gets exactly one fate."""
+    def score_task(self, task: TaskRecord) -> tuple[list[CandidateScores], Counter, Counter]:
+        """Eligible candidates with their scores, per-sample exclusion counts
+        (each writer sample gets exactly one fate), and a breakdown of
+        initially_failing by parse category and reason and of infra_error by
+        cause, keyed "<reason>/<detail>"."""
         excluded: Counter = Counter()
-        excluded["initially_failing"] += task.unparseable_samples
+        detail: Counter = Counter()
+        excluded["initially_failing"] += len(task.parse_failures)
+        detail.update(f"initially_failing/{failure}" for failure in task.parse_failures)
         length = task.sequence_length
         if self.cfg.max_changes is not None:
             length = min(length, self.cfg.max_changes)
@@ -254,6 +279,7 @@ class Scorer:
                 continue
             if not c.initially_passed:
                 excluded["initially_failing"] += 1
+                detail["initially_failing/failed_initial_tests"] += 1
                 continue
             scores = [
                 [trial_score(c.trials.get((seq, rep), {}), length) for rep in self.reps]
@@ -262,11 +288,19 @@ class Scorer:
             flat = [s for reps in scores for s in reps]
             if "infra_error" in flat:
                 excluded["infra_error"] += 1
+                # The cause of the first unresolved trial, in sequence/rep order.
+                first = next(
+                    (seq, rep)
+                    for seq, reps in zip(task.sequence_ids, scores, strict=True)
+                    for rep, score in zip(self.reps, reps, strict=True)
+                    if score == "infra_error"
+                )
+                detail[f"infra_error/{c.infra_causes.get(first, 'unknown')}"] += 1
             elif "incomplete" in flat:
                 excluded["incomplete"] += 1
             else:
                 eligible.append(CandidateScores(c.candidate_id, tuple(map(tuple, scores))))
-        return eligible, excluded
+        return eligible, excluded, detail
 
     def compare(self, scored: list[CandidateScores], rule: str, mode: str) -> list[Comparison]:
         """Comparisons for one task, in a deterministic order."""
@@ -311,19 +345,22 @@ class Scorer:
             "primary": {"rule": self.cfg.rule, "pairing_mode": self.cfg.pairing_mode},
             "ablation": {"max_changes": self.cfg.max_changes, "reps": list(self.reps)},
             "samples": Counter(),
+            "samples_detail": Counter(),
             "combinations": {},
             "tasks": {},
         }
         per_task = []
         agreements: list[float] = []
         for task in sorted(tasks, key=lambda t: t.task_id):
-            scored, excluded = self.score_task(task)
+            scored, excluded, detail = self.score_task(task)
             report["samples"].update(excluded)
+            report["samples_detail"].update(detail)
             report["samples"]["eligible"] += len(scored)
             agreements += [a for s in scored for a in s.agreement()]
             report["tasks"][task.task_id] = {
                 "eligible": len(scored),
                 "excluded": dict(sorted(excluded.items())),
+                "excluded_detail": _nest(detail),
                 "score_histogram": _histograms(scored, task),
             }
             per_task.append((task, scored))
@@ -352,9 +389,11 @@ class Scorer:
                 }
         report["rep_agreement"] = sum(agreements) / len(agreements) if agreements else None
         report["samples"] = dict(sorted(report["samples"].items()))
+        report["samples_detail"] = _nest(report["samples_detail"])
         return ScoreResult(pairs, report)
 
     def _pair(self, task: TaskRecord, c: Comparison, load_program) -> dict:
+        records = {r.candidate_id: r for r in task.candidates}
         return {
             "task_id": task.task_id,
             "prompt": task.prompt,
@@ -369,7 +408,19 @@ class Scorer:
             "chosen_scores": [list(r) for r in c.a.rep_scores],
             "rejected_scores": [list(r) for r in c.b.rep_scores],
             "margin": str(c.margin),
+            # The recorded writer answers behind each program (model_calls keys).
+            "chosen_call_keys": list(records[c.a.candidate_id].call_keys),
+            "rejected_call_keys": list(records[c.b.candidate_id].call_keys),
         }
+
+
+def _nest(detail: Counter) -> dict[str, dict[str, int]]:
+    """{"infra_error/backend_error": 2} -> {"infra_error": {"backend_error": 2}}."""
+    nested: dict[str, dict[str, int]] = {}
+    for key in sorted(detail):
+        reason, _, cause = key.partition("/")
+        nested.setdefault(reason, {})[cause] = detail[key]
+    return nested
 
 
 def _histograms(scored: list[CandidateScores], task: TaskRecord) -> dict[str, list[int]]:

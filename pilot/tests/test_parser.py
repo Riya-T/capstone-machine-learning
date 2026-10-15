@@ -13,7 +13,7 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from pipeline.parser import ParseFailure, parse_program, render_program
+from pipeline.parser import ParseFailure, parse_program, prose_lines, render_program
 
 DATA = Path(__file__).parent / "data"
 ONE = ["records.py"]
@@ -159,3 +159,37 @@ content = st.lists(safe_line, max_size=8).map(lambda lines: "".join(f"{x}\n" for
 @given(st.dictionaries(st.sampled_from(TWO), content.map(str.encode), min_size=2))
 def test_render_then_parse_returns_the_same_bytes(files):
     assert parse_program(render_program(files), TWO, "stop").files == files
+
+
+# --- editor replies ---------------------------------------------------------
+
+
+def test_subset_mode_accepts_some_or_no_files():
+    one = "```python file=records.py\nr = 1\n```\nRUN_CHECKS"
+    assert parse_program(one, TWO, "stop", require_all=False).files == {"records.py": b"r = 1\n"}
+    assert parse_program("RUN_CHECKS", TWO, "stop", require_all=False).files == {}
+
+
+@pytest.mark.parametrize(
+    ("text", "reason"),
+    [
+        ("```python file=evil.py\nx\n```", "not_allowed"),
+        ("```python\nx\n```", "unlabeled_block"),
+        ("```python file=records.py\nx\n```\n```python file=records.py\ny\n```", "duplicate"),
+    ],
+)
+def test_subset_mode_keeps_every_other_rule(text, reason):
+    assert parse_program(text, TWO, "stop", require_all=False).failure.reason == reason
+
+
+def test_prose_lines_skip_code_blocks():
+    text = "Intro\n```python file=a.py\nDONE\n```\n  RUN_CHECKS  \nDONE"
+    assert prose_lines(text) == ["Intro", "RUN_CHECKS", "DONE"]
+
+
+def test_prose_after_an_unclosed_block_is_code():
+    assert prose_lines("before\n```python file=a.py\nDONE\n") == ["before"]
+
+
+def test_render_adds_the_missing_final_newline():
+    assert render_program({"a.py": b"x = 1"}) == "```python file=a.py\nx = 1\n```\n"

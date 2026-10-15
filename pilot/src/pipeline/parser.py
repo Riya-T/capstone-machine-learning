@@ -27,6 +27,7 @@ Usage:
 
 from __future__ import annotations
 
+import contextlib
 import re
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -73,10 +74,19 @@ class ParseResult:
 
 
 def parse_program(
-    text: str, allowed_files: Sequence[str], finish_reason: str | None = None
+    text: str,
+    allowed_files: Sequence[str],
+    finish_reason: str | None = None,
+    *,
+    require_all: bool = True,
 ) -> ParseResult:
     """Extract the allowed files from a model answer, preserving their exact
-    contents as UTF-8 bytes."""
+    contents as UTF-8 bytes.
+
+    require_all=True (writer answers): every allowed file must appear.
+    require_all=False (editor replies): any subset, including none, is fine;
+    the other rules (labels, paths, allowlist, duplicates) still apply.
+    """
     if finish_reason == "length":
         return _fail("truncated", "max_tokens", "the backend stopped at max_tokens")
     try:
@@ -91,11 +101,12 @@ def parse_program(
             if path in files:
                 raise _Failure("duplicate", f"line {line_no}: {path!r} appears more than once")
             files[path] = content.encode("utf-8")
-        if not blocks:
-            raise _Failure("no_code", "the answer has no fenced code block")
-        missing = [p for p in allowed_files if p not in files]
-        if missing:
-            raise _Failure("missing_file", f"no block for {missing}")
+        if require_all:
+            if not blocks:
+                raise _Failure("no_code", "the answer has no fenced code block")
+            missing = [p for p in allowed_files if p not in files]
+            if missing:
+                raise _Failure("missing_file", f"no block for {missing}")
     except _Failure as exc:
         return _fail("malformed", exc.reason, exc.detail)
     return ParseResult(files, None)
@@ -108,6 +119,8 @@ def render_program(files: dict[str, bytes]) -> str:
     parts = []
     for path in sorted(files):
         content = files[path].decode("utf-8")
+        if content and not content.endswith("\n"):
+            content += "\n"  # the closing fence must start its own line
         parts.append(f"```python file={path}\n{content}```\n")
     return "\n".join(parts)
 
@@ -122,8 +135,20 @@ def _fail(category: Category, reason: Reason, detail: str) -> ParseResult:
     return ParseResult(None, ParseFailure(category, reason, detail))
 
 
-def _blocks(text: str) -> list[tuple[int, str, str]]:
-    """(line number, info string, content) for every fenced block.
+def prose_lines(text: str) -> list[str]:
+    """The lines outside fenced blocks, stripped (where an editor's commands
+    such as RUN_CHECKS live). Lines after an unclosed fence count as code,
+    never as prose."""
+    prose: list[str] = []
+    # On an unclosed block, the prose collected before it is kept.
+    with contextlib.suppress(_Failure):
+        _blocks(text, prose)
+    return [line.strip() for line in prose]
+
+
+def _blocks(text: str, prose: list[str] | None = None) -> list[tuple[int, str, str]]:
+    """(line number, info string, content) for every fenced block; lines
+    outside blocks are appended to `prose` if given.
 
     Lines are split on "\\n" only. str.splitlines would also split on form
     feeds and Unicode line separators inside the code, changing its bytes.
@@ -136,7 +161,9 @@ def _blocks(text: str) -> list[tuple[int, str, str]]:
     while i < len(lines):
         opening = _FENCE.match(lines[i].rstrip("\r"))
         if opening is None:
-            i += 1  # prose
+            if prose is not None:
+                prose.append(lines[i])
+            i += 1
             continue
         ticks, info = opening.group(1), opening.group(2).strip()
         start = i + 1

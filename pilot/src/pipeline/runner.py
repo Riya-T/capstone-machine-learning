@@ -90,6 +90,9 @@ class RunResult:
     out_files: dict[str, bytes]  # everything the run wrote under /out
     wall_s: float
     detail: str = ""  # what went wrong, for infra_error
+    # Short code for an infra_error, for counting by cause: docker_create,
+    # docker_inspect, container_error or unexplained_sigkill.
+    infra_cause: str = ""
     command: tuple[str, ...] = field(default=(), repr=False)
 
 
@@ -150,7 +153,12 @@ class SandboxRunner:
             command = self.create_command(name, work, out, request.command)
             created = _docker(command[1:])
             if created.returncode != 0:
-                return _infra(f"docker create failed: {created.stderr.strip()}", start, command)
+                return _infra(
+                    "docker_create",
+                    f"docker create failed: {created.stderr.strip()}",
+                    start,
+                    command,
+                )
             try:
                 return self._start(name, timeout, start, out, command)
             finally:
@@ -223,19 +231,25 @@ class SandboxRunner:
 
         state = _docker(["inspect", "--format", "{{json .State}}", name])
         if state.returncode != 0:
-            return _infra(f"docker inspect failed: {state.stderr.strip()}", start, command)
+            return _infra(
+                "docker_inspect", f"docker inspect failed: {state.stderr.strip()}", start, command
+            )
         info = json.loads(state.stdout)
         exit_code = info.get("ExitCode")
         out_files = _read_tree(out)
         oom_kills = _oom_kills(out_files.pop(STATUS_FILE, None))
         status = classify(timed_out, info, oom_kills)
         if status == "infra_error":
-            detail = (
-                f"container error: {info['Error']}"
-                if info.get("Error")
-                else "killed by SIGKILL (exit 137), not by timeout or OOM"
+            if info.get("Error"):
+                return _infra(
+                    "container_error", f"container error: {info['Error']}", start, command
+                )
+            return _infra(
+                "unexplained_sigkill",
+                "killed by SIGKILL (exit 137), not by timeout or OOM",
+                start,
+                command,
             )
-            return _infra(detail, start, command)
         return RunResult(
             status=status,
             exit_code=exit_code,
@@ -341,7 +355,7 @@ def _docker(
         return subprocess.CompletedProcess(["docker", *args], 127, "", str(exc))
 
 
-def _infra(detail: str, start: float, command: list[str]) -> RunResult:
+def _infra(cause: str, detail: str, start: float, command: list[str]) -> RunResult:
     return RunResult(
         status="infra_error",
         exit_code=None,
@@ -352,6 +366,7 @@ def _infra(detail: str, start: float, command: list[str]) -> RunResult:
         out_files={},
         wall_s=time.monotonic() - start,
         detail=detail,
+        infra_cause=cause,
         command=tuple(command),
     )
 

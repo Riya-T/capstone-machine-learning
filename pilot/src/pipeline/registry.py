@@ -223,15 +223,16 @@ class Task:
 # --- writer prompt ----------------------------------------------------------
 
 
-def load_template(path: Path) -> string.Template:
-    """Load the writer prompt template and check its placeholders."""
+def load_template(path: Path, fields: frozenset[str] = TEMPLATE_FIELDS) -> string.Template:
+    """Load a prompt template and check it uses exactly `fields` as
+    placeholders (by default the writer's)."""
     template = string.Template(path.read_text(encoding="utf-8"))
     if not template.is_valid():
         raise ConfigError(f"{path}: invalid placeholder (write a literal $ as $$)")
     found = set(template.get_identifiers())
-    if found != TEMPLATE_FIELDS:
+    if found != fields:
         raise ConfigError(
-            f"{path}: placeholders must be exactly {sorted(TEMPLATE_FIELDS)}, got {sorted(found)}"
+            f"{path}: placeholders must be exactly {sorted(fields)}, got {sorted(found)}"
         )
     return template
 

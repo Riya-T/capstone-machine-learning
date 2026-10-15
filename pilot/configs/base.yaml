@@ -27,7 +27,12 @@ writer:
 editor:
   scaffold: turn_loop        # provisional, pending team sign-off
   reps: 3                    # proposal: each sequence repeated three times
-  view_transform: none
+  view_transform: none       # strip_comments (comment ablation) not implemented yet
+  prompt_template: ../prompts/editor_v1.md
+  # Context is 8192 tokens: a prompt of at most ~16k characters (~4.5k tokens)
+  # leaves room for a 3072-token reply.
+  max_prompt_chars: 16000
+  max_check_output_chars: 2000
   budget:
     max_turns: 8
     max_total_tokens: 32000
@@ -37,7 +42,7 @@ editor:
     model: mock-editor
     fixtures: ../fixtures/mock/editor.yaml
     temperature: 0.7         # > 0 so repetitions can differ
-    max_tokens: 4096
+    max_tokens: 3072         # with max_prompt_chars, fits the 8192-token context
 
 sandbox:
   image: pipeline-sandbox:py3.11-v1   # change the tag whenever sandbox/Dockerfile changes

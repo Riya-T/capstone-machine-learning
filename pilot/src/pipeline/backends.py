@@ -30,7 +30,7 @@ import urllib.request
 from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Protocol
+from typing import Literal, Protocol
 
 import yaml
 
@@ -185,6 +185,8 @@ class OpenAICompatBackend:
 class MockResponse:
     text: str | None = None
     file: InputPath | None = None  # relative to the fixture file
+    # "length" simulates an answer cut off at max_tokens.
+    finish_reason: Literal["stop", "length"] = "stop"
 
 
 @dataclass(frozen=True)
@@ -227,15 +229,15 @@ class MockBackend:
         self.prompts.append(prompt)
         for pattern, responses in self._rules:
             if re.search(pattern, prompt):
-                text = responses[self.seed % len(responses)]
+                text, finish_reason = responses[self.seed % len(responses)]
                 # Word counts stand in for tokens: deterministic and roughly
                 # proportional, which is all tests of usage accounting need.
-                self.last_usage = Usage(len(prompt.split()), len(text.split()), "stop")
+                self.last_usage = Usage(len(prompt.split()), len(text.split()), finish_reason)
                 return text
         raise BackendError(f"no mock rule matches the prompt starting {prompt[:80]!r}")
 
 
-def _load_mock_rules(path: Path) -> list[tuple[str, list[str]]]:
+def _load_mock_rules(path: Path) -> list[tuple[str, list[tuple[str, str]]]]:
     try:
         data = yaml.safe_load(path.read_text(encoding="utf-8"))
         fixtures = parse_dataclass(MockFixtures, data, base_dir=path.parent)
@@ -250,16 +252,17 @@ def _load_mock_rules(path: Path) -> list[tuple[str, list[str]]]:
             raise ConfigError(f"{where}.match: invalid regex: {exc}") from None
         if not rule.responses:
             raise ConfigError(f"{where}.responses: must not be empty")
-        texts = []
+        answers = []
         for response in rule.responses:
             if (response.text is None) == (response.file is None):
                 raise ConfigError(f"{where}: each response needs exactly one of text, file")
-            texts.append(
+            text = (
                 response.text
                 if response.text is not None
                 else response.file.read_text(encoding="utf-8")
             )
-        rules.append((rule.match, texts))
+            answers.append((text, response.finish_reason))
+        rules.append((rule.match, answers))
     return rules
 
 
@@ -307,6 +310,7 @@ class CachedBackend:
         self.cache = cache
         self.last_usage: Usage | None = None
         self.last_was_cached = False
+        self.last_key: str | None = None  # model_calls key of the latest answer
         self.model_calls = 0  # calls that reached the wrapped backend
         self._index = 0
 
@@ -319,6 +323,7 @@ class CachedBackend:
 
     def generate(self, prompt: str) -> str:
         key = self.key(prompt, self._index)
+        self.last_key = key
         hit = self.cache.get(key)
         if hit is None:
             # If the wrapped call raises, nothing is recorded and the index

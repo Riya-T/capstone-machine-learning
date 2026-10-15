@@ -89,6 +89,11 @@ class CategoryResult:
     cases: tuple[CaseResult, ...]
     run_status: str  # the runner's status, e.g. "nonzero_exit" or "timeout"
     detail: str = ""
+    # For infra_error: the runner's cause, or pytest_harness (pytest exit 3
+    # or 4), missing_report or unreadable_report.
+    infra_cause: str = ""
+    # pytest's console output (shown to the editor for public checks).
+    output: str = ""
 
     def to_dict(self) -> dict:
         """Compact JSON form for the store (initial check reports)."""
@@ -136,6 +141,14 @@ class StepEvaluation:
         if old == "passed":
             return "fail_new"
         return "fail_both"
+
+    @property
+    def infra_cause(self) -> str:
+        """Cause code of the first category with an infrastructure error."""
+        for category in (self.new_feature, self.existing):
+            if category.status == "infra_error":
+                return category.infra_cause
+        return ""
 
 
 @dataclass(frozen=True)
@@ -289,26 +302,35 @@ def category_result(category: str, run: RunResult, checks: CheckSet) -> Category
         after pytest ran.
     """
 
-    def result(status: CategoryStatus, cases=(), detail="") -> CategoryResult:
+    def result(status: CategoryStatus, cases=(), detail="", cause="") -> CategoryResult:
         passed = sum(c.outcome == "passed" for c in cases)
         return CategoryResult(
-            category, status, passed, len(cases), tuple(cases), run.status, detail
+            category,
+            status,
+            passed,
+            len(cases),
+            tuple(cases),
+            run.status,
+            detail,
+            infra_cause=cause,
+            output=run.stdout + run.stderr,
         )
 
     if run.status == "infra_error":
-        return result("infra_error", detail=run.detail)
+        return result("infra_error", detail=run.detail, cause=run.infra_cause)
     if run.status in ("timeout", "oom"):
         return result("failed", detail=f"pytest run ended by {run.status}")
     if run.exit_code in (3, 4):
-        return result("infra_error", detail=f"pytest exit {run.exit_code}: {run.stdout[-500:]}")
+        detail = f"pytest exit {run.exit_code}: {run.stdout[-500:]}"
+        return result("infra_error", detail=detail, cause="pytest_harness")
 
     report = run.out_files.get(REPORT)
     if report is None:
-        return result("infra_error", detail="pytest wrote no JUnit report")
+        return result("infra_error", detail="pytest wrote no JUnit report", cause="missing_report")
     try:
         cases = parse_junit(report, checks)
     except ValueError as exc:
-        return result("infra_error", detail=str(exc))
+        return result("infra_error", detail=str(exc), cause="unreadable_report")
     if run.exit_code == 0 and cases and all(c.outcome == "passed" for c in cases):
         return result("passed", cases)
     return result("failed", cases, detail=f"pytest exit {run.exit_code}")

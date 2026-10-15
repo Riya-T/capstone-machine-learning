@@ -119,7 +119,14 @@ def test_rebuilt_image_under_the_same_tag_changes_editor_and_sandbox_keys(repo):
 
 def test_editor_key_changes_with_the_editor_section_only(repo):
     writer, editor, sandbox = keys(repo)
-    edit_config(repo, lambda d: d["editor"].update(view_transform="strip_comments"))
+    edit_config(repo, lambda d: d["editor"].update(max_check_output_chars=500))
+    assert keys(repo) == (writer, keys(repo)[1], sandbox)
+    assert keys(repo)[1] != editor
+
+
+def test_editor_key_changes_when_only_the_editor_template_contents_change(repo):
+    writer, editor, sandbox = keys(repo)
+    (repo.parent / "editor.md").write_text("$request $files $feedback $allowed_files $turns_left!")
     assert keys(repo) == (writer, keys(repo)[1], sandbox)
     assert keys(repo)[1] != editor
 

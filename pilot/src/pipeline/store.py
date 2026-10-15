@@ -46,7 +46,7 @@ from typing import Any, Literal
 from .backends import CachedCall, usage_from_dict, usage_to_dict
 from .config import ExperimentConfig, canonical
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2  # 2: checkpoints.infra_cause, candidates.call_key
 
 Status = Literal[
     "success", "fail_new", "fail_existing", "fail_both", "budget_exhausted", "infra_error"
@@ -153,6 +153,9 @@ class Candidate:
     tokens_out: int | None
     wall_s: float
     run_id: str
+    # model_calls key of the writer answer, so the raw text can be found
+    # again (e.g. to train on raw answers instead of re-rendered programs).
+    call_key: str | None = None
 
 
 @dataclass(frozen=True)
@@ -196,6 +199,8 @@ class Checkpoint:
     diff_lines: int | None = None
     failure_cause: str | None = None  # filled in by human triage
     run_id: str = ""
+    # For status infra_error: a short cause code (runner, evaluator or editor).
+    infra_cause: str | None = None
 
 
 @dataclass(frozen=True)
@@ -240,6 +245,7 @@ CREATE TABLE candidates (
     writer_cfg_hash TEXT NOT NULL,
     sample_idx INTEGER NOT NULL,
     candidate_id TEXT,
+    call_key TEXT,
     parse_error TEXT,
     tokens_in INTEGER,
     tokens_out INTEGER,
@@ -278,6 +284,7 @@ CREATE TABLE checkpoints (
     wall_s REAL,
     diff_lines INTEGER,
     failure_cause TEXT,
+    infra_cause TEXT,
     run_id TEXT NOT NULL REFERENCES runs(run_id),
     PRIMARY KEY (task_id, task_version, candidate_id, sequence_id, rep, editor_cfg_hash, step)
 );

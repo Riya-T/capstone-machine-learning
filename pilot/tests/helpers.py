@@ -41,6 +41,9 @@ def minimal() -> dict:
             "scaffold": "turn_loop",
             "budget": {"max_turns": 2, "max_total_tokens": 1000, "wall_time_s": 10},
             "reps": 3,
+            "prompt_template": "editor.md",
+            "max_prompt_chars": 16000,
+            "max_check_output_chars": 2000,
         },
         "sandbox": {
             "image": "img",
@@ -59,6 +62,7 @@ def write(directory: Path, data: dict, name: str = "exp.yaml") -> Path:
     directory.mkdir(parents=True, exist_ok=True)
     (directory / "tasks").mkdir(exist_ok=True)
     (directory / "writer.md").write_text("$entry_files $spec $public_checks")
+    (directory / "editor.md").write_text("$request $files $feedback $allowed_files $turns_left")
     (directory / "mock.yaml").write_text("rules: []\n")
     path = directory / name
     path.write_text(yaml.safe_dump(data, sort_keys=False))

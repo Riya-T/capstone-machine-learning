@@ -279,6 +279,23 @@ def test_mock_is_deterministic_and_records_prompts(fixtures):
     assert first.last_usage == Usage(prompt_tokens=2, completion_tokens=3, finish_reason="stop")
 
 
+def test_mock_can_simulate_a_cut_off_answer(tmp_path):
+    path = write_fixtures(
+        tmp_path, "rules:\n  - match: ''\n    responses: [{text: half, finish_reason: length}]\n"
+    )
+    backend = MockBackend(mock_cfg(path), seed=0)
+    assert backend.generate("p") == "half"
+    assert backend.last_usage.finish_reason == "length"
+
+
+def test_cached_backend_exposes_the_call_key():
+    cache = InMemoryCallCache()
+    backend = CachedBackend(Counter(), cache)
+    backend.generate("p")
+    assert backend.last_key in cache.calls
+    assert backend.last_key == backend.key("p", 0)
+
+
 def test_mock_without_a_matching_rule_raises(tmp_path):
     path = write_fixtures(
         tmp_path, "rules:\n  - match: '^only this$'\n    responses: [{text: x}]\n"
