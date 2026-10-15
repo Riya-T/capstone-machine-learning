@@ -27,6 +27,7 @@ from pipeline.editor import (
     Editor,
     _truncate_middle,
     diff_lines,
+    normalize_output,
 )
 from pipeline.evaluator import CaseResult, CategoryResult, Evaluator
 from pipeline.parser import render_program
@@ -314,6 +315,16 @@ def test_diff_lines_counts_added_and_removed_lines():
     after = {"a.py": b"one\n2\nthree\nfour\n"}
     assert diff_lines(before, after) == 3  # -two, +2, +four
     assert diff_lines(before, before) == 0
+
+
+def test_check_output_is_normalized_so_replayed_prompts_match():
+    a = "1 failed, 4 passed in 0.31s\nE  <records.RecordStore object at 0x7f3a9c2b1d90>"
+    b = "1 failed, 4 passed in 12.07s (0:00:12)\nE  <records.RecordStore object at 0x7f00aa11bb22>"
+    assert normalize_output(a) == normalize_output(b)
+    assert (
+        normalize_output(a)
+        == "1 failed, 4 passed in <time>\nE  <records.RecordStore object at 0x...>"
+    )
 
 
 def test_truncate_middle_keeps_both_ends_within_the_limit():

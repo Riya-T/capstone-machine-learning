@@ -16,9 +16,10 @@ each skipped test and the reason.
 | `parser.py` | Turns a model answer into program files; strict about labels, paths, duplicates and ambiguity, and reports truncation and malformed output separately. A subset mode and `prose_lines` serve editor replies. | `tests/test_parser.py` | (e) done |
 | `runner.py` | Runs programs and tests in an isolated Docker container (no network, no image pulls, read-only, memory, CPU, process, file-size and time limits) and always cleans up; OOM is detected from the container's own cgroup counter or Docker's flag (each covers the other's gap), and an unexplained SIGKILL is an infra error. | `tests/test_runner.py` (marked `docker`) | (f) done |
 | `evaluator.py` | Runs a program against each test category (initial, public, new-feature, existing) in its own sandbox run, reads the JUnit reports, drops superseded tests by exact id, and validates tasks (references pass, planted bugs fail as declared, the program before each change fails its tests). Independent runs go in parallel (`execution.sandbox_workers`). | `tests/test_evaluator.py` (mostly `docker`) | (g) done |
-| `scorer.py` | Trial scores (consecutive changes before the first failure; unresolved trials never scored), the `strict` and `weak_dominance` rules under `all_pairs` and `best_vs_worst` pairing side by side, per-task caps, ablations (fewer changes or reps), exclusion counts by reason, and the preference pairs and report files; exclusions broken down by parse category/reason and infra cause; pairs carry the model-call keys of their programs. | `tests/test_scorer.py` | (h) done |
+| `scorer.py` | Trial scores (consecutive changes before the first failure; unresolved trials never scored), step endings with `budget_exhausted` split by reason (e.g. `prompt_too_large`), the `strict` and `weak_dominance` rules under `all_pairs` and `best_vs_worst` pairing side by side, per-task caps, ablations (fewer changes or reps), exclusion counts by reason, and the preference pairs and report files; exclusions broken down by parse category/reason and infra cause; pairs carry the model-call keys of their programs. | `tests/test_scorer.py` | (h) done |
 | `editor.py` | Provisional editor turn loop (pending team sign-off): a fresh bounded prompt each turn (current request, current files, last feedback), full-file replies and `RUN_CHECKS`/`DONE`, cumulative public checks in the sandbox, budgets on turns, tokens and wall time; bad replies are wasted turns, never crashes. | `tests/test_editor.py` | (i) done |
-| `collect.py`, `__main__.py` | Orchestration: writer sampling, initial checks, editing trials, resume. | `tests/integration/` (end-to-end) | planned |
+| `collect.py` | Collection: writer samples (one cached backend per sample) → parse → initial checks → editing trials (one cached backend per trial, per-rep seeds) → store → preference files; resumes at every level, including mid-trial replay from the call cache; `report` rebuilds the files from the store with no model calls. | `tests/integration/test_end_to_end.py` (marked `docker`) | (j) done |
+| `__main__.py` | Command line: `collect`, `validate-tasks`, `report` (all `--config`), with progress logging. | `tests/integration/test_end_to_end.py` | (j) done |
 
 ## Data, prompts and environment
 
@@ -37,6 +38,7 @@ each skipped test and the reason.
 |---|---|---|
 | `test_writer_replay.py` | registry → writer prompt → `CachedBackend(MockBackend)` → parser → store; replay with zero model calls, in memory and after closing and reopening SQLite. | none |
 | `test_local_model.py` | The real writer from `configs/pilot_local.yaml` follows the output format. | `local_model` (run with `--local-model`) |
+| `test_end_to_end.py` | Full collection on record_store with the mock writer (modular, tangled, duplicate) and mock editor in the real sandbox: expected scores, one pair (modular over tangled), duplicate excluded; a rerun makes 0 model calls and leaves the store identical; an interrupted trial resumes from the cache; `report` and `validate-tasks` commands. | `docker` |
 
 ## Shared test support
 

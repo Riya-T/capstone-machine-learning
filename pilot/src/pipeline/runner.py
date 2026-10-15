@@ -130,6 +130,10 @@ class SandboxRunner:
         this, not by the tag: a rebuild under the same tag changes it."""
         return self._image_id or self.ensure_image()
 
+    def existing_image_id(self) -> str | None:
+        """The image's content id if it exists locally; never builds it."""
+        return self._inspect_image()
+
     def _inspect_image(self) -> str | None:
         result = _docker(["image", "inspect", "--format", "{{.Id}}", self.cfg.image])
         return result.stdout.strip() if result.returncode == 0 else None

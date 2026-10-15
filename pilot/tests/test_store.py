@@ -73,7 +73,7 @@ def store(tmp_path):
 
 @pytest.fixture
 def run_id(store, repo):
-    return store.start_run(load_config(repo))
+    return store.start_run(load_config(repo), repo_dir=repo.parent)
 
 
 def edit_config(path: Path, change) -> None:
@@ -155,7 +155,7 @@ def test_keys_do_not_depend_on_checkout_location(repo, tmp_path):
 
 def test_run_records_commit_and_full_config(store, repo):
     cfg = load_config(repo)
-    run_id = store.start_run(cfg)
+    run_id = store.start_run(cfg, repo_dir=repo.parent)
     run = store.get_run(run_id)
     assert run["git_commit"] == git(repo.parent.parent, "rev-parse", "HEAD")
     assert run["git_dirty"] is False
@@ -169,9 +169,9 @@ def test_run_records_commit_and_full_config(store, repo):
 def test_dirty_tree_is_refused_unless_allowed(store, repo):
     (repo.parent / "notes.txt").write_text("untracked files count as changes")
     with pytest.raises(StoreError, match="uncommitted changes"):
-        store.start_run(load_config(repo))
+        store.start_run(load_config(repo), repo_dir=repo.parent)
     edit_config(repo, lambda d: d.update(allow_dirty=True))
-    run_id = store.start_run(load_config(repo))
+    run_id = store.start_run(load_config(repo), repo_dir=repo.parent)
     assert store.get_run(run_id)["git_dirty"] is True
 
 
@@ -182,7 +182,7 @@ def test_outside_a_git_repository_is_an_error(tmp_path):
 
 def test_run_ids_are_unique(store, repo):
     cfg = load_config(repo)
-    assert store.start_run(cfg) != store.start_run(cfg)
+    assert store.start_run(cfg, repo_dir=repo.parent) != store.start_run(cfg, repo_dir=repo.parent)
 
 
 # --- blobs ------------------------------------------------------------------
@@ -264,7 +264,7 @@ def test_measurements_are_not_compared_and_keep_their_first_values(store, run_id
     # A replayed rerun takes ~0 s and belongs to a new run; that is not a
     # different result.
     store.record_candidate(candidate(run_id))
-    rerun = store.start_run(load_config(repo))
+    rerun = store.start_run(load_config(repo), repo_dir=repo.parent)
     store.record_candidate(candidate(rerun, wall_s=0.01, tokens_in=1, tokens_out=2))
     assert store.get_candidate(CandidateKey("t", "pv", "wh", 0)) == candidate(run_id)
 
@@ -376,7 +376,7 @@ def test_resume_point_with_a_missing_middle_step():
 
 def test_everything_survives_reopening(tmp_path, repo):
     with Store(tmp_path / "runs") as s:
-        run_id = s.start_run(load_config(repo))
+        run_id = s.start_run(load_config(repo), repo_dir=repo.parent)
         s.record_candidate(candidate(run_id))
         s.record_checkpoint(step(run_id, 1, "success", "b1"))
         blob = s.put_blob({"m.py": b"pass\n"})

@@ -46,7 +46,7 @@ from typing import Any, Literal
 from .backends import CachedCall, usage_from_dict, usage_to_dict
 from .config import ExperimentConfig, canonical
 
-SCHEMA_VERSION = 2  # 2: checkpoints.infra_cause, candidates.call_key
+SCHEMA_VERSION = 3  # 2: checkpoints.infra_cause, candidates.call_key; 3: checkpoints.end_reason
 
 Status = Literal[
     "success", "fail_new", "fail_existing", "fail_both", "budget_exhausted", "infra_error"
@@ -201,6 +201,9 @@ class Checkpoint:
     run_id: str = ""
     # For status infra_error: a short cause code (runner, evaluator or editor).
     infra_cause: str | None = None
+    # Why the editor stopped: done, max_turns, max_total_tokens, wall_time,
+    # prompt_too_large, or an error message.
+    end_reason: str | None = None
 
 
 @dataclass(frozen=True)
@@ -285,6 +288,7 @@ CREATE TABLE checkpoints (
     diff_lines INTEGER,
     failure_cause TEXT,
     infra_cause TEXT,
+    end_reason TEXT,
     run_id TEXT NOT NULL REFERENCES runs(run_id),
     PRIMARY KEY (task_id, task_version, candidate_id, sequence_id, rep, editor_cfg_hash, step)
 );
@@ -345,9 +349,14 @@ class Store:
 
     # -- runs --
 
-    def start_run(self, cfg: ExperimentConfig) -> str:
-        """Record the code version and full config; returns the run id."""
-        commit, dirty = git_state(cfg.base_dir)
+    def start_run(self, cfg: ExperimentConfig, repo_dir: Path | None = None) -> str:
+        """Record the code version and full config; returns the run id.
+
+        The commit is that of the repository holding the pipeline code
+        (`repo_dir` overrides it, for tests). The config itself is logged in
+        full, so a config kept outside the repository is still recorded.
+        """
+        commit, dirty = git_state(repo_dir or Path(__file__).resolve().parent)
         if dirty and not cfg.allow_dirty:
             raise StoreError(
                 "the git tree has uncommitted changes; commit them or set allow_dirty: true"

@@ -62,6 +62,8 @@ from .store import FAILED, Store, TrialKey
 Verdict = Literal["a", "b", "tie", "inconsistent"]
 TrialScore = int | Literal["infra_error", "incomplete"]
 PAIRING_MODES = ("all_pairs", "best_vs_worst")
+# What can happen to a writer sample: scored, or excluded for one reason.
+SAMPLE_FATES = ("eligible", "initially_failing", "duplicate", "infra_error", "incomplete")
 
 
 # --- rules ------------------------------------------------------------------
@@ -115,6 +117,9 @@ class CandidateRecord:
     call_keys: tuple[str, ...] = ()
     # (sequence_id, rep) -> cause code, for trials with an infra_error step.
     infra_causes: Mapping[tuple[str, int], str] = field(default_factory=dict)
+    # (sequence_id, rep) -> {step: why the editor stopped}, e.g. max_turns or
+    # prompt_too_large for budget_exhausted steps.
+    end_reasons: Mapping[tuple[str, int], Mapping[int, str]] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -154,13 +159,14 @@ def load_task_record(
     for cid, group in by_program.items():
         group.sort(key=lambda sample: sample.key.sample_idx)
         check = store.get_initial_check(task.id, task.task_version, cid, sandbox_hash)
-        trials, causes = {}, {}
+        trials, causes, reasons = {}, {}, {}
         for sequence in task.sequences:
             for rep in range(editor_reps):
                 key = TrialKey(task.id, task.task_version, cid, sequence.id, rep, editor_hash)
                 steps = store.trial_steps(key)
                 if steps:
                     trials[(sequence.id, rep)] = {c.step: c.status for c in steps}
+                    reasons[(sequence.id, rep)] = {c.step: c.end_reason or "" for c in steps}
                 for c in steps:
                     if c.status == "infra_error":
                         causes[(sequence.id, rep)] = c.infra_cause or "unknown"
@@ -172,6 +178,7 @@ def load_task_record(
                 trials,
                 call_keys=tuple(sample.call_key for sample in group if sample.call_key),
                 infra_causes=causes,
+                end_reasons=reasons,
             )
         )
     return TaskRecord(
@@ -300,7 +307,27 @@ class Scorer:
                 excluded["incomplete"] += 1
             else:
                 eligible.append(CandidateScores(c.candidate_id, tuple(map(tuple, scores))))
+                detail.update(self._step_endings(c, task, length))
         return eligible, excluded, detail
+
+    def _step_endings(self, c: CandidateRecord, task: TaskRecord, length: int) -> Counter:
+        """How each scored step ended, keyed "step_endings/<ending>": the step
+        status, with budget_exhausted split by the editor's reason (e.g.
+        budget_exhausted/prompt_too_large: the program no longer fit the
+        prompt). Steps after a trial's first failure never ran."""
+        endings: Counter = Counter()
+        for seq in task.sequence_ids:
+            for rep in self.reps:
+                steps = c.trials.get((seq, rep), {})
+                reasons = c.end_reasons.get((seq, rep), {})
+                for step in range(1, length + 1):
+                    status = steps[step]
+                    if status == "budget_exhausted":
+                        status = f"budget_exhausted/{reasons.get(step) or 'unknown'}"
+                    endings[f"step_endings/{status}"] += 1
+                    if steps[step] != "success":
+                        break
+        return endings
 
     def compare(self, scored: list[CandidateScores], rule: str, mode: str) -> list[Comparison]:
         """Comparisons for one task, in a deterministic order."""
@@ -346,6 +373,7 @@ class Scorer:
             "ablation": {"max_changes": self.cfg.max_changes, "reps": list(self.reps)},
             "samples": Counter(),
             "samples_detail": Counter(),
+            "step_endings": Counter(),
             "combinations": {},
             "tasks": {},
         }
@@ -353,14 +381,18 @@ class Scorer:
         agreements: list[float] = []
         for task in sorted(tasks, key=lambda t: t.task_id):
             scored, excluded, detail = self.score_task(task)
+            endings = Counter({k: v for k, v in detail.items() if k.startswith("step_endings/")})
+            detail = detail - endings
             report["samples"].update(excluded)
             report["samples_detail"].update(detail)
+            report["step_endings"].update(endings)
             report["samples"]["eligible"] += len(scored)
             agreements += [a for s in scored for a in s.agreement()]
             report["tasks"][task.task_id] = {
                 "eligible": len(scored),
-                "excluded": dict(sorted(excluded.items())),
+                "excluded": {reason: excluded[reason] for reason in SAMPLE_FATES[1:]},
                 "excluded_detail": _nest(detail),
+                "step_endings": _nest(endings).get("step_endings", {}),
                 "score_histogram": _histograms(scored, task),
             }
             per_task.append((task, scored))
@@ -388,8 +420,10 @@ class Scorer:
                     "inconsistent_rate": counts["inconsistent"] / compared if compared else None,
                 }
         report["rep_agreement"] = sum(agreements) / len(agreements) if agreements else None
-        report["samples"] = dict(sorted(report["samples"].items()))
+        # Every fate listed, zeros included, so reports compare at a glance.
+        report["samples"] = {fate: report["samples"][fate] for fate in SAMPLE_FATES}
         report["samples_detail"] = _nest(report["samples_detail"])
+        report["step_endings"] = _nest(report["step_endings"]).get("step_endings", {})
         return ScoreResult(pairs, report)
 
     def _pair(self, task: TaskRecord, c: Comparison, load_program) -> dict:

@@ -305,14 +305,17 @@ class CachedBackend:
     answers, not repeat the first one.
     """
 
-    def __init__(self, inner: Backend, cache: CallCache) -> None:
+    def __init__(self, inner: Backend, cache: CallCache, start_index: int = 0) -> None:
+        """start_index: the position of the first call. A trial resumed at a
+        later step starts at the number of calls its earlier steps made, so
+        the resumed calls line up with the recorded ones."""
         self.inner = inner
         self.cache = cache
         self.last_usage: Usage | None = None
         self.last_was_cached = False
         self.last_key: str | None = None  # model_calls key of the latest answer
         self.model_calls = 0  # calls that reached the wrapped backend
-        self._index = 0
+        self._index = start_index
 
     @property
     def identity(self) -> str:

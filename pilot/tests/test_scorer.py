@@ -184,6 +184,25 @@ def test_samples_get_exactly_one_fate():
     assert report["tasks"]["t"]["excluded_detail"] == report["samples_detail"]
 
 
+def test_step_endings_count_every_scored_step():
+    # Eligible a, b, c over 18 trials: successes a 6+5, b 6, c 6 = 23; first
+    # failures a 1, b 6, c 3 = 10.
+    assert build().report["step_endings"] == {"fail_new": 10, "success": 23}
+
+
+def test_budget_exhausted_steps_are_split_by_reason():
+    # One prompt_too_large step on a, the rest succeed.
+    a = cand("a", [2, 2, 2], [2, 2, 2])
+    trials = {**a.trials, ("s1", 0): {1: "success", 2: "budget_exhausted"}}
+    reasons = {("s1", 0): {1: "done", 2: "prompt_too_large"}}
+    a = CandidateRecord("a", (0,), True, trials, ("k",), {}, reasons)
+    b = cand("b", [1, 1, 1], [1, 1, 1], samples=(1,))
+    task = TaskRecord("t", "p", ("s1", "s2"), 2, (), (a, b))
+    endings = build(task).report["step_endings"]
+    assert endings["budget_exhausted/prompt_too_large"] == 1
+    assert build(task).report["tasks"]["t"]["step_endings"] == endings
+
+
 def test_all_pairs_under_each_rule():
     combos = build().report["combinations"]
     assert combos["strict/all_pairs"] == {
@@ -366,7 +385,13 @@ def test_load_task_record_from_the_store(tmp_path):
         .build([record], programs)
         .report
     )
-    assert report["samples"] == {"eligible": 1, "duplicate": 1, "initially_failing": 2}
+    assert report["samples"] == {
+        "eligible": 1,
+        "initially_failing": 2,
+        "duplicate": 1,
+        "infra_error": 0,
+        "incomplete": 0,
+    }
     assert report["samples_detail"] == {
         "initially_failing": {"failed_initial_tests": 1, "malformed/no_code": 1}
     }

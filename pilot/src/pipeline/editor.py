@@ -33,6 +33,7 @@ Usage:
 from __future__ import annotations
 
 import difflib
+import re
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -190,8 +191,21 @@ class Editor:
         if result.run_status in ("timeout", "oom"):
             head += f" The run was stopped by {result.run_status}."
         failing = [f"- {c.node_id}: {c.outcome}" for c in result.cases if c.outcome != "passed"]
-        text = "\n".join([head, *failing, "", "pytest output:", result.output.strip()])
+        output = normalize_output(result.output.strip())
+        text = "\n".join([head, *failing, "", "pytest output:", output])
         return _truncate_middle(text, self.cfg.max_check_output_chars)
+
+
+_DURATION = re.compile(r"\bin \d+(?:\.\d+)?s(?: \(\d+:\d\d:\d\d\))?")
+_ADDRESS = re.compile(r"\b0x[0-9a-fA-F]{4,}\b")
+
+
+def normalize_output(text: str) -> str:
+    """Remove what varies between identical runs: pytest's durations ("in
+    0.31s") and memory addresses ("at 0x7f3a..."). The next prompt includes
+    this text, and a replayed trial only hits the call cache if its prompts
+    are byte-identical to the recorded ones."""
+    return _ADDRESS.sub("0x...", _DURATION.sub("in <time>", text))
 
 
 def diff_lines(before: Program, after: Program) -> int:
