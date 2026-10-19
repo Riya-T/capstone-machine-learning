@@ -35,7 +35,7 @@ subpackages next to `collection/`.
 | Unit | Description | Unit tests |
 |---|---|---|
 | `config.py` | Loads experiment YAML (with `extends`) into frozen, strictly validated settings, and hashes them for keying results. | `tests/test_config.py` |
-| `registry.py` | Loads and checks task directories (splits, sequences, references, test sets, leak checks) and builds the writer prompt from writer-visible files only. | `tests/test_registry.py` |
+| `registry.py` | Loads and checks task directories (splits, sequences, references, test sets, leak checks, required planted bugs) and builds the writer prompt from writer-visible files only. | `tests/test_registry.py` |
 | `store.py` | SQLite results store (`harness.sqlite`) plus content-addressed program blobs: run logging (git commit, config), write-once records, resume points, result keys, and the model-call cache. | `tests/test_store.py` |
 | `__main__.py` | Command line: `collect`, `validate-tasks`, `report` (all `--config`), with progress logging. | `tests/integration/test_end_to_end.py` |
 
@@ -65,7 +65,7 @@ subpackages next to `collection/`.
 
 | Unit | Description | Tests |
 |---|---|---|
-| `tests/data/tasks/record_store/` | Example task the tests run on (not a real task): spec, 3 changes, 2 sequences, 5 reference solutions, 3 planted bugs. Its initial tests skip two spec rules (see `task.yaml`). | `tests/test_registry.py` (structure, leaks); `tests/sandbox/test_evaluator.py::test_record_store_task_is_sound` (behavior) |
+| `tests/data/tasks/record_store/` | Example task the tests run on (not a real task): spec, 3 changes, 2 sequences, 5 reference solutions, 5 planted bugs (the required 3 plus 2 extras). Its initial tests skip two spec rules (see `task.yaml`). | `tests/test_registry.py` (structure, leaks); `tests/sandbox/test_evaluator.py::test_record_store_task_is_sound` (behavior) |
 | `prompts/writer_v1.md` | Writer prompt template (`$entry_files`, `$spec`, `$public_checks`). | `tests/test_registry.py` |
 | `prompts/editor_v2.md` | Editor instructions template (`$request`, `$files`, `$history`, `$feedback`, `$allowed_files`, `$turns_left`). | `tests/collection/test_editor.py` |
 | `docker/sandbox/Dockerfile` | Sandbox image `harness-sandbox:py3.11-v1`: Python 3.11 pinned by digest, with the pytest and Hypothesis versions from `uv.lock`. | `tests/sandbox/test_runner.py` |

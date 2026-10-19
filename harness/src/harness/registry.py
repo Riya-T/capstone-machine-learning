@@ -437,6 +437,8 @@ class _Loader:
                         f"changes.{change.id}.supersedes: {node_id} is never in force "
                         "when this change is applied"
                     )
+        # Last, so a broken sequence is reported before a missing bug in it.
+        self._check_required_bugs()
         return tuple(sequences)
 
     # -- files --
@@ -536,6 +538,31 @@ class _Loader:
         for p in self.root.rglob("*"):
             if p.is_symlink():
                 raise TaskError(f"symlinks are not allowed: {self._rel(p)}")
+
+    def _check_required_bugs(self) -> None:
+        """Every task needs at least these planted bugs (more are allowed):
+        - one on the initial spec that only the hidden initial tests catch
+          (must_fail initial, must_pass public), proving they check more
+          than the public checks;
+        - one regression bug on each sequence's last step (must_fail
+          existing, must_pass new_feature), proving the existing-behavior
+          tests catch a change that breaks earlier behavior."""
+        if not any(
+            "initial" in b.must_fail and "public" in b.must_pass for b in self.m.planted_bugs
+        ):
+            raise TaskError(
+                "planted_bugs: needs a bug with must_fail [initial] and must_pass [public]"
+            )
+        for seq in self.m.sequences:
+            last = seq.steps[-1]
+            if not any(
+                "existing" in b.must_fail and "new_feature" in b.must_pass
+                for b in last.planted_bugs
+            ):
+                raise TaskError(
+                    f"sequences.{seq.id}: its last step needs a regression bug with "
+                    "must_fail [existing] and must_pass [new_feature]"
+                )
 
     def _check_unique_test_names(
         self,

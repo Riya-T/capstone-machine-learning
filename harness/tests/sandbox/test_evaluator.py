@@ -323,6 +323,9 @@ FUNCTIONAL = {
         "def a():\n    return 1\n\n\ndef b():\n    return 2\n\n\ndef c():\n    return 3\n"
     ),
     "bugs/b0/m.py": "def a():\n    return 0\n",
+    # Regression bugs: each adds its sequence's last change but drops the first.
+    "bugs/s1_reg/m.py": "def a():\n    return 1\n\n\ndef c():\n    return 3\n",  # no b()
+    "bugs/s2_reg/m.py": "def a():\n    return 1\n\n\ndef b():\n    return 2\n",  # no c()
     "public/test_pub.py": "from m import a\n\n\ndef test_pub():\n    assert a() is not None\n",
     "private/test_priv.py": (
         "from m import a\n\n\ndef test_priv():\n    assert a() == 1\n\n\n"
@@ -366,6 +369,8 @@ def test_change_tests_that_the_old_program_already_passes_are_flagged(evaluator,
     assert problems == [
         "s1 step 2 program before cb: should fail new_feature but passed (1/1; failing [])",
         "s2 step 1 program before cb: should fail new_feature but passed (1/1; failing [])",
+        # The weak test can't catch a later step that drops c() either.
+        "s2 step 2 bugs/s2_reg: should fail existing but passed (3/3; failing [])",
     ]
 
 

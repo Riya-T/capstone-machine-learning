@@ -15,6 +15,8 @@ public_checks: [public/test_public.py]
 private_tests: [private/test_initial.py]
 reference: reference/v0
 planted_bugs:
+  # Required: one bug only the hidden initial tests catch.
+  - {path: bugs/v0_reuses_ids, must_fail: [initial], must_pass: [public]}
   - {path: bugs/v0_no_persist, must_fail: [initial, public]}
 
 changes:
@@ -54,10 +56,14 @@ sequences:
             must_pass: [new_feature]
       - change: c_txn
         planted_bugs:
-          - path: bugs/txn_drops_conflict     # step 2 silently drops step 1's behavior
+          - path: bugs/txn_drops_conflict     # required regression bug: drops step 1's behavior
             must_fail: [existing, public]
             must_pass: [new_feature]
   - id: s2
     steps:
       - change: c_unique
       - change: c_conflict
+        planted_bugs:
+          - path: bugs/conflict_drops_unique  # required regression bug: drops step 1's behavior
+            must_fail: [existing]
+            must_pass: [new_feature]

@@ -53,6 +53,8 @@ def make_task(tasks_dir: Path, task_id: str = "t", edit=None, **manifest_overrid
         "ref/cb/m.py": "def f(): return 2\n",
         "ref/ca_cb/m.py": "def f(): return 3\n",
         "bugs/b0/m.py": "def f(): return -1\n",
+        "bugs/s1_reg/m.py": "def f(): return -2\n",
+        "bugs/s2_reg/m.py": "def f(): return -3\n",
     }
     for c in ("ca", "cb"):
         files[f"changes/{c}/request.md"] = f"Change {c}: make f return something new please."
@@ -72,7 +74,7 @@ def make_task(tasks_dir: Path, task_id: str = "t", edit=None, **manifest_overrid
         "public_checks": ["public/test_pub.py"],
         "private_tests": ["private/test_priv.py"],
         "reference": "ref/v0",
-        "planted_bugs": [{"path": "bugs/b0", "must_fail": ["initial"]}],
+        "planted_bugs": [{"path": "bugs/b0", "must_fail": ["initial"], "must_pass": ["public"]}],
         "changes": [
             {
                 "id": c,
@@ -85,8 +87,14 @@ def make_task(tasks_dir: Path, task_id: str = "t", edit=None, **manifest_overrid
         ],
         "references": {"ca": "ref/ca", "cb": "ref/cb", "ca+cb": "ref/ca_cb"},
         "sequences": [
-            {"id": "s1", "steps": [{"change": "ca"}, {"change": "cb"}]},
-            {"id": "s2", "steps": [{"change": "cb"}, {"change": "ca"}]},
+            {
+                "id": "s1",
+                "steps": [{"change": "ca"}, {"change": "cb", "planted_bugs": [regression("s1")]}],
+            },
+            {
+                "id": "s2",
+                "steps": [{"change": "cb"}, {"change": "ca", "planted_bugs": [regression("s2")]}],
+            },
         ],
     }
     manifest.update(manifest_overrides)
@@ -94,6 +102,15 @@ def make_task(tasks_dir: Path, task_id: str = "t", edit=None, **manifest_overrid
         edit(root, manifest)
     (root / "task.yaml").write_text(yaml.safe_dump(manifest, sort_keys=False))
     return root
+
+
+def regression(sequence_id: str) -> dict:
+    """The required regression bug on a sequence's last step."""
+    return {
+        "path": f"bugs/{sequence_id}_reg",
+        "must_fail": ["existing"],
+        "must_pass": ["new_feature"],
+    }
 
 
 def load(tasks_dir: Path, task_id: str = "t", **kw):
@@ -168,6 +185,11 @@ def _set(path_and_value):
     return edit
 
 
+def _move_s1_bug_to_first_step(root, m):
+    steps = m["sequences"][0]["steps"]
+    steps[0]["planted_bugs"] = steps[1].pop("planted_bugs")
+
+
 def _outside_spec(root, m):
     (root.parent / "outside.md").write_text("exists, but outside the task")
     m["spec"] = "../outside.md"
@@ -200,6 +222,48 @@ def test_manifest_errors_are_reported(tmp_path, edit, message):
     make_task(tmp_path, edit=edit)
     with pytest.raises(TaskError, match=message):
         load(tmp_path)
+
+
+@pytest.mark.parametrize(
+    ("edit", "message"),
+    [
+        (_set(("planted_bugs", [])), r"planted_bugs: needs a bug with must_fail \[initial\]"),
+        # Caught by the public checks too, so it proves nothing about the hidden ones.
+        (
+            _set(("planted_bugs", 0, "must_pass", [])),
+            r"planted_bugs: needs a bug with must_fail \[initial\] and must_pass \[public\]",
+        ),
+        (
+            _set(("sequences", 1, "steps", 1, "planted_bugs", [])),
+            r"sequences\.s2: its last step needs a regression bug",
+        ),
+        # On the first step instead of the last.
+        (_move_s1_bug_to_first_step, r"sequences\.s1: its last step needs a regression bug"),
+        (
+            _set(("sequences", 0, "steps", 1, "planted_bugs", 0, "must_pass", [])),
+            r"sequences\.s1: its last step needs a regression bug",
+        ),
+    ],
+)
+def test_required_planted_bugs_are_enforced(tmp_path, edit, message):
+    make_task(tmp_path, edit=edit)
+    with pytest.raises(TaskError, match=message):
+        load(tmp_path)
+
+
+def test_extra_planted_bugs_are_allowed(tmp_path):
+    def edit(root, m):
+        (root / "bugs/extra").mkdir()
+        (root / "bugs/extra/m.py").write_text("def f(): return -4\n")
+        m["planted_bugs"].append({"path": "bugs/extra", "must_fail": ["initial", "public"]})
+        m["sequences"][0]["steps"][0]["planted_bugs"] = [
+            {"path": "bugs/extra", "must_fail": ["new_feature"]}
+        ]
+
+    make_task(tmp_path, edit=edit)
+    task = load(tmp_path)
+    assert len(task.planted_bugs) == 2
+    assert len(task.sequence("s1").steps[0].planted_bugs) == 1
 
 
 def test_missing_shared_reference_names_the_change_set(tmp_path):

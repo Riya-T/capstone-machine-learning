@@ -215,10 +215,10 @@ lists its changes in order. A change can `supersede` an initial test whose
 behavior it changes on purpose. A planted bug declares which test categories
 must fail (`must_fail`) and which must still pass (`must_pass`).
 
-To add a task, copy `tests/data/tasks/record_store/` into `tasks/`, edit
-it, add its id to a config's `tasks.include`, and run `validate-tasks`. A
-task goes into a collection only once validation reports no problems and
-the team has reviewed its tests.
+To add a task, follow the step-by-step instructions in
+[harness/tasks/README.md](harness/tasks/README.md): what to write, how many
+changes and references each split needs, what `validate-tasks` checks, and
+what the team must review by hand.
 
 ### Configs
 
