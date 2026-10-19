@@ -1,0 +1,8 @@
+# Mock writer: the first rule whose regex matches the prompt answers, with
+# responses[seed % len(responses)]. Paths are relative to this file.
+# The end-to-end test uses its own fixtures (modular, tangled and duplicate
+# candidates).
+rules:
+  - match: 'Produce exactly these files: records\.py'
+    responses:
+      - file: writer/record_store_v0.md

@@ -1,0 +1,10 @@
+# Deterministic mock writer and editor: integration tests and the end-to-end check.
+extends: base.yaml
+name: harness-mock
+tasks:
+  dir: ../tests/data/tasks     # the test task, not part of the real task set
+  include: [record_store]
+writer:
+  samples_per_task: 3
+execution:
+  sandbox_workers: 8         # no model runs alongside the mock; measured 3.8x faster than 1

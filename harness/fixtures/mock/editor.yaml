@@ -1,0 +1,6 @@
+# Mock editor: ends every edit immediately. The editor and end-to-end tests
+# script their own replies.
+rules:
+  - match: ''
+    responses:
+      - text: DONE

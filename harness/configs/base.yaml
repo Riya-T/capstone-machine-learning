@@ -1,0 +1,64 @@
+# Shared settings for the harness. Variants extend this file and override
+# only what differs. Paths are relative to this directory.
+schema_version: 1
+name: harness-base
+seed: 20261014
+allow_dirty: true            # development only; the frozen collection config sets false
+runs_dir: ../runs
+tasks:
+  dir: ../tasks
+  include: []                # each variant lists its tasks
+  sequences_per_task: 2      # proposal: two different change sequences
+  sequence_length:           # changes per sequence, by split
+    train: 2
+    dev: 2
+    eval: 3
+
+writer:
+  samples_per_task: 8        # proposal: up to eight candidates per task
+  prompt_template: ../prompts/writer_v1.md
+  backend:
+    kind: mock
+    model: mock-writer
+    fixtures: ../fixtures/mock/writer.yaml
+    temperature: 0.8         # diverse candidates are the point of sampling
+    max_tokens: 4096
+
+editor:
+  scaffold: turn_loop        # see src/harness/collection/editor.py
+  reps: 3                    # proposal: each sequence repeated three times
+  view_transform: none       # strip_comments (comment ablation) not implemented yet
+  history_turns: 3           # one-line summaries of the latest turns in each prompt
+  prompt_template: ../prompts/editor_v2.md
+  # Context is 8192 tokens: a prompt of at most ~16k characters (~4.5k tokens)
+  # leaves room for a 3072-token reply.
+  max_prompt_chars: 16000
+  max_check_output_chars: 2000
+  budget:
+    max_turns: 8
+    max_total_tokens: 32000
+    wall_time_s: 600
+  backend:
+    kind: mock
+    model: mock-editor
+    fixtures: ../fixtures/mock/editor.yaml
+    temperature: 0.7         # > 0 so repetitions can differ
+    max_tokens: 3072         # with max_prompt_chars, fits the 8192-token context
+
+sandbox:
+  image: harness-sandbox:py3.11-v1   # change the tag whenever docker/sandbox/Dockerfile changes
+  build_context: ../docker/sandbox
+  timeout_s: 60
+  memory: 512m
+  cpus: 1.0
+  pids_limit: 128
+  tmpfs_size: 64m
+  output_cap_bytes: 65536
+
+execution:                   # how work runs; never part of a result key
+  sandbox_workers: 4         # containers at once; 4 x (1 cpu, 512m) fits the 8-core laptop
+
+scorer:
+  rule: weak_dominance       # primary; frozen after dev tasks
+  pairing_mode: best_vs_worst
+  per_task_cap: null
