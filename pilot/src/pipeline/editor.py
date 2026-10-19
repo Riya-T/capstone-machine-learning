@@ -13,6 +13,8 @@ and/or one command on its own line:
 - RUN_CHECKS: apply the files and run the public checks (initial plus
   changes 1..k) in the sandbox; the output comes back next turn.
 - DONE: apply the files and finish.
+If RUN_CHECKS shows every public check passing, the step ends right there,
+as if the editor had sent DONE (end reason "checks_passed").
 A reply that is cut off (finish_reason "length"), that breaks the format,
 that writes a file outside the original program's allowlist, or that has
 neither files nor a command is a wasted turn: nothing from it is applied,
@@ -46,6 +48,11 @@ from .parser import parse_program, prose_lines, render_program
 from .registry import Program, Step, load_template
 
 EditStatus = Literal["done", "budget_exhausted", "infra_error"]
+# Part of the editor result key: raise it whenever a code change alters how
+# the editor behaves or what it sees, so stored trials from the old behavior
+# are not reused. 1: original loop. 2: finishes when every public check
+# passes; check output keeps full failure lines and short tracebacks.
+PROTOCOL_VERSION = 2
 TEMPLATE_FIELDS = frozenset({"request", "files", "feedback", "allowed_files", "turns_left"})
 RUN_CHECKS, DONE = "RUN_CHECKS", "DONE"
 
@@ -65,7 +72,9 @@ CUT_OFF = (
 class EditOutcome:
     status: EditStatus
     program: Program  # the files after the step (everything applied so far)
-    reason: str  # done, max_turns, max_total_tokens, wall_time, prompt_too_large, or an error
+    # done, checks_passed, max_turns, max_total_tokens, wall_time,
+    # prompt_too_large, or an error message
+    reason: str
     turns: int  # replies received
     wasted_turns: int  # replies that applied nothing and ran nothing
     model_calls: int  # generate() calls (cached replays included)
@@ -162,6 +171,12 @@ class Editor:
                 result = self.evaluator.run_category(files, step.tests.public, "public")
                 if result.status == "infra_error":
                     return finish("infra_error", result.detail, cause=result.infra_cause)
+                if result.status == "passed":
+                    # Every public check passed: end the step as if the editor
+                    # had sent DONE. The pilot showed a 7B editor rarely sends
+                    # DONE and keeps re-checking a finished program until its
+                    # turns run out. The hidden tests still decide the score.
+                    return finish("done", "checks_passed")
                 feedback = self.check_feedback(result)
             else:
                 feedback = APPLIED

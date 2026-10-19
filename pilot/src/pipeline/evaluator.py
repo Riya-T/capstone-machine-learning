@@ -277,9 +277,15 @@ class Evaluator:
 
 
 def pytest_command(checks: CheckSet) -> list[str]:
+    """The pytest call for one category. COLUMNS=200 stops pytest from
+    cutting summary lines at 80 characters (which hid e.g. "has no attribute
+    'add'" from the editor), and --tb=short keeps each failure's traceback to
+    the lines that matter, so the cause survives the editor's output limit."""
     return [
+        "env", "COLUMNS=200",
         "python", "-m", "pytest",
         "-q",
+        "--tb=short",
         "-p", "no:cacheprovider",
         "-p", PLUGIN_MODULE,
         f"--junitxml=/out/{REPORT}",

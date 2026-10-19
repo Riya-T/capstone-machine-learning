@@ -319,7 +319,11 @@ class Scorer:
         """How each scored step ended, keyed "step_endings/<ending>": the step
         status, with budget_exhausted split by the editor's reason (e.g.
         budget_exhausted/prompt_too_large: the program no longer fit the
-        prompt). Steps after a trial's first failure never ran."""
+        prompt). Steps after a trial's first failure never ran.
+
+        Also keyed "editor_endings/<reason>": how the editor ended each of
+        those steps (done, checks_passed, max_turns, ...), whatever the
+        hidden tests then decided."""
         endings: Counter = Counter()
         for seq in task.sequence_ids:
             for rep in self.reps:
@@ -327,9 +331,11 @@ class Scorer:
                 reasons = c.end_reasons.get((seq, rep), {})
                 for step in range(1, length + 1):
                     status = steps[step]
+                    reason = reasons.get(step) or "unknown"
                     if status == "budget_exhausted":
-                        status = f"budget_exhausted/{reasons.get(step) or 'unknown'}"
+                        status = f"budget_exhausted/{reason}"
                     endings[f"step_endings/{status}"] += 1
+                    endings[f"editor_endings/{reason}"] += 1
                     if steps[step] != "success":
                         break
         return endings
@@ -379,6 +385,7 @@ class Scorer:
             "samples": Counter(),
             "samples_detail": Counter(),
             "step_endings": Counter(),
+            "editor_endings": Counter(),
             "combinations": {},
             "tasks": {},
             "candidates": {},
@@ -388,7 +395,11 @@ class Scorer:
         for task in sorted(tasks, key=lambda t: t.task_id):
             scored, excluded, detail = self.score_task(task)
             endings = Counter({k: v for k, v in detail.items() if k.startswith("step_endings/")})
-            detail = detail - endings
+            editor_endings = Counter(
+                {k: v for k, v in detail.items() if k.startswith("editor_endings/")}
+            )
+            detail = detail - endings - editor_endings
+            report["editor_endings"].update(editor_endings)
             report["samples"].update(excluded)
             report["samples_detail"].update(detail)
             report["step_endings"].update(endings)
@@ -431,6 +442,7 @@ class Scorer:
         report["samples"] = {fate: report["samples"][fate] for fate in SAMPLE_FATES}
         report["samples_detail"] = _nest(report["samples_detail"])
         report["step_endings"] = _nest(report["step_endings"]).get("step_endings", {})
+        report["editor_endings"] = _nest(report["editor_endings"]).get("editor_endings", {})
         return ScoreResult(pairs, report)
 
     def _pair(self, task: TaskRecord, c: Comparison, load_program) -> dict:
@@ -575,6 +587,8 @@ def summary_table(report: dict) -> str:
     out += ["", f"Rep agreement: {'-' if agreement is None else f'{agreement:.2f}'}"]
     endings = ", ".join(f"{k} {v}" for k, v in report["step_endings"].items()) or "-"
     out.append(f"Step endings: {endings}")
+    editor = ", ".join(f"{k} {v}" for k, v in report["editor_endings"].items()) or "-"
+    out.append(f"Editor endings: {editor}")
     for task_id, t in sorted(report["tasks"].items()):
         histograms = "; ".join(f"{seq} {counts}" for seq, counts in t["score_histogram"].items())
         out.append(f"Score histogram {task_id} (trials scoring 0, 1, ...): {histograms or '-'}")

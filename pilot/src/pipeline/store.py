@@ -45,6 +45,7 @@ from typing import Any, Literal
 
 from .backends import CachedCall, usage_from_dict, usage_to_dict
 from .config import ExperimentConfig, canonical
+from .editor import PROTOCOL_VERSION as EDITOR_PROTOCOL_VERSION
 
 SCHEMA_VERSION = 3  # 2: checkpoints.infra_cause, candidates.call_key; 3: checkpoints.end_reason
 
@@ -128,6 +129,8 @@ def editor_cfg_hash(cfg: ExperimentConfig, image_id: str) -> str:
     return _hash_json(
         {
             "editor": _without(canonical(cfg.editor, cfg.base_dir), "reps"),
+            # Behavior of the editor code itself (see editor.PROTOCOL_VERSION).
+            "editor_protocol": EDITOR_PROTOCOL_VERSION,
             "files": _input_file_hashes(cfg.editor, cfg.base_dir),
             "sandbox": sandbox_cfg_hash(cfg, image_id),
         }

@@ -137,6 +137,17 @@ def test_writer_key_changes_with_mock_fixture_contents(repo):
     assert keys(repo)[0] != writer
 
 
+def test_editor_protocol_version_is_part_of_the_editor_key(repo, monkeypatch):
+    # Editor code changes that alter behavior bump the version, so old trials
+    # are not reused.
+    import pipeline.store as store_module
+
+    writer, editor, sandbox = keys(repo)
+    monkeypatch.setattr(store_module, "EDITOR_PROTOCOL_VERSION", 999)
+    assert keys(repo) == (writer, keys(repo)[1], sandbox)
+    assert keys(repo)[1] != editor
+
+
 def test_sample_and_rep_counts_are_not_part_of_the_keys(repo):
     # Sample i and rep k don't depend on the totals, so growing either keeps
     # what was already collected.

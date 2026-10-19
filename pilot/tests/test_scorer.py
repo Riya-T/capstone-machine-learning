@@ -193,6 +193,16 @@ def test_step_endings_count_every_scored_step():
     assert build().report["step_endings"] == {"fail_new": 10, "success": 23}
 
 
+def test_editor_endings_are_counted_separately_from_step_outcomes():
+    a = cand("a", [2, 2, 2], [2, 2, 2])
+    reasons = {key: {1: "checks_passed", 2: "done"} for key in a.trials}
+    a = CandidateRecord("a", (0,), True, a.trials, ("k",), {}, reasons)
+    report = build(TaskRecord("t", "p", ("s1", "s2"), 2, (), (a,))).report
+    assert report["step_endings"] == {"success": 12}
+    assert report["editor_endings"] == {"checks_passed": 6, "done": 6}
+    assert "Editor endings: checks_passed 6, done 6" in summary_table(report)
+
+
 def test_budget_exhausted_steps_are_split_by_reason():
     # One prompt_too_large step on a, the rest succeed.
     a = cand("a", [2, 2, 2], [2, 2, 2])

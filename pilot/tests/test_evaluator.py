@@ -166,7 +166,9 @@ def test_step_status(new, existing, status):
 
 def test_pytest_command_loads_the_exact_deselect_plugin_and_writes_junit():
     cmd = pytest_command(CHECKS)
-    assert cmd[:3] == ["python", "-m", "pytest"]
+    # A wide terminal and short tracebacks keep failure causes readable.
+    assert cmd[:5] == ["env", "COLUMNS=200", "python", "-m", "pytest"]
+    assert "--tb=short" in cmd
     assert "-p" in cmd and "_pipeline_deselect" in cmd and "no:cacheprovider" in cmd
     assert "--junitxml=/out/report.xml" in cmd
     assert "--deselect" not in cmd  # prefix matching would drop test_x2 with test_x
@@ -409,3 +411,24 @@ def test_record_store_supersedes_drops_exactly_one_initial_test(evaluator):
     assert with_unique.status == "success"
     dropped = "private/test_initial.py::test_duplicate_emails_are_allowed"
     assert dropped not in {c.node_id for c in with_unique.existing.cases}
+
+
+@pytest.mark.docker
+def test_check_output_names_the_missing_attribute_within_the_editor_limit(evaluator):
+    """The pilot's lost trial: a rewrite dropped add(). The editor must be told
+    which attribute is missing, within its 2,000-character check output."""
+    from pipeline.editor import Editor
+
+    cfg = load_config(PILOT / "configs" / "pilot_mock.yaml")
+    step = load_tasks(cfg.tasks)["record_store"].sequence("s1").steps[0]
+    # Like the pilot's trial: the change itself is in, but add() is gone, so
+    # all 10 cumulative public checks fail and the output is long.
+    no_add = step.reference["records.py"].replace(
+        b"    def add(self, record):", b"    def _add(self, record):"
+    )
+    result = evaluator.run_category({"records.py": no_add}, step.tests.public, "public")
+    assert (result.status, result.passed, result.total) == ("failed", 0, 10)
+    assert len(result.output) > cfg.editor.max_check_output_chars  # it does get truncated
+    feedback = Editor(cfg.editor, evaluator).check_feedback(result)
+    assert len(feedback) <= cfg.editor.max_check_output_chars
+    assert "has no attribute 'add'" in feedback

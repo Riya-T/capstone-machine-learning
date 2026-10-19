@@ -13,7 +13,6 @@ Usage:
 import ast
 import dataclasses
 import itertools
-import re
 import uuid
 from pathlib import Path
 
@@ -53,7 +52,10 @@ class StubEvaluator:
     """Stands in for the sandbox: records what it was asked to check and
     returns a fixed public-check result."""
 
-    def __init__(self, status="passed", passed=4, total=5, output="1 failed, 4 passed", cause=""):
+    def __init__(self, status=None, passed=4, total=5, output="1 failed, 4 passed", cause=""):
+        # By default the status follows the counts: all passing is "passed",
+        # which makes the editor finish the step (auto-finish).
+        status = status or ("passed" if total and passed == total else "failed")
         failing = (CaseResult("public/test_public.py::test_records_survive_reopening", "failed"),)
         self.result = CategoryResult(
             "public", status, passed, total, failing if passed < total else (), "ok",
@@ -111,6 +113,35 @@ def test_applies_edits_runs_public_checks_and_finishes(tmp_path):
     # The second prompt shows the check results.
     assert "Public checks: 4 of 5 passed." in backend.prompts[1]
     assert "test_records_survive_reopening: failed" in backend.prompts[1]
+
+
+def test_all_public_checks_passing_finishes_the_step(tmp_path):
+    # The editor never sends DONE; a passing RUN_CHECKS ends the step anyway.
+    evaluator = StubEvaluator(passed=5, total=5)
+    backend = mock(tmp_path, [(FIRST, files_reply(CONFLICT)), ("", "RUN_CHECKS")])
+    out = Editor(editor_cfg(), evaluator).edit(backend, V0, STEP)
+    assert (out.status, out.reason, out.turns, out.program) == (
+        "done",
+        "checks_passed",
+        1,
+        CONFLICT,
+    )
+    assert len(evaluator.calls) == 1
+
+
+def test_some_public_checks_failing_keeps_the_step_going(tmp_path):
+    evaluator = StubEvaluator(passed=4, total=5)
+    backend = mock(tmp_path, [("", "RUN_CHECKS")])
+    out = Editor(editor_cfg(max_turns=3), evaluator).edit(backend, V0, STEP)
+    assert (out.status, out.reason, out.turns) == ("budget_exhausted", "max_turns", 3)
+
+
+def test_a_run_with_no_tests_is_not_a_pass(tmp_path):
+    # 0 of 0 (e.g. the program fails to import) must never auto-finish.
+    evaluator = StubEvaluator(status="failed", passed=0, total=0)
+    backend = mock(tmp_path, [("", "RUN_CHECKS")])
+    out = Editor(editor_cfg(max_turns=2), evaluator).edit(backend, V0, STEP)
+    assert out.reason == "max_turns"
 
 
 def test_files_with_done_are_applied_then_the_step_ends_without_checks(tmp_path):
@@ -351,11 +382,12 @@ def test_editing_record_store_with_real_public_checks(tmp_path):
     runner = SandboxRunner(CFG.sandbox, owner=f"pytest-editor-{uuid.uuid4().hex[:8]}")
     try:
         evaluator = Evaluator(runner, workers=2)
-        backend = mock(tmp_path, [(FIRST, files_reply(CONFLICT)), ("Public checks:", "DONE")])
+        backend = mock(tmp_path, [(FIRST, files_reply(CONFLICT))])
         out = Editor(editor_cfg(), evaluator).edit(backend, V0, STEP)
-        assert (out.status, out.program) == ("done", CONFLICT)
-        # Every public check passed (initial plus c_conflict's), whatever their number.
-        assert re.search(r"Public checks: (\d+) of \1 passed\.", backend.prompts[1])
+        # Every real public check (initial plus c_conflict's) passed on the
+        # first RUN_CHECKS, so the step ended there without a DONE.
+        assert (out.status, out.reason, out.turns) == ("done", "checks_passed", 1)
+        assert out.program == CONFLICT
         # The edited program then passes the hidden tests for this step.
         assert evaluator.check_step(out.program, STEP).status == "success"
     finally:
