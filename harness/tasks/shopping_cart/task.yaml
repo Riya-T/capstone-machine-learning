@@ -1,0 +1,70 @@
+schema_version: 1
+id: shopping_cart
+family: shopping_cart
+split: dev
+entry_files: [cart.py]
+spec: spec.md
+public_checks: [public/test_cart_public.py]
+private_tests: [private/test_cart_initial.py]
+reference: reference/v0
+
+planted_bugs:
+  - {
+      path: bugs/v0_allows_negative_quantity,
+      must_fail: [initial],
+      must_pass: [public]
+    }
+  - {
+      path: bugs/v0_skips_price_validation,
+      must_fail: [initial],
+      must_pass: [public]
+    }
+  - {
+      path: bugs/v0_incorrect_total_calculation,
+      must_fail: [initial],
+      must_pass: [public]
+    }
+
+changes:
+  - id: c_inventory
+    kind: validation_rule
+    request: changes/c_inventory/request.md
+    public_checks: [changes/c_inventory/public/test_inventory_public.py]
+    new_feature_tests: [changes/c_inventory/private/test_inventory_new.py]
+
+  - id: c_discounts
+    kind: derived_value
+    request: changes/c_discounts/request.md
+    public_checks: [changes/c_discounts/public/test_discounts_public.py]
+    new_feature_tests: [changes/c_discounts/private/test_discounts_new.py]
+
+  - id: c_undo
+    kind: undo
+    request: changes/c_undo/request.md
+    public_checks: [changes/c_undo/public/test_undo_public.py]
+    new_feature_tests: [changes/c_undo/private/test_undo_new.py]
+
+references:
+  c_inventory: reference/inventory
+  c_discounts: reference/discounts
+  c_discounts+c_inventory: reference/inventory_discounts
+  c_discounts+c_undo: reference/discounts_undo
+
+sequences:
+  - id: seq_cart_workflow_1
+    steps:
+      - change: c_inventory
+      - change: c_discounts
+        planted_bugs:
+          - path: bugs/discounts_allow_negative_quantity
+            must_fail: [existing]
+            must_pass: [new_feature]
+
+  - id: seq_cart_workflow_2
+    steps:
+      - change: c_discounts
+      - change: c_undo
+        planted_bugs:
+          - path: bugs/undo_allows_negative_quantity
+            must_fail: [existing]
+            must_pass: [new_feature]

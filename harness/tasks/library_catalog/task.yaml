@@ -1,0 +1,63 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+schema_version: 1
+id: library_catalog
+family: library_catalog
+split: dev
+entry_files: [library.py]
+spec: spec.md
+public_checks: [public/test_public.py]
+private_tests: [private/test_initial.py]
+reference: reference/v0
+
+planted_bugs:
+  - {path: bugs/v0_no_validation, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_allows_negative_copies, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_returns_wrong_count, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_duplicate_loans
+    kind: validation_rule
+    request: changes/c_duplicate_loans/request.md
+    public_checks: [changes/c_duplicate_loans/public/test_duplicate_public.py]
+    new_feature_tests: [changes/c_duplicate_loans/private/test_duplicate_new.py]
+    supersedes:
+      - private/test_initial.py::test_baseline_allows_same_borrower_to_borrow_multiple_copies
+      - private/test_initial.py::test_returning_one_of_two_copies_releases_only_one_copy
+
+  - id: c_reservations
+    kind: state_flag
+    request: changes/c_reservations/request.md
+    public_checks: [changes/c_reservations/public/test_reservations_public.py]
+    new_feature_tests: [changes/c_reservations/private/test_reservations_new.py]
+
+  - id: c_audit_log
+    kind: derived_value
+    request: changes/c_audit_log/request.md
+    public_checks: [changes/c_audit_log/public/test_audit_log_public.py]
+    new_feature_tests: [changes/c_audit_log/private/test_audit_log_new.py]
+
+references:
+  c_duplicate_loans: reference/duplicate_loans
+  c_audit_log: reference/audit_log
+  c_duplicate_loans+c_reservations: reference/duplicate_reservations
+  c_audit_log+c_duplicate_loans: reference/audit_duplicate
+
+sequences:
+  - id: seq_library_workflow_1
+    steps:
+      - change: c_duplicate_loans
+      - change: c_reservations
+        planted_bugs:
+          - path: bugs/reservations_allows_negative_copies
+            must_fail: [existing]
+            must_pass: [new_feature]
+
+  - id: seq_library_workflow_2
+    steps:
+      - change: c_audit_log
+      - change: c_duplicate_loans
+        planted_bugs:
+          - path: bugs/audit_duplicate_no_validation
+            must_fail: [existing]
+            must_pass: [new_feature]

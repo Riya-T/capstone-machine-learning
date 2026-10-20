@@ -1,0 +1,74 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+schema_version: 1
+id: course_enrollment
+family: course_enrollment
+split: dev
+entry_files: [enrollment.py]
+spec: spec.md
+public_checks: [public/test_enrollment_public.py]
+private_tests: [private/test_enrollment_initial.py]
+reference: reference/v0
+
+planted_bugs:
+  - {
+      path: bugs/v0_no_capacity_check,
+      must_fail: [initial],
+      must_pass: [public]
+    }
+  - {
+      path: bugs/v0_allows_duplicate_enrollment,
+      must_fail: [initial],
+      must_pass: [public]
+    }
+  - {
+      path: bugs/v0_drops_waitlist_order,
+      must_fail: [initial],
+      must_pass: [public]
+    }
+
+changes:
+  - id: c_waitlist
+    kind: state_flag
+    request: changes/c_waitlist/request.md
+    public_checks: [changes/c_waitlist/public/test_waitlist_public.py]
+    new_feature_tests: [changes/c_waitlist/private/test_waitlist_new.py]
+
+  - id: c_prerequisites
+    kind: validation_rule
+    request: changes/c_prerequisites/request.md
+    public_checks: [changes/c_prerequisites/public/test_prerequisites_public.py]
+    new_feature_tests: [changes/c_prerequisites/private/test_prerequisites_new.py]
+
+  - id: c_freeze
+    kind: state_flag
+    request: changes/c_freeze/request.md
+    public_checks: [changes/c_freeze/public/test_freeze_public.py]
+    new_feature_tests: [changes/c_freeze/private/test_freeze_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_waitlist: reference/waitlist
+  c_prerequisites: reference/prerequisites
+  c_prerequisites+c_waitlist: reference/waitlist_prerequisites
+  c_freeze+c_prerequisites: reference/freeze_prerequisites
+
+# Define multi-step evaluation sequences
+sequences:
+  - id: seq_enrollment_workflow_1
+    steps:
+      - change: c_waitlist
+      - change: c_prerequisites
+        planted_bugs:
+          - path: bugs/prerequisites_allow_duplicate_waitlist
+            must_fail: [existing]
+            must_pass: [new_feature]
+
+  - id: seq_enrollment_workflow_2
+    steps:
+      - change: c_prerequisites
+      - change: c_freeze
+        planted_bugs:
+          - path: bugs/freeze_ignores_capacity
+            must_fail: [existing]
+            must_pass: [new_feature]
