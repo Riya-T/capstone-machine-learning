@@ -1,9 +1,0 @@
-# Deterministic mock writer and editor: integration tests and the end-to-end check.
-extends: base.yaml
-name: pilot-mock
-tasks:
-  include: [record_store]
-writer:
-  samples_per_task: 3
-execution:
-  sandbox_workers: 8         # no model runs alongside the mock; measured 3.8x faster than 1

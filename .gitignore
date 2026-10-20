@@ -1,7 +1,4 @@
 
-# pilot
-pilot/runs/
-pilot/.venv/
 # harness
 harness/runs/
 harness/.venv/

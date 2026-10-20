@@ -1,6 +1,0 @@
-# Mock editor. Placeholder until the editor scaffold (build step 9) defines
-# the turn protocol; it ends every edit immediately.
-rules:
-  - match: ''
-    responses:
-      - text: DONE

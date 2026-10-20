@@ -10,18 +10,12 @@ experimental design.
 ```
 docs/       project documents (the proposal)
 harness/    the pipeline: generates programs, runs the editor, builds preference pairs
-pilot/      the pilot experiment (temporary; see below)
 ```
 
-### The pilot directory
-
-`pilot/` holds the pilot experiment: a first, small trial of the pipeline
-on one task, with a local 7B model as both writer and editor on a laptop.
-It was only a test, used to find problems before building the real
-pipeline; for example, it showed the editor getting stuck repeating
-itself. The working code from it now lives in `harness/`. `pilot/` is kept
-for reference for now and will be removed in the final product, so don't
-build on it.
+The harness grew out of an earlier pilot: a small trial on one task with a
+local 7B model as both writer and editor. It found problems such as the
+editor repeating itself, which the harness fixes. The pilot's code was
+removed and is still in the git history.
 
 ## The harness
 

@@ -1,5 +1,0 @@
-{
-  "model": "qwen2.5-coder-7b-ctx8k",
-  "from": "qwen2.5-coder:7b-instruct",
-  "parameters": {"num_ctx": 8192}
-}
