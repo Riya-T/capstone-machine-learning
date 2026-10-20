@@ -30,6 +30,8 @@ def minimal() -> dict:
             "include": ["a"],
             "sequence_length": {"train": 2, "dev": 2, "eval": 3},
             "sequences_per_task": 2,
+            "change_kinds": ["k", "k_eval"],
+            "eval_only_kinds": ["k_eval"],
         },
         "writer": {
             "backend": dict(backend),

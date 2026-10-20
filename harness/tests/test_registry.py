@@ -27,12 +27,18 @@ ROOT = Path(__file__).resolve().parents[1]
 TEMPLATE = string.Template("files: $entry_files\nspec: $spec\nchecks: $public_checks")
 
 
+# record_store's kinds, so tests that copy it can load it with rules() too.
+MOCK_KINDS = load_config(ROOT / "configs" / "mock.yaml").tasks.change_kinds
+
+
 def rules(tasks_dir: Path, include=("t",), sequences_per_task=2) -> TasksConfig:
     return TasksConfig(
         dir=tasks_dir,
         include=tuple(include),
         sequence_length=SequenceLengths(train=2, dev=2, eval=3),
         sequences_per_task=sequences_per_task,
+        change_kinds=("k", "k_eval", *MOCK_KINDS),
+        eval_only_kinds=("k_eval",),
     )
 
 
@@ -248,6 +254,64 @@ def test_manifest_errors_are_reported(tmp_path, edit, message):
 def test_required_planted_bugs_are_enforced(tmp_path, edit, message):
     make_task(tmp_path, edit=edit)
     with pytest.raises(TaskError, match=message):
+        load(tmp_path)
+
+
+def test_an_unknown_kind_is_rejected(tmp_path):
+    make_task(tmp_path, edit=_set(("changes", 0, "kind", "teleportation")))
+    with pytest.raises(TaskError, match=r"changes\.ca\.kind: 'teleportation' is not one of"):
+        load(tmp_path)
+
+
+@pytest.mark.parametrize("split", ["train", "dev"])
+def test_eval_only_kinds_are_rejected_outside_eval(tmp_path, split):
+    def edit(root, m):
+        m["split"] = split
+        m["changes"][1]["kind"] = "k_eval"
+
+    make_task(tmp_path, edit=edit)
+    with pytest.raises(TaskError, match=rf"{split} task uses eval-only kinds \['k_eval'\]"):
+        load(tmp_path)
+
+
+def eval_task(root, m):
+    """Turn the synthetic task into a valid eval task: 3-change sequences."""
+    (root / "ref/ca_cb_cc").mkdir()
+    (root / "ref/ca_cb_cc/m.py").write_text("def f(): return 6\n")
+    for c in ("cc",):
+        (root / f"changes/{c}").mkdir()
+        (root / f"changes/{c}/request.md").write_text(
+            f"Change {c}: make f return yet another value."
+        )
+        (root / f"changes/{c}/test_{c}_new.py").write_text(f"def test_{c}_new():\n    pass\n")
+    m["split"] = "eval"
+    m["changes"].append(
+        {
+            "id": "cc",
+            "kind": "k_eval",
+            "request": "changes/cc/request.md",
+            "new_feature_tests": ["changes/cc/test_cc_new.py"],
+        }
+    )
+    m["references"]["ca+cb+cc"] = "ref/ca_cb_cc"
+    for seq in m["sequences"]:
+        last = seq["steps"][-1]
+        seq["steps"][-1] = {"change": last["change"]}
+        seq["steps"].append({"change": "cc", "planted_bugs": last["planted_bugs"]})
+
+
+def test_an_eval_task_with_an_eval_only_kind_loads(tmp_path):
+    make_task(tmp_path, edit=eval_task)
+    assert load(tmp_path).split == "eval"
+
+
+def test_an_eval_task_needs_an_eval_only_kind(tmp_path):
+    def edit(root, m):
+        eval_task(root, m)
+        m["changes"][2]["kind"] = "k"
+
+    make_task(tmp_path, edit=edit)
+    with pytest.raises(TaskError, match=r"eval task needs a change of an eval-only kind"):
         load(tmp_path)
 
 
@@ -480,7 +544,7 @@ def test_record_store_structure(committed):
     assert (task.family, task.split) == ("record_store", "train")
     assert {c.kind for c in task.changes.values()} == {
         "concurrency_control",
-        "atomicity",
+        "atomic_operation",
         "validation_rule",
     }
     assert [[s.change.id for s in q.steps] for q in task.sequences] == [

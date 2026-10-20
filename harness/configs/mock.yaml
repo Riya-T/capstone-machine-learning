@@ -3,6 +3,7 @@ extends: base.yaml
 name: harness-mock
 tasks:
   dir: ../tests/data/tasks     # the test task, not part of the real task set
+  eval_only_kinds: []        # the test task is outside the real splits
   include: [record_store]
 writer:
   samples_per_task: 3

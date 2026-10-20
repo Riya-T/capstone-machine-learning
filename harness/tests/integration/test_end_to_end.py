@@ -101,7 +101,10 @@ def setup(tmp_path_factory):
 
     cfg = yaml.safe_load((ROOT / "configs" / "base.yaml").read_text())
     cfg.update(name="e2e", seed=seed, allow_dirty=True, runs_dir=str(tmp / "runs"))
-    cfg["tasks"].update(dir=str(ROOT / "tests" / "data" / "tasks"), include=["record_store"])
+    # The test task is outside the real splits, so no kind is eval-only (as in mock.yaml).
+    cfg["tasks"].update(
+        dir=str(ROOT / "tests" / "data" / "tasks"), include=["record_store"], eval_only_kinds=[]
+    )
     cfg["writer"].update(samples_per_task=3, prompt_template=str(ROOT / "prompts/writer_v1.md"))
     cfg["writer"]["backend"]["fixtures"] = str(tmp / "writer.yaml")
     cfg["editor"]["prompt_template"] = str(ROOT / "prompts/editor_v2.md")

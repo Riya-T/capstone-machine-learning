@@ -211,8 +211,10 @@ record_store/
 
 The manifest declares the task's `split` (`train`, `dev` or `eval`) and its
 `family`: close variants share a family and must share a split. A sequence
-lists its changes in order. A change can `supersede` an initial test whose
-behavior it changes on purpose. A planted bug declares which test categories
+lists its changes in order. Each change has a `kind` from the list in
+`configs/base.yaml`; some kinds are held out for eval tasks only, so
+evaluation tests kinds of change the writer never trained on. A change can
+`supersede` an initial test whose behavior it changes on purpose. A planted bug declares which test categories
 must fail (`must_fail`) and which must still pass (`must_pass`).
 
 To add a task, follow the step-by-step instructions in
@@ -273,6 +275,4 @@ These are in the proposal but not in the harness yet:
   14B editor);
 - the 60 real tasks, and a CI workflow.
 
-Known open decisions: `allow_dirty` is `true` in `base.yaml`, and the
-editor budgets must be tuned on dev tasks and then frozen before
-collecting training data.
+

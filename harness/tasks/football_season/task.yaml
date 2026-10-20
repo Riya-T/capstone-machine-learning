@@ -1,0 +1,56 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+schema_version: 1
+id: football_season
+family: football_season
+split: dev
+entry_files: [season.py]
+spec: spec.md
+public_checks: [public/test_season_public.py]
+private_tests: [private/test_season_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_ignores_point_differential, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_remove
+    kind: undo
+    request: changes/c_remove/request.md
+    public_checks: [changes/c_remove/public/test_remove_public.py]
+    new_feature_tests: [changes/c_remove/private/test_remove_new.py]
+  - id: c_divisions
+    kind: grouping
+    request: changes/c_divisions/request.md
+    public_checks: [changes/c_divisions/public/test_divisions_public.py]
+    new_feature_tests: [changes/c_divisions/private/test_divisions_new.py]
+  - id: c_streak
+    kind: derived_value
+    request: changes/c_streak/request.md
+    public_checks: [changes/c_streak/public/test_streak_public.py]
+    new_feature_tests: [changes/c_streak/private/test_streak_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_remove: reference/remove
+  c_divisions+c_remove: reference/divisions_remove
+  c_streak: reference/streak
+  c_remove+c_streak: reference/remove_streak
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_remove
+      - change: c_divisions
+        planted_bugs:
+          - path: bugs/divisions_reuse_game_ids  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_streak
+      - change: c_remove
+        planted_bugs:
+          - path: bugs/remove_streak_counts_ties_as_losses  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]

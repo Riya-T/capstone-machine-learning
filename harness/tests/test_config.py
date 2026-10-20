@@ -72,6 +72,15 @@ def test_output_path_may_be_missing_but_input_path_must_exist(tmp_path):
         (lambda d: d["writer"]["backend"].update(temperature=-1), r"writer\.backend: temp"),
         (lambda d: d["scorer"].update(reps=[]), r"scorer: reps: must be a non-empty"),
         (lambda d: d.update(schema_version=2), r"schema_version: expected 1"),
+        (lambda d: d["tasks"].update(change_kinds=[]), r"change_kinds: must be a non-empty"),
+        (
+            lambda d: d["tasks"].update(change_kinds=["k", "k"]),
+            r"change_kinds: must be a non-empty",
+        ),
+        (
+            lambda d: d["tasks"].update(eval_only_kinds=["nope"]),
+            r"eval_only_kinds: not in change_kinds: \['nope'\]",
+        ),
         (lambda d: d.update(base_dir="/x"), r"base_dir: unknown key"),
         (lambda d: d["editor"]["backend"].update(max_retries=-1), r"max_retries: must be >= 0"),
         (
@@ -246,7 +255,7 @@ def test_hash_is_independent_of_key_order(tmp_path_factory, rng):
 # --- committed configs ------------------------------------------------------
 
 
-@pytest.mark.parametrize("name", ["mock.yaml"])
+@pytest.mark.parametrize("name", ["mock.yaml", "noahs_laptop.yaml"])
 def test_committed_configs_load(name):
     cfg = load_config(CONFIGS_DIR / name)
     assert cfg.allow_dirty is True

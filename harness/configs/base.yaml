@@ -3,12 +3,26 @@
 schema_version: 1
 name: harness-base
 seed: 20261014
-allow_dirty: true            # development only; the frozen collection config sets false
+allow_dirty: true            # runs may start with uncommitted changes; each run records that it did
 runs_dir: ../runs
 tasks:
   dir: ../tasks
   include: []                # each variant lists its tasks
   sequences_per_task: 2      # proposal: two different change sequences
+  # The kinds of change a task may contain (each change's `kind`). The
+  # eval-only kinds appear only in eval tasks, so evaluation tests kinds of
+  # change the writer never saw in training or calibration.
+  change_kinds:
+    - validation_rule        # a new constraint on inputs (unique emails, limits)
+    - state_flag             # a status that changes what's allowed (freezing, injuries)
+    - atomic_operation       # several changes that succeed or fail together (trades)
+    - undo                   # removing or reversing something already recorded
+    - derived_value          # a new value computed from existing data (fees, streaks)
+    - grouping               # splitting items into categories (divisions)
+    - query                  # new ways to search or filter existing data
+    - configuration          # making a fixed rule adjustable (custom points)
+    - concurrency_control    # detecting conflicting updates (version numbers)
+  eval_only_kinds: [configuration, concurrency_control]
   sequence_length:           # changes per sequence, by split
     train: 2
     dev: 2

@@ -26,7 +26,7 @@ changes:
     public_checks: [changes/c_conflict/public/test_conflict_public.py]
     new_feature_tests: [changes/c_conflict/private/test_conflict_new.py]
   - id: c_txn
-    kind: atomicity
+    kind: atomic_operation
     request: changes/c_txn/request.md
     public_checks: [changes/c_txn/public/test_txn_public.py]
     new_feature_tests: [changes/c_txn/private/test_txn_new.py]

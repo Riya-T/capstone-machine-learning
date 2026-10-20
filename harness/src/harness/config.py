@@ -71,6 +71,12 @@ class TasksConfig:
     include: tuple[str, ...]
     sequence_length: SequenceLengths
     sequences_per_task: int  # proposal: two different change sequences
+    # Every change's `kind` must be one of change_kinds. Kinds in
+    # eval_only_kinds may appear only in eval tasks, and every eval task must
+    # use at least one, so evaluation tests kinds of change the writer was
+    # never trained or calibrated on (proposal: "new kinds of changes").
+    change_kinds: tuple[str, ...]
+    eval_only_kinds: tuple[str, ...]
     # Edit and score only each task's first N sequences (None: all). Not part
     # of any result key: a trial on s1 is the same whether s2 also runs.
     max_sequences: int | None = None
@@ -80,6 +86,11 @@ class TasksConfig:
         if len(set(self.include)) != len(self.include):
             raise ConfigError("include: contains duplicate task ids")
         _require_positive(self.sequences_per_task, "sequences_per_task")
+        if not self.change_kinds or len(set(self.change_kinds)) != len(self.change_kinds):
+            raise ConfigError("change_kinds: must be a non-empty list without duplicates")
+        unknown = sorted(set(self.eval_only_kinds) - set(self.change_kinds))
+        if unknown:
+            raise ConfigError(f"eval_only_kinds: not in change_kinds: {unknown}")
         if self.max_sequences is not None:
             _require_positive(self.max_sequences, "max_sequences")
 

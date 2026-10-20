@@ -35,7 +35,7 @@ subpackages next to `collection/`.
 | Unit | Description | Unit tests |
 |---|---|---|
 | `config.py` | Loads experiment YAML (with `extends`) into frozen, strictly validated settings, and hashes them for keying results. | `tests/test_config.py` |
-| `registry.py` | Loads and checks task directories (splits, sequences, references, test sets, leak checks, required planted bugs) and builds the writer prompt from writer-visible files only. | `tests/test_registry.py` |
+| `registry.py` | Loads and checks task directories (splits, sequences, references, test sets, leak checks, change kinds and eval-only kinds, required planted bugs) and builds the writer prompt from writer-visible files only. | `tests/test_registry.py` |
 | `store.py` | SQLite results store (`harness.sqlite`) plus content-addressed program blobs: run logging (git commit, config), write-once records, resume points, result keys, and the model-call cache. | `tests/test_store.py` |
 | `__main__.py` | Command line: `collect`, `validate-tasks`, `report` (all `--config`), with progress logging. | `tests/integration/test_end_to_end.py` |
 

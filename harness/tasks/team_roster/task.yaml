@@ -1,0 +1,56 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+schema_version: 1
+id: team_roster
+family: team_roster
+split: dev
+entry_files: [roster.py]
+spec: spec.md
+public_checks: [public/test_roster_public.py]
+private_tests: [private/test_roster_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_players_sorted, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_trades
+    kind: atomic_operation
+    request: changes/c_trades/request.md
+    public_checks: [changes/c_trades/public/test_trade_public.py]
+    new_feature_tests: [changes/c_trades/private/test_trade_new.py]
+  - id: c_position_limits
+    kind: validation_rule
+    request: changes/c_position_limits/request.md
+    public_checks: [changes/c_position_limits/public/test_limits_public.py]
+    new_feature_tests: [changes/c_position_limits/private/test_limits_new.py]
+  - id: c_injuries
+    kind: state_flag
+    request: changes/c_injuries/request.md
+    public_checks: [changes/c_injuries/public/test_injury_public.py]
+    new_feature_tests: [changes/c_injuries/private/test_injury_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_trades: reference/trades
+  c_position_limits+c_trades: reference/limits_trades
+  c_injuries: reference/injuries
+  c_injuries+c_trades: reference/injuries_trades
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_trades
+      - change: c_position_limits
+        planted_bugs:
+          - path: bugs/limits_trade_cap_before_outgoing  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_injuries
+      - change: c_trades
+        planted_bugs:
+          - path: bugs/trades_ignore_injury_relief  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]

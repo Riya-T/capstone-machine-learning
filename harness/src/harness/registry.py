@@ -437,7 +437,8 @@ class _Loader:
                         f"changes.{change.id}.supersedes: {node_id} is never in force "
                         "when this change is applied"
                     )
-        # Last, so a broken sequence is reported before a missing bug in it.
+        # Last, so a broken sequence is reported before these.
+        self._check_kinds(changes)
         self._check_required_bugs()
         return tuple(sequences)
 
@@ -538,6 +539,24 @@ class _Loader:
         for p in self.root.rglob("*"):
             if p.is_symlink():
                 raise TaskError(f"symlinks are not allowed: {self._rel(p)}")
+
+    def _check_kinds(self, changes: Mapping[str, Change]) -> None:
+        """Every kind is a known one; eval-only kinds appear in eval tasks
+        only, and every eval task uses at least one."""
+        rules = self.rules
+        for change in changes.values():
+            if change.kind not in rules.change_kinds:
+                raise TaskError(
+                    f"changes.{change.id}.kind: {change.kind!r} is not one of "
+                    f"{list(rules.change_kinds)}"
+                )
+        held_out = sorted({c.kind for c in changes.values()} & set(rules.eval_only_kinds))
+        if self.m.split != "eval" and held_out:
+            raise TaskError(f"{self.m.split} task uses eval-only kinds {held_out}")
+        if self.m.split == "eval" and rules.eval_only_kinds and not held_out:
+            raise TaskError(
+                f"eval task needs a change of an eval-only kind {list(rules.eval_only_kinds)}"
+            )
 
     def _check_required_bugs(self) -> None:
         """Every task needs at least these planted bugs (more are allowed):
