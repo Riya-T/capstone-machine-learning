@@ -1,0 +1,57 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+schema_version: 1
+id: gradebook
+family: gradebook
+split: train
+entry_files: [gradebook.py]
+spec: spec.md
+public_checks: [public/test_gradebook_public.py]
+private_tests: [private/test_gradebook_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_zero_points_rejected, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_assignments_sorted, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_late
+    kind: state_flag
+    request: changes/c_late/request.md
+    public_checks: [changes/c_late/public/test_late_public.py]
+    new_feature_tests: [changes/c_late/private/test_late_new.py]
+  - id: c_ranking
+    kind: query
+    request: changes/c_ranking/request.md
+    public_checks: [changes/c_ranking/public/test_ranking_public.py]
+    new_feature_tests: [changes/c_ranking/private/test_ranking_new.py]
+  - id: c_drop_lowest
+    kind: derived_value
+    request: changes/c_drop_lowest/request.md
+    public_checks: [changes/c_drop_lowest/public/test_drop_lowest_public.py]
+    new_feature_tests: [changes/c_drop_lowest/private/test_drop_lowest_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_late: reference/late
+  c_late+c_ranking: reference/late_ranking
+  c_drop_lowest: reference/drop_lowest
+  c_drop_lowest+c_late: reference/drop_lowest_late
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_late
+      - change: c_ranking
+        planted_bugs:
+          - path: bugs/ranking_score_default_zero  # required regression bug: breaks earlier behavior
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_drop_lowest
+      - change: c_late
+        planted_bugs:
+          - path: bugs/late_drop_ties_alphabetical  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]

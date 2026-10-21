@@ -1,0 +1,147 @@
+"""Pantry inventory with a current day, expired batches and item
+categories.
+
+Correct solution for pantry_inventory after c_expired and c_categories.
+Never shown to the writer or the editor; validate-tasks checks that it
+passes every test it should.
+
+Usage:
+    from pantry import Pantry
+    pantry = Pantry()
+    pantry.add_item("milk", 2, use_by=3, category="dairy")
+    pantry.set_day(4)
+    pantry.get_items_in("dairy")  # ["milk"]
+"""
+
+
+class PantryError(Exception):
+    pass
+
+
+DEFAULT_CATEGORY = "other"
+
+
+def check_quantity(quantity):
+    if isinstance(quantity, bool) or not isinstance(quantity, int) or quantity <= 0:
+        raise ValueError(f"quantity must be a positive int, got {quantity!r}")
+
+
+def check_day(day):
+    if isinstance(day, bool) or not isinstance(day, int) or day < 0:
+        raise ValueError(f"day must be an int >= 0, got {day!r}")
+
+
+def check_category(category):
+    if not isinstance(category, str) or not category:
+        raise ValueError(f"category must be a non-empty str, got {category!r}")
+
+
+class Pantry:
+    def __init__(self):
+        self._batches = {}  # name -> list of [use_by, quantity], in the order added
+        self._categories = {}  # name -> category
+        self._day = 0
+
+    def add_item(self, name, quantity, use_by, category=None):
+        if not isinstance(name, str) or not name:
+            raise ValueError("name must be a non-empty str")
+        check_quantity(quantity)
+        check_day(use_by)
+        if category is not None:
+            check_category(category)
+        self._batches.setdefault(name, []).append([use_by, quantity])
+        if category is not None:
+            self._categories[name] = category
+        else:
+            self._categories.setdefault(name, DEFAULT_CATEGORY)
+
+    def use_item(self, name, quantity):
+        self._require(name)
+        check_quantity(quantity)
+        usable = self.get_usable_quantity(name)
+        if quantity > usable:
+            raise PantryError(f"only {usable} of {name!r} can still be used")
+        left = quantity
+        for batch in self._earliest_first(name):
+            if self._is_expired(batch):
+                continue
+            taken = min(batch[1], left)
+            batch[1] -= taken
+            left -= taken
+            if left == 0:
+                break
+        self._batches[name] = [b for b in self._batches[name] if b[1] > 0]
+
+    def get_quantity(self, name):
+        self._require(name)
+        return sum(quantity for _, quantity in self._batches[name])
+
+    def get_usable_quantity(self, name):
+        self._require(name)
+        return sum(b[1] for b in self._batches[name] if not self._is_expired(b))
+
+    def get_expired_quantity(self, name):
+        self._require(name)
+        return sum(b[1] for b in self._batches[name] if self._is_expired(b))
+
+    def discard_expired(self, name):
+        thrown = self.get_expired_quantity(name)
+        self._batches[name] = [b for b in self._batches[name] if not self._is_expired(b)]
+        return thrown
+
+    def get_batches(self, name):
+        self._require(name)
+        return [(use_by, quantity) for use_by, quantity in self._earliest_first(name)]
+
+    def get_expiring_by(self, day):
+        check_day(day)
+        return [
+            name
+            for name, batches in self._batches.items()
+            if any(use_by <= day for use_by, _ in batches)
+        ]
+
+    def get_items(self):
+        return list(self._batches)
+
+    def set_day(self, day):
+        if isinstance(day, bool) or not isinstance(day, int) or day < self._day:
+            raise ValueError(f"day must be an int >= {self._day}, got {day!r}")
+        self._day = day
+
+    def get_day(self):
+        return self._day
+
+    def set_category(self, name, category):
+        self._require(name)
+        check_category(category)
+        self._categories[name] = category
+
+    def get_category(self, name):
+        self._require(name)
+        return self._categories[name]
+
+    def get_categories(self):
+        categories = []
+        for name in self._batches:
+            if self._categories[name] not in categories:
+                categories.append(self._categories[name])
+        return categories
+
+    def get_items_in(self, category):
+        return [name for name in self._batches if self._categories[name] == category]
+
+    def get_category_quantity(self, category):
+        return sum(self.get_quantity(name) for name in self.get_items_in(category))
+
+    def _require(self, name):
+        # Non-str names are never stored, so they count as "not an item" too.
+        if not isinstance(name, str) or name not in self._batches:
+            raise KeyError(name)
+
+    def _is_expired(self, batch):
+        return batch[0] < self._day
+
+    def _earliest_first(self, name):
+        # sorted() is stable, so batches with the same day keep their order.
+        return sorted(self._batches[name], key=lambda b: b[0])

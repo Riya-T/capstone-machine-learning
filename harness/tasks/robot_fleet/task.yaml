@@ -1,0 +1,57 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+schema_version: 1
+id: robot_fleet
+family: robot_fleet
+split: train
+entry_files: [fleet.py]
+spec: spec.md
+public_checks: [public/test_fleet_public.py]
+private_tests: [private/test_fleet_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_partial_run_on_bad_command, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_duplicate_robot_allowed, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_bounds
+    kind: validation_rule
+    request: changes/c_bounds/request.md
+    public_checks: [changes/c_bounds/public/test_bounds_public.py]
+    new_feature_tests: [changes/c_bounds/private/test_bounds_new.py]
+  - id: c_disabled
+    kind: state_flag
+    request: changes/c_disabled/request.md
+    public_checks: [changes/c_disabled/public/test_disabled_public.py]
+    new_feature_tests: [changes/c_disabled/private/test_disabled_new.py]
+  - id: c_distance
+    kind: derived_value
+    request: changes/c_distance/request.md
+    public_checks: [changes/c_distance/public/test_distance_public.py]
+    new_feature_tests: [changes/c_distance/private/test_distance_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_bounds: reference/bounds
+  c_bounds+c_disabled: reference/bounds_disabled
+  c_distance: reference/distance
+  c_bounds+c_distance: reference/bounds_distance
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_bounds
+      - change: c_disabled
+        planted_bugs:
+          - path: bugs/disabled_run_all_not_atomic  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_distance
+      - change: c_bounds
+        planted_bugs:
+          - path: bugs/bounds_visits_only_final_cell  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]

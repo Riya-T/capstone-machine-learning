@@ -1,0 +1,57 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+schema_version: 1
+id: chat_rooms
+family: chat_rooms
+split: train
+entry_files: [chat.py]
+spec: spec.md
+public_checks: [public/test_chat_public.py]
+private_tests: [private/test_chat_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_leave_without_joining, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_join_twice, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_mute
+    kind: state_flag
+    request: changes/c_mute/request.md
+    public_checks: [changes/c_mute/public/test_mute_public.py]
+    new_feature_tests: [changes/c_mute/private/test_mute_new.py]
+  - id: c_search
+    kind: query
+    request: changes/c_search/request.md
+    public_checks: [changes/c_search/public/test_search_public.py]
+    new_feature_tests: [changes/c_search/private/test_search_new.py]
+  - id: c_delete
+    kind: undo
+    request: changes/c_delete/request.md
+    public_checks: [changes/c_delete/public/test_delete_public.py]
+    new_feature_tests: [changes/c_delete/private/test_delete_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_mute: reference/mute
+  c_mute+c_search: reference/mute_search
+  c_delete: reference/delete
+  c_delete+c_mute: reference/delete_mute
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_mute
+      - change: c_search
+        planted_bugs:
+          - path: bugs/search_drops_mute  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_delete
+      - change: c_mute
+        planted_bugs:
+          - path: bugs/mute_drops_post_id  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]

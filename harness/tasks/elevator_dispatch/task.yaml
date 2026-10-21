@@ -1,0 +1,74 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+schema_version: 1
+id: elevator_dispatch
+family: elevator_dispatch
+split: eval
+entry_files: [elevators.py]
+spec: spec.md
+public_checks: [public/test_elevators_public.py]
+private_tests: [private/test_elevators_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_arrived_id_reused, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_board_before_alight, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_capacity
+    kind: configuration
+    request: changes/c_capacity/request.md
+    public_checks: [changes/c_capacity/public/test_capacity_public.py]
+    new_feature_tests: [changes/c_capacity/private/test_capacity_new.py]
+  - id: c_service
+    kind: state_flag
+    request: changes/c_service/request.md
+    public_checks: [changes/c_service/public/test_service_public.py]
+    new_feature_tests: [changes/c_service/private/test_service_new.py]
+  - id: c_wait
+    kind: derived_value
+    request: changes/c_wait/request.md
+    public_checks: [changes/c_wait/public/test_wait_public.py]
+    new_feature_tests: [changes/c_wait/private/test_wait_new.py]
+  - id: c_cancel
+    kind: undo
+    request: changes/c_cancel/request.md
+    public_checks: [changes/c_cancel/public/test_cancel_public.py]
+    new_feature_tests: [changes/c_cancel/private/test_cancel_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_capacity: reference/capacity
+  c_capacity+c_service: reference/capacity_service
+  c_capacity+c_service+c_wait: reference/capacity_service_wait
+  c_cancel: reference/cancel
+  c_cancel+c_capacity: reference/cancel_capacity
+  c_cancel+c_capacity+c_service: reference/cancel_capacity_service
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_capacity
+      - change: c_service
+        planted_bugs:
+          - path: bugs/service_drops_capacity_check  # breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+      - change: c_wait
+        planted_bugs:
+          - path: bugs/wait_allows_busy_car_out  # required regression bug: breaks step 2
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_cancel
+      - change: c_capacity
+        planted_bugs:
+          - path: bugs/capacity_cancel_keeps_id  # breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+      - change: c_service
+        planted_bugs:
+          - path: bugs/service_cancels_riders  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]

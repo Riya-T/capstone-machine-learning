@@ -1,0 +1,57 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+schema_version: 1
+id: access_control
+family: access_control
+split: train
+entry_files: [gateway.py]
+spec: spec.md
+public_checks: [public/test_gateway_public.py]
+private_tests: [private/test_gateway_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: bugs only the hidden initial tests catch.
+  - {path: bugs/v0_allowed_in_allow_order, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_access_before_message, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_ban
+    kind: state_flag
+    request: changes/c_ban/request.md
+    public_checks: [changes/c_ban/public/test_ban_public.py]
+    new_feature_tests: [changes/c_ban/private/test_ban_new.py]
+  - id: c_groups
+    kind: grouping
+    request: changes/c_groups/request.md
+    public_checks: [changes/c_groups/public/test_groups_public.py]
+    new_feature_tests: [changes/c_groups/private/test_groups_new.py]
+  - id: c_counts
+    kind: derived_value
+    request: changes/c_counts/request.md
+    public_checks: [changes/c_counts/public/test_counts_public.py]
+    new_feature_tests: [changes/c_counts/private/test_counts_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_ban: reference/ban
+  c_ban+c_groups: reference/ban_groups
+  c_counts: reference/counts
+  c_ban+c_counts: reference/ban_counts
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_ban
+      - change: c_groups
+        planted_bugs:
+          - path: bugs/groups_ban_keeps_allowed  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_counts
+      - change: c_ban
+        planted_bugs:
+          - path: bugs/ban_ranks_by_characters  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]

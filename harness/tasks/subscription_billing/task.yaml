@@ -1,0 +1,74 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+schema_version: 1
+id: subscription_billing
+family: subscription_billing
+split: eval
+entry_files: [billing.py]
+spec: spec.md
+public_checks: [public/test_billing_public.py]
+private_tests: [private/test_billing_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_equal_price_charges_zero, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_same_plan_allowed, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_proration
+    kind: configuration
+    request: changes/c_proration/request.md
+    public_checks: [changes/c_proration/public/test_proration_public.py]
+    new_feature_tests: [changes/c_proration/private/test_proration_new.py]
+  - id: c_pause
+    kind: state_flag
+    request: changes/c_pause/request.md
+    public_checks: [changes/c_pause/public/test_pause_public.py]
+    new_feature_tests: [changes/c_pause/private/test_pause_new.py]
+  - id: c_plan_version
+    kind: concurrency_control
+    request: changes/c_plan_version/request.md
+    public_checks: [changes/c_plan_version/public/test_plan_version_public.py]
+    new_feature_tests: [changes/c_plan_version/private/test_plan_version_new.py]
+  - id: c_revenue
+    kind: derived_value
+    request: changes/c_revenue/request.md
+    public_checks: [changes/c_revenue/public/test_revenue_public.py]
+    new_feature_tests: [changes/c_revenue/private/test_revenue_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_proration: reference/proration
+  c_pause+c_proration: reference/pause_proration
+  c_pause+c_plan_version+c_proration: reference/pause_proration_version
+  c_revenue: reference/revenue
+  c_proration+c_revenue: reference/proration_revenue
+  c_pause+c_proration+c_revenue: reference/pause_proration_revenue
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_proration
+      - change: c_pause
+        planted_bugs:
+          - path: bugs/pause_ignores_plan_percent  # breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+      - change: c_plan_version
+        planted_bugs:
+          - path: bugs/version_charges_paused  # required regression bug: breaks step 2
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_revenue
+      - change: c_proration
+        planted_bugs:
+          - path: bugs/proration_revenue_to_old_plan  # breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+      - change: c_pause
+        planted_bugs:
+          - path: bugs/pause_revenue_skips_upgrades  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]

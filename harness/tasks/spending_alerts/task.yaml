@@ -1,0 +1,74 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+schema_version: 1
+id: spending_alerts
+family: spending_alerts
+split: eval
+entry_files: [spending.py]
+spec: spec.md
+public_checks: [public/test_spending_public.py]
+private_tests: [private/test_spending_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_limit_inclusive, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_alert_months_unsorted, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_thresholds
+    kind: configuration
+    request: changes/c_thresholds/request.md
+    public_checks: [changes/c_thresholds/public/test_thresholds_public.py]
+    new_feature_tests: [changes/c_thresholds/private/test_thresholds_new.py]
+  - id: c_refunds
+    kind: undo
+    request: changes/c_refunds/request.md
+    public_checks: [changes/c_refunds/public/test_refunds_public.py]
+    new_feature_tests: [changes/c_refunds/private/test_refunds_new.py]
+  - id: c_groups
+    kind: grouping
+    request: changes/c_groups/request.md
+    public_checks: [changes/c_groups/public/test_groups_public.py]
+    new_feature_tests: [changes/c_groups/private/test_groups_new.py]
+  - id: c_month_compare
+    kind: derived_value
+    request: changes/c_month_compare/request.md
+    public_checks: [changes/c_month_compare/public/test_month_compare_public.py]
+    new_feature_tests: [changes/c_month_compare/private/test_month_compare_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_thresholds: reference/thresholds
+  c_refunds+c_thresholds: reference/refunds_thresholds
+  c_groups+c_refunds+c_thresholds: reference/groups_refunds_thresholds
+  c_month_compare: reference/month_compare
+  c_month_compare+c_thresholds: reference/month_compare_thresholds
+  c_month_compare+c_refunds+c_thresholds: reference/month_compare_refunds_thresholds
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_thresholds
+      - change: c_refunds
+        planted_bugs:
+          - path: bugs/refunds_skip_threshold_check  # breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+      - change: c_groups
+        planted_bugs:
+          - path: bugs/groups_alert_months_default_threshold  # required: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_month_compare
+      - change: c_thresholds
+        planted_bugs:
+          - path: bugs/thresholds_unusual_strict  # breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+      - change: c_refunds
+        planted_bugs:
+          - path: bugs/refunds_unusual_without_history  # required: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]

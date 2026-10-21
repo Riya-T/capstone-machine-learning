@@ -1,0 +1,74 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+schema_version: 1
+id: time_clock
+family: time_clock
+split: eval
+entry_files: [timeclock.py]
+spec: spec.md
+public_checks: [public/test_clock_public.py]
+private_tests: [private/test_clock_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_clock_in_before_last_shift, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_overtime_on_total, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_overtime_rules
+    kind: configuration
+    request: changes/c_overtime_rules/request.md
+    public_checks: [changes/c_overtime_rules/public/test_overtime_rules_public.py]
+    new_feature_tests: [changes/c_overtime_rules/private/test_overtime_rules_new.py]
+  - id: c_versions
+    kind: concurrency_control
+    request: changes/c_versions/request.md
+    public_checks: [changes/c_versions/public/test_versions_public.py]
+    new_feature_tests: [changes/c_versions/private/test_versions_new.py]
+  - id: c_breaks
+    kind: derived_value
+    request: changes/c_breaks/request.md
+    public_checks: [changes/c_breaks/public/test_breaks_public.py]
+    new_feature_tests: [changes/c_breaks/private/test_breaks_new.py]
+  - id: c_approval
+    kind: state_flag
+    request: changes/c_approval/request.md
+    public_checks: [changes/c_approval/public/test_approval_public.py]
+    new_feature_tests: [changes/c_approval/private/test_approval_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_overtime_rules: reference/overtime_rules
+  c_overtime_rules+c_versions: reference/overtime_rules_versions
+  c_breaks+c_overtime_rules+c_versions: reference/breaks_overtime_rules_versions
+  c_approval: reference/approval
+  c_approval+c_overtime_rules: reference/approval_overtime_rules
+  c_approval+c_overtime_rules+c_versions: reference/approval_overtime_rules_versions
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_overtime_rules
+      - change: c_versions
+        planted_bugs:
+          - path: bugs/versions_unchecked_employee_threshold  # breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+      - change: c_breaks
+        planted_bugs:
+          - path: bugs/breaks_threshold_skips_version  # required regression bug: breaks step 2
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_approval
+      - change: c_overtime_rules
+        planted_bugs:
+          - path: bugs/overtime_rules_approve_counts_all  # breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+      - change: c_versions
+        planted_bugs:
+          - path: bugs/versions_remove_ignores_approval  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]

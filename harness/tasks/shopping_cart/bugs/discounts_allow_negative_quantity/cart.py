@@ -1,3 +1,17 @@
+"""Shopping cart: item quantities, prices and the cart total.
+
+Planted bug (after c_inventory and c_discounts): discounts work, but
+add_item no longer rejects a bad quantity, breaking the initial spec. Never
+shown to the writer or the editor; validate-tasks checks that the tests
+catch it.
+
+Usage:
+    from cart import ShoppingCart
+    cart = ShoppingCart()
+    cart.add_item("apple", "Apple", 0.5, quantity=3)
+    cart.get_total()
+"""
+
 class ShoppingCart:
     def __init__(self, stock_inventory: dict = None):
         self.items = {}

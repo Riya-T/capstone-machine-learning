@@ -1,0 +1,73 @@
+"""Ring buffer: a bounded first-in, first-out buffer of ints.
+
+Planted bug (initial version): write never checks that the value is an
+int, so strings, floats and None are stored. The public checks only write
+ints, so only the hidden initial tests catch it.
+Never shown to the writer or the editor; validate-tasks checks that the
+tests catch it.
+
+Usage:
+    from ring_buffer import RingBuffer
+    buf = RingBuffer(3)
+    buf.write(10)
+    buf.read()  # 10
+"""
+
+
+class RingError(Exception):
+    pass
+
+
+class BufferFull(RingError):
+    pass
+
+
+class BufferEmpty(RingError):
+    pass
+
+
+def check_value(value):
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise ValueError(f"value must be an int, got {value!r}")
+
+
+class RingBuffer:
+    def __init__(self, capacity):
+        if isinstance(capacity, bool) or not isinstance(capacity, int) or capacity < 1:
+            raise ValueError(f"capacity must be an int >= 1, got {capacity!r}")
+        self._slots = [None] * capacity  # fixed storage, used as a ring
+        self._head = 0  # slot of the oldest value
+        self._count = 0  # values currently held
+
+    def write(self, value):
+        if self._count == len(self._slots):
+            raise BufferFull("buffer is full")
+        self._slots[self._slot(self._count)] = value
+        self._count += 1
+
+    def read(self):
+        self._require_values()
+        value = self._slots[self._head]
+        self._slots[self._head] = None
+        self._head = self._slot(1)
+        self._count -= 1
+        return value
+
+    def clear(self):
+        self._slots = [None] * len(self._slots)
+        self._head = 0
+        self._count = 0
+
+    def get_size(self):
+        return self._count
+
+    def get_capacity(self):
+        return len(self._slots)
+
+    def _slot(self, offset):
+        # The slot `offset` places after the oldest value, wrapping around.
+        return (self._head + offset) % len(self._slots)
+
+    def _require_values(self):
+        if self._count == 0:
+            raise BufferEmpty("buffer is empty")

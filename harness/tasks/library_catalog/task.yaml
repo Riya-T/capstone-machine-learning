@@ -6,58 +6,52 @@ family: library_catalog
 split: dev
 entry_files: [library.py]
 spec: spec.md
-public_checks: [public/test_public.py]
-private_tests: [private/test_initial.py]
+public_checks: [public/test_library_public.py]
+private_tests: [private/test_library_initial.py]
 reference: reference/v0
-
 planted_bugs:
-  - {path: bugs/v0_no_validation, must_fail: [initial], must_pass: [public]}
-  - {path: bugs/v0_allows_negative_copies, must_fail: [initial], must_pass: [public]}
-  - {path: bugs/v0_returns_wrong_count, must_fail: [initial], must_pass: [public]}
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_refused_check_out_in_history, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_adding_copies_clears_history, must_fail: [initial], must_pass: [public]}
 
 changes:
-  - id: c_duplicate_loans
+  - id: c_one_copy
     kind: validation_rule
-    request: changes/c_duplicate_loans/request.md
-    public_checks: [changes/c_duplicate_loans/public/test_duplicate_public.py]
-    new_feature_tests: [changes/c_duplicate_loans/private/test_duplicate_new.py]
-    supersedes:
-      - private/test_initial.py::test_baseline_allows_same_borrower_to_borrow_multiple_copies
-      - private/test_initial.py::test_returning_one_of_two_copies_releases_only_one_copy
-
+    request: changes/c_one_copy/request.md
+    public_checks: [changes/c_one_copy/public/test_one_copy_public.py]
+    new_feature_tests: [changes/c_one_copy/private/test_one_copy_new.py]
   - id: c_reservations
-    kind: state_flag
+    kind: atomic_operation
     request: changes/c_reservations/request.md
     public_checks: [changes/c_reservations/public/test_reservations_public.py]
     new_feature_tests: [changes/c_reservations/private/test_reservations_new.py]
+  - id: c_loan_log
+    kind: query
+    request: changes/c_loan_log/request.md
+    public_checks: [changes/c_loan_log/public/test_loan_log_public.py]
+    new_feature_tests: [changes/c_loan_log/private/test_loan_log_new.py]
 
-  - id: c_audit_log
-    kind: derived_value
-    request: changes/c_audit_log/request.md
-    public_checks: [changes/c_audit_log/public/test_audit_log_public.py]
-    new_feature_tests: [changes/c_audit_log/private/test_audit_log_new.py]
-
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
 references:
-  c_duplicate_loans: reference/duplicate_loans
-  c_audit_log: reference/audit_log
-  c_duplicate_loans+c_reservations: reference/duplicate_reservations
-  c_audit_log+c_duplicate_loans: reference/audit_duplicate
+  c_one_copy: reference/one_copy
+  c_one_copy+c_reservations: reference/one_copy_reservations
+  c_loan_log: reference/loan_log
+  c_loan_log+c_one_copy: reference/loan_log_one_copy
 
 sequences:
-  - id: seq_library_workflow_1
+  - id: s1
     steps:
-      - change: c_duplicate_loans
+      - change: c_one_copy
       - change: c_reservations
         planted_bugs:
-          - path: bugs/reservations_allows_negative_copies
+          - path: bugs/reservations_allow_second_copy  # required regression bug: breaks step 1
             must_fail: [existing]
             must_pass: [new_feature]
-
-  - id: seq_library_workflow_2
+  - id: s2
     steps:
-      - change: c_audit_log
-      - change: c_duplicate_loans
+      - change: c_loan_log
+      - change: c_one_copy
         planted_bugs:
-          - path: bugs/audit_duplicate_no_validation
+          - path: bugs/one_copy_logs_refused_check_out  # required regression bug: breaks step 1
             must_fail: [existing]
             must_pass: [new_feature]

@@ -1,0 +1,74 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+schema_version: 1
+id: light_grid
+family: light_grid
+split: eval
+entry_files: [lights.py]
+spec: spec.md
+public_checks: [public/test_lights_public.py]
+private_tests: [private/test_lights_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_reversed_corners_allowed, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_is_on_outside_grid, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_brightness
+    kind: configuration
+    request: changes/c_brightness/request.md
+    public_checks: [changes/c_brightness/public/test_brightness_public.py]
+    new_feature_tests: [changes/c_brightness/private/test_brightness_new.py]
+  - id: c_locks
+    kind: state_flag
+    request: changes/c_locks/request.md
+    public_checks: [changes/c_locks/public/test_locks_public.py]
+    new_feature_tests: [changes/c_locks/private/test_locks_new.py]
+  - id: c_undo
+    kind: undo
+    request: changes/c_undo/request.md
+    public_checks: [changes/c_undo/public/test_undo_public.py]
+    new_feature_tests: [changes/c_undo/private/test_undo_new.py]
+  - id: c_count_query
+    kind: query
+    request: changes/c_count_query/request.md
+    public_checks: [changes/c_count_query/public/test_count_query_public.py]
+    new_feature_tests: [changes/c_count_query/private/test_count_query_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_brightness: reference/brightness
+  c_brightness+c_locks: reference/brightness_locks
+  c_brightness+c_locks+c_undo: reference/brightness_locks_undo
+  c_count_query: reference/count_query
+  c_brightness+c_count_query: reference/brightness_count_query
+  c_brightness+c_count_query+c_locks: reference/brightness_count_query_locks
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_brightness
+      - change: c_locks
+        planted_bugs:
+          - path: bugs/locks_skip_step_check  # breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+      - change: c_undo
+        planted_bugs:
+          - path: bugs/undo_toggle_ignores_locks  # required: breaks step 2
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_count_query
+      - change: c_brightness
+        planted_bugs:
+          - path: bugs/brightness_lit_by_column  # breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+      - change: c_locks
+        planted_bugs:
+          - path: bugs/locks_count_misses_last_column  # required: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]

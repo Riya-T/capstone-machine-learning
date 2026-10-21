@@ -1,0 +1,74 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+schema_version: 1
+id: locker_room
+family: locker_room
+split: eval
+entry_files: [lockers.py]
+spec: spec.md
+public_checks: [public/test_lockers_public.py]
+private_tests: [private/test_lockers_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_fee_by_item_size, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_item_stored_twice, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_size_table
+    kind: configuration
+    request: changes/c_size_table/request.md
+    public_checks: [changes/c_size_table/public/test_size_table_public.py]
+    new_feature_tests: [changes/c_size_table/private/test_size_table_new.py]
+  - id: c_out_of_order
+    kind: state_flag
+    request: changes/c_out_of_order/request.md
+    public_checks: [changes/c_out_of_order/public/test_out_of_order_public.py]
+    new_feature_tests: [changes/c_out_of_order/private/test_out_of_order_new.py]
+  - id: c_undo
+    kind: undo
+    request: changes/c_undo/request.md
+    public_checks: [changes/c_undo/public/test_undo_public.py]
+    new_feature_tests: [changes/c_undo/private/test_undo_new.py]
+  - id: c_versions
+    kind: concurrency_control
+    request: changes/c_versions/request.md
+    public_checks: [changes/c_versions/public/test_versions_public.py]
+    new_feature_tests: [changes/c_versions/private/test_versions_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_size_table: reference/size_table
+  c_out_of_order+c_size_table: reference/out_of_order_size_table
+  c_out_of_order+c_size_table+c_undo: reference/out_of_order_size_table_undo
+  c_versions: reference/versions
+  c_size_table+c_versions: reference/size_table_versions
+  c_out_of_order+c_size_table+c_versions: reference/out_of_order_size_table_versions
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_size_table
+      - change: c_out_of_order
+        planted_bugs:
+          - path: bugs/out_of_order_unchecked_locker_fee  # breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+      - change: c_undo
+        planted_bugs:
+          - path: bugs/undo_retrieve_refuses_broken  # required regression bug: breaks step 2
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_versions
+      - change: c_size_table
+        planted_bugs:
+          - path: bugs/size_table_retrieve_keeps_version  # breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+      - change: c_out_of_order
+        planted_bugs:
+          - path: bugs/out_of_order_move_ignores_size  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]

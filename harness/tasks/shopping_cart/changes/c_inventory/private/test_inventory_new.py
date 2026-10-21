@@ -1,3 +1,10 @@
+"""Hidden tests for the c_inventory change (stock limits). Never shown to the
+writer or the editor.
+
+Usage (with cart.py importable, e.g. in the sandbox):
+    python -m pytest changes/c_inventory/private/test_inventory_new.py
+"""
+
 import pytest
 
 from cart import ShoppingCart
