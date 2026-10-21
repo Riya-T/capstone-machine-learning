@@ -1,3 +1,10 @@
+"""Hidden tests for the initial shopping_cart spec. They decide whether a
+program is correct to begin with. Never shown to the writer or the editor.
+
+Usage (with cart.py importable, e.g. in the sandbox):
+    python -m pytest private/test_cart_initial.py
+"""
+
 import pytest
 
 from cart import ShoppingCart

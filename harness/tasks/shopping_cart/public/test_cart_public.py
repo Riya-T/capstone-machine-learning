@@ -1,3 +1,9 @@
+"""Public checks for cart.py.
+
+Usage (with cart.py importable, e.g. in the sandbox):
+    python -m pytest public/test_cart_public.py
+"""
+
 from cart import ShoppingCart
 
 

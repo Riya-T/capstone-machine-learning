@@ -1,3 +1,10 @@
+"""Hidden tests for the c_discounts change (coupon discounts). Never shown to
+the writer or the editor.
+
+Usage (with cart.py importable, e.g. in the sandbox):
+    python -m pytest changes/c_discounts/private/test_discounts_new.py
+"""
+
 import pytest
 
 from cart import ShoppingCart

@@ -1,3 +1,10 @@
+"""Public checks for the c_inventory change (stock limits). Shown to the
+editor, never to the writer.
+
+Usage (with cart.py importable, e.g. in the sandbox):
+    python -m pytest changes/c_inventory/public/test_inventory_public.py
+"""
+
 import pytest
 
 from cart import ShoppingCart
