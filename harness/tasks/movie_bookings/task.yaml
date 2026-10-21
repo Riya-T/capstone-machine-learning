@@ -1,0 +1,57 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+schema_version: 1
+id: movie_bookings
+family: movie_bookings
+split: train
+entry_files: [bookings.py]
+spec: spec.md
+public_checks: [public/test_bookings_public.py]
+private_tests: [private/test_bookings_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_showing_for_unknown_movie, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_duplicate_showing_id, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_cancel
+    kind: undo
+    request: changes/c_cancel/request.md
+    public_checks: [changes/c_cancel/public/test_cancel_public.py]
+    new_feature_tests: [changes/c_cancel/private/test_cancel_new.py]
+  - id: c_genres
+    kind: grouping
+    request: changes/c_genres/request.md
+    public_checks: [changes/c_genres/public/test_genres_public.py]
+    new_feature_tests: [changes/c_genres/private/test_genres_new.py]
+  - id: c_search
+    kind: query
+    request: changes/c_search/request.md
+    public_checks: [changes/c_search/public/test_search_public.py]
+    new_feature_tests: [changes/c_search/private/test_search_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_cancel: reference/cancel
+  c_cancel+c_genres: reference/cancel_genres
+  c_search: reference/search
+  c_cancel+c_search: reference/cancel_search
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_cancel
+      - change: c_genres
+        planted_bugs:
+          - path: bugs/genres_cancel_keeps_seats  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_search
+      - change: c_cancel
+        planted_bugs:
+          - path: bugs/cancel_loses_showing_order  # required regression bug: breaks the initial spec
+            must_fail: [existing]
+            must_pass: [new_feature]

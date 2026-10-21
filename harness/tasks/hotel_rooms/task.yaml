@@ -1,0 +1,57 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+schema_version: 1
+id: hotel_rooms
+family: hotel_rooms
+split: train
+entry_files: [hotel.py]
+spec: spec.md
+public_checks: [public/test_hotel_public.py]
+private_tests: [private/test_hotel_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_last_night_free, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_checkout_without_checkin, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_cancel
+    kind: undo
+    request: changes/c_cancel/request.md
+    public_checks: [changes/c_cancel/public/test_cancel_public.py]
+    new_feature_tests: [changes/c_cancel/private/test_cancel_new.py]
+  - id: c_categories
+    kind: grouping
+    request: changes/c_categories/request.md
+    public_checks: [changes/c_categories/public/test_categories_public.py]
+    new_feature_tests: [changes/c_categories/private/test_categories_new.py]
+  - id: c_occupancy
+    kind: derived_value
+    request: changes/c_occupancy/request.md
+    public_checks: [changes/c_occupancy/public/test_occupancy_public.py]
+    new_feature_tests: [changes/c_occupancy/private/test_occupancy_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_cancel: reference/cancel
+  c_cancel+c_categories: reference/cancel_categories
+  c_occupancy: reference/occupancy
+  c_cancel+c_occupancy: reference/cancel_occupancy
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_cancel
+      - change: c_categories
+        planted_bugs:
+          - path: bugs/categories_drop_duplicate_room  # required regression bug: breaks the initial spec
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_occupancy
+      - change: c_cancel
+        planted_bugs:
+          - path: bugs/cancel_reopens_checked_out  # required regression bug: breaks the initial spec
+            must_fail: [existing]
+            must_pass: [new_feature]

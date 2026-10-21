@@ -1,0 +1,57 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+schema_version: 1
+id: hangman_games
+family: hangman_games
+split: train
+entry_files: [hangman.py]
+spec: spec.md
+public_checks: [public/test_hangman_public.py]
+private_tests: [private/test_hangman_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_repeat_guess_allowed, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_restart_overwrites, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_max_wrong
+    kind: validation_rule
+    request: changes/c_max_wrong/request.md
+    public_checks: [changes/c_max_wrong/public/test_max_wrong_public.py]
+    new_feature_tests: [changes/c_max_wrong/private/test_max_wrong_new.py]
+  - id: c_hint
+    kind: derived_value
+    request: changes/c_hint/request.md
+    public_checks: [changes/c_hint/public/test_hint_public.py]
+    new_feature_tests: [changes/c_hint/private/test_hint_new.py]
+  - id: c_take_back
+    kind: undo
+    request: changes/c_take_back/request.md
+    public_checks: [changes/c_take_back/public/test_take_back_public.py]
+    new_feature_tests: [changes/c_take_back/private/test_take_back_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_max_wrong: reference/max_wrong
+  c_hint+c_max_wrong: reference/hint_max_wrong
+  c_take_back: reference/take_back
+  c_max_wrong+c_take_back: reference/max_wrong_take_back
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_max_wrong
+      - change: c_hint
+        planted_bugs:
+          - path: bugs/hint_allows_repeat_guess  # required regression bug: breaks the initial spec
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_take_back
+      - change: c_max_wrong
+        planted_bugs:
+          - path: bugs/max_wrong_take_back_keeps_won  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]

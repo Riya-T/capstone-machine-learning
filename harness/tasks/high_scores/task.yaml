@@ -1,0 +1,57 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+schema_version: 1
+id: high_scores
+family: high_scores
+split: train
+entry_files: [scores.py]
+spec: spec.md
+public_checks: [public/test_scores_public.py]
+private_tests: [private/test_scores_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_latest_without_scores, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_duplicate_player_allowed, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_best
+    kind: derived_value
+    request: changes/c_best/request.md
+    public_checks: [changes/c_best/public/test_best_public.py]
+    new_feature_tests: [changes/c_best/private/test_best_new.py]
+  - id: c_seasons
+    kind: grouping
+    request: changes/c_seasons/request.md
+    public_checks: [changes/c_seasons/public/test_seasons_public.py]
+    new_feature_tests: [changes/c_seasons/private/test_seasons_new.py]
+  - id: c_remove
+    kind: undo
+    request: changes/c_remove/request.md
+    public_checks: [changes/c_remove/public/test_remove_public.py]
+    new_feature_tests: [changes/c_remove/private/test_remove_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_best: reference/best
+  c_best+c_seasons: reference/best_seasons
+  c_remove: reference/remove
+  c_best+c_remove: reference/best_remove
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_best
+      - change: c_seasons
+        planted_bugs:
+          - path: bugs/seasons_drop_duplicate_check  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_remove
+      - change: c_best
+        planted_bugs:
+          - path: bugs/best_rejects_zero_score  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]

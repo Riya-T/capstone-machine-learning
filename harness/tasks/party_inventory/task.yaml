@@ -1,0 +1,57 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+schema_version: 1
+id: party_inventory
+family: party_inventory
+split: train
+entry_files: [party.py]
+spec: spec.md
+public_checks: [public/test_party_public.py]
+private_tests: [private/test_party_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_double_equip_allowed, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_duplicate_item_given, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_carry_limit
+    kind: validation_rule
+    request: changes/c_carry_limit/request.md
+    public_checks: [changes/c_carry_limit/public/test_carry_limit_public.py]
+    new_feature_tests: [changes/c_carry_limit/private/test_carry_limit_new.py]
+  - id: c_trade
+    kind: atomic_operation
+    request: changes/c_trade/request.md
+    public_checks: [changes/c_trade/public/test_trade_public.py]
+    new_feature_tests: [changes/c_trade/private/test_trade_new.py]
+  - id: c_status
+    kind: state_flag
+    request: changes/c_status/request.md
+    public_checks: [changes/c_status/public/test_status_public.py]
+    new_feature_tests: [changes/c_status/private/test_status_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_carry_limit: reference/carry_limit
+  c_carry_limit+c_trade: reference/carry_limit_trade
+  c_status: reference/status
+  c_carry_limit+c_status: reference/carry_limit_status
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_carry_limit
+      - change: c_trade
+        planted_bugs:
+          - path: bugs/trade_skips_give_weight_check  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_status
+      - change: c_carry_limit
+        planted_bugs:
+          - path: bugs/carry_limit_ignores_stun  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]

@@ -1,0 +1,57 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+schema_version: 1
+id: ring_buffer
+family: ring_buffer
+split: train
+entry_files: [ring_buffer.py]
+spec: spec.md
+public_checks: [public/test_ring_public.py]
+private_tests: [private/test_ring_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: bugs only the hidden initial tests catch.
+  - {path: bugs/v0_accepts_any_value, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_zero_capacity, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_overwrite
+    kind: state_flag
+    request: changes/c_overwrite/request.md
+    public_checks: [changes/c_overwrite/public/test_overwrite_public.py]
+    new_feature_tests: [changes/c_overwrite/private/test_overwrite_new.py]
+  - id: c_counts
+    kind: derived_value
+    request: changes/c_counts/request.md
+    public_checks: [changes/c_counts/public/test_counts_public.py]
+    new_feature_tests: [changes/c_counts/private/test_counts_new.py]
+  - id: c_peek
+    kind: query
+    request: changes/c_peek/request.md
+    public_checks: [changes/c_peek/public/test_peek_public.py]
+    new_feature_tests: [changes/c_peek/private/test_peek_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_overwrite: reference/overwrite
+  c_counts+c_overwrite: reference/counts_overwrite
+  c_peek: reference/peek
+  c_overwrite+c_peek: reference/overwrite_peek
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_overwrite
+      - change: c_counts
+        planted_bugs:
+          - path: bugs/counts_overwrite_stalls_head  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_peek
+      - change: c_overwrite
+        planted_bugs:
+          - path: bugs/overwrite_peek_first_slot  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]

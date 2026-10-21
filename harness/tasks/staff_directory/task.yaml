@@ -1,0 +1,57 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+schema_version: 1
+id: staff_directory
+family: staff_directory
+split: train
+entry_files: [directory.py]
+spec: spec.md
+public_checks: [public/test_directory_public.py]
+private_tests: [private/test_directory_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_duplicate_hire_allowed, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_set_salary_unchecked, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_leave
+    kind: state_flag
+    request: changes/c_leave/request.md
+    public_checks: [changes/c_leave/public/test_leave_public.py]
+    new_feature_tests: [changes/c_leave/private/test_leave_new.py]
+  - id: c_payroll
+    kind: derived_value
+    request: changes/c_payroll/request.md
+    public_checks: [changes/c_payroll/public/test_payroll_public.py]
+    new_feature_tests: [changes/c_payroll/private/test_payroll_new.py]
+  - id: c_transfer
+    kind: atomic_operation
+    request: changes/c_transfer/request.md
+    public_checks: [changes/c_transfer/public/test_transfer_public.py]
+    new_feature_tests: [changes/c_transfer/private/test_transfer_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_leave: reference/leave
+  c_leave+c_payroll: reference/leave_payroll
+  c_transfer: reference/transfer
+  c_leave+c_transfer: reference/leave_transfer
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_leave
+      - change: c_payroll
+        planted_bugs:
+          - path: bugs/payroll_drops_leave_salary_check  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_transfer
+      - change: c_leave
+        planted_bugs:
+          - path: bugs/leave_transfer_cap_off_by_one  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]

@@ -1,0 +1,57 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+schema_version: 1
+id: clinic_appointments
+family: clinic_appointments
+split: train
+entry_files: [clinic.py]
+spec: spec.md
+public_checks: [public/test_clinic_public.py]
+private_tests: [private/test_clinic_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_reopen_slot_allowed, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_minute_1440_allowed, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_cancel
+    kind: undo
+    request: changes/c_cancel/request.md
+    public_checks: [changes/c_cancel/public/test_cancel_public.py]
+    new_feature_tests: [changes/c_cancel/private/test_cancel_new.py]
+  - id: c_double_booking
+    kind: validation_rule
+    request: changes/c_double_booking/request.md
+    public_checks: [changes/c_double_booking/public/test_double_booking_public.py]
+    new_feature_tests: [changes/c_double_booking/private/test_double_booking_new.py]
+  - id: c_daily_load
+    kind: derived_value
+    request: changes/c_daily_load/request.md
+    public_checks: [changes/c_daily_load/public/test_daily_load_public.py]
+    new_feature_tests: [changes/c_daily_load/private/test_daily_load_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_cancel: reference/cancel
+  c_cancel+c_double_booking: reference/cancel_double_booking
+  c_daily_load: reference/daily_load
+  c_cancel+c_daily_load: reference/cancel_daily_load
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_cancel
+      - change: c_double_booking
+        planted_bugs:
+          - path: bugs/double_booking_drop_close_check  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_daily_load
+      - change: c_cancel
+        planted_bugs:
+          - path: bugs/cancel_load_skips_booked_days  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]

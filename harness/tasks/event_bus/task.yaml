@@ -1,0 +1,57 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+schema_version: 1
+id: event_bus
+family: event_bus
+split: train
+entry_files: [bus.py]
+spec: spec.md
+public_checks: [public/test_bus_public.py]
+private_tests: [private/test_bus_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_double_subscribe, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_any_message, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_unsubscribe
+    kind: undo
+    request: changes/c_unsubscribe/request.md
+    public_checks: [changes/c_unsubscribe/public/test_unsubscribe_public.py]
+    new_feature_tests: [changes/c_unsubscribe/private/test_unsubscribe_new.py]
+  - id: c_groups
+    kind: grouping
+    request: changes/c_groups/request.md
+    public_checks: [changes/c_groups/public/test_groups_public.py]
+    new_feature_tests: [changes/c_groups/private/test_groups_new.py]
+  - id: c_counts
+    kind: derived_value
+    request: changes/c_counts/request.md
+    public_checks: [changes/c_counts/public/test_counts_public.py]
+    new_feature_tests: [changes/c_counts/private/test_counts_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_unsubscribe: reference/unsubscribe
+  c_groups+c_unsubscribe: reference/groups_unsubscribe
+  c_counts: reference/counts
+  c_counts+c_unsubscribe: reference/counts_unsubscribe
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_unsubscribe
+      - change: c_groups
+        planted_bugs:
+          - path: bugs/groups_tolerant_unsubscribe  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_counts
+      - change: c_unsubscribe
+        planted_bugs:
+          - path: bugs/unsubscribe_skips_empty_publish  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
