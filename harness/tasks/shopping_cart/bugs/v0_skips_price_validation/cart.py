@@ -1,3 +1,17 @@
+"""Shopping cart: item quantities, prices and the cart total.
+
+Planted bug (initial version): add_item accepts a negative price, re-adding
+an item replaces its quantity, and remove_item validates nothing and never
+drops a line. Never shown to the writer or the editor; validate-tasks checks
+that the tests catch it.
+
+Usage:
+    from cart import ShoppingCart
+    cart = ShoppingCart()
+    cart.add_item("apple", "Apple", 0.5, quantity=3)
+    cart.get_total()
+"""
+
 class ShoppingCart:
     def __init__(self):
         self.items = {}

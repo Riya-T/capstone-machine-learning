@@ -1,3 +1,16 @@
+"""Shopping cart: item quantities, prices and the cart total.
+
+Correct solution for shopping_cart after c_undo alone. No sequence in
+task.yaml reaches this set of changes, so the harness does not load it.
+Never shown to the writer or the editor.
+
+Usage:
+    from cart import ShoppingCart
+    cart = ShoppingCart()
+    cart.add_item("apple", "Apple", 0.5, quantity=3)
+    cart.get_total()
+"""
+
 class ShoppingCart:
     def __init__(self):
         self.items = {}

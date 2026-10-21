@@ -1,3 +1,10 @@
+"""Public checks for the c_undo change (undo). Shown to the editor, never to
+the writer.
+
+Usage (with cart.py importable, e.g. in the sandbox):
+    python -m pytest changes/c_undo/public/test_undo_public.py
+"""
+
 from cart import ShoppingCart
 
 

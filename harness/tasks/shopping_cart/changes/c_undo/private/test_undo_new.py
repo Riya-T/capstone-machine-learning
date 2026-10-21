@@ -1,3 +1,10 @@
+"""Hidden tests for the c_undo change (undo). Never shown to the writer or the
+editor.
+
+Usage (with cart.py importable, e.g. in the sandbox):
+    python -m pytest changes/c_undo/private/test_undo_new.py
+"""
+
 import pytest
 
 from cart import ShoppingCart

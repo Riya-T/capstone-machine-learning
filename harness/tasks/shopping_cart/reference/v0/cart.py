@@ -1,3 +1,16 @@
+"""Shopping cart: item quantities, prices and the cart total.
+
+Correct solution for shopping_cart before any change (the initial spec).
+Never shown to the writer or the editor; validate-tasks checks that it
+passes every test it should.
+
+Usage:
+    from cart import ShoppingCart
+    cart = ShoppingCart()
+    cart.add_item("apple", "Apple", 0.5, quantity=3)
+    cart.get_total()
+"""
+
 class ShoppingCart:
     def __init__(self):
         self.items = {}
