@@ -9,37 +9,22 @@ spec: spec.md
 public_checks: [public/test_enrollment_public.py]
 private_tests: [private/test_enrollment_initial.py]
 reference: reference/v0
-
 planted_bugs:
-  - {
-      path: bugs/v0_no_capacity_check,
-      must_fail: [initial],
-      must_pass: [public]
-    }
-  - {
-      path: bugs/v0_allows_duplicate_enrollment,
-      must_fail: [initial],
-      must_pass: [public]
-    }
-  - {
-      path: bugs/v0_drops_waitlist_order,
-      must_fail: [initial],
-      must_pass: [public]
-    }
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_full_checked_before_duplicate, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_accepts_zero_capacity, must_fail: [initial], must_pass: [public]}
 
 changes:
-  - id: c_waitlist
-    kind: state_flag
-    request: changes/c_waitlist/request.md
-    public_checks: [changes/c_waitlist/public/test_waitlist_public.py]
-    new_feature_tests: [changes/c_waitlist/private/test_waitlist_new.py]
-
   - id: c_prerequisites
     kind: validation_rule
     request: changes/c_prerequisites/request.md
     public_checks: [changes/c_prerequisites/public/test_prerequisites_public.py]
     new_feature_tests: [changes/c_prerequisites/private/test_prerequisites_new.py]
-
+  - id: c_waitlist
+    kind: undo
+    request: changes/c_waitlist/request.md
+    public_checks: [changes/c_waitlist/public/test_waitlist_public.py]
+    new_feature_tests: [changes/c_waitlist/private/test_waitlist_new.py]
   - id: c_freeze
     kind: state_flag
     request: changes/c_freeze/request.md
@@ -48,27 +33,25 @@ changes:
 
 # Reference solutions by the set of changes applied (sorted ids joined by "+").
 references:
-  c_waitlist: reference/waitlist
   c_prerequisites: reference/prerequisites
-  c_prerequisites+c_waitlist: reference/waitlist_prerequisites
+  c_prerequisites+c_waitlist: reference/prerequisites_waitlist
+  c_freeze: reference/freeze
   c_freeze+c_prerequisites: reference/freeze_prerequisites
 
-# Define multi-step evaluation sequences
 sequences:
-  - id: seq_enrollment_workflow_1
+  - id: s1
     steps:
-      - change: c_waitlist
       - change: c_prerequisites
+      - change: c_waitlist
         planted_bugs:
-          - path: bugs/prerequisites_allow_duplicate_waitlist
+          - path: bugs/waitlist_full_before_prerequisites  # required regression bug: breaks step 1
             must_fail: [existing]
             must_pass: [new_feature]
-
-  - id: seq_enrollment_workflow_2
+  - id: s2
     steps:
-      - change: c_prerequisites
       - change: c_freeze
+      - change: c_prerequisites
         planted_bugs:
-          - path: bugs/freeze_ignores_capacity
+          - path: bugs/prerequisites_freeze_checked_late  # required regression bug: breaks step 1
             must_fail: [existing]
             must_pass: [new_feature]

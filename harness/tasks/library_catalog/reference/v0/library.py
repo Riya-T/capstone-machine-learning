@@ -1,39 +1,80 @@
-class Book:
-    def __init__(self, isbn: str, title: str, author: str, total_copies: int = 1):
-        self.isbn = isbn
-        self.title = title
-        self.author = author
-        self.total_copies = total_copies
-        self.available_copies = total_copies
+"""Library catalog: copies on the shelf, borrowers' loans and each book's history.
+
+Correct solution for library_catalog before any change (the initial spec).
+Never shown to the writer or the editor; validate-tasks checks that it
+passes every test it should.
+
+Usage:
+    from library import Library
+    library = Library()
+    library.add_book("978-1", copies=2)
+    library.check_out("978-1", "ana")
+"""
 
 
-class LibraryCatalog:
+class LibraryError(Exception):
+    pass
+
+
+class NoCopyAvailable(LibraryError):
+    pass
+
+
+def check_borrower(borrower):
+    if not isinstance(borrower, str) or not borrower:
+        raise ValueError(f"borrower must be a non-empty str, got {borrower!r}")
+
+
+class Library:
     def __init__(self):
-        self.books = {}
-        self.loans = {}
+        self._available = {}  # isbn -> copies on the shelf, in the order first added
+        self._history = {}  # isbn -> list of (action, borrower), oldest first
+        self._loans = {}  # borrower -> isbns checked out, oldest first
 
-    def add_book(self, isbn: str, title: str, author: str, copies: int = 1):
-        if not isinstance(copies, int) or copies <= 0:
-            raise ValueError("Copies must be a positive integer")
-        if isbn in self.books:
-            book = self.books[isbn]
-            book.total_copies += copies
-            book.available_copies += copies
-        else:
-            self.books[isbn] = Book(isbn, title, author, copies)
+    def add_book(self, isbn, copies=1):
+        if not isinstance(isbn, str) or not isbn:
+            raise ValueError("isbn must be a non-empty str")
+        if isinstance(copies, bool) or not isinstance(copies, int) or copies <= 0:
+            raise ValueError(f"copies must be a positive int, got {copies!r}")
+        if isbn not in self._available:
+            self._available[isbn] = 0
+            self._history[isbn] = []
+        self._available[isbn] += copies
 
-    def checkout(self, isbn: str, borrower_id: str) -> bool:
-        book = self.books.get(isbn)
-        if book is None or book.available_copies <= 0:
-            return False
-        book.available_copies -= 1
-        self.loans.setdefault(isbn, []).append(borrower_id)
-        return True
+    def check_out(self, isbn, borrower):
+        self._require(isbn)
+        check_borrower(borrower)
+        if self._available[isbn] == 0:
+            raise NoCopyAvailable(f"no copy of {isbn!r} is on the shelf")
+        self._available[isbn] -= 1
+        self._loans.setdefault(borrower, []).append(isbn)
+        self._history[isbn].append(("check_out", borrower))
 
-    def return_book(self, isbn: str, borrower_id: str) -> bool:
-        borrowers = self.loans.get(isbn, [])
-        if borrower_id not in borrowers:
-            return False
-        borrowers.remove(borrower_id)
-        self.books[isbn].available_copies += 1
-        return True
+    def return_book(self, isbn, borrower):
+        self._require(isbn)
+        check_borrower(borrower)
+        if isbn not in self._loans.get(borrower, []):
+            raise LibraryError(f"{borrower!r} has no copy of {isbn!r} checked out")
+        self._loans[borrower].remove(isbn)
+        self._available[isbn] += 1
+        self._history[isbn].append(("return", borrower))
+
+    def get_available(self, isbn):
+        self._require(isbn)
+        return self._available[isbn]
+
+    def get_loans(self, borrower):
+        check_borrower(borrower)
+        return list(self._loans.get(borrower, []))
+
+    def get_history(self, isbn):
+        self._require(isbn)
+        return list(self._history[isbn])
+
+    def get_books(self):
+        return list(self._available)
+
+    def _require(self, isbn):
+        # Non-str isbns are never stored, so they count as "not in the catalog" too.
+        if not isinstance(isbn, str) or isbn not in self._available:
+            raise KeyError(isbn)
