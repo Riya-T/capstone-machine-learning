@@ -1,0 +1,57 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+schema_version: 1
+id: restaurant_orders
+family: restaurant_orders
+split: train
+entry_files: [orders.py]
+spec: spec.md
+public_checks: [public/test_orders_public.py]
+private_tests: [private/test_orders_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_duplicate_dish_overwrites, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_closed_table_takes_orders, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_void
+    kind: undo
+    request: changes/c_void/request.md
+    public_checks: [changes/c_void/public/test_void_public.py]
+    new_feature_tests: [changes/c_void/private/test_void_new.py]
+  - id: c_courses
+    kind: grouping
+    request: changes/c_courses/request.md
+    public_checks: [changes/c_courses/public/test_courses_public.py]
+    new_feature_tests: [changes/c_courses/private/test_courses_new.py]
+  - id: c_service
+    kind: derived_value
+    request: changes/c_service/request.md
+    public_checks: [changes/c_service/public/test_service_public.py]
+    new_feature_tests: [changes/c_service/private/test_service_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_void: reference/void
+  c_courses+c_void: reference/courses_void
+  c_service: reference/service
+  c_service+c_void: reference/service_void
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_void
+      - change: c_courses
+        planted_bugs:
+          - path: bugs/courses_count_voided_lines  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_service
+      - change: c_void
+        planted_bugs:
+          - path: bugs/void_drops_service_charge  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]

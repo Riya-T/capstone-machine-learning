@@ -1,0 +1,69 @@
+"""Event bus: topics, their subscribers, and a record of every delivery.
+
+Correct solution for event_bus before any change (the initial spec).
+Never shown to the writer or the editor; validate-tasks checks that it
+passes every test it should.
+
+Usage:
+    from bus import EventBus
+    bus = EventBus()
+    bus.add_topic("orders")
+    bus.subscribe("orders", "billing")
+    bus.publish("orders", "order 17 placed")
+"""
+
+
+class BusError(Exception):
+    pass
+
+
+def check_name(value, what):
+    if not isinstance(value, str) or not value:
+        raise ValueError(f"{what} must be a non-empty str, got {value!r}")
+
+
+def check_message(message):
+    if not isinstance(message, str):
+        raise ValueError(f"message must be a str, got {message!r}")
+
+
+class EventBus:
+    def __init__(self):
+        self._subscribers = {}  # topic -> subscriber names in subscription order
+        self._log = []  # (subscriber, topic, message), oldest first
+
+    def add_topic(self, topic):
+        check_name(topic, "topic")
+        if topic in self._subscribers:
+            raise BusError(f"topic {topic!r} already exists")
+        self._subscribers[topic] = []
+
+    def subscribe(self, topic, subscriber):
+        self._require(topic)
+        check_name(subscriber, "subscriber")
+        if subscriber in self._subscribers[topic]:
+            raise BusError(f"{subscriber!r} already subscribes to {topic!r}")
+        self._subscribers[topic].append(subscriber)
+
+    def publish(self, topic, message):
+        self._require(topic)
+        check_message(message)
+        receivers = self._subscribers[topic]
+        for subscriber in receivers:
+            self._log.append((subscriber, topic, message))
+        return len(receivers)
+
+    def get_topics(self):
+        return list(self._subscribers)
+
+    def get_subscribers(self, topic):
+        self._require(topic)
+        return list(self._subscribers[topic])
+
+    def get_deliveries(self, subscriber):
+        return [(topic, message) for who, topic, message in self._log if who == subscriber]
+
+    def _require(self, topic):
+        # Non-str names are never stored, so they count as "does not exist" too.
+        if not isinstance(topic, str) or topic not in self._subscribers:
+            raise KeyError(topic)

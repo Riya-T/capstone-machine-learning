@@ -1,0 +1,57 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+schema_version: 1
+id: login_sessions
+family: login_sessions
+split: train
+entry_files: [sessions.py]
+spec: spec.md
+public_checks: [public/test_sessions_public.py]
+private_tests: [private/test_sessions_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_double_sign_in, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_sign_out_anyone, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_lockout
+    kind: state_flag
+    request: changes/c_lockout/request.md
+    public_checks: [changes/c_lockout/public/test_lockout_public.py]
+    new_feature_tests: [changes/c_lockout/private/test_lockout_new.py]
+  - id: c_capacity
+    kind: validation_rule
+    request: changes/c_capacity/request.md
+    public_checks: [changes/c_capacity/public/test_capacity_public.py]
+    new_feature_tests: [changes/c_capacity/private/test_capacity_new.py]
+  - id: c_activity
+    kind: query
+    request: changes/c_activity/request.md
+    public_checks: [changes/c_activity/public/test_activity_public.py]
+    new_feature_tests: [changes/c_activity/private/test_activity_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_lockout: reference/lockout
+  c_capacity+c_lockout: reference/lockout_capacity
+  c_activity: reference/activity
+  c_activity+c_lockout: reference/activity_lockout
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_lockout
+      - change: c_capacity
+        planted_bugs:
+          - path: bugs/capacity_keeps_failures  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_activity
+      - change: c_lockout
+        planted_bugs:
+          - path: bugs/lockout_drops_failed_log  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]

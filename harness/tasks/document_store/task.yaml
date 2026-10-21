@@ -1,0 +1,57 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+schema_version: 1
+id: document_store
+family: document_store
+split: train
+entry_files: [docstore.py]
+spec: spec.md
+public_checks: [public/test_docstore_public.py]
+private_tests: [private/test_docstore_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: bugs only the hidden initial tests catch.
+  - {path: bugs/v0_duplicate_tags, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_overwrites_existing_id, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_tag_groups
+    kind: grouping
+    request: changes/c_tag_groups/request.md
+    public_checks: [changes/c_tag_groups/public/test_tag_groups_public.py]
+    new_feature_tests: [changes/c_tag_groups/private/test_tag_groups_new.py]
+  - id: c_search
+    kind: query
+    request: changes/c_search/request.md
+    public_checks: [changes/c_search/public/test_search_public.py]
+    new_feature_tests: [changes/c_search/private/test_search_new.py]
+  - id: c_trash
+    kind: undo
+    request: changes/c_trash/request.md
+    public_checks: [changes/c_trash/public/test_trash_public.py]
+    new_feature_tests: [changes/c_trash/private/test_trash_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_tag_groups: reference/tag_groups
+  c_search+c_tag_groups: reference/search_tag_groups
+  c_trash: reference/trash
+  c_tag_groups+c_trash: reference/tag_groups_trash
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_tag_groups
+      - change: c_search
+        planted_bugs:
+          - path: bugs/search_lowercases_bodies  # required regression bug: breaks the initial spec
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_trash
+      - change: c_tag_groups
+        planted_bugs:
+          - path: bugs/groups_forget_trash_filter  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]

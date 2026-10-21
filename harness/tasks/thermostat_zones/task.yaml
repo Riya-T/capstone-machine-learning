@@ -1,0 +1,57 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+schema_version: 1
+id: thermostat_zones
+family: thermostat_zones
+split: train
+entry_files: [thermostat.py]
+spec: spec.md
+public_checks: [public/test_thermostat_public.py]
+private_tests: [private/test_thermostat_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_zones_sorted_by_name, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_duplicate_zone_resets, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_limits
+    kind: validation_rule
+    request: changes/c_limits/request.md
+    public_checks: [changes/c_limits/public/test_limits_public.py]
+    new_feature_tests: [changes/c_limits/private/test_limits_new.py]
+  - id: c_hold
+    kind: state_flag
+    request: changes/c_hold/request.md
+    public_checks: [changes/c_hold/public/test_hold_public.py]
+    new_feature_tests: [changes/c_hold/private/test_hold_new.py]
+  - id: c_demand
+    kind: derived_value
+    request: changes/c_demand/request.md
+    public_checks: [changes/c_demand/public/test_demand_public.py]
+    new_feature_tests: [changes/c_demand/private/test_demand_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_limits: reference/limits
+  c_hold+c_limits: reference/hold_limits
+  c_demand: reference/demand
+  c_demand+c_limits: reference/demand_limits
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_limits
+      - change: c_hold
+        planted_bugs:
+          - path: bugs/hold_skips_limit_check  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_demand
+      - change: c_limits
+        planted_bugs:
+          - path: bugs/limits_drop_call_count  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]

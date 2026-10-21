@@ -1,0 +1,57 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+schema_version: 1
+id: order_workflow
+family: order_workflow
+split: train
+entry_files: [workflow.py]
+spec: spec.md
+public_checks: [public/test_workflow_public.py]
+private_tests: [private/test_workflow_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_shipped_can_be_cancelled, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_duplicate_order_overwrites, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_history
+    kind: query
+    request: changes/c_history/request.md
+    public_checks: [changes/c_history/public/test_history_public.py]
+    new_feature_tests: [changes/c_history/private/test_history_new.py]
+  - id: c_guards
+    kind: validation_rule
+    request: changes/c_guards/request.md
+    public_checks: [changes/c_guards/public/test_guards_public.py]
+    new_feature_tests: [changes/c_guards/private/test_guards_new.py]
+  - id: c_rollback
+    kind: undo
+    request: changes/c_rollback/request.md
+    public_checks: [changes/c_rollback/public/test_rollback_public.py]
+    new_feature_tests: [changes/c_rollback/private/test_rollback_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_history: reference/history
+  c_guards+c_history: reference/guards_history
+  c_rollback: reference/rollback
+  c_history+c_rollback: reference/history_rollback
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_history
+      - change: c_guards
+        planted_bugs:
+          - path: bugs/guards_drop_state_name_check  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_rollback
+      - change: c_history
+        planted_bugs:
+          - path: bugs/history_rollback_of_delivered_allowed  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]

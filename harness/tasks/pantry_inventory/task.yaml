@@ -1,0 +1,57 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+schema_version: 1
+id: pantry_inventory
+family: pantry_inventory
+split: train
+entry_files: [pantry.py]
+spec: spec.md
+public_checks: [public/test_pantry_public.py]
+private_tests: [private/test_pantry_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_expiring_by_excludes_the_day, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_cannot_use_everything, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_expired
+    kind: state_flag
+    request: changes/c_expired/request.md
+    public_checks: [changes/c_expired/public/test_expired_public.py]
+    new_feature_tests: [changes/c_expired/private/test_expired_new.py]
+  - id: c_categories
+    kind: grouping
+    request: changes/c_categories/request.md
+    public_checks: [changes/c_categories/public/test_categories_public.py]
+    new_feature_tests: [changes/c_categories/private/test_categories_new.py]
+  - id: c_shopping_list
+    kind: derived_value
+    request: changes/c_shopping_list/request.md
+    public_checks: [changes/c_shopping_list/public/test_shopping_list_public.py]
+    new_feature_tests: [changes/c_shopping_list/private/test_shopping_list_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_expired: reference/expired
+  c_categories+c_expired: reference/categories_expired
+  c_shopping_list: reference/shopping_list
+  c_expired+c_shopping_list: reference/expired_shopping_list
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_expired
+      - change: c_categories
+        planted_bugs:
+          - path: bugs/categories_expiry_off_by_one  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_shopping_list
+      - change: c_expired
+        planted_bugs:
+          - path: bugs/expired_drops_minimum_check  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]

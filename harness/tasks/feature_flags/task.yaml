@@ -1,0 +1,57 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+schema_version: 1
+id: feature_flags
+family: feature_flags
+split: train
+entry_files: [flags.py]
+spec: spec.md
+public_checks: [public/test_flags_public.py]
+private_tests: [private/test_flags_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: bugs only the hidden initial tests catch.
+  - {path: bugs/v0_rollout_off_by_one, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_enable_skips_user_check, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_groups
+    kind: grouping
+    request: changes/c_groups/request.md
+    public_checks: [changes/c_groups/public/test_groups_public.py]
+    new_feature_tests: [changes/c_groups/private/test_groups_new.py]
+  - id: c_kill_switch
+    kind: state_flag
+    request: changes/c_kill_switch/request.md
+    public_checks: [changes/c_kill_switch/public/test_kill_switch_public.py]
+    new_feature_tests: [changes/c_kill_switch/private/test_kill_switch_new.py]
+  - id: c_audit
+    kind: query
+    request: changes/c_audit/request.md
+    public_checks: [changes/c_audit/public/test_audit_public.py]
+    new_feature_tests: [changes/c_audit/private/test_audit_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_groups: reference/groups
+  c_groups+c_kill_switch: reference/groups_kill_switch
+  c_audit: reference/audit
+  c_audit+c_groups: reference/audit_groups
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_groups
+      - change: c_kill_switch
+        planted_bugs:
+          - path: bugs/kill_drops_group_check  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_audit
+      - change: c_groups
+        planted_bugs:
+          - path: bugs/groups_drop_user_audit  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]

@@ -1,0 +1,57 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+schema_version: 1
+id: io_meter
+family: io_meter
+split: train
+entry_files: [meter.py]
+spec: spec.md
+public_checks: [public/test_meter_public.py]
+private_tests: [private/test_meter_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_size_type_unchecked, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_reopen_resets_stream, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_quota
+    kind: validation_rule
+    request: changes/c_quota/request.md
+    public_checks: [changes/c_quota/public/test_quota_public.py]
+    new_feature_tests: [changes/c_quota/private/test_quota_new.py]
+  - id: c_pause
+    kind: state_flag
+    request: changes/c_pause/request.md
+    public_checks: [changes/c_pause/public/test_pause_public.py]
+    new_feature_tests: [changes/c_pause/private/test_pause_new.py]
+  - id: c_totals
+    kind: derived_value
+    request: changes/c_totals/request.md
+    public_checks: [changes/c_totals/public/test_totals_public.py]
+    new_feature_tests: [changes/c_totals/private/test_totals_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_quota: reference/quota
+  c_pause+c_quota: reference/pause_quota
+  c_totals: reference/totals
+  c_quota+c_totals: reference/quota_totals
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_quota
+      - change: c_pause
+        planted_bugs:
+          - path: bugs/pause_drops_write_quota  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_totals
+      - change: c_quota
+        planted_bugs:
+          - path: bugs/quota_largest_op_is_latest  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]

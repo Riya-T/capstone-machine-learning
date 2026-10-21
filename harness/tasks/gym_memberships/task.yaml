@@ -1,0 +1,57 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+schema_version: 1
+id: gym_memberships
+family: gym_memberships
+split: train
+entry_files: [gym.py]
+spec: spec.md
+public_checks: [public/test_gym_public.py]
+private_tests: [private/test_gym_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: bugs only the hidden initial tests catch.
+  - {path: bugs/v0_same_plan_change, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_unknown_plan_filter, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_freeze
+    kind: state_flag
+    request: changes/c_freeze/request.md
+    public_checks: [changes/c_freeze/public/test_freeze_public.py]
+    new_feature_tests: [changes/c_freeze/private/test_freeze_new.py]
+  - id: c_visits
+    kind: derived_value
+    request: changes/c_visits/request.md
+    public_checks: [changes/c_visits/public/test_visits_public.py]
+    new_feature_tests: [changes/c_visits/private/test_visits_new.py]
+  - id: c_tiers
+    kind: grouping
+    request: changes/c_tiers/request.md
+    public_checks: [changes/c_tiers/public/test_tiers_public.py]
+    new_feature_tests: [changes/c_tiers/private/test_tiers_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_freeze: reference/freeze
+  c_freeze+c_visits: reference/freeze_visits
+  c_tiers: reference/tiers
+  c_freeze+c_tiers: reference/freeze_tiers
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_freeze
+      - change: c_visits
+        planted_bugs:
+          - path: bugs/visits_drop_frozen_check  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_tiers
+      - change: c_freeze
+        planted_bugs:
+          - path: bugs/freeze_skips_tier_check  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]

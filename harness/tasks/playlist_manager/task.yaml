@@ -1,0 +1,57 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+schema_version: 1
+id: playlist_manager
+family: playlist_manager
+split: train
+entry_files: [playlist.py]
+spec: spec.md
+public_checks: [public/test_playlist_public.py]
+private_tests: [private/test_playlist_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_playlist_allows_repeats, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_duplicate_title_accepted, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_remove
+    kind: undo
+    request: changes/c_remove/request.md
+    public_checks: [changes/c_remove/public/test_remove_public.py]
+    new_feature_tests: [changes/c_remove/private/test_remove_new.py]
+  - id: c_duration
+    kind: derived_value
+    request: changes/c_duration/request.md
+    public_checks: [changes/c_duration/public/test_duration_public.py]
+    new_feature_tests: [changes/c_duration/private/test_duration_new.py]
+  - id: c_by_artist
+    kind: query
+    request: changes/c_by_artist/request.md
+    public_checks: [changes/c_by_artist/public/test_by_artist_public.py]
+    new_feature_tests: [changes/c_by_artist/private/test_by_artist_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_remove: reference/remove
+  c_duration+c_remove: reference/remove_duration
+  c_by_artist: reference/by_artist
+  c_by_artist+c_remove: reference/by_artist_remove
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_remove
+      - change: c_duration
+        planted_bugs:
+          - path: bugs/duration_drops_empty_queue_check  # required regression bug: breaks v0
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_by_artist
+      - change: c_remove
+        planted_bugs:
+          - path: bugs/remove_allows_playlist_repeats  # required regression bug: breaks v0
+            must_fail: [existing]
+            must_pass: [new_feature]

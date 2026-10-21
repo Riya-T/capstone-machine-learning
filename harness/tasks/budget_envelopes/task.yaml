@@ -1,0 +1,57 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+schema_version: 1
+id: budget_envelopes
+family: budget_envelopes
+split: train
+entry_files: [envelopes.py]
+spec: spec.md
+public_checks: [public/test_envelopes_public.py]
+private_tests: [private/test_envelopes_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_cannot_spend_whole_balance, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_duplicate_envelope_resets, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_move
+    kind: atomic_operation
+    request: changes/c_move/request.md
+    public_checks: [changes/c_move/public/test_move_public.py]
+    new_feature_tests: [changes/c_move/private/test_move_new.py]
+  - id: c_totals
+    kind: derived_value
+    request: changes/c_totals/request.md
+    public_checks: [changes/c_totals/public/test_totals_public.py]
+    new_feature_tests: [changes/c_totals/private/test_totals_new.py]
+  - id: c_lock
+    kind: state_flag
+    request: changes/c_lock/request.md
+    public_checks: [changes/c_lock/public/test_lock_public.py]
+    new_feature_tests: [changes/c_lock/private/test_lock_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_move: reference/move
+  c_move+c_totals: reference/move_totals
+  c_lock: reference/lock
+  c_lock+c_move: reference/lock_move
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_move
+      - change: c_totals
+        planted_bugs:
+          - path: bugs/totals_drop_move_funds_check  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_lock
+      - change: c_move
+        planted_bugs:
+          - path: bugs/move_forgets_lock_on_spend  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]

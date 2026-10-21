@@ -1,0 +1,57 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+schema_version: 1
+id: warehouse_stock
+family: warehouse_stock
+split: train
+entry_files: [warehouse.py]
+spec: spec.md
+public_checks: [public/test_warehouse_public.py]
+private_tests: [private/test_warehouse_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_cannot_order_all_stock, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_duplicate_product_ignored, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_returns
+    kind: undo
+    request: changes/c_returns/request.md
+    public_checks: [changes/c_returns/public/test_returns_public.py]
+    new_feature_tests: [changes/c_returns/private/test_returns_new.py]
+  - id: c_bundle
+    kind: atomic_operation
+    request: changes/c_bundle/request.md
+    public_checks: [changes/c_bundle/public/test_bundle_public.py]
+    new_feature_tests: [changes/c_bundle/private/test_bundle_new.py]
+  - id: c_lowstock
+    kind: query
+    request: changes/c_lowstock/request.md
+    public_checks: [changes/c_lowstock/public/test_lowstock_public.py]
+    new_feature_tests: [changes/c_lowstock/private/test_lowstock_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_returns: reference/returns
+  c_bundle+c_returns: reference/returns_bundle
+  c_lowstock: reference/lowstock
+  c_lowstock+c_returns: reference/lowstock_returns
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_returns
+      - change: c_bundle
+        planted_bugs:
+          - path: bugs/bundle_drops_double_return_check  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_lowstock
+      - change: c_returns
+        planted_bugs:
+          - path: bugs/returns_reject_zero_threshold  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]

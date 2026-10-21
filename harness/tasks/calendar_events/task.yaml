@@ -1,0 +1,57 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+schema_version: 1
+id: calendar_events
+family: calendar_events
+split: train
+entry_files: [agenda.py]
+spec: spec.md
+public_checks: [public/test_agenda_public.py]
+private_tests: [private/test_agenda_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: bugs only the hidden initial tests catch.
+  - {path: bugs/v0_duplicate_attendee, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_zero_length_event, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_no_overlap
+    kind: validation_rule
+    request: changes/c_no_overlap/request.md
+    public_checks: [changes/c_no_overlap/public/test_no_overlap_public.py]
+    new_feature_tests: [changes/c_no_overlap/private/test_no_overlap_new.py]
+  - id: c_cancel
+    kind: undo
+    request: changes/c_cancel/request.md
+    public_checks: [changes/c_cancel/public/test_cancel_public.py]
+    new_feature_tests: [changes/c_cancel/private/test_cancel_new.py]
+  - id: c_free_busy
+    kind: query
+    request: changes/c_free_busy/request.md
+    public_checks: [changes/c_free_busy/public/test_free_busy_public.py]
+    new_feature_tests: [changes/c_free_busy/private/test_free_busy_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_no_overlap: reference/no_overlap
+  c_cancel+c_no_overlap: reference/cancel_no_overlap
+  c_free_busy: reference/free_busy
+  c_free_busy+c_no_overlap: reference/free_busy_no_overlap
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_no_overlap
+      - change: c_cancel
+        planted_bugs:
+          - path: bugs/cancel_touching_conflicts  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_free_busy
+      - change: c_no_overlap
+        planted_bugs:
+          - path: bugs/no_overlap_splits_touching_busy  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
