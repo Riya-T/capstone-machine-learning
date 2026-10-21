@@ -1,0 +1,74 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+schema_version: 1
+id: rover_fleet
+family: rover_fleet
+split: eval
+entry_files: [rovers.py]
+spec: spec.md
+public_checks: [public/test_rovers_public.py]
+private_tests: [private/test_rovers_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_blocked_move_skips_only_itself, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_odometer_counts_turns, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_grid_size
+    kind: configuration
+    request: changes/c_grid_size/request.md
+    public_checks: [changes/c_grid_size/public/test_grid_size_public.py]
+    new_feature_tests: [changes/c_grid_size/private/test_grid_size_new.py]
+  - id: c_obstacles
+    kind: validation_rule
+    request: changes/c_obstacles/request.md
+    public_checks: [changes/c_obstacles/public/test_obstacles_public.py]
+    new_feature_tests: [changes/c_obstacles/private/test_obstacles_new.py]
+  - id: c_paths
+    kind: query
+    request: changes/c_paths/request.md
+    public_checks: [changes/c_paths/public/test_paths_public.py]
+    new_feature_tests: [changes/c_paths/private/test_paths_new.py]
+  - id: c_versioned_commands
+    kind: concurrency_control
+    request: changes/c_versioned_commands/request.md
+    public_checks: [changes/c_versioned_commands/public/test_versioned_commands_public.py]
+    new_feature_tests: [changes/c_versioned_commands/private/test_versioned_commands_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_grid_size: reference/plateau
+  c_grid_size+c_obstacles: reference/plateau_obstacles
+  c_grid_size+c_obstacles+c_paths: reference/plateau_obstacles_paths
+  c_versioned_commands: reference/versions
+  c_grid_size+c_versioned_commands: reference/plateau_versions
+  c_grid_size+c_obstacles+c_versioned_commands: reference/plateau_obstacles_versions
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_grid_size
+      - change: c_obstacles
+        planted_bugs:
+          - path: bugs/obstacles_ignore_rover_wrap  # breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+      - change: c_paths
+        planted_bugs:
+          - path: bugs/paths_obstacle_under_rover  # required regression bug: breaks step 2
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_versioned_commands
+      - change: c_grid_size
+        planted_bugs:
+          - path: bugs/plateau_version_on_idle_drive  # breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+      - change: c_obstacles
+        planted_bugs:
+          - path: bugs/obstacles_ignore_expected_version  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]

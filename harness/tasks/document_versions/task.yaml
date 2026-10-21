@@ -1,0 +1,70 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+schema_version: 1
+id: document_versions
+family: document_versions
+split: eval
+entry_files: [wiki.py]
+spec: spec.md
+public_checks: [public/test_wiki_public.py]
+private_tests: [private/test_wiki_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_keeps_six_revisions, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_duplicate_page_overwrites, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_version_check
+    kind: concurrency_control
+    request: changes/c_version_check/request.md
+    public_checks: [changes/c_version_check/public/test_version_check_public.py]
+    new_feature_tests: [changes/c_version_check/private/test_version_check_new.py]
+  - id: c_retention
+    kind: configuration
+    request: changes/c_retention/request.md
+    public_checks: [changes/c_retention/public/test_retention_public.py]
+    new_feature_tests: [changes/c_retention/private/test_retention_new.py]
+  - id: c_restore
+    kind: undo
+    request: changes/c_restore/request.md
+    public_checks: [changes/c_restore/public/test_restore_public.py]
+    new_feature_tests: [changes/c_restore/private/test_restore_new.py]
+  - id: c_search
+    kind: query
+    request: changes/c_search/request.md
+    public_checks: [changes/c_search/public/test_search_public.py]
+    new_feature_tests: [changes/c_search/private/test_search_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_version_check: reference/version_check
+  c_retention+c_version_check: reference/retention_version_check
+  c_restore+c_retention+c_version_check: reference/restore_retention_version_check
+  c_search: reference/search
+  c_search+c_version_check: reference/search_version_check
+  c_retention+c_search+c_version_check: reference/retention_search_version_check
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_version_check
+      - change: c_retention
+        planted_bugs:
+          - path: bugs/retention_allows_unchanged_edit  # regression bug: breaks the initial spec
+            must_fail: [existing]
+            must_pass: [new_feature]
+      - change: c_restore
+        planted_bugs:
+          - path: bugs/restore_edit_skips_version_check  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_search
+      - change: c_version_check
+      - change: c_retention
+        planted_bugs:
+          - path: bugs/retention_search_reads_old_revisions  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]

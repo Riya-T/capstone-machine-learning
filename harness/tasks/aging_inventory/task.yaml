@@ -1,0 +1,74 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+schema_version: 1
+id: aging_inventory
+family: aging_inventory
+split: eval
+entry_files: [cooler.py]
+spec: spec.md
+public_checks: [public/test_cooler_public.py]
+private_tests: [private/test_cooler_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_counts_down_first, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_no_upper_freshness_check, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_loss_rates
+    kind: configuration
+    request: changes/c_loss_rates/request.md
+    public_checks: [changes/c_loss_rates/public/test_loss_rates_public.py]
+    new_feature_tests: [changes/c_loss_rates/private/test_loss_rates_new.py]
+  - id: c_categories
+    kind: grouping
+    request: changes/c_categories/request.md
+    public_checks: [changes/c_categories/public/test_categories_public.py]
+    new_feature_tests: [changes/c_categories/private/test_categories_new.py]
+  - id: c_hold
+    kind: state_flag
+    request: changes/c_hold/request.md
+    public_checks: [changes/c_hold/public/test_hold_public.py]
+    new_feature_tests: [changes/c_hold/private/test_hold_new.py]
+  - id: c_undo_day
+    kind: undo
+    request: changes/c_undo_day/request.md
+    public_checks: [changes/c_undo_day/public/test_undo_day_public.py]
+    new_feature_tests: [changes/c_undo_day/private/test_undo_day_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_loss_rates: reference/loss_rates
+  c_categories+c_loss_rates: reference/categories_loss_rates
+  c_categories+c_hold+c_loss_rates: reference/categories_hold_loss_rates
+  c_undo_day: reference/undo_day
+  c_loss_rates+c_undo_day: reference/loss_rates_undo_day
+  c_categories+c_loss_rates+c_undo_day: reference/categories_loss_rates_undo_day
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_loss_rates
+      - change: c_categories
+        planted_bugs:
+          - path: bugs/categories_skip_set_losses_check  # regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+      - change: c_hold
+        planted_bugs:
+          - path: bugs/hold_category_beats_batch_losses  # required regression bug: breaks step 2
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_undo_day
+      - change: c_loss_rates
+        planted_bugs:
+          - path: bugs/loss_rates_silent_empty_undo  # regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+      - change: c_categories
+        planted_bugs:
+          - path: bugs/categories_undo_hits_reused_id  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]

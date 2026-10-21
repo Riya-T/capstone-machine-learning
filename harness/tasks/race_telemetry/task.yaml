@@ -1,0 +1,74 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+schema_version: 1
+id: race_telemetry
+family: race_telemetry
+split: eval
+entry_files: [telemetry.py]
+spec: spec.md
+public_checks: [public/test_telemetry_public.py]
+private_tests: [private/test_telemetry_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_zero_lap_time, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_ties_by_first_lap, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_points_table
+    kind: configuration
+    request: changes/c_points_table/request.md
+    public_checks: [changes/c_points_table/public/test_points_table_public.py]
+    new_feature_tests: [changes/c_points_table/private/test_points_table_new.py]
+  - id: c_penalties
+    kind: derived_value
+    request: changes/c_penalties/request.md
+    public_checks: [changes/c_penalties/public/test_penalties_public.py]
+    new_feature_tests: [changes/c_penalties/private/test_penalties_new.py]
+  - id: c_car_classes
+    kind: grouping
+    request: changes/c_car_classes/request.md
+    public_checks: [changes/c_car_classes/public/test_car_classes_public.py]
+    new_feature_tests: [changes/c_car_classes/private/test_car_classes_new.py]
+  - id: c_lap_corrections
+    kind: concurrency_control
+    request: changes/c_lap_corrections/request.md
+    public_checks: [changes/c_lap_corrections/public/test_lap_corrections_public.py]
+    new_feature_tests: [changes/c_lap_corrections/private/test_lap_corrections_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_points_table: reference/points_table
+  c_penalties+c_points_table: reference/points_table_penalties
+  c_car_classes+c_penalties+c_points_table: reference/points_table_penalties_classes
+  c_lap_corrections: reference/corrections
+  c_lap_corrections+c_points_table: reference/corrections_points_table
+  c_lap_corrections+c_penalties+c_points_table: reference/corrections_points_table_penalties
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_points_table
+      - change: c_penalties
+        planted_bugs:
+          - path: bugs/penalties_unchecked_series_table  # breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+      - change: c_car_classes
+        planted_bugs:
+          - path: bugs/classes_allow_zero_penalty  # required regression bug: breaks step 2
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_lap_corrections
+      - change: c_points_table
+        planted_bugs:
+          - path: bugs/points_table_skip_record_version  # breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+      - change: c_penalties
+        planted_bugs:
+          - path: bugs/penalties_ignore_correction_version  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]

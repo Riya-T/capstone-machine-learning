@@ -1,0 +1,74 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+schema_version: 1
+id: task_board
+family: task_board
+split: eval
+entry_files: [board.py]
+spec: spec.md
+public_checks: [public/test_board_public.py]
+private_tests: [private/test_board_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_move_ignores_limit, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_complete_twice, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_open_limit
+    kind: configuration
+    request: changes/c_open_limit/request.md
+    public_checks: [changes/c_open_limit/public/test_open_limit_public.py]
+    new_feature_tests: [changes/c_open_limit/private/test_open_limit_new.py]
+  - id: c_versions
+    kind: concurrency_control
+    request: changes/c_versions/request.md
+    public_checks: [changes/c_versions/public/test_versions_public.py]
+    new_feature_tests: [changes/c_versions/private/test_versions_new.py]
+  - id: c_archive
+    kind: undo
+    request: changes/c_archive/request.md
+    public_checks: [changes/c_archive/public/test_archive_public.py]
+    new_feature_tests: [changes/c_archive/private/test_archive_new.py]
+  - id: c_overdue
+    kind: query
+    request: changes/c_overdue/request.md
+    public_checks: [changes/c_overdue/public/test_overdue_public.py]
+    new_feature_tests: [changes/c_overdue/private/test_overdue_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_open_limit: reference/limit
+  c_open_limit+c_versions: reference/limit_versions
+  c_archive+c_open_limit+c_versions: reference/limit_versions_archive
+  c_overdue: reference/overdue
+  c_open_limit+c_overdue: reference/limit_overdue
+  c_open_limit+c_overdue+c_versions: reference/limit_overdue_versions
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_open_limit
+      - change: c_versions
+        planted_bugs:
+          - path: bugs/versions_drop_limit_check  # breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+      - change: c_archive
+        planted_bugs:
+          - path: bugs/archive_rename_keeps_version  # required regression bug: breaks step 2
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_overdue
+      - change: c_open_limit
+        planted_bugs:
+          - path: bugs/limit_due_on_ignores_project  # breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+      - change: c_versions
+        planted_bugs:
+          - path: bugs/versions_overdue_lists_done  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
