@@ -1,0 +1,74 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+schema_version: 1
+id: seat_reservation
+family: seat_reservation
+split: eval
+entry_files: [seats.py]
+spec: spec.md
+public_checks: [public/test_seats_public.py]
+private_tests: [private/test_seats_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_move_ignores_limit, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_limit_rounds_to_nearest, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_fill_percent
+    kind: configuration
+    request: changes/c_fill_percent/request.md
+    public_checks: [changes/c_fill_percent/public/test_fill_percent_public.py]
+    new_feature_tests: [changes/c_fill_percent/private/test_fill_percent_new.py]
+  - id: c_cancel
+    kind: undo
+    request: changes/c_cancel/request.md
+    public_checks: [changes/c_cancel/public/test_cancel_public.py]
+    new_feature_tests: [changes/c_cancel/private/test_cancel_new.py]
+  - id: c_coach_groups
+    kind: grouping
+    request: changes/c_coach_groups/request.md
+    public_checks: [changes/c_coach_groups/public/test_coach_groups_public.py]
+    new_feature_tests: [changes/c_coach_groups/private/test_coach_groups_new.py]
+  - id: c_versions
+    kind: concurrency_control
+    request: changes/c_versions/request.md
+    public_checks: [changes/c_versions/public/test_versions_public.py]
+    new_feature_tests: [changes/c_versions/private/test_versions_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_fill_percent: reference/fill_percent
+  c_cancel+c_fill_percent: reference/cancel_fill_percent
+  c_cancel+c_coach_groups+c_fill_percent: reference/cancel_fill_percent_groups
+  c_versions: reference/versions
+  c_fill_percent+c_versions: reference/fill_percent_versions
+  c_cancel+c_fill_percent+c_versions: reference/cancel_fill_percent_versions
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_fill_percent
+      - change: c_cancel
+        planted_bugs:
+          - path: bugs/cancel_skips_coach_percent_check  # regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+      - change: c_coach_groups
+        planted_bugs:
+          - path: bugs/groups_drop_percent_check  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_versions
+      - change: c_fill_percent
+        planted_bugs:
+          - path: bugs/fill_percent_add_seats_skips_version  # regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+      - change: c_cancel
+        planted_bugs:
+          - path: bugs/cancel_move_keeps_version  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]

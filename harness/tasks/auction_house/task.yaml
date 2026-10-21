@@ -1,0 +1,74 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+schema_version: 1
+id: auction_house
+family: auction_house
+split: eval
+entry_files: [auction.py]
+spec: spec.md
+public_checks: [public/test_auction_public.py]
+private_tests: [private/test_auction_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_leader_can_rebid, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_raise_must_exceed_ten, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_increment
+    kind: configuration
+    request: changes/c_increment/request.md
+    public_checks: [changes/c_increment/public/test_increment_public.py]
+    new_feature_tests: [changes/c_increment/private/test_increment_new.py]
+  - id: c_bid_version
+    kind: concurrency_control
+    request: changes/c_bid_version/request.md
+    public_checks: [changes/c_bid_version/public/test_bid_version_public.py]
+    new_feature_tests: [changes/c_bid_version/private/test_bid_version_new.py]
+  - id: c_withdraw
+    kind: undo
+    request: changes/c_withdraw/request.md
+    public_checks: [changes/c_withdraw/public/test_withdraw_public.py]
+    new_feature_tests: [changes/c_withdraw/private/test_withdraw_new.py]
+  - id: c_closing
+    kind: state_flag
+    request: changes/c_closing/request.md
+    public_checks: [changes/c_closing/public/test_closing_public.py]
+    new_feature_tests: [changes/c_closing/private/test_closing_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_increment: reference/increment
+  c_bid_version+c_increment: reference/increment_version
+  c_bid_version+c_increment+c_withdraw: reference/increment_version_withdraw
+  c_closing: reference/closing
+  c_closing+c_increment: reference/closing_increment
+  c_bid_version+c_closing+c_increment: reference/closing_increment_version
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_increment
+      - change: c_bid_version
+        planted_bugs:
+          - path: bugs/version_accepts_bad_house_increment  # breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+      - change: c_withdraw
+        planted_bugs:
+          - path: bugs/withdraw_ignores_lot_increment  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_closing
+      - change: c_increment
+        planted_bugs:
+          - path: bugs/increment_allows_reclosing  # breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+      - change: c_bid_version
+        planted_bugs:
+          - path: bugs/version_skips_closed_check  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]

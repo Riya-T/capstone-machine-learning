@@ -1,0 +1,70 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+schema_version: 1
+id: meeting_rooms
+family: meeting_rooms
+split: eval
+entry_files: [rooms.py]
+spec: spec.md
+public_checks: [public/test_rooms_public.py]
+private_tests: [private/test_rooms_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_free_rooms_ignore_gap, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_booking_id_unique_per_room, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_buffer
+    kind: configuration
+    request: changes/c_buffer/request.md
+    public_checks: [changes/c_buffer/public/test_buffer_public.py]
+    new_feature_tests: [changes/c_buffer/private/test_buffer_new.py]
+  - id: c_booking_versions
+    kind: concurrency_control
+    request: changes/c_booking_versions/request.md
+    public_checks: [changes/c_booking_versions/public/test_booking_versions_public.py]
+    new_feature_tests: [changes/c_booking_versions/private/test_booking_versions_new.py]
+  - id: c_cancel
+    kind: undo
+    request: changes/c_cancel/request.md
+    public_checks: [changes/c_cancel/public/test_cancel_public.py]
+    new_feature_tests: [changes/c_cancel/private/test_cancel_new.py]
+  - id: c_usage
+    kind: derived_value
+    request: changes/c_usage/request.md
+    public_checks: [changes/c_usage/public/test_usage_public.py]
+    new_feature_tests: [changes/c_usage/private/test_usage_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_buffer: reference/buffer
+  c_booking_versions+c_buffer: reference/booking_versions_buffer
+  c_booking_versions+c_buffer+c_cancel: reference/booking_versions_buffer_cancel
+  c_usage: reference/usage
+  c_buffer+c_usage: reference/buffer_usage
+  c_booking_versions+c_buffer+c_usage: reference/booking_versions_buffer_usage
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_buffer
+      - change: c_booking_versions
+        planted_bugs:
+          - path: bugs/versions_room_bookings_unsorted  # regression bug: breaks the initial spec
+            must_fail: [existing]
+            must_pass: [new_feature]
+      - change: c_cancel
+        planted_bugs:
+          - path: bugs/cancel_free_rooms_default_gap  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_usage
+      - change: c_buffer
+      - change: c_booking_versions
+        planted_bugs:
+          - path: bugs/versions_reschedule_default_gap  # required regression bug: breaks step 2
+            must_fail: [existing]
+            must_pass: [new_feature]

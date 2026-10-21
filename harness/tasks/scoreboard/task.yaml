@@ -1,0 +1,74 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+schema_version: 1
+id: scoreboard
+family: scoreboard
+split: eval
+entry_files: [scoreboard.py]
+spec: spec.md
+public_checks: [public/test_scoreboard_public.py]
+private_tests: [private/test_scoreboard_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_ties_by_name, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_kind_checked_first, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_points
+    kind: configuration
+    request: changes/c_points/request.md
+    public_checks: [changes/c_points/public/test_points_public.py]
+    new_feature_tests: [changes/c_points/private/test_points_new.py]
+  - id: c_corrections
+    kind: undo
+    request: changes/c_corrections/request.md
+    public_checks: [changes/c_corrections/public/test_corrections_public.py]
+    new_feature_tests: [changes/c_corrections/private/test_corrections_new.py]
+  - id: c_periods
+    kind: grouping
+    request: changes/c_periods/request.md
+    public_checks: [changes/c_periods/public/test_periods_public.py]
+    new_feature_tests: [changes/c_periods/private/test_periods_new.py]
+  - id: c_versions
+    kind: concurrency_control
+    request: changes/c_versions/request.md
+    public_checks: [changes/c_versions/public/test_versions_public.py]
+    new_feature_tests: [changes/c_versions/private/test_versions_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_points: reference/points
+  c_corrections+c_points: reference/corrections_points
+  c_corrections+c_periods+c_points: reference/corrections_periods_points
+  c_versions: reference/versions
+  c_points+c_versions: reference/points_versions
+  c_corrections+c_points+c_versions: reference/corrections_points_versions
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_points
+      - change: c_corrections
+        planted_bugs:
+          - path: bugs/corrections_allow_zero_points  # breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+      - change: c_periods
+        planted_bugs:
+          - path: bugs/periods_keep_caller_table  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_versions
+      - change: c_points
+        planted_bugs:
+          - path: bugs/points_version_before_kind  # breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+      - change: c_corrections
+        planted_bugs:
+          - path: bugs/corrections_skip_version_check  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
