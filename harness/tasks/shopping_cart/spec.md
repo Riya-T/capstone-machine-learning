@@ -20,12 +20,14 @@ class ShoppingCart:
 - Adding an item with a new id stores its name, price, and quantity.
 - Adding an existing id increases its quantity. The original name and price
   remain in effect.
-- Price must be non-negative and quantity must be a positive integer.
-  Invalid additions raise `ValueError` and leave the cart unchanged.
+- Price must be non-negative and quantity must be an `int` greater than 0;
+  anything else (such as `0`, `1.5` or `"2"`) is invalid. Invalid additions
+  raise `ValueError` and leave the cart unchanged.
 - Removing an item decreases its quantity. If the requested quantity is at
   least the quantity in the cart, the item is removed entirely.
-- Removing an unknown id does nothing. The quantity must be positive; an
-  invalid quantity raises `ValueError` and leaves the cart unchanged.
+- Removing an unknown id does nothing. The quantity follows the same rule
+  as for adding (an `int` greater than 0); an invalid quantity raises
+  `ValueError` and leaves the cart unchanged.
 
 ## Total
 

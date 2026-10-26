@@ -4,8 +4,9 @@ For each task:
 1. Writer samples: ask the writer for N programs (one seed each) and parse them.
 2. Initial checks: run each distinct program against the public checks and
    the hidden initial tests.
-3. Editing trials: take each passing program through every change sequence,
-   editor.reps times. A trial stops at its first failed step.
+3. Editing trials: take each passing program (the first tasks.max_programs
+   of them) through every change sequence, editor.reps times. A trial stops
+   at its first failed step.
 4. Scoring: write preferences.jsonl and preferences_report.json to the
    run's directory.
 
@@ -125,6 +126,7 @@ def collect(cfg: ExperimentConfig, until: str = "edit") -> CollectStats:
             )
             if until == "initial":
                 continue
+            passed = passed[: cfg.tasks.max_programs]
             for n, cid in enumerate(passed, start=1):
                 for sequence in task.sequences[: cfg.tasks.max_sequences]:
                     for rep in range(cfg.editor.reps):
@@ -173,6 +175,7 @@ def score(cfg, store: Store, tasks: dict[str, Task], keys: Keys, out_dir: Path, 
             editor_hash=keys.editor,
             editor_reps=cfg.editor.reps,
             max_sequences=cfg.tasks.max_sequences,
+            max_programs=cfg.tasks.max_programs,
         )
         for task in tasks.values()
     ]

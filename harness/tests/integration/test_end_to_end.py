@@ -144,6 +144,7 @@ def test_first_run_scores_and_pairs(setup):
         "duplicate": 1,
         "infra_error": 0,
         "incomplete": 0,
+        "over_program_cap": 0,
     }
     assert report["tasks"]["record_store"]["score_histogram"] == {"s1": [0, 3, 3], "s2": [0, 3, 3]}
     # modular: 12 successful steps; tangled: 6 successes, then 6 broken steps.

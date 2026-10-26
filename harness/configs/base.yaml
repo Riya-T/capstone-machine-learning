@@ -27,9 +27,14 @@ tasks:
     train: 2
     dev: 2
     eval: 3
+  # Proposal: up to eight candidates per task. The writer samples 16 (below)
+  # and the first 8 distinct passing programs go on to editing, so editing
+  # cost matches the proposal's estimate. See "Changes from the proposal" in
+  # the top-level README.
+  max_programs: 8
 
 writer:
-  samples_per_task: 8        # proposal: up to eight candidates per task
+  samples_per_task: 16       # the 7B writer passes ~4 of 8 on dev tasks; 16 reaches more
   prompt_template: ../prompts/writer_v1.md
   backend:
     kind: mock
@@ -74,5 +79,8 @@ execution:                   # how work runs; never part of a result key
 
 scorer:
   rule: weak_dominance       # primary; frozen after dev tasks
-  pairing_mode: best_vs_worst
-  per_task_cap: null
+  # best_vs_worst gives at most one pair per task (36 at most), short of the
+  # proposal's 100-300; all_pairs with a cap reaches it without letting a few
+  # tasks dominate (36 x 8 = 288 at most).
+  pairing_mode: all_pairs
+  per_task_cap: 8

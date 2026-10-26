@@ -47,7 +47,9 @@ Verdict = Literal["a", "b", "tie", "inconsistent"]
 TrialScore = int | Literal["infra_error", "incomplete"]
 PAIRING_MODES = ("all_pairs", "best_vs_worst")
 # What can happen to a writer sample: scored, or excluded for one reason.
-SAMPLE_FATES = ("eligible", "initially_failing", "duplicate", "infra_error", "incomplete")
+SAMPLE_FATES = (
+    "eligible", "initially_failing", "duplicate", "infra_error", "incomplete", "over_program_cap"
+)  # fmt: skip
 
 
 # --- rules ------------------------------------------------------------------
@@ -104,6 +106,8 @@ class CandidateRecord:
     # (sequence_id, rep) -> {step: why the editor stopped}, e.g. max_turns or
     # prompt_too_large for budget_exhausted steps.
     end_reasons: Mapping[tuple[str, int], Mapping[int, str]] = field(default_factory=dict)
+    # A passing program after the first tasks.max_programs: never edited.
+    over_program_cap: bool = False
 
 
 @dataclass(frozen=True)
@@ -128,9 +132,12 @@ def load_task_record(
     editor_hash: str,
     editor_reps: int,
     max_sequences: int | None = None,
+    max_programs: int | None = None,
 ) -> TaskRecord:
     """Gather a task's candidates, initial checks and trials from the store.
-    Only the first `max_sequences` sequences are used (None: all)."""
+    Only the first `max_sequences` sequences are used (None: all), and only
+    the first `max_programs` passing programs in sample order; later passing
+    programs are marked over_program_cap."""
     sequences = task.sequences[:max_sequences]
     samples = store.candidates(task.id, prompt_version(prompt), writer_hash)
     by_program: dict[str, list] = {}
@@ -143,9 +150,13 @@ def load_task_record(
             by_program.setdefault(sample.candidate_id, []).append(sample)
 
     candidates = []
-    for cid, group in by_program.items():
+    n_passed = 0
+    for cid, group in by_program.items():  # in order of first sample, as collect edits them
         group.sort(key=lambda sample: sample.key.sample_idx)
         check = store.get_initial_check(task.id, task.task_version, cid, sandbox_hash)
+        passed = bool(check and check.passed)
+        n_passed += passed
+        over_cap = passed and max_programs is not None and n_passed > max_programs
         trials, causes, reasons = {}, {}, {}
         for sequence in sequences:
             for rep in range(editor_reps):
@@ -166,6 +177,7 @@ def load_task_record(
                 call_keys=tuple(sample.call_key for sample in group if sample.call_key),
                 infra_causes=causes,
                 end_reasons=reasons,
+                over_program_cap=over_cap,
             )
         )
     return TaskRecord(
@@ -274,6 +286,9 @@ class Scorer:
             if not c.initially_passed:
                 excluded["initially_failing"] += 1
                 detail["initially_failing/failed_initial_tests"] += 1
+                continue
+            if c.over_program_cap:
+                excluded["over_program_cap"] += 1
                 continue
             scores = [
                 [trial_score(c.trials.get((seq, rep), {}), length) for rep in self.reps]

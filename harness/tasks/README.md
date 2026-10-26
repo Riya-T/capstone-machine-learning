@@ -131,4 +131,12 @@ From `harness/`, with the task id in the config's `tasks.include`:
    spec using the rules above. Also check the passing programs differ in
    structure, not just in names.
 
+   3 of 8 is the floor for keeping a task, not the goal: across all tasks
+   the average should be about **5 of 8**. Pairs come from comparing passing
+   programs (n passing give n(n-1)/2 comparisons, many of them ties), so an
+   average of 3 gives roughly 40 pairs from the 36 train tasks and an
+   average of 5 roughly 145; the proposal targets 100-300. Don't aim for 8
+   of 8 by making a task easier: easy tasks give similar programs and an
+   editor that always succeeds, which means ties and no pairs.
+
 

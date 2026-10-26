@@ -1,0 +1,23 @@
+# Every real task, with the mock writer and editor. Use it to validate the
+# whole task set in the sandbox (no models):
+#     uv run python -m harness validate-tasks --config configs/all_tasks.yaml
+extends: base.yaml
+name: all-tasks
+runs_dir: ../runs/all_tasks  # its own store, apart from every other config
+tasks:
+  include: [
+    access_control, aging_inventory, auction_house, bank_ledger, budget_envelopes,
+    calendar_events, chat_rooms, clinic_appointments, course_enrollment, document_store,
+    document_versions, elevator_dispatch, event_bus, feature_flags, football_season,
+    gradebook, gym_memberships, hangman_games, high_scores, hotel_rooms,
+    io_meter, iou_tracker, job_board, job_queue, library_catalog,
+    light_grid, locker_room, login_sessions, lru_cache, meeting_rooms,
+    movie_bookings, order_workflow, pantry_inventory, parking_garage, party_inventory,
+    playlist_manager, race_telemetry, recipe_box, restaurant_orders, ring_buffer,
+    robot_fleet, rover_fleet, school_roster, scoreboard, seat_reservation,
+    shopping_cart, social_feed, spending_alerts, staff_directory, stock_portfolio,
+    subscription_billing, task_board, team_roster, thermostat_zones, ticket_desk,
+    time_clock, token_bucket, url_shortener, vending_machine, warehouse_stock,
+  ]
+execution:
+  sandbox_workers: 8         # no model runs alongside; the 9700X has 8 cores

@@ -11,13 +11,31 @@ list each sequence's changes in order.
 
 - All 60 tasks pass task validation (references pass; planted bugs fail
   where declared; each change's tests fail before the change; no leaks).
-  This was run with a local copy of `validate-tasks` that runs pytest
-  outside Docker. The real `validate-tasks` should be run once on a machine
-  with Docker.
+  This was first run with a local copy of `validate-tasks` that runs pytest
+  outside Docker; on 2026-10-26 the real `validate-tasks` passed all 60 in
+  the Docker sandbox (`configs/all_tasks.yaml`).
 - The writer check (`collect --until initial`, at least 3 of 8 programs
-  passing) has not been run on the new tasks. It needs the local model. A
-  task whose spec turns out too hard should be simplified before the
-  settings are locked.
+  passing per task and about 5 of 8 on average) was run on the 8 dev tasks
+  on 2026-10-26 (`configs/rtx5070_pc.yaml`, Qwen2.5-Coder-7B Q4 in Ollama,
+  temperature 0.4). Passing programs out of 8: bank_ledger 8,
+  course_enrollment 6, team_roster 4, football_season 3, parking_garage 3,
+  lru_cache 3 (only 4 distinct), shopping_cart 3, library_catalog 1;
+  average 3.9.
+  - shopping_cart was at 0: the spec said "positive integer" but the tests
+    reject `1.5` and `"2"`. The spec now says so.
+  - library_catalog was at 0. The initial spec dropped the error-order rule
+    and non-string borrowers (both now unspecified). It is still at 1:
+    7 of 8 programs store loans per book and list them in catalog order,
+    not check-out order, failing a public check. It is kept as a hard task
+    for now; the team should decide whether to relax the order of
+    `get_loans`.
+  - With 16 samples per task (the new default; see "Changes from the
+    proposal" in the top-level README), passing programs out of 16:
+    bank_ledger 15, course_enrollment 11, team_roster 7, lru_cache 7 (only
+    8 distinct), football_season 6, shopping_cart 5, parking_garage 4,
+    library_catalog 2. With at most 8 going to editing, that is 5.9 per
+    task on average, and every dev task but library_catalog has at least 3.
+  - The train and eval tasks have not had the writer check yet.
 
 ## How the families were chosen
 

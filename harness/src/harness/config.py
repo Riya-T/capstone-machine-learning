@@ -80,6 +80,11 @@ class TasksConfig:
     # Edit and score only each task's first N sequences (None: all). Not part
     # of any result key: a trial on s1 is the same whether s2 also runs.
     max_sequences: int | None = None
+    # Edit and score only each task's first N distinct passing programs, in
+    # sample order (None: all). With more writer samples than this, hard
+    # tasks still reach N passing programs while editing cost stays bounded.
+    # Not part of any result key, like max_sequences.
+    max_programs: int | None = None
 
     def __post_init__(self) -> None:
         # Whether each listed task exists is checked by the registry.
@@ -93,6 +98,8 @@ class TasksConfig:
             raise ConfigError(f"eval_only_kinds: not in change_kinds: {unknown}")
         if self.max_sequences is not None:
             _require_positive(self.max_sequences, "max_sequences")
+        if self.max_programs is not None:
+            _require_positive(self.max_programs, "max_programs")
 
 
 @dataclass(frozen=True)

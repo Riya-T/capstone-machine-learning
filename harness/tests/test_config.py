@@ -73,6 +73,7 @@ def test_output_path_may_be_missing_but_input_path_must_exist(tmp_path):
         (lambda d: d["scorer"].update(reps=[]), r"scorer: reps: must be a non-empty"),
         (lambda d: d.update(schema_version=2), r"schema_version: expected 1"),
         (lambda d: d["tasks"].update(change_kinds=[]), r"change_kinds: must be a non-empty"),
+        (lambda d: d["tasks"].update(max_programs=0), r"tasks: max_programs: must be > 0"),
         (
             lambda d: d["tasks"].update(change_kinds=["k", "k"]),
             r"change_kinds: must be a non-empty",
@@ -255,10 +256,13 @@ def test_hash_is_independent_of_key_order(tmp_path_factory, rng):
 # --- committed configs ------------------------------------------------------
 
 
-@pytest.mark.parametrize("name", ["mock.yaml", "noahs_laptop.yaml"])
+@pytest.mark.parametrize(
+    "name", ["mock.yaml", "noahs_laptop.yaml", "all_tasks.yaml", "rtx5070_pc.yaml"]
+)
 def test_committed_configs_load(name):
     cfg = load_config(CONFIGS_DIR / name)
     assert cfg.allow_dirty is True
     assert cfg.editor.backend.temperature > 0  # reps must be able to differ
     assert cfg.scorer.rule == "weak_dominance"
-    assert cfg.scorer.pairing_mode == "best_vs_worst"
+    assert cfg.scorer.pairing_mode == "all_pairs"
+    assert cfg.scorer.per_task_cap == 8

@@ -53,14 +53,8 @@ check out a book.
 - `get_loans(borrower)` returns the ISBNs the borrower has checked out and
   not returned yet, oldest check-out first. A borrower with nothing checked
   out gets `[]`.
-- Every method that takes a `borrower` raises `ValueError` when it is not a
-  non-empty string.
-
-When a call has several problems, the first of these is raised:
-
-1. `KeyError` for an ISBN that is not in the catalog;
-2. `ValueError` for an invalid borrower;
-3. `NoCopyAvailable` from `check_out`, or `LibraryError` from `return_book`.
+- Every method that takes a `borrower` raises `ValueError` when it is an
+  empty string.
 
 ## History
 
@@ -79,7 +73,8 @@ borrower's loans and every history are unchanged.
 
 Behavior not described here is unspecified, and no test depends on it. This
 includes a borrower checking out a second copy of a book they already have
-checked out (and what `get_loans` and `return_book` do after that), ISBNs
-that are not strings passed to `add_book`, `bool` copy counts, what happens
-if a returned list is changed, the text of error messages, saving the
-catalog to a file, and use from several threads.
+checked out (and what `get_loans` and `return_book` do after that), which
+error is raised when a call has several problems, borrowers that are not
+strings, ISBNs that are not strings passed to `add_book`, `bool` copy
+counts, what happens if a returned list is changed, the text of error
+messages, saving the catalog to a file, and use from several threads.

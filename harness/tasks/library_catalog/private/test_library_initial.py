@@ -10,7 +10,7 @@ from library import Library, LibraryError, NoCopyAvailable
 
 BORROWERS = ("ana", "ben", "cy")
 BAD_COPIES = [0, -2, 1.5, "3", None]
-BAD_BORROWERS = ["", None, 7]
+BAD_BORROWERS = [""]  # non-string borrowers are unspecified
 
 
 @pytest.fixture
@@ -223,21 +223,6 @@ def test_failed_calls_add_nothing_to_history(library):
 
 
 # --- errors -----------------------------------------------------------------
-
-
-def test_an_isbn_not_in_the_catalog_is_reported_before_a_bad_borrower(library):
-    with pytest.raises(KeyError):
-        library.check_out("978-9", "")
-    with pytest.raises(KeyError):
-        library.return_book("978-9", None)
-
-
-def test_a_bad_borrower_is_reported_before_a_missing_copy_or_loan(library):
-    library.check_out("978-2", "ana")
-    with pytest.raises(ValueError):
-        library.check_out("978-2", "")  # no copy is on the shelf either
-    with pytest.raises(ValueError):
-        library.return_book("978-1", "")  # and nobody has 978-1 out
 
 
 def test_no_copy_available_is_a_library_error():

@@ -59,7 +59,7 @@ subpackages next to `collection/`.
 |---|---|---|
 | `editor.py` | Editor turn loop: a fresh bounded prompt each turn with one-line summaries of the latest `history_turns` turns, full-file replies and `RUN_CHECKS`/`DONE`, cumulative public checks in the sandbox (`checks_passed` once every public check passes), budgets on turns, tokens and wall time. Bad replies, replies that change nothing, and `RUN_CHECKS` on already-checked code are wasted turns (the checks are not rerun), never crashes. `PROTOCOL_VERSION` (3) is part of the editor key. | `tests/collection/test_editor.py` |
 | `collect.py` | Collection: writer samples → parse → initial checks → editing trials → store → preference files; resumes at every level, including mid-trial replay from the call cache; `report` rebuilds the files from the store with no model calls; `--until writer\|initial\|edit` stops after a stage. | `tests/collection/test_collect.py`, `tests/integration/test_end_to_end.py` (marked `docker`) |
-| `scorer.py` | Trial scores (consecutive changes before the first failure), step and editor endings, `strict` and `weak_dominance` rules under `all_pairs` and `best_vs_worst` pairing, per-task caps, ablations (fewer changes or reps), exclusion counts by reason, preference pairs, report files and `summary.txt`. | `tests/collection/test_scorer.py` |
+| `scorer.py` | Trial scores (consecutive changes before the first failure), step and editor endings, `strict` and `weak_dominance` rules under `all_pairs` and `best_vs_worst` pairing, per-task pair caps and the program cap (`tasks.max_programs`), ablations (fewer changes or reps), exclusion counts by reason, preference pairs, report files and `summary.txt`. | `tests/collection/test_scorer.py` |
 
 ## Data, prompts and environment
 
@@ -70,7 +70,7 @@ subpackages next to `collection/`.
 | `prompts/editor_v2.md` | Editor instructions template (`$request`, `$files`, `$history`, `$feedback`, `$allowed_files`, `$turns_left`). | `tests/collection/test_editor.py` |
 | `docker/sandbox/Dockerfile` | Sandbox image `harness-sandbox:py3.11-v1`: Python 3.11 pinned by digest, with the pytest and Hypothesis versions from `uv.lock`. | `tests/sandbox/test_runner.py` |
 | `fixtures/mock/` | Mock writer and editor responses for the deterministic backend. | `tests/models/test_backends.py`, `tests/integration/test_writer_replay.py` |
-| `configs/` | `base.yaml` and `mock.yaml` (deterministic mock writer and editor on the example task). A real-model config for the 5090 comes later. `execution` holds settings that never affect results. | `tests/test_config.py` (committed configs load) |
+| `configs/` | `base.yaml`, `mock.yaml` (deterministic mock writer and editor on the example task), `all_tasks.yaml` (every real task, for `validate-tasks`), and `noahs_laptop.yaml` and `rtx5070_pc.yaml` (the 7B model in Ollama, for the writer check). A real-model config for the 5090 comes later. `execution` holds settings that never affect results. | `tests/test_config.py` (committed configs load) |
 
 ## Integration tests (`tests/integration/`)
 

@@ -107,7 +107,9 @@ recorded as a parse failure with a reason, never guessed at.
 
 **2. Initial checks.** Each distinct program runs the task's public checks
 and its private initial tests in the sandbox. Only programs that pass both
-go on. Programs with the same content are run and scored once.
+go on, and only the first `tasks.max_programs` of them (8), in sample
+order; later passing programs are counted as `over_program_cap` and never
+edited. Programs with the same content are run and scored once.
 
 **3. Editing trials.** A *trial* is one program, one change sequence and
 one repetition. For each step of the sequence, the editor gets a turn loop
@@ -132,7 +134,8 @@ rule over their per-sequence scores:
 Ties and inconsistent comparisons (better in one sequence, worse in another)
 give no pair. `pairing_mode` picks which comparisons become pairs:
 `best_vs_worst` (one pair per task) or `all_pairs` (every comparison, with an
-optional `per_task_cap`). All combinations are computed side by side in the
+optional `per_task_cap`). The primary is `all_pairs` with a cap of 8 pairs
+per task. All combinations are computed side by side in the
 report, and the ablations from the proposal (one change instead of two, one
 repetition instead of three) are computed from the same trials.
 
@@ -184,10 +187,11 @@ and how to use it; `docs/units.md` lists every unit with its tests.
 
 ### Tasks
 
-A task is a directory under `tasks/` with a `task.yaml` manifest. There
-are no real tasks yet. The tests use one example task,
-`tests/data/tasks/record_store/` (a file-backed record store), which shows
-the layout:
+A task is a directory under `tasks/` with a `task.yaml` manifest. The 60
+real tasks (36 train, 8 dev, 16 eval) are listed, with their status, in
+[harness/tasks/FAMILIES.md](harness/tasks/FAMILIES.md). The tests use one
+example task, `tests/data/tasks/record_store/` (a file-backed record
+store), which shows the layout:
 
 ```
 record_store/
@@ -224,6 +228,12 @@ what the team must review by hand.
 - `configs/mock.yaml`: the mock writer and editor (`fixtures/mock/`) on
   the example task in `tests/data/tasks/`, for tests and the end-to-end
   check.
+- `configs/all_tasks.yaml`: all 60 real tasks with the mock models, for
+  `validate-tasks` on the whole set.
+- `configs/noahs_laptop.yaml` and `configs/rtx5070_pc.yaml`: Qwen2.5-Coder-7B
+  in Ollama on team members' machines, for the writer check on the dev
+  tasks. The 7B model stands in for the 14B editor, so their results never
+  go into training data or the report.
 
 Settings that change results (models, prompts, budgets, sandbox limits,
 seeds) are part of the result keys. `execution` holds settings that never
@@ -267,6 +277,66 @@ These are in the proposal but not in the harness yet:
   size-matched subset;
 - a config for the real models on the RTX 5090 (Qwen2.5-Coder-7B writer,
   14B editor);
-- the 60 real tasks, and a CI workflow.
+- a CI workflow.
+
+## Changes from the proposal
+
+Decisions made while setting up the pipeline that differ from, or fill in,
+the proposal. Each is in `configs/base.yaml` unless noted.
+
+**2026-10-26: 16 writer samples per task, at most 8 programs edited.** The
+proposal says "up to eight implementations" per task. The writer check on
+the 8 dev tasks (Qwen2.5-Coder-7B, temperature 0.4) passed only 3.9 of 8
+on average, and pairs grow with the square of the passing count (n passing
+programs give n(n-1)/2 comparisons, many of them ties), so if about 40% of
+comparisons give a pair, 8 samples would give roughly 80 pairs from the 36
+train tasks, short of the 100-300 target. The writer now samples 16 programs (`writer.samples_per_task`) and
+the first 8 distinct passing ones go on to editing (`tasks.max_programs`).
+Editing is the expensive part and stays capped at 8 programs per task, so
+the proposal's compute estimate (3,456 editing checkpoints) still holds;
+the extra cost is 8 more writer calls per task, about 5 seconds each.
+Earlier samples are kept: sample i is the same whatever the total, so
+raising the count only adds new samples. On the dev tasks this raised the
+programs going to editing from 3.9 to 5.9 per task on average, and the
+possible comparisons from 61 to 130 (per-task numbers in
+[harness/tasks/FAMILIES.md](harness/tasks/FAMILIES.md)).
+
+**2026-10-26: pairs from `all_pairs`, at most 8 per task.** The default was
+`best_vs_worst`, which gives at most one pair per task (36 in all).
+`all_pairs` with `per_task_cap: 8` gives up to 288 and keeps a few tasks
+from dominating, as the proposal asks.
+
+**2026-10-26: pass-rate target for tasks.** At least 3 of 8 programs must
+pass for a task to be kept (unchanged), and the average across tasks should
+be about 5 of 8 (see [harness/tasks/README.md](harness/tasks/README.md)).
+
+**2026-10-26: two dev task specs changed** after the writer check (details
+in [harness/tasks/FAMILIES.md](harness/tasks/FAMILIES.md)):
+`shopping_cart` now says that quantities must be an `int` (the tests
+already required it); `library_catalog` no longer requires a fixed error
+order or rejecting non-string borrowers. library_catalog still passes only
+1 of 8 and is kept as a hard task for now; the team should decide whether
+to relax the order of `get_loans`.
+
+**Writer temperature: not decided.** On the dev tasks, 0.4 and 0.6 gave
+about the same number of passing programs (31 and 30 of 64); 0.6 gave no
+duplicates but fewer tasks above 3 of 8. Both runs used a 4-bit model in
+Ollama, so the choice should be confirmed with the real writer on the 5090
+before the settings are frozen.
+
+## Running on Windows
+
+The harness needs Linux and Docker; on Windows, use WSL2.
+
+- Install Ubuntu in WSL and Docker Engine inside it (`apt install
+  docker.io`); Docker Desktop is not needed. A distro can live on any
+  drive: `wsl --install -d Ubuntu-24.04 --location E:\WSL\Ubuntu`.
+- Install uv and Ollama inside Ubuntu, and run the harness from there
+  (the repo can stay on the Windows drive, under `/mnt/c/...`).
+- Check out the repo with Linux line endings (`git config core.autocrlf
+  false`, then check out again). With Windows line endings the writer
+  prompt differs from other machines' and some tests fail.
+- If git inside WSL reports "dubious ownership", run
+  `git config --global --add safe.directory '<repo path>'` inside WSL.
 
 

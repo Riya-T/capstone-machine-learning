@@ -176,6 +176,7 @@ def test_samples_get_exactly_one_fate():
         "initially_failing": 2,  # e, plus the unparseable sample
         "infra_error": 1,  # f
         "incomplete": 1,  # h
+        "over_program_cap": 0,
     }
     assert sum(report["samples"].values()) == 8  # every sample accounted for
     assert report["samples_detail"] == {
@@ -402,6 +403,7 @@ def test_load_task_record_from_the_store(tmp_path):
         "duplicate": 1,
         "infra_error": 0,
         "incomplete": 0,
+        "over_program_cap": 0,
     }
     assert report["samples_detail"] == {
         "initially_failing": {"failed_initial_tests": 1, "malformed/no_code": 1}
@@ -506,7 +508,8 @@ def test_report_has_candidates_and_the_summary_table_shows_them():
         "weak_dominance/best_vs_worst",
         "Rep agreement: 0.94",
         "Step endings: fail_new 10, success 23",
-        "Samples: eligible 3, initially_failing 2, duplicate 1, infra_error 1, incomplete 1",
+        "Samples: eligible 3, initially_failing 2, duplicate 1, infra_error 1, incomplete 1, "
+        "over_program_cap 0",
     ]:
         assert expected in text, expected
 
@@ -520,3 +523,45 @@ def test_max_sequences_limits_the_loaded_sequences(tmp_path):
             editor_reps=3, max_sequences=1,
         )  # fmt: skip
     assert record.sequence_ids == ("s1",)
+
+
+def test_max_programs_keeps_the_first_passing_programs_in_sample_order(tmp_path):
+    cfg = load_config(ROOT / "configs" / "mock.yaml")
+    task = load_tasks(cfg.tasks)["record_store"]
+    from harness.registry import prompt_version
+
+    pv = prompt_version("P")
+    with Store(tmp_path / "runs") as store:
+        run = store.start_run(cfg)
+        # Samples 0-4: pass, fail, pass, pass, pass.
+        cids = [store.put_blob({"records.py": f"p{i}\n".encode()}) for i in range(5)]
+        for idx, cid in enumerate(cids):
+            store.record_candidate(
+                Candidate(CandidateKey(task.id, pv, "w", idx), cid, None, 1, 1, 0.1, run)
+            )
+            store.record_initial_check(
+                InitialCheck(task.id, task.task_version, cid, "s", idx != 1, {}, run)
+            )
+
+        def load(cap):
+            return load_task_record(
+                store, task, "P", writer_hash="w", sandbox_hash="s", editor_hash="e",
+                editor_reps=3, max_programs=cap,
+            )  # fmt: skip
+
+        capped = {c.candidate_id: c.over_program_cap for c in load(2).candidates}
+        uncapped = load(None)
+
+    # The first two passing programs (samples 0 and 2) stay; 3 and 4 are over
+    # the cap; the failing sample 1 is never over the cap.
+    assert capped == {cids[0]: False, cids[1]: False, cids[2]: False, cids[3]: True, cids[4]: True}
+    assert not any(c.over_program_cap for c in uncapped.candidates)
+
+
+def test_programs_over_the_cap_are_counted_and_never_scored():
+    capped = CandidateRecord("b", (1,), True, {}, (), {}, {}, over_program_cap=True)
+    task = TaskRecord("t", "p", ("s1", "s2"), 2, (), (cand("a", [2, 2, 2], [2, 2, 2]), capped))
+    report = build(task).report
+    assert report["samples"]["eligible"] == 1
+    assert report["samples"]["over_program_cap"] == 1
+    assert report["samples"]["incomplete"] == 0  # its missing trials don't count as unfinished

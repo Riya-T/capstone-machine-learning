@@ -20,6 +20,7 @@ import pytest
 from harness.config import load_config
 from harness.sandbox.runner import (
     LABEL,
+    NOBODY,
     RunRequest,
     SandboxRunner,
     _CappedReader,
@@ -54,7 +55,7 @@ def test_create_command_has_every_isolation_flag(tmp_path):
     for flag in [
         "--pull never",
         "--network none",
-        f"--user {os.getuid()}:{os.getgid()}",
+        f"--user {NOBODY if os.getuid() == 0 else f'{os.getuid()}:{os.getgid()}'}",
         "--cap-drop ALL",
         "--security-opt no-new-privileges",
         "--read-only",
