@@ -63,6 +63,9 @@ The first run builds the sandbox image `harness-sandbox:py3.11-v1` from
 `writer.backend` and `editor.backend` are `kind: openai_compat` and point at
 an OpenAI-compatible server (vLLM, Ollama, llama.cpp).
 
+CI (`.github/workflows/tests.yml`) runs `uv run pytest -rs` on every pull
+request into main and every push to main. The Docker tests run but the slow ones don't (this could be changed).
+
 ### How it works
 
 ```
@@ -276,8 +279,7 @@ These are in the proposal but not in the harness yet:
 - the comment ablation (`editor.view_transform: strip_comments`) and the
   size-matched subset;
 - a config for the real models on the RTX 5090 (Qwen2.5-Coder-7B writer,
-  14B editor);
-- a CI workflow.
+  14B editor).
 
 ## Changes from the proposal
 
