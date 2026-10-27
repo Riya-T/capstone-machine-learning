@@ -61,6 +61,16 @@ def test_trial_score(steps, length, score):
     assert trial_score(steps, length) == score
 
 
+def test_trial_score_uses_failed_edit_test_pass_rate():
+    assert trial_score({1: "fail_new"}, 2, {1: (4, 10, 8, 10)}) == F(3, 5)
+    assert trial_score({1: "success", 2: "fail_existing"}, 2, {2: (5, 5, 2, 10)}) == F(22, 15)
+
+
+def test_trial_score_rejects_invalid_test_counts():
+    with pytest.raises(ValueError, match="invalid test counts"):
+        trial_score({1: "fail_new"}, 2, {1: (5, 4, 0, 10)})
+
+
 def test_unknown_status_is_an_error():
     with pytest.raises(ValueError, match="unknown step status"):
         trial_score({1: "passed"}, 2)
@@ -371,7 +381,20 @@ def test_load_task_record_from_the_store(tmp_path):
             for rep in range(3):
                 key = TrialKey(task.id, task.task_version, good, seq, rep, "eh")
                 store.record_checkpoint(Checkpoint(key, 1, "c", "success", "x", run_id=run))
-                store.record_checkpoint(Checkpoint(key, 2, "c", "fail_new", "y", run_id=run))
+                store.record_checkpoint(
+                    Checkpoint(
+                        key,
+                        2,
+                        "c",
+                        "fail_new",
+                        "y",
+                        new_pass=4,
+                        new_total=10,
+                        existing_pass=8,
+                        existing_total=10,
+                        run_id=run,
+                    )
+                )
 
         record = load_task_record(
             store,
@@ -390,6 +413,7 @@ def test_load_task_record_from_the_store(tmp_path):
     assert by_id[good].call_keys == ("k0", "k1")
     assert by_id[good].initially_passed is True
     assert by_id[good].trials[("s2", 2)] == {1: "success", 2: "fail_new"}
+    assert by_id[good].trial_checks[("s2", 2)][2] == (4, 10, 8, 10)
     assert by_id[bad].initially_passed is False and by_id[bad].trials == {}
 
     report = (
@@ -408,7 +432,11 @@ def test_load_task_record_from_the_store(tmp_path):
     assert report["samples_detail"] == {
         "initially_failing": {"failed_initial_tests": 1, "malformed/no_code": 1}
     }
-    assert report["tasks"]["record_store"]["score_histogram"] == {"s1": [0, 3, 0], "s2": [0, 3, 0]}
+    assert report["tasks"]["record_store"]["score_histogram"] == {"s1": [0, 0, 0], "s2": [0, 0, 0]}
+    assert report["tasks"]["record_store"]["score_distribution"] == {
+        "s1": {"8/5": 3},
+        "s2": {"8/5": 3},
+    }
 
 
 def test_infra_cause_is_loaded_from_the_store(tmp_path):

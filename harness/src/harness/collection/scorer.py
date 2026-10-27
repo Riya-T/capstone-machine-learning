@@ -1,8 +1,8 @@
 """Scorer: turns editing results into DPO preference pairs.
 
-A program's score on one trial is how many changes in a row the editor
-completed before the first failure (failed hidden tests, or out of
-budget). Its score for a sequence is the mean over repetitions.
+A program's score on one trial is the number of fully successful changes,
+plus partial credit on its first failed edit based on the share of hidden
+tests passed. Its score for a sequence is the mean over repetitions.
 
 Two programs from the same task are compared over their sequence scores:
 - strict: better in every sequence;
@@ -44,7 +44,7 @@ from ..registry import Task, prompt_version
 from ..store import FAILED, Store, TrialKey
 
 Verdict = Literal["a", "b", "tie", "inconsistent"]
-TrialScore = int | Literal["infra_error", "incomplete"]
+TrialScore = Fraction | Literal["infra_error", "incomplete"]
 PAIRING_MODES = ("all_pairs", "best_vs_worst")
 # What can happen to a writer sample: scored, or excluded for one reason.
 SAMPLE_FATES = (
@@ -108,6 +108,10 @@ class CandidateRecord:
     end_reasons: Mapping[tuple[str, int], Mapping[int, str]] = field(default_factory=dict)
     # A passing program after the first tasks.max_programs: never edited.
     over_program_cap: bool = False
+    # (sequence_id, rep) -> {step: (new_pass, new_total, existing_pass, existing_total)}.
+    trial_checks: Mapping[tuple[str, int], Mapping[int, tuple[int, int, int, int]]] = field(
+        default_factory=dict
+    )
 
 
 @dataclass(frozen=True)
@@ -157,7 +161,7 @@ def load_task_record(
         passed = bool(check and check.passed)
         n_passed += passed
         over_cap = passed and max_programs is not None and n_passed > max_programs
-        trials, causes, reasons = {}, {}, {}
+        trials, causes, reasons, checks = {}, {}, {}, {}
         for sequence in sequences:
             for rep in range(editor_reps):
                 key = TrialKey(task.id, task.task_version, cid, sequence.id, rep, editor_hash)
@@ -165,6 +169,19 @@ def load_task_record(
                 if steps:
                     trials[(sequence.id, rep)] = {c.step: c.status for c in steps}
                     reasons[(sequence.id, rep)] = {c.step: c.end_reason or "" for c in steps}
+                    checks[(sequence.id, rep)] = {
+                        c.step: (c.new_pass, c.new_total, c.existing_pass, c.existing_total)
+                        for c in steps
+                        if all(
+                            value is not None
+                            for value in (
+                                c.new_pass,
+                                c.new_total,
+                                c.existing_pass,
+                                c.existing_total,
+                            )
+                        )
+                    }
                 for c in steps:
                     if c.status == "infra_error":
                         causes[(sequence.id, rep)] = c.infra_cause or "unknown"
@@ -178,6 +195,7 @@ def load_task_record(
                 infra_causes=causes,
                 end_reasons=reasons,
                 over_program_cap=over_cap,
+                trial_checks=checks,
             )
         )
     return TaskRecord(
@@ -193,12 +211,19 @@ def load_task_record(
 # --- scoring ----------------------------------------------------------------
 
 
-def trial_score(steps: Mapping[int, str], length: int) -> TrialScore:
-    """Consecutive successful steps before the first failure, counting only
-    the first `length` steps (the change-count ablation truncates here).
-    budget_exhausted is a failure. An infrastructure error or a missing step
-    before the first failure leaves the trial unresolved, never scored."""
-    score = 0
+def trial_score(
+    steps: Mapping[int, str],
+    length: int,
+    checks: Mapping[int, tuple[int, int, int, int]] | None = None,
+) -> TrialScore:
+    """Score editing progress with partial credit for test pass rates.
+
+    Every fully successful change earns 1. A failed edit earns the fraction
+    of its new-feature and regression tests that passed; later edits do not
+    count because the trial stops at its first failure. Infrastructure errors
+    and missing steps remain unresolved rather than receiving a score.
+    """
+    score = Fraction(0)
     for step in range(1, length + 1):
         status = steps.get(step)
         if status is None:
@@ -206,6 +231,17 @@ def trial_score(steps: Mapping[int, str], length: int) -> TrialScore:
         if status == "infra_error":
             return "infra_error"
         if status in FAILED:
+            outcome = (checks or {}).get(step)
+            if outcome is not None:
+                new_pass, new_total, existing_pass, existing_total = outcome
+                total = new_total + existing_total
+                if (
+                    total <= 0
+                    or not 0 <= new_pass <= new_total
+                    or not 0 <= existing_pass <= existing_total
+                ):
+                    raise ValueError(f"invalid test counts for failed step {step}: {outcome}")
+                score += Fraction(new_pass + existing_pass, total)
             return score
         if status != "success":
             raise ValueError(f"unknown step status {status!r}")
@@ -216,7 +252,7 @@ def trial_score(steps: Mapping[int, str], length: int) -> TrialScore:
 @dataclass(frozen=True)
 class CandidateScores:
     candidate_id: str
-    rep_scores: tuple[tuple[int, ...], ...]  # per sequence, per rep
+    rep_scores: tuple[tuple[Fraction, ...], ...]  # per sequence, per rep
 
     @property
     def means(self) -> tuple[Fraction, ...]:
@@ -291,7 +327,14 @@ class Scorer:
                 excluded["over_program_cap"] += 1
                 continue
             scores = [
-                [trial_score(c.trials.get((seq, rep), {}), length) for rep in self.reps]
+                [
+                    trial_score(
+                        c.trials.get((seq, rep), {}),
+                        length,
+                        c.trial_checks.get((seq, rep), {}),
+                    )
+                    for rep in self.reps
+                ]
                 for seq in task.sequence_ids
             ]
             flat = [s for reps in scores for s in reps]
@@ -408,6 +451,7 @@ class Scorer:
                 "excluded_detail": _nest(detail),
                 "step_endings": _nest(endings).get("step_endings", {}),
                 "score_histogram": _histograms(scored, task),
+                "score_distribution": _score_distributions(scored, task),
             }
             per_task.append((task, scored))
             report["candidates"][task.task_id] = candidate_stats(task, load_program)
@@ -455,8 +499,8 @@ class Scorer:
             "rule": self.cfg.rule,
             "pairing_mode": self.cfg.pairing_mode,
             "strict_subset": strict(c.a.means, c.b.means) == "a",
-            "chosen_scores": [list(r) for r in c.a.rep_scores],
-            "rejected_scores": [list(r) for r in c.b.rep_scores],
+            "chosen_scores": [[float(score) for score in r] for r in c.a.rep_scores],
+            "rejected_scores": [[float(score) for score in r] for r in c.b.rep_scores],
             "margin": str(c.margin),
             # The recorded writer answers behind each program (model_calls keys).
             "chosen_call_keys": list(records[c.a.candidate_id].call_keys),
@@ -474,15 +518,28 @@ def _nest(detail: Counter) -> dict[str, dict[str, int]]:
 
 
 def _histograms(scored: list[CandidateScores], task: TaskRecord) -> dict[str, list[int]]:
-    """Per sequence: how many trials scored 0, 1, ..., L. All mass at 0 or at
-    L flags a task that is too hard or too easy for the editor."""
+    """Legacy integer-score histogram retained for existing reports."""
     out = {}
     for i, seq in enumerate(task.sequence_ids):
         counts = [0] * (task.sequence_length + 1)
         for s in scored:
             for score in s.rep_scores[i]:
-                counts[score] += 1
+                if score.denominator == 1:
+                    counts[int(score)] += 1
         out[seq] = counts
+    return out
+
+
+def _score_distributions(
+    scored: list[CandidateScores], task: TaskRecord
+) -> dict[str, dict[str, int]]:
+    """Per sequence: count each exact score, including fractional outcomes."""
+    out = {}
+    for i, seq in enumerate(task.sequence_ids):
+        counts: Counter[str] = Counter(
+            str(score) for candidate in scored for score in candidate.rep_scores[i]
+        )
+        out[seq] = dict(sorted(counts.items(), key=lambda item: Fraction(item[0])))
     return out
 
 
@@ -587,8 +644,9 @@ def summary_table(report: dict) -> str:
     editor = ", ".join(f"{k} {v}" for k, v in report["editor_endings"].items()) or "-"
     out.append(f"Editor endings: {editor}")
     for task_id, t in sorted(report["tasks"].items()):
-        histograms = "; ".join(f"{seq} {counts}" for seq, counts in t["score_histogram"].items())
-        out.append(f"Score histogram {task_id} (trials scoring 0, 1, ...): {histograms or '-'}")
+        distributions = t.get("score_distribution", t["score_histogram"])
+        histograms = "; ".join(f"{seq} {counts}" for seq, counts in distributions.items())
+        out.append(f"Score distribution {task_id} (trial scores): {histograms or '-'}")
     return "\n".join(out)
 
 

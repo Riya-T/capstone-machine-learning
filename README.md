@@ -27,13 +27,13 @@ a fixed editing agent to change later. For each task it:
 2. keeps the ones that pass the initial tests;
 3. has the **editor** model apply the same sequence of later changes to
    each one, several times, in a sandbox;
-4. scores each implementation by how many changes in a row the editor
-   completed before its first failure;
+4. scores each implementation by how many changes the editor completed,
+   with partial credit based on hidden-test pass rates for its first failed edit;
 5. pairs the higher-scoring implementation (chosen) against a lower-scoring
    one (rejected) for DPO training.
 
-It holds the core pipeline; training (DPO, baselines) and held-out
-evaluation are not built yet (see [Not built yet](#not-built-yet)). All
+It holds the core pipeline and an initial DPO training implementation.
+Baselines and held-out evaluation are not built yet (see [Not built yet](#not-built-yet)). All
 paths from here on are relative to `harness/`.
 
 ### Quick start
@@ -92,6 +92,8 @@ request into main and every push to main. The Docker tests run but the slow ones
   └───────────────────────────┬───────────────────────────┘
                               │
             runs/<run_id>/preferences.jsonl  (+ report, summary)
+              │
+              └── TRL DPOTrainer + PEFT QLoRA ──► adapter
 
   Every result and every model call is saved in runs/ (store.py) as it happens,
   so an interrupted run resumes where it stopped and a rerun makes no model calls.
@@ -271,7 +273,7 @@ are never scored; the next run retries them.
 
 These are in the proposal but not in the harness yet:
 
-- DPO training with TRL and QLoRA, and the training baselines
+- Training baselines
   (correctness-only fine-tuning, DPO on Radon maintainability rankings, a
   maintainability-focused prompt);
 - held-out evaluation (three-change sequences on eval tasks, confidence
@@ -280,6 +282,27 @@ These are in the proposal but not in the harness yet:
   size-matched subset;
 - a config for the real models on the RTX 5090 (Qwen2.5-Coder-7B writer,
   14B editor).
+
+### DPO training
+
+The scorer emits preference pairs with continuous partial-test scores in
+`runs/<run_id>/preferences.jsonl`. Install the CUDA training extra and train
+the writer using the same writer prompts and code completions:
+
+```bash
+cd harness
+uv sync --extra training
+uv run python -m harness.train_dpo runs/<run_id>/preferences.jsonl \
+  --output-dir ../models/writer-dpo
+```
+
+The command requires a CUDA GPU supported by bitsandbytes. It loads the base
+model in 4-bit NF4, applies PEFT LoRA adapters to linear layers, and uses
+TRL's DPOTrainer. The output is an adapter; load it with the same base model
+for generation. Adjust batch size/gradient accumulation and sequence lengths
+for available VRAM. `chosen_scores` and `rejected_scores` remain in each JSONL
+row for analysis; vanilla DPO uses their preference ordering, not their
+numeric magnitude.
 
 ## Changes from the proposal
 
@@ -340,5 +363,4 @@ The harness needs Linux and Docker; on Windows, use WSL2.
   prompt differs from other machines' and some tests fail.
 - If git inside WSL reports "dubious ownership", run
   `git config --global --add safe.directory '<repo path>'` inside WSL.
-
 
