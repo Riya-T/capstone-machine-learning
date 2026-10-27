@@ -23,7 +23,7 @@ extends: base.yaml
 name: noahs-laptop
 runs_dir: ../runs/noahs_laptop  # its own store, apart from every other config
 tasks:
-  include: [bank_ledger, football_season, team_roster]
+  include: [chat_rooms]
 writer:
   backend:
     kind: openai_compat

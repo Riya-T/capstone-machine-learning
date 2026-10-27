@@ -103,7 +103,8 @@ This is a  rough list of tasks we need to complete and is definitely subject to 
   the first program, editor mistake, unclear test, or infrastructure.
 - [ ] **Plots** — Charts of the main results and costs.
 - [ ] **Reproduction instructions** — README commands to rerun every result.
-- [ ] **CI** — Run the CPU tests automatically on GitHub.
+- [x] **CI** — Run the CPU tests automatically on GitHub
+  (`.github/workflows/tests.yml`).
 - [ ] **Release the adapters** — Publish the trained writer's adapters.
 - [ ] **Final report** — Research question, methods, results and limitations.
 - [ ] **Final presentation**
