@@ -1,3 +1,9 @@
+"""Tests DPO preference loading and chat formatting.
+
+Usage:
+    uv run pytest tests/test_train_dpo.py
+"""
+
 import json
 
 import pytest
