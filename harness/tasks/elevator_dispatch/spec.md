@@ -19,6 +19,7 @@ class Building:
     def get_riders(self, car_id: str) -> list[str]: ...
     def get_waiting(self, floor: int) -> list[str]: ...
     def get_delivered(self) -> list[str]: ...
+    def get_destination(self, passenger_id: str) -> int: ...
 ```
 
 ## Floors and cars
@@ -39,7 +40,16 @@ class Building:
 
 - `call(passenger_id, floor, destination)` adds a passenger who waits on
   `floor` to be taken to `destination`. An empty passenger id raises
-  `ValueError`, and so does a call whose `floor` equals its `destination`.
+  `ValueError`, and so does an invalid `floor` or `destination`, or a call
+  whose `floor` equals its `destination`.
+- `call` records the passenger's id and destination. That record is kept
+  for good: it is never removed, not when the passenger gets in and not
+  when they arrive.
+- `get_destination(passenger_id)` returns the `destination` the passenger
+  gave to `call` (not the floor they are on now), whether they are still
+  waiting, riding or have arrived. An id that was never used in a call
+  raises `KeyError`. The same record of every id ever called is what makes
+  a second call with that id raise `ElevatorError`.
 - A passenger id can be used by one call only. Calling with an id that was
   already used, whether that passenger is still waiting, riding or has
   arrived, raises `ElevatorError`. Every `ValueError` check comes before
@@ -52,16 +62,24 @@ class Building:
 ## Moving a car
 
 `move_car(car_id, floor)` sends the car to `floor` and opens its doors
-there. Moving a car to the floor it is already on is allowed and opens the
-doors in the same way. `KeyError` for the car is checked before
-`ValueError` for the floor. When the doors open, in this order:
+there. `KeyError` for the car is checked before `ValueError` for the floor.
+When the doors open, in this order:
 
-1. Every rider whose destination is this floor gets out. They have arrived.
-2. Passengers waiting on this floor get in, in the order they called, as
-   long as the car has fewer than **4** riders. Whoever does not fit keeps
-   waiting, in the same order as before.
+1. Every rider whose destination is this floor gets out, however many
+   there are (several riders can get out at one stop). They have arrived.
+2. Passengers waiting on this floor get in, in the order they called,
+   while the car has fewer than **4** riders in total, counting the riders
+   already inside. A car with 3 riders takes 1 more; a car with 4 takes
+   nobody. Whoever does not fit keeps waiting, in the same order as before.
 
-Only the car that was moved picks anybody up.
+Only the car that was moved picks anybody up. A passenger keeps the
+destination they called with while they wait and while they ride, so the
+car knows where each rider gets out.
+
+For example, with `Building(6)` and a car `"east"`: `call("ann", 2, 5)`
+and `call("ben", 2, 4)`, then `move_car("east", 2)` gives riders
+`["ann", "ben"]`. Then `move_car("east", 4)` lets ben out: the riders are
+`["ann"]` and `get_delivered()` is `["ben"]`.
 
 - `get_riders(car_id)` returns the ids of the passengers in the car, in the
   order they got in.
@@ -75,7 +93,7 @@ list and the list of arrived passengers are unchanged.
 ## Unspecified behavior
 
 Behavior not described here is unspecified, and no test depends on it. This
-includes passenger and car ids that are not strings passed to `call` or
-`add_car`, `bool` floors, what happens if a returned list is changed, the
-text of error messages, saving the building to a file, and use from several
-threads.
+includes moving a car to the floor it is already on, passenger and car ids
+that are not strings passed to `call` or `add_car`, `bool` floors, what
+happens if a returned list is changed, the text of error messages, saving
+the building to a file, and use from several threads.

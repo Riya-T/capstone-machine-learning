@@ -191,13 +191,6 @@ def test_a_document_with_several_tags_is_listed_under_each(store):
 # --- error order ------------------------------------------------------------
 
 
-def test_a_missing_id_is_reported_before_a_bad_body_or_tag(store):
-    with pytest.raises(KeyError):
-        store.update_body("missing", None)
-    with pytest.raises(KeyError):
-        store.tag_document("missing", "")
-
-
 def test_an_invalid_title_or_body_is_reported_before_a_duplicate_id(store):
     with pytest.raises(ValueError):
         store.add_document("notes", "", "body")

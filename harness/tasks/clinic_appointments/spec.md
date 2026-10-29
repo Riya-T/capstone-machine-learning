@@ -21,7 +21,8 @@ class Clinic:
 
 A slot is identified by its doctor, a day number and a minute of that day.
 Days are `int` values starting at 1. Minutes are `int` values from 0
-(midnight) to 1439 (23:59), so 9:00 is minute 540.
+(midnight) to 1439 (23:59), so 9:00 is minute 540. Minute 540 on day 1
+and minute 540 on day 2 are two different slots.
 
 ## Doctors
 
@@ -39,17 +40,26 @@ Days are `int` values starting at 1. Minutes are `int` values from 0
   for. A day that is not an `int` of 1 or more, or a minute that is not an
   `int` from 0 to 1439, raises `ValueError`. Opening a slot that doctor
   already has on that day and minute, whether still open or already booked,
-  raises `ClinicError`.
+  raises `ClinicError`. A booked slot still exists; it is just no longer
+  open.
 - `book(doctor, day, minute, patient)` books the slot for the patient. The
-  patient must be a non-empty string, or `ValueError` is raised. Booking a
+  patient must be a non-empty string (so `""` and `None` are invalid), or
+  `ValueError` is raised. Booking a
   slot that is not open for booking, because it was never opened or is
   already booked, raises `ClinicError`.
 - `get_open_slots(doctor, day)` returns the minutes of the doctor's slots on
-  that day that are still unbooked, earliest first. It raises `ValueError`
-  for an invalid day.
+  that day that are still unbooked, sorted from the earliest minute to the
+  latest, whatever order they were opened in. A day on which the
+  doctor has no slots gives `[]`. It raises `ValueError` for an invalid day.
 - `get_appointments(patient)` returns the patient's bookings as
   `(doctor, day, minute)` tuples, in the order they were booked. Patients
   are not registered anywhere: a patient with no bookings gives `[]`.
+
+For example: `open_slot("dr_lee", 2, 540)`, then
+`book("dr_lee", 2, 540, "ana")`. Now `get_appointments("ana")` is
+`[("dr_lee", 2, 540)]`, `get_open_slots("dr_lee", 2)` is `[]`, and
+`open_slot("dr_lee", 2, 540)` raises `ClinicError` because that slot
+exists (booked).
 
 When a call has several problems, the first of these is raised:
 
@@ -66,6 +76,7 @@ booking is unchanged.
 
 Behavior not described here is unspecified, and no test depends on it. This
 includes `bool` values passed as days or minutes, values that are not
-strings passed to `get_appointments`, what happens if a returned list is
+strings passed to `get_appointments`, patients passed to `book` that are
+neither strings nor `None`, what happens if a returned list is
 changed, the text of error messages, saving the clinic to a file, and use
 from several threads.

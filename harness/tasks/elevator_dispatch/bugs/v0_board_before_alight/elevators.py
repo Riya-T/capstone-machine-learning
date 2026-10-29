@@ -79,6 +79,11 @@ class Building:
     def get_delivered(self):
         return list(self._delivered)
 
+    def get_destination(self, passenger_id):
+        if passenger_id not in self._destinations:
+            raise KeyError(f"no passenger {passenger_id!r}")
+        return self._destinations[passenger_id]
+
     def _car(self, car_id):
         # Non-str ids are never stored, so they count as "not a car" too.
         if not isinstance(car_id, str) or car_id not in self._cars:

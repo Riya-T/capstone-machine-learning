@@ -55,8 +55,14 @@ For example, a batch added with freshness 12 and 1 day left has
 freshness 10 and 0 days left after one day, then 5 and -1, then 0 and -2,
 then 0 and -3.
 
-`get_wilted()` returns the ids of the batches whose freshness is 0, in the
-order they were added. Wilted batches stay in the cooler until removed.
+`get_wilted()` returns the same ids as `get_batches()`, in the same order,
+but keeps only the batches whose freshness is 0 right now. The order in
+which batches wilted does not matter. A list of wilted ids built up in
+`end_day` gets this wrong (a batch can be added already wilted, and a
+removed batch must disappear), so work it out from the batches. So a batch added with freshness 0 is
+wilted right away, each wilted batch is listed once, and a removed batch is
+no longer listed. Wilted batches stay in the cooler until removed: they are
+still in `get_batches()` and still change each day.
 
 A failed call has no effect: if a method raises, every batch is unchanged.
 

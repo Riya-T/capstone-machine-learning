@@ -28,8 +28,11 @@ def test_open_slots_are_listed_earliest_first(clinic):
 def test_booking_takes_the_slot_and_records_the_appointment(clinic):
     clinic.open_slot("dr_lee", 1, 540)
     clinic.open_slot("dr_lee", 1, 600)
+    clinic.open_slot("dr_lee", 2, 540)
     clinic.book("dr_lee", 1, 540, "ana")
     assert clinic.get_open_slots("dr_lee", 1) == [600]
+    assert clinic.get_open_slots("dr_lee", 2) == [540]
+    assert clinic.get_open_slots("dr_lee", 3) == []
     assert clinic.get_appointments("ana") == [("dr_lee", 1, 540)]
     assert clinic.get_appointments("ben") == []
 

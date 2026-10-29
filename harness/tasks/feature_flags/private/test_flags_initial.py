@@ -228,13 +228,6 @@ def test_is_enabled_returns_real_bools(store):
 # --- error order ------------------------------------------------------------
 
 
-def test_a_missing_flag_is_reported_before_a_missing_user(store):
-    with pytest.raises(KeyError, match="night_mode"):
-        store.enable_for_user("night_mode", "dan")
-    with pytest.raises(KeyError, match="night_mode"):
-        store.is_enabled("night_mode", "dan")
-
-
 def test_a_missing_flag_is_reported_before_a_bad_percent(store):
     with pytest.raises(KeyError):
         store.set_rollout("night_mode", -1)

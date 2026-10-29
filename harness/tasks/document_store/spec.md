@@ -50,11 +50,9 @@ class DocumentStore:
 - `get_documents(tag)` returns only the ids of the documents that carry
   that tag, in the same order. A tag that no document carries gives `[]`.
 
-When a call has several problems, the first of these is raised:
-
-1. `KeyError` for an id that is not in the store;
-2. `ValueError` for an invalid id, title, body or tag;
-3. `StoreError` for an id that is already in the store.
+When `add_document` has several problems, `ValueError` for an invalid id,
+title or body is raised before `StoreError` for an id that is already in
+the store.
 
 A failed call has no effect: if a method raises, no document, body or tag
 changes.
@@ -62,6 +60,7 @@ changes.
 ## Unspecified behavior
 
 Behavior not described here is unspecified, and no test depends on it. This
-includes tags passed to `get_documents` that are not strings, what happens
+includes which of `KeyError` and `ValueError` is raised when a call has
+both problems, tags passed to `get_documents` that are not strings, what happens
 if a returned list is changed, the text of error messages, saving the store
 to a file, and use from several threads.

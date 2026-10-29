@@ -53,3 +53,16 @@ def test_unknown_batches_raise_key_error(cooler):
         cooler.get_freshness("daisies")
     with pytest.raises(KeyError):
         cooler.remove_batch("daisies")
+
+
+def test_wilted_batches_are_listed_in_the_order_added():
+    c = FlowerCooler()
+    c.add_batch("asters", 6, 5)
+    c.add_batch("daisies", 2, 5)
+    c.add_batch("irises", 0, 5)
+    assert c.get_wilted() == ["irises"]
+    c.end_day()
+    assert c.get_wilted() == ["daisies", "irises"]
+    c.end_day()
+    c.end_day()
+    assert c.get_wilted() == ["asters", "daisies", "irises"]

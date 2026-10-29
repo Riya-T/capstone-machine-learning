@@ -10,7 +10,7 @@ from clinic import Clinic, ClinicError
 
 BAD_DAYS = [0, -1, 1.5, "1", None]
 BAD_MINUTES = [-1, 1440, 2000, 1.5, "540", None]
-BAD_PATIENTS = ["", None, 7]
+BAD_PATIENTS = ["", None]
 
 
 @pytest.fixture

@@ -31,8 +31,8 @@ class Wiki:
 - `get_pages()` returns the names of all pages, in the order they were
   created.
 - Every other method raises `KeyError` when given a page name that does not
-  exist, including values that are not strings at all, such as `None` or
-  `1`.
+  exist. A page name that is not a `str`, such as `None` or `1`, counts as
+  a page that does not exist: it raises `KeyError`, not `ValueError`.
 
 ## Revisions
 
@@ -43,23 +43,39 @@ class Wiki:
 - Revisions of a page are numbered 1, 2, 3, … in the order they were
   written; the revision made by `create_page` is number 1.
 - `get_text(page)` returns the text of the latest revision.
-- `get_revision_count(page)` returns the number of revisions the page has
-  had so far.
-- `get_revision(page, number)` returns the text of revision `number`. The
-  number must be an `int` of 1 or more, or `ValueError` is raised. A number
-  higher than the page's latest revision raises `IndexError`.
-- Only the 5 most recent revisions of each page are kept. Asking for an
-  older revision with `get_revision` raises `IndexError`. Revisions that
-  are no longer kept still count for `get_revision_count` and
-  `get_authors`.
-- `get_authors(page)` returns everyone who wrote a revision of the page,
-  each name once, in the order of the first revision they wrote.
+- `get_revision_count(page)` returns the number of revisions ever written
+  to the page, including revisions that are no longer kept. It is not the
+  number of revisions kept.
+- `get_revision(page, number)` returns the text of revision `number`: the
+  `number`-th revision ever written to the page, not the `number`-th one
+  still kept. The number must be an `int` of 1 or more, or `ValueError` is
+  raised. A number higher than the page's latest revision raises
+  `IndexError`.
+- `get_authors(page)` returns everyone who ever wrote a revision of the
+  page, including revisions no longer kept, each name once, in the order
+  of the first revision they wrote (not sorted). For example, if zoe
+  writes revision 1, bob revision 2 and zoe revision 3, `get_authors`
+  returns `["zoe", "bob"]`.
 
-When a call has several problems, the first of these is raised:
+## Keeping only 5 revisions
 
-1. `KeyError` for a page that does not exist;
-2. `ValueError` for an invalid page name, author, text or revision number;
-3. `WikiError` or `IndexError`.
+Each page keeps the text of only its 5 most recent revisions:
+
+1. After an edit, if the page has more than 5 revisions kept, the oldest
+   kept revision is dropped and its text is forgotten.
+2. `get_revision` for a dropped revision raises `IndexError`.
+3. Dropping changes nothing else. Revision numbers stay the same,
+   `get_revision_count` still counts every revision ever written, and the
+   authors of dropped revisions stay in `get_authors`. So keep the count of
+   revisions written separately from the revisions kept.
+
+For example, after `create_page` and 7 edits a page has had 8 revisions:
+`get_revision_count` returns 8, revisions 4 to 8 can be read by their
+numbers, and `get_revision(page, 1)`, `2` and `3` raise `IndexError`.
+
+When a call has several problems, `ValueError` for an invalid page name,
+author, text or revision number is raised before `WikiError` or
+`IndexError`.
 
 A failed call has no effect: if a method raises, every page, text and
 revision is unchanged.
@@ -67,6 +83,7 @@ revision is unchanged.
 ## Unspecified behavior
 
 Behavior not described here is unspecified, and no test depends on it. This
-includes `bool` revision numbers, what happens if a returned list is
+includes which of `KeyError` and `ValueError` is raised when a call has
+both problems, `bool` revision numbers, what happens if a returned list is
 changed, the text of error messages, saving the wiki to a file, and use from
 several threads.

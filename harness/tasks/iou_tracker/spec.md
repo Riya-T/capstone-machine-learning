@@ -43,7 +43,10 @@ All amounts are whole cents, as `int`.
   bob 400.
 - `get_owed_to(name)` returns one `(borrower, amount)` tuple for every user
   who owes `name` something, largest amount first. Users with equal amounts
-  come in the order they were added.
+  come in the order they were added, so sorting with `reverse=True` is
+  wrong (it reverses the ties too). For example, if carol and then bob
+  were added before alice, and each borrows 100 from alice, then
+  `get_owed_to("alice")` is `[("carol", 100), ("bob", 100)]`.
 - `get_owed_by(name)` returns one `(lender, amount)` tuple for every user
   that `name` owes something, largest amount first, with the same tie rule.
 - `get_balance(name)` returns everything owed to `name` minus everything

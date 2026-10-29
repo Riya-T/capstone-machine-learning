@@ -9,7 +9,7 @@ import pytest
 from auction import AuctionError, AuctionHouse, BidTooLow
 
 BAD_NUMBERS = [0, -5, 1.5, "100", None]
-BAD_NAMES = ["", None, 7]
+BAD_NAMES = ["", None]
 
 
 @pytest.fixture

@@ -39,13 +39,14 @@ All prices and bids are whole cents, as `int`.
 
 `place_bid(lot_id, bidder, amount)` records a bid by `bidder` on the lot.
 
-- The bidder must be a non-empty string, and the amount an `int` greater
-  than 0; otherwise `ValueError` is raised.
-- The first bid on a lot must be at least the lot's opening price.
-- Every later bid must be at least 10 more than the current highest bid on
-  that lot. For example, if the highest bid is 250, a bid of 260 is accepted
+- The bidder must be a non-empty string (so `""` and `None` are invalid),
+  and the amount an `int` greater than 0; otherwise `ValueError` is raised.
+- Each lot has a minimum bid. While the lot has no bids, the minimum is its
+  opening price. Once it has bids, the minimum is the current highest bid
+  plus 10. For example, if the highest bid is 250, a bid of 260 is accepted
   and a bid of 259 is not.
-- A bid that is too low raises `BidTooLow`.
+- A bid below the minimum raises `BidTooLow`. Any other valid bid, including
+  the first bid on a lot, is recorded and becomes the lot's highest bid.
 - The bidder who holds the highest bid on a lot may not bid on that lot
   again until someone else outbids them; trying raises `AuctionError` (not
   `BidTooLow`).
@@ -74,6 +75,7 @@ unchanged.
 
 Behavior not described here is unspecified, and no test depends on it. This
 includes ids or bidders that are not strings passed to `add_lot` or
-`get_leading_lots`, `bool` prices or amounts, what happens if a returned
+`get_leading_lots`, bidders passed to `place_bid` that are neither strings
+nor `None`, `bool` prices or amounts, what happens if a returned
 list is changed, the text of error messages, saving the auction house to a
 file, and use from several threads.

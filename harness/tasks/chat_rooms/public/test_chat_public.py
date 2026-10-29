@@ -21,6 +21,7 @@ def test_joining_creates_the_room_and_adds_the_member(server):
     server.join("bob", "general")
     assert server.get_rooms() == ["general"]
     assert server.get_members("general") == ["alice", "bob"]
+    assert server.get_messages("general") == []
 
 
 def test_posting_then_reading(server):

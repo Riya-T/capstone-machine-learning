@@ -49,7 +49,8 @@ class Hangman:
   the word, in order: the letter itself if it has been guessed, and `_`
   otherwise. For the word `banana` after guessing `a`, it is `_a_a_a`.
 - `get_guesses(game_id)` returns the letters guessed so far, in the order
-  they were guessed.
+  they were guessed (not sorted): after guessing `z`, `b`, `a`, `n` it is
+  `["z", "b", "a", "n"]`.
 - `get_wrong_count(game_id)` returns how many guesses were letters that do
   not occur in the word.
 - `get_status(game_id)` returns `"playing"` until every letter of the word

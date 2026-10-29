@@ -30,9 +30,10 @@ def test_edits_add_numbered_revisions(wiki):
 
 
 def test_authors_are_listed_once_each(wiki):
-    wiki.edit_page("home", "bob", "Hi")
-    wiki.edit_page("home", "ann", "Hello")
-    assert wiki.get_authors("home") == ["ann", "bob"]
+    wiki.edit_page("home", "zoe", "Hi")
+    wiki.edit_page("home", "bob", "Hello")
+    wiki.edit_page("home", "ann", "Hello again")
+    assert wiki.get_authors("home") == ["ann", "zoe", "bob"]  # order of first revision
 
 
 def test_an_edit_that_changes_nothing_is_refused(wiki):
@@ -49,3 +50,14 @@ def test_a_revision_that_does_not_exist_yet_raises_index_error(wiki):
 def test_unknown_page_raises_key_error(wiki):
     with pytest.raises(KeyError):
         wiki.get_text("about")
+
+
+def test_old_revisions_are_dropped_but_keep_their_numbers(wiki):
+    for n in range(2, 9):
+        wiki.edit_page("home", "bob", f"v{n}")
+    assert wiki.get_revision_count("home") == 8
+    assert wiki.get_text("home") == "v8"
+    assert wiki.get_revision("home", 8) == "v8"
+    assert wiki.get_revision("home", 4) == "v4"
+    with pytest.raises(IndexError):
+        wiki.get_revision("home", 1)

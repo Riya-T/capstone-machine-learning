@@ -38,10 +38,14 @@ class Gateway:
 ## Allow list
 
 - `allow(client_id)` puts the client on the allow list. `revoke(client_id)`
-  takes it off. Allowing a client that is already allowed, or revoking one
-  that is not, does nothing.
-- `get_allowed()` returns the ids of the clients on the allow list, in the
-  order they were registered (not the order they were allowed).
+  takes it off. Both first check that the client is registered and raise
+  `KeyError` if not. After that check, allowing a registered client that is
+  already allowed, or revoking a registered client that is not allowed,
+  does nothing.
+- `get_allowed()` returns the same ids as `get_clients()`, in the same
+  order, but keeps only those that are on the allow list right now. The
+  order in which clients were allowed does not matter. For example, after registering `"a"`, `"b"` and `"c"` and then allowing
+  `"c"` and then `"a"`, `get_allowed()` returns `["a", "c"]`.
 
 ## Messages
 

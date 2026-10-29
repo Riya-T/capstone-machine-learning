@@ -22,7 +22,7 @@ def building():
 def test_wait_clock_starts_at_zero_and_counts_every_stop(building):
     assert building.get_clock() == 0
     building.move_car("east", 3)
-    building.move_car("east", 3)  # a stop on the same floor counts too
+    building.move_car("east", 2)
     building.move_car("west", 1)
     assert building.get_clock() == 3
 
@@ -117,7 +117,7 @@ def test_wait_totals_are_kept_per_car(building):
     building.call("ben", 1, 4)
     building.call("cy", 2, 5)
     building.move_car("east", 1)  # ann and ben, 1 each
-    building.move_car("west", 0)
+    building.move_car("west", 1)  # nobody is left waiting there
     building.move_car("west", 2)  # cy, 3
     building.move_car("east", 3)
     assert building.get_total_wait("east") == 2

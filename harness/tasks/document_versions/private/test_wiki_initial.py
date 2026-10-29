@@ -153,13 +153,6 @@ def test_invalid_edits_are_rejected(wiki, author, text):
     assert state(wiki) == before
 
 
-def test_a_missing_page_is_reported_before_bad_edit_arguments(wiki):
-    with pytest.raises(KeyError):
-        wiki.edit_page("about", "", None)
-    with pytest.raises(KeyError):
-        wiki.get_revision("about", 0)
-
-
 def test_a_bad_edit_is_reported_before_an_unchanged_text(wiki):
     with pytest.raises(ValueError):
         wiki.edit_page("home", "", "v1")

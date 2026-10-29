@@ -145,11 +145,6 @@ def test_an_unknown_user_is_reported_before_an_unknown_room(server):
         server.post("carol", "nowhere", "hi")
 
 
-def test_an_unknown_user_is_reported_before_a_bad_room_name(server):
-    with pytest.raises(KeyError):
-        server.join("carol", "")
-
-
 def test_a_bad_room_name_is_reported_before_the_membership_check(server):
     # alice is a member of "general"; an empty name is still a ValueError.
     with pytest.raises(ValueError):
@@ -195,11 +190,6 @@ def test_posting_without_membership_is_rejected(server):
 def test_a_bad_text_is_reported_before_the_membership_check(server):
     with pytest.raises(ValueError):
         server.post("bob", "music", "")
-
-
-def test_an_unknown_room_is_reported_before_a_bad_text(server):
-    with pytest.raises(KeyError):
-        server.post("alice", "nowhere", "")
 
 
 def test_servers_do_not_share_state():

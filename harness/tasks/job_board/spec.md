@@ -72,6 +72,7 @@ application is unchanged.
 
 Behavior not described here is unspecified, and no test depends on it. This
 includes job ids and names that are not strings passed to `post_job` and
-`add_applicant`, `bool` salaries, what happens if a returned list is
+`add_applicant`, titles that are neither strings nor `None`, `bool`
+salaries, what happens if a returned list is
 changed, the text of error messages, saving the board to a file, and use
 from several threads.

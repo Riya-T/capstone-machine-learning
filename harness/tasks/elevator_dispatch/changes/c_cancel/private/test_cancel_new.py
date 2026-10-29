@@ -119,9 +119,9 @@ def test_cancel_is_listed_every_time_oldest_first(building):
 
 
 def test_cancel_a_cancelled_call_is_never_delivered(building):
-    building.call("ann", 0, 3)
-    building.call("ben", 0, 3)
+    building.call("ann", 1, 3)
+    building.call("ben", 1, 3)
     building.cancel_call("ann")
-    building.move_car("east", 0)
+    building.move_car("east", 1)
     building.move_car("east", 3)
     assert building.get_delivered() == ["ben"]
