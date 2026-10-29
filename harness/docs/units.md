@@ -14,7 +14,7 @@ harness/
     registry.py            shared: tasks and writer prompts
     store.py               shared: results store
     models/                talking to models (backends, parser)
-    sandbox/               running generated code (runner, evaluator)
+    sandbox/               running generated code (runner, apptainer, evaluator)
     collection/            preference-data collection (editor, collect, scorer)
   tests/                 mirrors src/harness/; integration/ for multi-module tests
     data/tasks/            the example task the tests run on
@@ -50,7 +50,8 @@ subpackages next to `collection/`.
 
 | Unit | Description | Unit tests |
 |---|---|---|
-| `runner.py` | Runs programs and tests in an isolated Docker container (no network, no image pulls, read-only, memory, CPU, process, file-size and time limits) and always cleans up; OOM is detected from the container's own cgroup counter or Docker's flag, and an unexplained SIGKILL is an infra error. Containers carry the `harness.sandbox` label. | `tests/sandbox/test_runner.py` (marked `docker`) |
+| `runner.py` | Runs programs and tests in an isolated Docker container (no network, no image pulls, read-only, memory, CPU, process, file-size and time limits) and always cleans up; OOM is detected from the container's own cgroup counter or Docker's flag, and an unexplained SIGKILL is an infra error. Containers carry the `harness.sandbox` label. `make_runner` picks Docker or Apptainer from `execution.sandbox_runtime`. | `tests/sandbox/test_runner.py` (marked `docker`) |
+| `apptainer.py` | The same runner on Apptainer, for hosts without Docker (the Nexus cluster): user-namespace mode, no network, no capabilities, read-only image and `/work`, no host paths, `/dev/shm` read-only, no `/sys`, Docker's environment; per-run process limit (`pids_limit`), memory per process (`ulimit -v`; a MemoryError with an exit other than 1 is `oom`), file size and time. A timeout kills the whole process tree, Apptainer's squashfuse helper included. The image id is `apptainer:sha256:<SIF hash>`; a start-up probe refuses to run if any isolation is missing. No CPU limit. Design and measurements: `docs/apptainer_sandbox.md`. | `tests/sandbox/test_apptainer.py` (marked `apptainer`) |
 | `evaluator.py` | Runs a program against each test category (initial, public, new-feature, existing) in its own sandbox run, reads the JUnit reports, drops superseded tests by exact id, and validates tasks (references pass, planted bugs fail as declared, the program before each change fails its tests). Independent runs go in parallel (`execution.sandbox_workers`). | `tests/sandbox/test_evaluator.py` (mostly `docker`) |
 
 ## Collection (`src/harness/collection/`)
@@ -69,6 +70,7 @@ subpackages next to `collection/`.
 | `prompts/writer_v1.md` | Writer prompt template (`$entry_files`, `$spec`, `$public_checks`). | `tests/test_registry.py` |
 | `prompts/editor_v2.md` | Editor instructions template (`$request`, `$files`, `$history`, `$feedback`, `$allowed_files`, `$turns_left`). | `tests/collection/test_editor.py` |
 | `docker/sandbox/Dockerfile` | Sandbox image `harness-sandbox:py3.11-v1`: Python 3.11 pinned by digest, with the pytest and Hypothesis versions from `uv.lock`. | `tests/sandbox/test_runner.py` |
+| `docker/sandbox/sandbox.def` | The same image for Apptainer (same digest and packages), built into `execution.apptainer_image`. | `tests/sandbox/test_apptainer.py` (the two files must match) |
 | `fixtures/mock/` | Mock writer and editor responses for the deterministic backend. | `tests/models/test_backends.py`, `tests/integration/test_writer_replay.py` |
 | `configs/` | `base.yaml`, `mock.yaml` (deterministic mock writer and editor on the example task), `all_tasks.yaml` (every real task, for `validate-tasks`), and `noahs_laptop.yaml` and `rtx5070_pc.yaml` (the 7B model in Ollama, for the writer check). A real-model config for the 5090 comes later. `execution` holds settings that never affect results. | `tests/test_config.py` (committed configs load) |
 
@@ -83,7 +85,7 @@ subpackages next to `collection/`.
 
 | File | Purpose |
 |---|---|
-| `tests/conftest.py` | `--slow` option; skips `docker` tests when no daemon answers, and `slow` tests unless asked. |
+| `tests/conftest.py` | `--slow` option; skips `docker` tests when no daemon answers, `apptainer` tests without the apptainer CLI, and `slow` tests unless asked. |
 | `tests/helpers.py` | Builds valid config files for tests. |
 | `tests/data/` | Test inputs: the example task, and a real model answer for the parser test. pytest doesn't collect them (see `conftest.py`). |
 | `tests/test_headers.py` | Enforces the course rule that every source and test file has a header with a Usage section. |

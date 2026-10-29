@@ -10,10 +10,10 @@ A change can retire an initial test whose behavior it changes on purpose
 tests; pytest's own --deselect would also drop tests whose names merely
 start the same way.
 
-Docker failures give "infra_error", which callers retry and never score.
+Sandbox failures (Docker or Apptainer) give "infra_error", which callers retry and never score.
 
 Usage:
-    evaluator = Evaluator(SandboxRunner(cfg.sandbox, owner=run_id),
+    evaluator = Evaluator(make_runner(cfg, owner=run_id),
                           workers=cfg.execution.sandbox_workers)
     initial = evaluator.check_initial(program, task)      # initial.passed
     step = evaluator.check_step(program, task.sequence("s1").steps[0])
@@ -32,7 +32,7 @@ from pathlib import PurePosixPath
 from typing import Literal
 
 from ..registry import CheckSet, Program, Step, Task
-from .runner import RunRequest, RunResult, SandboxRunner
+from .runner import Runner, RunRequest, RunResult
 
 Category = Literal["initial", "public", "new_feature", "existing"]
 CategoryStatus = Literal["passed", "failed", "infra_error"]
@@ -158,7 +158,7 @@ class _Job:
 
 
 class Evaluator:
-    def __init__(self, runner: SandboxRunner, workers: int = 1) -> None:
+    def __init__(self, runner: Runner, workers: int = 1) -> None:
         self.runner = runner
         # Sandbox runs that are independent of each other run this many at a
         # time (config: execution.sandbox_workers). Each run has its own

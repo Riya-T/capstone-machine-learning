@@ -248,9 +248,22 @@ class ExecutionConfig:
     # Sandbox containers run at the same time (each limited by the sandbox
     # section's cpus and memory).
     sandbox_workers: int = 1
+    # Container runtime: docker, or apptainer for hosts without Docker (the
+    # Nexus cluster). The runtime reaches result keys only through the image
+    # id, and the two runtimes' ids never match, so their results are never
+    # mixed (memory and CPU limits work differently; see sandbox/apptainer.py).
+    sandbox_runtime: Literal["docker", "apptainer"] = "docker"
+    # apptainer only: the SIF image file. Built from sandbox.def in
+    # sandbox.build_context if missing. Its sha256 is the image id, so keep
+    # the file: a rebuild gives new result keys.
+    apptainer_image: OutputPath | None = None
 
     def __post_init__(self) -> None:
         _require_positive(self.sandbox_workers, "sandbox_workers")
+        if self.sandbox_runtime == "apptainer" and self.apptainer_image is None:
+            raise ConfigError("apptainer_image: required when sandbox_runtime is apptainer")
+        if self.sandbox_runtime == "docker" and self.apptainer_image is not None:
+            raise ConfigError("apptainer_image: only valid when sandbox_runtime is apptainer")
 
 
 @dataclass(frozen=True)

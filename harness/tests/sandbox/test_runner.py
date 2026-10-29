@@ -89,6 +89,7 @@ def test_capped_reader_keeps_the_first_bytes_and_drains_the_rest():
     assert reader.data == b"x" * 10
     assert reader.truncated
     assert stream.closed  # read to the end, so a real writer never blocks
+    assert reader.tail.endswith(b"xEND") and len(reader.tail) == _CappedReader.TAIL
 
 
 @pytest.mark.parametrize(

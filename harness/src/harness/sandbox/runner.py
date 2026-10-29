@@ -12,8 +12,11 @@ A misbehaving program never makes the runner raise. When Docker itself
 fails, the result is "infra_error", which must never count against the
 program.
 
+Hosts without Docker use the Apptainer runner in sandbox/apptainer.py,
+which has the same interface; make_runner picks one from the config.
+
 Usage:
-    runner = SandboxRunner(cfg.sandbox, owner=run_id)
+    runner = make_runner(cfg, owner=run_id)   # or SandboxRunner(cfg.sandbox, owner=...)
     runner.ensure_image()            # build the image if it's missing
     runner.sweep()                   # remove containers left by a crashed run
     result = runner.run(RunRequest(
@@ -36,9 +39,9 @@ import uuid
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path, PurePosixPath
-from typing import IO, Literal
+from typing import IO, Literal, Protocol
 
-from ..config import SandboxConfig
+from ..config import ExperimentConfig, SandboxConfig
 
 Status = Literal["ok", "nonzero_exit", "timeout", "oom", "infra_error"]
 
@@ -67,6 +70,28 @@ _DOCKER_CMD_TIMEOUT = 60
 
 class SandboxError(RuntimeError):
     """The sandbox can't be set up at all (e.g. the image can't be built)."""
+
+
+class Runner(Protocol):
+    """What callers use of a runner; SandboxRunner (Docker) and
+    ApptainerRunner both provide it."""
+
+    def ensure_image(self) -> str: ...
+    @property
+    def image_id(self) -> str: ...
+    def existing_image_id(self) -> str | None: ...
+    def run(self, request: RunRequest) -> RunResult: ...
+    def sweep(self) -> int: ...
+
+
+def make_runner(cfg: ExperimentConfig, owner: str = "harness") -> Runner:
+    """The runner for cfg.execution.sandbox_runtime."""
+    if cfg.execution.sandbox_runtime == "apptainer":
+        from .apptainer import ApptainerRunner  # imports this module
+
+        assert cfg.execution.apptainer_image is not None  # checked by the config
+        return ApptainerRunner(cfg.sandbox, cfg.execution.apptainer_image)
+    return SandboxRunner(cfg.sandbox, owner=owner)
 
 
 @dataclass(frozen=True)
@@ -277,12 +302,17 @@ class SandboxRunner:
 
 class _CappedReader:
     """Drains a pipe on a background thread, keeping only the first `cap`
-    bytes. Draining continues past the cap so the writer never blocks, but
-    memory use stays bounded however much a program prints."""
+    bytes, plus the last TAIL bytes so the end of a long output (e.g. a
+    final traceback) can still be checked. Draining continues past the cap
+    so the writer never blocks, but memory use stays bounded however much a
+    program prints."""
+
+    TAIL = 4096
 
     def __init__(self, stream: IO[bytes] | None, cap: int) -> None:
         self.cap = cap
         self.data = bytearray()
+        self.tail = bytearray()
         self.truncated = False
         self._thread = threading.Thread(target=self._drain, args=(stream,), daemon=True)
         self._thread.start()
@@ -295,6 +325,7 @@ class _CappedReader:
             self.data += chunk[:room]
             if len(chunk) > room:
                 self.truncated = True
+            self.tail = (self.tail + chunk)[-self.TAIL :]
         stream.close()
 
     def join(self) -> None:

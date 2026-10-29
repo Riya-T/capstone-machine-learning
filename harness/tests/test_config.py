@@ -32,6 +32,7 @@ def load(tmp_path: Path, data: dict) -> ExperimentConfig:
 def test_loads_and_converts_types(tmp_path):
     cfg = load(tmp_path, minimal())
     assert cfg.execution.sandbox_workers == 1  # default when the section is absent
+    assert cfg.execution.sandbox_runtime == "docker"
     assert cfg.tasks.include == ("a",)
     assert cfg.sandbox.cpus == 1.0 and isinstance(cfg.sandbox.cpus, float)
     assert cfg.editor.view_transform == "none"  # default applied
@@ -98,6 +99,18 @@ def test_output_path_may_be_missing_but_input_path_must_exist(tmp_path):
         (
             lambda d: d.update(execution={"sandbox_workers": 0}),
             r"execution: sandbox_workers: must be > 0",
+        ),
+        (
+            lambda d: d.update(execution={"sandbox_runtime": "apptainer"}),
+            r"execution: apptainer_image: required when sandbox_runtime is apptainer",
+        ),
+        (
+            lambda d: d.update(execution={"apptainer_image": "x.sif"}),
+            r"execution: apptainer_image: only valid when sandbox_runtime is apptainer",
+        ),
+        (
+            lambda d: d.update(execution={"sandbox_runtime": "podman"}),
+            r"execution\.sandbox_runtime: must be one of",
         ),
     ],
 )

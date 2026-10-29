@@ -27,7 +27,7 @@ from .collection.collect import collect, report, sandbox_owner
 from .config import ConfigError, load_config
 from .registry import TaskError, load_tasks
 from .sandbox.evaluator import Evaluator
-from .sandbox.runner import SandboxError, SandboxRunner
+from .sandbox.runner import SandboxError, make_runner
 from .store import StoreError
 
 log = logging.getLogger("harness")
@@ -71,7 +71,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 
 def validate_tasks(cfg) -> int:
-    runner = SandboxRunner(cfg.sandbox, owner=sandbox_owner(cfg))
+    runner = make_runner(cfg, owner=sandbox_owner(cfg))
     runner.ensure_image()
     evaluator = Evaluator(runner, workers=cfg.execution.sandbox_workers)
     failed = 0

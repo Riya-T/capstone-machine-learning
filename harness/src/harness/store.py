@@ -137,9 +137,10 @@ def editor_cfg_hash(cfg: ExperimentConfig, image_id: str) -> str:
 def sandbox_cfg_hash(cfg: ExperimentConfig, image_id: str) -> str:
     """Keys initial checks, which depend on the sandbox but not the editor.
 
-    `image_id` is the image's content id from SandboxRunner.image_id. The
-    config names the image only by tag, and rebuilding the Dockerfile under
-    the same tag must not reuse results from the old image.
+    `image_id` is the image's content id from the runner's image_id: the
+    Docker image id, or apptainer:sha256:<hex> of the SIF file. The config
+    names the image only by tag, and rebuilding the image under the same
+    tag must not reuse results from the old image.
     """
     return _hash_json({"sandbox": canonical(cfg.sandbox, cfg.base_dir), "image_id": image_id})
 
