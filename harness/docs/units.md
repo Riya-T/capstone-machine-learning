@@ -19,6 +19,7 @@ harness/
   tests/                 mirrors src/harness/; integration/ for multi-module tests
     data/tasks/            the example task the tests run on
   configs/               base.yaml and variants (mock.yaml)
+  scripts/               collect_nexus.sbatch: a Slurm job that starts Ollama and runs collect
   prompts/               writer and editor prompt templates
   tasks/<task_id>/       one directory per real task (none yet); its split is in task.yaml
   fixtures/mock/         mock writer and editor answers
@@ -72,7 +73,7 @@ subpackages next to `collection/`.
 | `docker/sandbox/Dockerfile` | Sandbox image `harness-sandbox:py3.11-v1`: Python 3.11 pinned by digest, with the pytest and Hypothesis versions from `uv.lock`. | `tests/sandbox/test_runner.py` |
 | `docker/sandbox/sandbox.def` | The same image for Apptainer (same digest and packages), built into `execution.apptainer_image`. | `tests/sandbox/test_apptainer.py` (the two files must match) |
 | `fixtures/mock/` | Mock writer and editor responses for the deterministic backend. | `tests/models/test_backends.py`, `tests/integration/test_writer_replay.py` |
-| `configs/` | `base.yaml`, `mock.yaml` (deterministic mock writer and editor on the example task), `all_tasks.yaml` (every real task, for `validate-tasks`), and `noahs_laptop.yaml` and `rtx5070_pc.yaml` (the 7B model in Ollama, for the writer check). A real-model config for the 5090 comes later. `execution` holds settings that never affect results. | `tests/test_config.py` (committed configs load) |
+| `configs/` | `base.yaml`, `mock.yaml` (deterministic mock writer and editor on the example task), `all_tasks.yaml` (every real task, for `validate-tasks`), `noahs_laptop.yaml` and `rtx5070_pc.yaml` (the 7B model in Ollama, for the writer check), and `nexus.yaml` (the Nexus cluster: the proposal's 7B writer and 14B editor in Ollama, Apptainer sandbox). A real-model config for the 5090 comes later. `execution` holds settings that never affect results. | `tests/test_config.py` (committed configs load) |
 
 ## Integration tests (`tests/integration/`)
 
