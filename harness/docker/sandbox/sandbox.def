@@ -1,0 +1,20 @@
+# Apptainer sandbox image: the same image as the Dockerfile next to it, for
+# hosts without Docker (the Nexus cluster).
+#
+# Same pinned base digest and the same pinned packages as the Dockerfile; a
+# unit test checks that the two files stay identical in both.
+#
+# Usage (from harness/, on a compute node):
+#     apptainer build runs/images/harness-sandbox_py3.11-v1.sif docker/sandbox/sandbox.def
+# or let the runner build it from execution.apptainer_image in the config.
+# Rebuilding changes the SIF's hash and with it every result key.
+Bootstrap: docker
+# The Dockerfile's python:3.11-slim@sha256:... without the tag: Apptainer
+# rejects a tag and a digest together, and the digest alone pins the image.
+From: python@sha256:e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e5767af9ea65f6ce
+
+%post
+    pip install --no-cache-dir --no-deps \
+        pytest==9.1.1 iniconfig==2.3.1 packaging==26.3 pluggy==1.6.0 pygments==2.21.0 \
+        hypothesis==6.169.1 sortedcontainers==2.4.0 \
+    && pip check
