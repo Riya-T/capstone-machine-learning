@@ -1,0 +1,58 @@
+# ============================================================================
+# The UMIACS Nexus class cluster: the proposal's models, run in a Slurm job.
+#
+# Hardware per job (scripts/collect_nexus.sbatch): one RTX A5000 (24 GB),
+# 8 CPUs, 32 GB RAM. Ollama serves both models, which stay loaded together
+# (15 GB of the 24).
+#
+# Writer: Qwen2.5-Coder-7B-Instruct (Q4), the proposal's writer. Its
+# settings match noahs_laptop.yaml exactly, base_url included: the writer key
+# covers the whole writer section, so the laptop's writer programs are
+# reused only while every writer setting here stays the same.
+#
+# Editor: Qwen2.5-Coder-14B-Instruct (Q4), the proposal's editor. It has
+# the same 8192-token context as the writer, so base.yaml's prompt and
+# token budgets fit.
+#
+# The cluster has no Docker, so the sandbox runs on Apptainer. Its image id
+# differs from Docker's, so initial checks and editing trials are computed
+# afresh here and never mixed with the laptop's.
+# ============================================================================
+#
+# Setup (once, from harness/): the store starts as a copy of the laptop's,
+# so its writer programs are reused:
+#
+#     cp -a runs/noahs_laptop runs/nexus
+#
+# The job script installs Ollama and creates both model variants (8192-token
+# context) on its first run.
+#
+# Usage (from harness/, on the submission node):
+#     sbatch scripts/collect_nexus.sbatch configs/nexus.yaml --until initial
+#     sbatch scripts/collect_nexus.sbatch configs/nexus.yaml              # also edit
+extends: base.yaml
+name: nexus
+runs_dir: ../runs/nexus
+tasks:
+  include: [chat_rooms]      # a quick check of the setup; variants list their own tasks
+writer:
+  backend:
+    kind: openai_compat
+    model: qwen2.5-coder-7b-ctx8k
+    base_url: http://localhost:11434/v1   # the job script's Ollama; part of the writer key
+    fixtures: null           # clear the mock fixtures inherited from base.yaml
+    temperature: 0.4         # the pilot: 0.8 gave 0 of 16 passing, 0.4 gave 6 of 16
+    request_timeout_s: 600
+editor:
+  backend:
+    kind: openai_compat
+    model: qwen2.5-coder-14b-ctx8k
+    base_url: http://localhost:11434/v1
+    fixtures: null
+    request_timeout_s: 600
+execution:
+  sandbox_runtime: apptainer
+  # Built on first use from ../docker/sandbox/sandbox.def. Keep this file:
+  # its sha256 is part of every result key, and a rebuild changes it.
+  apptainer_image: ../runs/images/harness-sandbox_py3.11-v1.sif
+  sandbox_workers: 6         # the job has 8 CPUs; Ollama and the harness need the rest

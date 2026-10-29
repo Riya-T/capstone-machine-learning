@@ -111,9 +111,8 @@ def collect(cfg: ExperimentConfig, until: str = "edit") -> CollectStats:
     with Store(cfg.runs_dir) as store:
         stats.run_id = store.start_run(cfg)
         stats.run_dir = store.runs_dir / stats.run_id
-        log.info(
-            "run %s: %d tasks, image %s, until %s", stats.run_id, len(tasks), image_id[:19], until
-        )
+        short_id = image_id[: image_id.rindex(":") + 13]  # e.g. sha256:<12 hex>
+        log.info("run %s: %d tasks, image %s, until %s", stats.run_id, len(tasks), short_id, until)
         for task in tasks.values():
             prompt = build_writer_prompt(task.writer_view(), template)
             _write_samples(cfg, store, task, prompt, keys, stats)
