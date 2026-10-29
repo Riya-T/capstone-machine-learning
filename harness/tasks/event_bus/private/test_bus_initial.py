@@ -181,13 +181,6 @@ def test_late_subscribers_miss_earlier_messages(bus):
     assert bus.get_deliveries("billing") == [("orders", "before"), ("orders", "after")]
 
 
-def test_a_missing_topic_is_reported_before_a_bad_subscriber_or_message(bus):
-    with pytest.raises(KeyError):
-        bus.subscribe("payments", "")
-    with pytest.raises(KeyError):
-        bus.publish("payments", None)
-
-
 def test_failed_calls_deliver_nothing(bus):
     for call in (
         lambda: bus.publish("orders", 7),

@@ -166,13 +166,6 @@ def test_get_guest_rejects_invalid_nights(hotel, night):
         hotel.get_guest("101", night)
 
 
-def test_a_missing_room_is_reported_before_a_bad_guest(hotel):
-    with pytest.raises(KeyError):
-        hotel.book("303", "", 1, 2)
-    with pytest.raises(KeyError):
-        hotel.book("303", "ana", 0, 2)
-
-
 def test_a_bad_guest_is_reported_before_bad_nights(hotel):
     with pytest.raises(ValueError):
         hotel.book("101", "", 2, 1)

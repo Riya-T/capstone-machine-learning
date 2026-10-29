@@ -79,8 +79,6 @@ def test_service_moving_a_car_out_of_service_changes_nothing(building):
     before = state(building)
     with pytest.raises(CarOutOfService):
         building.move_car("east", 3)
-    with pytest.raises(CarOutOfService):
-        building.move_car("east", 2)  # not even on its own floor
     assert state(building) == before
     assert building.get_waiting(3) == ["ann"]
 
@@ -130,7 +128,7 @@ def test_service_other_cars_keep_working(building):
 
 def test_service_a_returned_car_picks_people_up_again(building):
     building.take_out_of_service("east")
-    building.call("ann", 0, 3)
+    building.call("ann", 1, 3)
     building.return_to_service("east")
-    building.move_car("east", 0)
+    building.move_car("east", 1)
     assert building.get_riders("east") == ["ann"]

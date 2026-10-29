@@ -49,11 +49,9 @@ class EventBus:
   received anything gives `[]`, even if it never subscribed to any topic.
 - A subscriber only receives messages published after it subscribed.
 
-When a call has several problems, the first of these is raised:
-
-1. `KeyError` for a topic that does not exist;
-2. `ValueError` for an invalid subscriber or message;
-3. `BusError` for a subscriber that already subscribes to the topic.
+When a call has several problems, `ValueError` for an invalid subscriber
+or message is raised before `BusError` for a subscriber that already
+subscribes to the topic.
 
 A failed call has no effect: if a method raises, the topics, the subscribers
 and every subscriber's deliveries are unchanged.
@@ -61,7 +59,8 @@ and every subscriber's deliveries are unchanged.
 ## Unspecified behavior
 
 Behavior not described here is unspecified, and no test depends on it. This
-includes topic names that are not strings passed to `add_topic`, values that
+includes which of `KeyError` and `ValueError` is raised when a call has
+both problems, topic names that are not strings passed to `add_topic`, values that
 are not strings passed to `get_deliveries`, what happens if a returned list is
 changed, the text of error messages, saving the bus to a file, and use from
 several threads.

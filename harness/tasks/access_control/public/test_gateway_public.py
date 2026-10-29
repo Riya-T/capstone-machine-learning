@@ -36,8 +36,9 @@ def test_a_client_off_the_allow_list_is_denied(gateway):
 
 
 def test_revoking_takes_a_client_off_the_allow_list(gateway):
-    gateway.allow("alpha")
     gateway.allow("bravo")
+    gateway.allow("alpha")
+    assert gateway.get_allowed() == ["alpha", "bravo"]  # registration order
     gateway.revoke("alpha")
     assert gateway.get_allowed() == ["bravo"]
     with pytest.raises(AccessDenied):
@@ -47,5 +48,7 @@ def test_revoking_takes_a_client_off_the_allow_list(gateway):
 def test_unknown_client_raises_key_error(gateway):
     with pytest.raises(KeyError):
         gateway.allow("charlie")
+    with pytest.raises(KeyError):
+        gateway.revoke("charlie")
     with pytest.raises(KeyError):
         gateway.get_messages("charlie")

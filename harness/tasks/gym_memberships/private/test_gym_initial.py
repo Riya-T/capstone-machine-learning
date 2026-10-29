@@ -99,12 +99,6 @@ def test_a_bad_member_id_is_reported_before_an_unknown_plan(gym):
         gym.add_member("", "gold")
 
 
-def test_an_unknown_plan_is_reported_before_a_duplicate_member(gym):
-    with pytest.raises(KeyError):
-        gym.add_member("ann", "gold")
-    assert gym.get_plan("ann") == "basic"
-
-
 @pytest.mark.parametrize(
     "call",
     [

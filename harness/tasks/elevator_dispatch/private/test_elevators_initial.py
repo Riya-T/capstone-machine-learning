@@ -205,8 +205,8 @@ def test_only_four_get_in_and_the_rest_keep_their_order(building):
 
 def test_a_full_car_picks_up_nobody(building):
     for name in ["p1", "p2", "p3", "p4"]:
-        building.call(name, 0, 6)
-    building.move_car("east", 0)
+        building.call(name, 1, 6)
+    building.move_car("east", 1)
     building.call("late", 3, 5)
     building.move_car("east", 3)
     assert building.get_riders("east") == ["p1", "p2", "p3", "p4"]
@@ -215,8 +215,8 @@ def test_a_full_car_picks_up_nobody(building):
 
 def test_riders_get_out_before_new_passengers_get_in(building):
     for name, dest in [("p1", 6), ("p2", 3), ("p3", 6), ("p4", 6)]:
-        building.call(name, 0, dest)
-    building.move_car("east", 0)
+        building.call(name, 1, dest)
+    building.move_car("east", 1)
     building.call("q1", 3, 5)
     building.call("q2", 3, 5)
     building.move_car("east", 3)

@@ -26,17 +26,16 @@ class ChatServer:
   a non-empty `str`, or `ValueError` is raised. Adding a username that is
   already added raises `ChatError`.
 - `join`, `leave` and `post` raise `KeyError` when given a username that
-  was never added, including values that are not strings at all, such as
-  `None` or `1`.
+  was never added. A username that is not a `str`, such as `None` or `1`,
+  counts as never added: it raises `KeyError`, not `ValueError`.
 
 ## Rooms
 
 - `join(username, room)` makes the user a member of the room. The room name
   must be a non-empty `str`, or `ValueError` is raised. A room is created
-  the first time someone joins it. If the user is already a member of that
-  room, `ChatError` is raised. When several problems apply, the first of
-  these is raised: `KeyError` for an unknown user, then `ValueError` for a
-  bad room name, then `ChatError`.
+  the first time someone joins it, with that user as its only member and no
+  messages. If the user is already a member of that room, `ChatError` is
+  raised; this is checked after the user and the room name.
 - `leave(username, room)` removes the user from the room. A room that
   nobody is a member of still exists and keeps its messages. If the user is
   not a member of that room, `ChatError` is raised.
@@ -44,18 +43,19 @@ class ChatServer:
   (a user who leaves and joins again goes to the end).
 - `get_rooms()` returns every room, in the order the rooms were created.
 - `leave`, `post`, `get_members` and `get_messages` raise `KeyError` for a
-  room that was never created, including values that are not strings.
+  room that was never created. A room that is not a `str`, such as `None`
+  or `3`, counts as never created there (only `join` raises `ValueError`
+  for a bad room name).
   Where a user and a room are both given, the user is checked first.
 
 ## Messages
 
 - `post(username, room, text)` adds a message to the room. The text must
   be a non-empty `str`, or `ValueError` is raised. Only a member of the room
-  can post; anyone else gets `ChatError`. When several problems apply, the
-  first of these is raised: `KeyError` for an unknown user, then `KeyError`
-  for an unknown room, then `ValueError` for a bad text, then `ChatError`.
+  can post; anyone else gets `ChatError`, which is checked last.
 - `get_messages(room)` returns the room's messages, oldest first, as
-  `(username, text)` tuples. Messages stay after their author leaves.
+  `(username, text)` tuples. A room nobody has posted in gives an empty
+  list. Messages stay after their author leaves.
 
 A failed call has no effect: if a method raises, every room, every list of
 members and every list of messages is unchanged.
@@ -63,5 +63,6 @@ members and every list of messages is unchanged.
 ## Unspecified behavior
 
 Behavior not described here is unspecified, and no test depends on it. This
-includes what happens if a returned list is changed, the text of error
+includes which of `KeyError` and `ValueError` is raised when a call has
+both problems, what happens if a returned list is changed, the text of error
 messages, saving the chat to a file, and use from several threads.

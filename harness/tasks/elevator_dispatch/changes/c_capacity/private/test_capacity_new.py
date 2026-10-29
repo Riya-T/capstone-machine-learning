@@ -133,12 +133,13 @@ def test_capacity_a_bad_value_is_reported_before_the_rider_check(building):
 
 def test_capacity_raised_capacity_is_used_at_the_next_stop(building):
     building.set_capacity("east", 1)
-    building.call("ann", 0, 4)
-    building.call("ben", 0, 4)
-    building.move_car("east", 0)
+    building.call("ann", 1, 4)
+    building.call("ben", 1, 4)
+    building.move_car("east", 1)
     assert building.get_riders("east") == ["ann"]
     building.set_capacity("east", 3)
     assert building.get_riders("east") == ["ann"]
-    assert building.get_waiting(0) == ["ben"]
-    building.move_car("east", 0)
+    assert building.get_waiting(1) == ["ben"]
+    building.move_car("east", 2)
+    building.move_car("east", 1)
     assert building.get_riders("east") == ["ann", "ben"]

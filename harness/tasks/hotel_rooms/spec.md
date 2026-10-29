@@ -51,12 +51,8 @@ are no dates.
   that night, or `None` if no booking does. A night that is not an `int` of 1
   or more raises `ValueError`.
 
-When a call to `book` has several problems, the first of these is raised:
-
-1. `KeyError` for a room that does not exist;
-2. `ValueError` for an invalid guest;
-3. `ValueError` for invalid nights;
-4. `RoomUnavailable`.
+When a call to `book` has several problems, `ValueError` for an invalid
+guest or invalid nights is raised before `RoomUnavailable`.
 
 ## Checking in and out
 
@@ -79,6 +75,7 @@ status is unchanged.
 ## Unspecified behavior
 
 Behavior not described here is unspecified, and no test depends on it. This
-includes room names that are not strings passed to `add_room`, `bool` nights,
+includes which of `KeyError` and `ValueError` is raised when a call has
+both problems, room names that are not strings passed to `add_room`, `bool` nights,
 what happens if a returned list is changed, the text of error messages,
 saving the hotel to a file, and use from several threads.

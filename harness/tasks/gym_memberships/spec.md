@@ -34,9 +34,7 @@ day 2, and so on.
 
 - `add_member(member_id, plan_id)` adds a member on the given plan. An empty
   member id raises `ValueError`; a member id that is already in use raises
-  `GymError`. When a call has several problems, the first of these is
-  raised: `ValueError` for the member id, `KeyError` for the plan,
-  `GymError` for the duplicate member.
+  `GymError`. `ValueError` for the member id is checked first.
 - `change_plan(member_id, plan_id)` moves the member to another plan.
   Moving a member to the plan they are already on raises `GymError`. The
   member is checked before the plan.
@@ -67,7 +65,8 @@ every check-in is unchanged.
 ## Unspecified behavior
 
 Behavior not described here is unspecified, and no test depends on it. This
-includes ids that are not strings passed to `add_plan` or as the new id in
+includes which of `KeyError` and `GymError` `add_member` raises when it
+has both problems, ids that are not strings passed to `add_plan` or as the new id in
 `add_member`, `bool` days, what happens if a returned list is changed, the
 text of error messages, saving the gym to a file, and use from several
 threads.

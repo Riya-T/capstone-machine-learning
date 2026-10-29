@@ -87,6 +87,11 @@ class Building:
     def get_delivered(self):
         return list(self._delivered)
 
+    def get_destination(self, passenger_id):
+        if passenger_id not in self._destinations:
+            raise KeyError(f"no passenger {passenger_id!r}")
+        return self._destinations[passenger_id]
+
     def get_capacity(self, car_id):
         return self._car(car_id)["capacity"]
 

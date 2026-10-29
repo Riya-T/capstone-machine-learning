@@ -61,11 +61,9 @@ All numbers are `int`.
 - `get_enabled_users(name)` returns the ids of all registered users for whom
   the flag is enabled, in the order the users were registered.
 
-When a call has several problems, the first of these is raised:
-
-1. `KeyError` for a flag that does not exist;
-2. `KeyError` for a user that is not registered;
-3. `ValueError` for an invalid percent.
+When a call has several problems, `KeyError` for a flag that does not exist
+or a user that is not registered is raised before `ValueError` for an
+invalid percent.
 
 A failed call has no effect: if a method raises, no flag, rollout, user or
 switch changes.

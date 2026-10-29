@@ -10,8 +10,7 @@ public_checks: [public/test_gateway_public.py]
 private_tests: [private/test_gateway_initial.py]
 reference: reference/v0
 planted_bugs:
-  # Required: bugs only the hidden initial tests catch.
-  - {path: bugs/v0_allowed_in_allow_order, must_fail: [initial], must_pass: [public]}
+  # Required: a bug only the hidden initial tests catch.
   - {path: bugs/v0_access_before_message, must_fail: [initial], must_pass: [public]}
 
 changes:

@@ -29,8 +29,8 @@ All scores are whole points, as `int`.
 - `get_players()` returns the names of all players, in the order they were
   added.
 - Every other method that takes a name raises `KeyError` when the name is
-  not on the board, including values that are not strings at all, such as
-  `None` or `1`.
+  not on the board. A name that is not a `str`, such as `None` or `1`,
+  counts as not on the board: it raises `KeyError`, not `ValueError`.
 
 ## Scores
 
