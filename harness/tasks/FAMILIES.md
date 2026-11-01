@@ -51,11 +51,14 @@ list each sequence's changes in order.
 
 ## Writer check
 
-`collect --until initial` with `configs/noahs_laptop.yaml` (Qwen2.5-Coder-7B
-Q4, temperature 0.4, 16 samples per task), run in batches of 10 through
-`configs/writer_check_batch.yaml`. A task passes with at least 3 distinct
-passing programs out of 16. The dev counts are the 16-sample run on
-`configs/rtx5070_pc.yaml` above. Last updated 2026-10-28.
+`collect --until initial` (Qwen2.5-Coder-7B Q4, temperature 0.4, 16 samples
+per task). A task passes with at least 3 distinct passing programs out of
+16. The dev counts are the 16-sample run on `configs/rtx5070_pc.yaml` above.
+The eval tasks were run with `configs/noahs_laptop.yaml` in batches of 10
+through `configs/writer_check_batch.yaml` (2026-10-28). All 36 train tasks
+were run again on 2026-11-01 with `configs/rtx5070_train.yaml`, after the
+fixes below; "0 → 7" means the task was fixed after that run and rerun.
+Last updated 2026-11-01.
 
 | Task | Split | Passing of 16 | Writer check |
 |---|---|---|---|
@@ -67,46 +70,46 @@ passing programs out of 16. The dev counts are the 16-sample run on
 | `shopping_cart` | dev | 5 | ✅ passed |
 | `parking_garage` | dev | 4 | ✅ passed |
 | `library_catalog` | dev | 2 | ❌ failed |
-| `budget_envelopes` | train | 15 | ✅ passed |
-| `calendar_events` | train | 11 | ✅ passed |
-| `access_control` | train | 9 | ✅ passed |
-| `document_store` | train | 7 | ✅ passed |
+| `io_meter` | train | 15 | ✅ passed |
+| `order_workflow` | train | 15 | ✅ passed |
+| `playlist_manager` | train | 15 | ✅ passed |
+| `token_bucket` | train | 15 | ✅ passed |
+| `budget_envelopes` | train | 14 | ✅ passed |
+| `thermostat_zones` | train | 14 | ✅ passed |
+| `party_inventory` | train | 13 | ✅ passed |
+| `event_bus` | train | 11 | ✅ passed |
+| `calendar_events` | train | 10 | ✅ passed |
+| `gradebook` | train | 10 | ✅ passed |
+| `warehouse_stock` | train | 10 | ✅ passed |
+| `high_scores` | train | 1 → 10 | ✅ passed after fix |
+| `url_shortener` | train | 0 → 10 | ✅ passed after fix |
+| `access_control` | train | 8 | ✅ passed |
+| `document_store` | train | 8 | ✅ passed |
+| `vending_machine` | train | 0 → 8 (only 8 distinct) | ✅ passed after fix |
+| `job_queue` | train | 0 → 7 | ✅ passed after fix |
+| `chat_rooms` | train | 6 | ✅ passed |
+| `feature_flags` | train | 6 | ✅ passed |
+| `gym_memberships` | train | 6 | ✅ passed |
+| `clinic_appointments` | train | 4 | ✅ passed |
+| `hotel_rooms` | train | 4 | ✅ passed |
+| `staff_directory` | train | 4 | ✅ passed |
+| `job_board` | train | 3 | ✅ passed (borderline) |
+| `hangman_games` | train | 2 | ❌ failed |
+| `restaurant_orders` | train | 2 | ❌ failed |
+| `recipe_box` | train | 1 | ❌ failed |
+| `school_roster` | train | 1 | ❌ failed |
+| `iou_tracker` | train | 0 | ❌ failed |
+| `login_sessions` | train | 0 | ❌ failed |
+| `movie_bookings` | train | 0 | ❌ failed |
+| `pantry_inventory` | train | 0 | ❌ failed |
+| `ring_buffer` | train | 0 | ❌ failed |
+| `robot_fleet` | train | 0 | ❌ failed |
+| `stock_portfolio` | train | 0 | ❌ failed |
+| `ticket_desk` | train | 0 | ❌ failed |
 | `aging_inventory` | eval | 7 | ✅ passed |
 | `auction_house` | eval | 5 | ✅ passed |
-| `chat_rooms` | train | 5 | ✅ passed |
-| `clinic_appointments` | train | 3 | ✅ passed (borderline) |
 | `document_versions` | eval | 0 | ❌ failed |
 | `elevator_dispatch` | eval | 0 | ❌ failed; redesigned, not rerun |
-| `io_meter` | train | 14 | ✅ passed |
-| `gradebook` | train | 11 | ✅ passed |
-| `high_scores` | train | 2 | ❌ failed; fixed, not rerun |
-| `event_bus` | train | 0 | ❌ failed; fixed, not rerun |
-| `feature_flags` | train | 0 | ❌ failed; fixed, not rerun |
-| `gym_memberships` | train | 0 | ❌ failed; fixed, not rerun |
-| `hangman_games` | train | 0 | ❌ failed; fixed, not rerun |
-| `hotel_rooms` | train | 0 | ❌ failed; fixed, not rerun |
-| `iou_tracker` | train | 0 | ❌ failed; fixed, not rerun |
-| `job_board` | train | 0 | ❌ failed; fixed, not rerun |
-| `job_queue` | train | – | not run yet |
-| `login_sessions` | train | – | not run yet |
-| `movie_bookings` | train | – | not run yet |
-| `order_workflow` | train | – | not run yet |
-| `pantry_inventory` | train | – | not run yet |
-| `party_inventory` | train | – | not run yet |
-| `playlist_manager` | train | – | not run yet |
-| `recipe_box` | train | – | not run yet |
-| `restaurant_orders` | train | – | not run yet |
-| `ring_buffer` | train | – | not run yet |
-| `robot_fleet` | train | – | not run yet |
-| `school_roster` | train | – | not run yet |
-| `staff_directory` | train | – | not run yet |
-| `stock_portfolio` | train | – | not run yet |
-| `thermostat_zones` | train | – | not run yet |
-| `ticket_desk` | train | – | not run yet |
-| `token_bucket` | train | – | not run yet |
-| `url_shortener` | train | – | not run yet |
-| `vending_machine` | train | – | not run yet |
-| `warehouse_stock` | train | – | not run yet |
 | `light_grid` | eval | – | not run yet |
 | `locker_room` | eval | – | not run yet |
 | `meeting_rooms` | eval | – | not run yet |
@@ -120,7 +123,10 @@ passing programs out of 16. The dev counts are the 16-sample run on
 | `task_board` | eval | – | not run yet |
 | `time_clock` | eval | – | not run yet |
 
-So far 20 of the 28 tasks run pass; the other 32 have not been run yet.
+So far 33 of the 48 tasks run pass: 7 of 8 dev, 24 of 36 train and 2 of 4
+eval. The other 12 eval tasks have not been run yet. Data collection started
+on the 24 train tasks that pass (2026-11-01); the 12 that fail are being
+looked at.
 
 What the writer kept getting wrong, and the fixes that worked:
 
@@ -130,12 +136,21 @@ What the writer kept getting wrong, and the fixes that worked:
   program even with a public check for it. Such rules were made
   unspecified and their hidden tests removed (`chat_rooms`,
   `document_store`, `document_versions`, `event_bus`, `hotel_rooms`,
-  `gym_memberships`, `feature_flags`).
+  `gym_memberships`, `feature_flags`, and on 2026-11-01 `vending_machine`
+  and `high_scores`). The same goes for `get_latest_score` on a player who
+  is not on the board (`high_scores`): 12 of 15 programs raised the "no
+  scores" `ScoreError` instead of `KeyError`; either is now allowed.
 - **Non-string values.** The writer checks `if not name`, which lets `7`
   through. `7` was removed from the invalid bidders (`auction_house`),
-  patients (`clinic_appointments`) and titles (`job_board`); `""` and `None`
-  are still tested. Where a non-string id must raise `KeyError`, saying "it
-  counts as unknown: `KeyError`, not `ValueError`" worked (`chat_rooms`).
+  patients (`clinic_appointments`), titles (`job_board`) and codes and
+  targets (`url_shortener`, which now says "an empty string or `None`");
+  `""` and `None` are still tested. Where a non-string id must raise
+  `KeyError`, saying "it counts as unknown: `KeyError`, not `ValueError`"
+  worked (`chat_rooms`).
+- **`True` as a number.** `isinstance(True, int)` holds, and every
+  `job_queue` program accepted `True` as a priority although the spec said
+  "not a `bool`". `bool` priorities are now unspecified, as `bool` values
+  already were in most tasks.
 - **Lists kept up to date by hand.** A list of allowed clients or wilted
   batches that is appended to when things change comes out in the wrong
   order. Describing it as "the same ids as `get_…()`, in the same order,

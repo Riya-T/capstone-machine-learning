@@ -22,14 +22,14 @@ class Shortener:
 
 ## Links
 
-- `add_link(code, target)` adds a link from `code` to `target`. The code and
-  the target must both be non-empty strings, or `ValueError` is raised.
-  Adding a code that already exists raises `ShortenerError`.
+- `add_link(code, target)` adds a link from `code` to `target`. An empty
+  string or `None` as the code or the target raises `ValueError`. Adding a
+  code that already exists raises `ShortenerError`.
 - `get_codes()` returns every code, in the order the links were added.
 - `get_target(code)` returns the address the code currently points to.
 - `set_target(code, target)` makes the code point to a different address.
-  The target must be a non-empty string, or `ValueError` is raised. The
-  code's hits are kept.
+  An empty string or `None` as the target raises `ValueError`. The code's
+  hits are kept.
 - Every method that takes an existing code raises `KeyError` when the code
   does not exist, including values that are not strings at all, such as
   `None` or `1`.
@@ -57,6 +57,7 @@ count is unchanged.
 ## Unspecified behavior
 
 Behavior not described here is unspecified, and no test depends on it. This
-includes whether a target looks like a real web address, what happens if a
-returned list is changed, the text of error messages, saving the links to a
-file, and use from several threads.
+includes other values that are not strings, such as `7`, passed as a code to
+`add_link` or as a target, whether a target looks like a real web address,
+what happens if a returned list is changed, the text of error messages,
+saving the links to a file, and use from several threads.

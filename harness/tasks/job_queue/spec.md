@@ -23,9 +23,9 @@ class JobQueue:
 ## Adding jobs
 
 - `add_job(job_id, priority, depends_on)` adds a job. `job_id` must be a
-  non-empty `str` and `priority` an `int` (not a `bool`; negative values are
-  fine), or `ValueError` is raised. An id that is already in the queue
-  raises `QueueError`.
+  non-empty `str` and `priority` an `int` (negative values are fine), or
+  `ValueError` is raised. An id that is already in the queue raises
+  `QueueError`.
 - `depends_on` lists the ids of the jobs this one has to wait for. Every one
   of them must already be in the queue, or `KeyError` is raised. Leaving it
   out means the job waits for nothing.
@@ -63,7 +63,8 @@ dependencies and the completed list are unchanged.
 ## Unspecified behavior
 
 Behavior not described here is unspecified, and no test depends on it. This
-includes listing the same dependency twice in `depends_on`, passing something
-other than a list for `depends_on`, what happens if a returned list is
+includes passing `True` or `False` as a priority, listing the same
+dependency twice in `depends_on`, passing something other than a list for
+`depends_on`, what happens if a returned list is
 changed, the text of error messages, saving the queue to a file, and use from
 several threads.

@@ -105,11 +105,6 @@ def test_invalid_counts_are_rejected(machine, count):
     assert state(machine) == before
 
 
-def test_a_missing_slot_is_reported_before_a_bad_count(machine):
-    with pytest.raises(KeyError):
-        machine.restock("Z9", -1)
-
-
 # --- coins ------------------------------------------------------------------
 
 

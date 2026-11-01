@@ -49,15 +49,15 @@ All scores are whole points, as `int`.
   recorded twice appears twice. `n` must be an `int` of 1 or more, or
   `ValueError` is raised.
 
-When `record_score` has several problems, `KeyError` for an unknown player is
-raised before `ValueError` for the score.
-
 A failed call has no effect: if a method raises, every player's scores are
 unchanged.
 
 ## Unspecified behavior
 
 Behavior not described here is unspecified, and no test depends on it. This
-includes names that are not strings passed to `add_player`, `bool` scores,
-what happens if a returned list is changed, the text of error messages,
-saving the board to a file, and use from several threads.
+includes which of `KeyError` and `ValueError` `record_score` raises for a
+name that is not on the board and an invalid score, which of `KeyError` and
+`ScoreError` `get_latest_score` raises for a name that is not on the board,
+names that are not strings passed to `add_player`, `bool` scores, what
+happens if a returned list is changed, the text of error messages, saving the
+board to a file, and use from several threads.

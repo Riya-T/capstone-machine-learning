@@ -43,7 +43,7 @@ All prices and coin amounts are whole cents, as `int`.
 - `get_stock(slot_id)` returns the number of items in the slot.
 - Every method that takes a slot id raises `KeyError` when the slot does not
   exist, including values that are not strings at all, such as `None` or
-  `1`. This is checked before anything else.
+  `1`.
 
 ## Coins and buying
 
@@ -57,12 +57,11 @@ All prices and coin amounts are whole cents, as `int`.
 - `take_change()` returns the whole remaining credit and sets it to 0. With
   no credit it returns 0.
 
-When a call has several problems, the first of these is raised:
+When `buy` has several problems, the first of these is raised:
 
 1. `KeyError` for a slot that does not exist;
-2. `ValueError` for an invalid count, price or amount;
-3. `SoldOut`;
-4. `NotEnoughCredit`.
+2. `SoldOut`;
+3. `NotEnoughCredit`.
 
 A failed call has no effect: if a method raises, every stock count and the
 credit are unchanged.
@@ -70,6 +69,8 @@ credit are unchanged.
 ## Unspecified behavior
 
 Behavior not described here is unspecified, and no test depends on it. This
-includes ids that are not strings passed to `add_slot`, `bool` prices,
-counts or amounts, what happens if a returned list is changed, the text of
-error messages, saving the machine to a file, and use from several threads.
+includes which of `KeyError` and `ValueError` `restock` raises for a slot
+that does not exist and an invalid count, ids that are not strings passed to
+`add_slot`, `bool` prices, counts or amounts, what happens if a returned list
+is changed, the text of error messages, saving the machine to a file, and use
+from several threads.

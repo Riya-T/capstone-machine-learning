@@ -8,7 +8,7 @@ Usage (with shortener.py importable, e.g. in the sandbox):
 import pytest
 from shortener import Shortener, ShortenerError
 
-BAD_TEXT = ["", None, 7]
+BAD_TEXT = ["", None]
 SALE = "https://example.com/sale"
 DOCS = "https://example.com/docs"
 

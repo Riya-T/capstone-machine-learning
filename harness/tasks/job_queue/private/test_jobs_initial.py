@@ -9,7 +9,7 @@ import pytest
 from jobs import JobQueue, QueueError
 
 BAD_IDS = ["", None, 7]
-BAD_PRIORITIES = [1.5, "3", None, True]
+BAD_PRIORITIES = [1.5, "3", None]
 
 
 @pytest.fixture

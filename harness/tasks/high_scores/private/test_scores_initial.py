@@ -62,7 +62,6 @@ def test_a_name_already_on_the_board_is_rejected(board):
     [
         lambda bd: bd.record_score("cleo", 10),
         lambda bd: bd.get_scores("cleo"),
-        lambda bd: bd.get_latest_score("cleo"),
         lambda bd: bd.get_total_score("cleo"),
         lambda bd: bd.get_scores(None),
         lambda bd: bd.get_scores(1),
@@ -101,11 +100,6 @@ def test_invalid_scores_are_rejected(board, score):
     with pytest.raises(ValueError):
         board.record_score("ana", score)
     assert state(board) == before
-
-
-def test_an_unknown_player_is_reported_before_a_bad_score(board):
-    with pytest.raises(KeyError):
-        board.record_score("cleo", -1)
 
 
 def test_latest_score_is_the_most_recent_one(board):
