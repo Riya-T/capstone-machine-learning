@@ -1,22 +1,44 @@
 # ============================================================================
-# This is for the RTX 5070 desktop (Windows 11 + WSL2)
+# The main config: every run (calibration, data collection, evaluation) is on
+# this machine. The proposal planned an RTX 5090; the team switched to this
+# GPU on 2026-10-26 (see "Changes from the proposal" in the top-level README).
 #
 # Hardware: NVIDIA GeForce RTX 5070 (12 GB), AMD Ryzen 7 9700X (8 cores),
 # 15 GB RAM visible to WSL. Runs inside the Ubuntu-24.04 WSL distro, with
-# Docker and Ollama installed in that distro (not Docker Desktop). Use it for
-# the writer check on the dev tasks. Results from it never go into the
-# training data or the report: the 7B model stands in for the 14B editor.
+# Docker and Ollama installed in that distro (not Docker Desktop), and the
+# repo cloned into the Linux file system (~/capstone-machine-learning).
+#
+# Models, both 4-bit in Ollama so they fit in 12 GB: the writer is
+# Qwen2.5-Coder-7B-Instruct and the editor Qwen2.5-Coder-14B-Instruct. Only
+# one is loaded at a time; collection uses the writer, then the editor.
 # ============================================================================
 #
-# Setup (once, inside WSL): Ollama with Qwen2.5-Coder-7B-Instruct and an
-# 8192-token context variant (same as noahs_laptop.yaml):
+# Setup (once, inside WSL): pull both models and make 8192-token context
+# variants (Ollama's OpenAI-compatible endpoint can't set the context per
+# request, so it is fixed in a named variant; no new download):
 #
 #     ollama pull qwen2.5-coder:7b-instruct
+#     ollama pull qwen2.5-coder:14b-instruct
 #     curl -s http://localhost:11434/api/create -d '{"model": "qwen2.5-coder-7b-ctx8k",
 #         "from": "qwen2.5-coder:7b-instruct", "parameters": {"num_ctx": 8192}}'
+#     curl -s http://localhost:11434/api/create -d '{"model": "qwen2.5-coder-14b-ctx8k",
+#         "from": "qwen2.5-coder:14b-instruct", "parameters": {"num_ctx": 8192}}'
+#
+# Ollama runs with flash attention and an 8-bit KV cache, which cuts the 14B
+# editor's GPU memory from 11.3 to 10.3 GB. In
+# /etc/systemd/system/ollama.service.d/override.conf:
+#
+#     [Service]
+#     Environment="OLLAMA_FLASH_ATTENTION=1"
+#     Environment="OLLAMA_KV_CACHE_TYPE=q8_0"
+#
+# Windows needs a page file with room to grow (see "Running on Windows" in
+# the top-level README); without it the WSL VM crashed within minutes of
+# loading the 14B editor.
 #
 # Usage (from harness/, inside WSL):
 #     uv run python -m harness collect --config configs/rtx5070_pc.yaml --until initial
+#     uv run python -m harness collect --config configs/rtx5070_pc.yaml      # also edit
 extends: base.yaml
 name: rtx5070-pc
 runs_dir: ../runs/rtx5070_pc  # its own store, apart from every other config
@@ -29,14 +51,14 @@ writer:
     model: qwen2.5-coder-7b-ctx8k
     base_url: http://localhost:11434/v1
     fixtures: null           # clear the mock fixtures inherited from base.yaml
-    temperature: 0.4         # the pilot: 0.8 gave 0 of 16 passing, 0.4 gave 6 of 16
+    temperature: 0.4         # frozen after the dev calibration; see the top-level README
     request_timeout_s: 300
 editor:
   backend:
     kind: openai_compat
-    model: qwen2.5-coder-7b-ctx8k  # stand-in for the 14B editor
+    model: qwen2.5-coder-14b-ctx8k
     base_url: http://localhost:11434/v1
     fixtures: null
-    request_timeout_s: 300
+    request_timeout_s: 600   # the 14B model fills most of the 12 GB; long replies are slow
 execution:
   sandbox_workers: 4         # leaves CPU for Ollama

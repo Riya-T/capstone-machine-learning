@@ -32,18 +32,22 @@ This is a  rough list of tasks we need to complete and is definitely subject to 
 
 ## 3. Real model setup and calibration 
 
-- [ ] **5090 config** — A config for the real setup: the 7B writer on vLLM
-  and the 14B editor on Ollama.
-- [ ] **Set up the 5090** — Install the models and check the harness runs
-  end to end on it.
-- [ ] **Calibrate on dev tasks** — Tune the editor budget, the editor's turn
+- [x] **Real-model config** — `configs/rtx5070_pc.yaml`: the 7B writer and
+  the 14B editor, both 4-bit in Ollama. The team moved from the planned
+  RTX 5090 to an RTX 5070 (12 GB).
+- [x] **Set up the RTX 5070** — Models installed; check the harness runs
+  end to end with the 14B editor (`configs/rtx5070_editor_probe.yaml`).
+- [x] **Calibrate on dev tasks** — Tune the editor budget, the editor's turn
   history and the writer temperature until programs pass often enough and
   the editor's results spread out (some changes succeed, some fail).
-- [ ] **Measure time per editing step** — Check the ~110 GPU-hour estimate.
-- [ ] **Choose the pairing settings** — Pick the preference rule and pairing
-  mode that give enough pairs (target 100–300).
-- [ ] **Freeze the settings** — Commit the final config and stop changing it
-  before collecting training data.
+  Results in the README, "2026-11-01: settings frozen".
+- [x] **Measure time per editing step** — Check the ~110 GPU-hour estimate.
+  47 s per step on average; about 25 hours for the train tasks.
+- [x] **Choose the pairing settings** — Pick the preference rule and pairing
+  mode that give enough pairs (target 100–300). weak_dominance, all_pairs,
+  at most 8 per task, a gap of at least 2 changes.
+- [x] **Freeze the settings** — Commit the final config and stop changing it
+  before collecting training data. `configs/rtx5070_train.yaml`.
 
 ## 4. Training data 
 

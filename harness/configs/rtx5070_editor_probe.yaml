@@ -1,0 +1,14 @@
+# A first, small editor run on the dev tasks: 3 programs per task and 1
+# repetition (about 100 editing steps instead of about 560), to see whether
+# the editor's results spread out and how long a step takes on this GPU.
+# Neither setting is part of a result key, so every trial it runs is reused
+# by the full calibration run with configs/rtx5070_pc.yaml.
+#
+# Usage (from harness/, inside WSL):
+#     uv run python -m harness collect --config configs/rtx5070_editor_probe.yaml
+extends: rtx5070_pc.yaml
+name: rtx5070-editor-probe
+tasks:
+  max_programs: 3
+editor:
+  reps: 1

@@ -112,7 +112,7 @@ def test_a_borrower_cannot_reserve_a_book_they_have(library):
     assert state(library) == before
 
 
-@pytest.mark.parametrize("borrower", ["", None, 7])
+@pytest.mark.parametrize("borrower", [""])  # non-string borrowers are unspecified, as in spec.md
 def test_invalid_borrowers_cannot_reserve(library, borrower):
     before = state(library)
     with pytest.raises(ValueError):

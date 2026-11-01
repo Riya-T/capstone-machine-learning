@@ -27,8 +27,8 @@ a fixed editing agent to change later. For each task it:
 2. keeps the ones that pass the initial tests;
 3. has the **editor** model apply the same sequence of later changes to
    each one, several times, in a sandbox;
-4. scores each implementation by how many changes the editor completed,
-   with partial credit based on hidden-test pass rates for its first failed edit;
+4. scores each implementation by how many changes in a row the editor
+   completed;
 5. pairs the higher-scoring implementation (chosen) against a lower-scoring
    one (rejected) for DPO training.
 
@@ -137,7 +137,10 @@ rule over their per-sequence scores:
 - `strict`: better in every sequence.
 
 Ties and inconsistent comparisons (better in one sequence, worse in another)
-give no pair. `pairing_mode` picks which comparisons become pairs:
+give no pair, and neither does a win by fewer than `min_step_gap` (2)
+changes completed, summed over sequences and repetitions: a one-change gap
+is a single trial going differently. `pairing_mode` picks which comparisons
+become pairs:
 `best_vs_worst` (one pair per task) or `all_pairs` (every comparison, with an
 optional `per_task_cap`). The primary is `all_pairs` with a cap of 8 pairs
 per task. All combinations are computed side by side in the
@@ -235,10 +238,18 @@ what the team must review by hand.
   check.
 - `configs/all_tasks.yaml`: all 60 real tasks with the mock models, for
   `validate-tasks` on the whole set.
-- `configs/noahs_laptop.yaml` and `configs/rtx5070_pc.yaml`: Qwen2.5-Coder-7B
-  in Ollama on team members' machines, for the writer check on the dev
-  tasks. The 7B model stands in for the 14B editor, so their results never
-  go into training data or the report.
+- `configs/rtx5070_pc.yaml`: **the main config.** Every run (calibration,
+  data collection, evaluation) is on this RTX 5070 machine, with the 7B
+  writer and 14B editor both 4-bit in Ollama. Its header has the setup.
+- `configs/rtx5070_editor_probe.yaml`: a small first editor run on the dev
+  tasks (3 programs per task, 1 repetition) to check the spread of editor
+  results and the time per step; its trials are reused by the full run.
+- `configs/rtx5070_train.yaml`: data collection on the 36 train tasks with
+  the settings frozen after the dev calibration; same store as
+  `rtx5070_pc.yaml`.
+- `configs/noahs_laptop.yaml`: the 7B model as both writer and editor on an
+  8 GB laptop, for cheap early checks. Its results never go into training
+  data or the report.
 
 Settings that change results (models, prompts, budgets, sandbox limits,
 seeds) are part of the result keys. `execution` holds settings that never
@@ -279,15 +290,13 @@ These are in the proposal but not in the harness yet:
 - held-out evaluation (three-change sequences on eval tasks, confidence
   intervals by resampling task families);
 - the comment ablation (`editor.view_transform: strip_comments`) and the
-  size-matched subset;
-- a config for the real models on the RTX 5090 (Qwen2.5-Coder-7B writer,
-  14B editor).
+  size-matched subset.
 
 ### DPO training
 
-The scorer emits preference pairs with continuous partial-test scores in
-`runs/<run_id>/preferences.jsonl`. Install the CUDA training extra and train
-the writer using the same writer prompts and code completions:
+The scorer writes the preference pairs to `runs/<run_id>/preferences.jsonl`.
+Install the CUDA training extra and train the writer using the same writer
+prompts and code completions:
 
 ```bash
 cd harness
@@ -309,14 +318,32 @@ numeric magnitude.
 Decisions made while setting up the pipeline that differ from, or fill in,
 the proposal. Each is in `configs/base.yaml` unless noted.
 
+**2026-10-26: everything runs on an RTX 5070 (12 GB), not the RTX 5090
+(32 GB).** Config: `configs/rtx5070_pc.yaml`. Consequences:
+
+- The writer (Qwen2.5-Coder-7B) and the editor (Qwen2.5-Coder-14B) both run
+  4-bit in Ollama; the proposal planned the writer at full precision in
+  vLLM. The 14B editor at 4-bit with an 8192-token context only just fits.
+- The trained writer and every baseline must be served the same way for a
+  fair comparison: the full-precision 7B (~15 GB) doesn't fit, so trained
+  adapters will be merged and quantized like the original model.
+- DPO training must fit in 12 GB: QLoRA, batch size 1, gradient
+  checkpointing.
+- The proposal's estimate (~110 GPU-hours at one minute per editing step)
+  assumed the 5090. Measured here in the dev calibration: 47 seconds per
+  step on average (median 27), and 1.5 steps per trial, since a trial stops
+  at its first failure. Collection on the 36 train tasks should take about
+  25 hours.
+
 **2026-10-26: 16 writer samples per task, at most 8 programs edited.** The
 proposal says "up to eight implementations" per task. The writer check on
 the 8 dev tasks (Qwen2.5-Coder-7B, temperature 0.4) passed only 3.9 of 8
 on average, and pairs grow with the square of the passing count (n passing
 programs give n(n-1)/2 comparisons, many of them ties), so if about 40% of
 comparisons give a pair, 8 samples would give roughly 80 pairs from the 36
-train tasks, short of the 100-300 target. The writer now samples 16 programs (`writer.samples_per_task`) and
-the first 8 distinct passing ones go on to editing (`tasks.max_programs`).
+train tasks, short of the 100-300 target. The writer now samples 16
+programs (`writer.samples_per_task`) and the first 8 distinct passing ones
+go on to editing (`tasks.max_programs`).
 Editing is the expensive part and stays capped at 8 programs per task, so
 the proposal's compute estimate (3,456 editing checkpoints) still holds;
 the extra cost is 8 more writer calls per task, about 5 seconds each.
@@ -343,11 +370,44 @@ order or rejecting non-string borrowers. library_catalog still passes only
 1 of 8 and is kept as a hard task for now; the team should decide whether
 to relax the order of `get_loans`.
 
-**Writer temperature: not decided.** On the dev tasks, 0.4 and 0.6 gave
-about the same number of passing programs (31 and 30 of 64); 0.6 gave no
-duplicates but fewer tasks above 3 of 8. Both runs used a 4-bit model in
-Ollama, so the choice should be confirmed with the real writer on the 5090
-before the settings are frozen.
+**Writer temperature: 0.4.** On the dev tasks, 0.4 and 0.6 gave about the
+same number of passing programs (31 and 30 of 64); 0.6 gave no duplicates
+but fewer tasks above 3 of 8. With one run of 8 samples each, the
+difference is within noise. Frozen at 0.4 with the other settings below.
+
+**2026-11-01: settings frozen after the dev calibration.** The full dev run
+(`configs/rtx5070_pc.yaml`: 8 dev tasks, up to 8 programs each, 2
+sequences, 3 reps, 14B editor) gave 53 pairs from 130 comparisons, a tie
+rate of 0.23 and rep agreement of 0.84. Of 417 editing steps, 198
+succeeded, 164 failed hidden tests and 55 ran out of turns. Frozen from
+here on, for the train collection (`configs/rtx5070_train.yaml`):
+
+- `editor.budget.max_turns: 8`. In every step that ran out of turns that
+  was checked (43 of 55), the editor's last program still failed a public
+  check it could see, so it was stuck rather than short of turns.
+- Scores stay "changes completed in a row", as in the proposal, with no
+  partial credit for the share of hidden tests a failed change passes. A
+  failed change passed 88% of its new-feature tests and 99.5% of the
+  existing ones on average (96.5% of all its hidden tests), so partial
+  credit would rank failures by which one or two tests they miss, and a
+  step that ran out of turns (whose hidden tests never run) would score 0
+  against about 0.97 for a wrong answer.
+- `scorer.min_step_gap: 2`: a pair needs the chosen program to complete at
+  least 2 more changes than the rejected one, summed over sequences and
+  reps. A 1-change gap is one trial out of 3 going differently; it decided
+  16 of the 53 dev pairs, including all 7 of bank_ledger's, where 47 of 48
+  trials completed nothing. With the rule the dev tasks give 37 pairs; the
+  same rate on the 36 train tasks gives about 170, inside the proposal's
+  100-300.
+- Writer temperature 0.4, 16 samples, at most 8 programs edited, as above.
+
+The run also showed which hidden tests fail most. Mostly they are rules
+the change request states but the editor keeps missing (that `True` is
+not an allowed `int`, a fixed error order, "teams with no division have no
+division games"). Two were faults in the task and are fixed: shopping_cart's
+`c_discounts` didn't say whether reapplying a coupon raises (the test
+expects it not to), and library_catalog's `c_reservations` test rejected a
+non-string borrower, which the spec leaves unspecified.
 
 ## Running on Windows
 
@@ -356,8 +416,18 @@ The harness needs Linux and Docker; on Windows, use WSL2.
 - Install Ubuntu in WSL and Docker Engine inside it (`apt install
   docker.io`); Docker Desktop is not needed. A distro can live on any
   drive: `wsl --install -d Ubuntu-24.04 --location E:\WSL\Ubuntu`.
-- Install uv and Ollama inside Ubuntu, and run the harness from there
-  (the repo can stay on the Windows drive, under `/mnt/c/...`).
+- Install uv and Ollama inside Ubuntu, and run the harness from there.
+  Clone the repo into the Linux file system (e.g. `~/capstone-machine-learning`):
+  under `/mnt/c/...` file access is slow enough that sandbox runs time out.
+- Give Windows room for WSL's memory. WSL reserves its VM's memory from the
+  Windows commit limit (RAM plus page file); if that runs out, the Linux
+  kernel panics with "mce: [Hardware Error] ... Fatal local machine check"
+  (no hardware is at fault, and Windows logs no error). With the 14B editor
+  this happened within minutes on a 32 GB machine whose page file couldn't
+  grow because C: was full. Fix: put a page file on a drive with space
+  (System Properties > Advanced > Performance > Virtual memory; here
+  16-32 GB on E:), and keep WSL's swap file off a full drive with
+  `swapFile=E:\\WSL\\swap.vhdx` under `[wsl2]` in `%USERPROFILE%\.wslconfig`.
 - Check out the repo with Linux line endings (`git config core.autocrlf
   false`, then check out again). With Windows line endings the writer
   prompt differs from other machines' and some tests fail.

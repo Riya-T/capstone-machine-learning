@@ -54,6 +54,9 @@ editor:
   max_prompt_chars: 16000
   max_check_output_chars: 2000
   budget:
+    # Frozen after the dev calibration (2026-10-31): 13% of steps ran out of
+    # turns, and in every one checked the editor was stuck on a public check
+    # it could see, so more turns would mostly add time.
     max_turns: 8
     max_total_tokens: 32000
     wall_time_s: 600
@@ -77,10 +80,14 @@ sandbox:
 execution:                   # how work runs; never part of a result key
   sandbox_workers: 4         # containers at once; 4 x (1 cpu, 512m) fits the 8-core laptop
 
-scorer:
-  rule: weak_dominance       # primary; frozen after dev tasks
+scorer:                      # frozen after the dev calibration (2026-10-31)
+  rule: weak_dominance
   # best_vs_worst gives at most one pair per task (36 at most), short of the
   # proposal's 100-300; all_pairs with a cap reaches it without letting a few
   # tasks dominate (36 x 8 = 288 at most).
   pairing_mode: all_pairs
   per_task_cap: 8
+  # A one-change gap over 3 reps is one trial going differently. In the dev
+  # calibration that decided 16 of 53 pairs, all 7 of bank_ledger's among
+  # them, where 47 of 48 trials completed nothing.
+  min_step_gap: 2

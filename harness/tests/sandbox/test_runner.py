@@ -334,8 +334,11 @@ def test_oom_is_detected_under_parallel_load():
     from concurrent.futures import ThreadPoolExecutor
 
     runner = SandboxRunner(sandbox_cfg(memory="128m"), owner=SESSION_OWNER)
-    hog = py("x = bytearray(1 << 30)\n")
-    busy = py("import time\ntime.sleep(1)\n")
+    # On a host whose Docker storage is on a hard disk (the RTX 5070 machine),
+    # an OOM kill takes ~15 s and 8 hogs at once stall every container, so
+    # with 20 s both the hogs and the sleepers sometimes time out first.
+    hog = py("x = bytearray(1 << 30)\n", timeout_s=120)
+    busy = py("import time\ntime.sleep(1)\n", timeout_s=120)
     with ThreadPoolExecutor(8) as pool:
         results = list(pool.map(runner.run, [hog, busy] * 16))
     assert [r.status for r in results[0::2]] == ["oom"] * 16

@@ -61,16 +61,6 @@ def test_trial_score(steps, length, score):
     assert trial_score(steps, length) == score
 
 
-def test_trial_score_uses_failed_edit_test_pass_rate():
-    assert trial_score({1: "fail_new"}, 2, {1: (4, 10, 8, 10)}) == F(3, 5)
-    assert trial_score({1: "success", 2: "fail_existing"}, 2, {2: (5, 5, 2, 10)}) == F(22, 15)
-
-
-def test_trial_score_rejects_invalid_test_counts():
-    with pytest.raises(ValueError, match="invalid test counts"):
-        trial_score({1: "fail_new"}, 2, {1: (5, 4, 0, 10)})
-
-
 def test_unknown_status_is_an_error():
     with pytest.raises(ValueError, match="unknown step status"):
         trial_score({1: "passed"}, 2)
@@ -232,6 +222,7 @@ def test_all_pairs_under_each_rule():
         "compared": 3,
         "tie": 1,  # a vs c
         "inconsistent": 1,  # b vs c
+        "too_close": 0,
         "over_cap": 0,
         "tie_rate": 1 / 3,
         "inconsistent_rate": 1 / 3,
@@ -279,6 +270,38 @@ def test_per_task_cap_keeps_the_first_pairs_and_counts_the_rest():
     result = build(rule="weak_dominance", pairing_mode="all_pairs", per_task_cap=1)
     assert [(p["chosen_id"], p["rejected_id"]) for p in result.pairs] == [("a", "b")]
     assert result.report["combinations"]["weak_dominance/all_pairs"]["over_cap"] == 1
+
+
+def test_wins_by_fewer_than_min_step_gap_changes_give_no_pair():
+    # Changes completed per sequence, summed over reps: zero (0, 0),
+    # one_rep (0, 1), two_reps (2, 0), spread (1, 1). one_rep beats zero and
+    # spread beats one_rep by a single change each; two_reps and spread beat
+    # zero by two.
+    task = TaskRecord(
+        "t",
+        "p",
+        ("s1", "s2"),
+        2,
+        (),
+        (
+            cand("zero", [0, 0, 0], [0, 0, 0]),
+            cand("one_rep", [0, 0, 0], [1, 0, 0], samples=(1,)),
+            cand("two_reps", [1, 1, 0], [0, 0, 0], samples=(2,)),
+            cand("spread", [1, 0, 0], [0, 1, 0], samples=(3,)),
+        ),
+    )
+    combos = build(task, min_step_gap=1).report["combinations"]
+    assert combos["weak_dominance/all_pairs"]["pair_yield"] == 4
+    assert combos["weak_dominance/all_pairs"]["too_close"] == 0
+
+    result = build(task, rule="weak_dominance", pairing_mode="all_pairs", min_step_gap=2)
+    pairs = {(p["chosen_id"], p["rejected_id"]) for p in result.pairs}
+    assert pairs == {("two_reps", "zero"), ("spread", "zero")}
+    combo = result.report["combinations"]["weak_dominance/all_pairs"]
+    assert combo["too_close"] == 2  # one_rep vs zero, spread vs one_rep
+    assert combo["inconsistent"] == 2  # two_reps vs one_rep, two_reps vs spread
+    assert result.report["primary"]["min_step_gap"] == 2
+    assert "min step gap 2" in summary_table(result.report)
 
 
 def test_one_change_ablation_truncates_scores():
@@ -381,20 +404,7 @@ def test_load_task_record_from_the_store(tmp_path):
             for rep in range(3):
                 key = TrialKey(task.id, task.task_version, good, seq, rep, "eh")
                 store.record_checkpoint(Checkpoint(key, 1, "c", "success", "x", run_id=run))
-                store.record_checkpoint(
-                    Checkpoint(
-                        key,
-                        2,
-                        "c",
-                        "fail_new",
-                        "y",
-                        new_pass=4,
-                        new_total=10,
-                        existing_pass=8,
-                        existing_total=10,
-                        run_id=run,
-                    )
-                )
+                store.record_checkpoint(Checkpoint(key, 2, "c", "fail_new", "y", run_id=run))
 
         record = load_task_record(
             store,
@@ -413,7 +423,6 @@ def test_load_task_record_from_the_store(tmp_path):
     assert by_id[good].call_keys == ("k0", "k1")
     assert by_id[good].initially_passed is True
     assert by_id[good].trials[("s2", 2)] == {1: "success", 2: "fail_new"}
-    assert by_id[good].trial_checks[("s2", 2)][2] == (4, 10, 8, 10)
     assert by_id[bad].initially_passed is False and by_id[bad].trials == {}
 
     report = (
@@ -432,11 +441,7 @@ def test_load_task_record_from_the_store(tmp_path):
     assert report["samples_detail"] == {
         "initially_failing": {"failed_initial_tests": 1, "malformed/no_code": 1}
     }
-    assert report["tasks"]["record_store"]["score_histogram"] == {"s1": [0, 0, 0], "s2": [0, 0, 0]}
-    assert report["tasks"]["record_store"]["score_distribution"] == {
-        "s1": {"8/5": 3},
-        "s2": {"8/5": 3},
-    }
+    assert report["tasks"]["record_store"]["score_histogram"] == {"s1": [0, 3, 0], "s2": [0, 3, 0]}
 
 
 def test_infra_cause_is_loaded_from_the_store(tmp_path):

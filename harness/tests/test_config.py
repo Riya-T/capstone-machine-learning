@@ -74,6 +74,7 @@ def test_output_path_may_be_missing_but_input_path_must_exist(tmp_path):
         (lambda d: d.update(schema_version=2), r"schema_version: expected 1"),
         (lambda d: d["tasks"].update(change_kinds=[]), r"change_kinds: must be a non-empty"),
         (lambda d: d["tasks"].update(max_programs=0), r"tasks: max_programs: must be > 0"),
+        (lambda d: d["scorer"].update(min_step_gap=0), r"scorer: min_step_gap: must be > 0"),
         (
             lambda d: d["tasks"].update(change_kinds=["k", "k"]),
             r"change_kinds: must be a non-empty",
@@ -257,7 +258,15 @@ def test_hash_is_independent_of_key_order(tmp_path_factory, rng):
 
 
 @pytest.mark.parametrize(
-    "name", ["mock.yaml", "noahs_laptop.yaml", "all_tasks.yaml", "rtx5070_pc.yaml"]
+    "name",
+    [
+        "mock.yaml",
+        "noahs_laptop.yaml",
+        "all_tasks.yaml",
+        "rtx5070_pc.yaml",
+        "rtx5070_editor_probe.yaml",
+        "rtx5070_train.yaml",
+    ],
 )
 def test_committed_configs_load(name):
     cfg = load_config(CONFIGS_DIR / name)
@@ -266,3 +275,4 @@ def test_committed_configs_load(name):
     assert cfg.scorer.rule == "weak_dominance"
     assert cfg.scorer.pairing_mode == "all_pairs"
     assert cfg.scorer.per_task_cap == 8
+    assert cfg.scorer.min_step_gap == 2

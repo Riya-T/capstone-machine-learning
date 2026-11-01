@@ -48,8 +48,7 @@ class Building:
 - `get_destination(passenger_id)` returns the `destination` the passenger
   gave to `call` (not the floor they are on now), whether they are still
   waiting, riding or have arrived. An id that was never used in a call
-  raises `KeyError`. The same record of every id ever called is what makes
-  a second call with that id raise `ElevatorError`.
+  raises `KeyError`.
 - A passenger id can be used by one call only. Calling with an id that was
   already used, whether that passenger is still waiting, riding or has
   arrived, raises `ElevatorError`. Every `ValueError` check comes before
@@ -72,9 +71,7 @@ When the doors open, in this order:
    already inside. A car with 3 riders takes 1 more; a car with 4 takes
    nobody. Whoever does not fit keeps waiting, in the same order as before.
 
-Only the car that was moved picks anybody up. A passenger keeps the
-destination they called with while they wait and while they ride, so the
-car knows where each rider gets out.
+Only the car that was moved picks anybody up.
 
 For example, with `Building(6)` and a car `"east"`: `call("ann", 2, 5)`
 and `call("ben", 2, 4)`, then `move_car("east", 2)` gives riders

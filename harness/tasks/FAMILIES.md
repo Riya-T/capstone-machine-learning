@@ -37,6 +37,17 @@ list each sequence's changes in order.
     task on average, and every dev task but library_catalog has at least 3.
   - The train and eval tasks are being checked in batches of 10; see
     "Writer check" below.
+- The dev calibration with the 14B editor (2026-10-31; results in "Changes
+  from the proposal" in the top-level README) found two changes whose
+  hidden tests disagreed with what the editor was told. Both are fixed:
+  - shopping_cart `c_discounts`: the request said reapplying a coupon "must
+    not compound" but not whether it raises; 10 of 15 editor attempts
+    raised `ValueError`, which the test rejects. The request now says it
+    raises nothing.
+  - library_catalog `c_reservations`: a hidden test required `ValueError`
+    for borrowers `None` and `7`, which the initial spec leaves unspecified
+    (since the 2026-10-26 change above); every failed attempt failed only
+    on `7`. It now tests only `""`, like the initial tests.
 
 ## Writer check
 
@@ -135,6 +146,22 @@ What the writer kept getting wrong, and the fixes that worked:
 - **Tests that contradicted their own spec.** `job_board` rejected a `True`
   salary, which the spec lists as unspecified; `feature_flags` matched on an
   error message's text. Both tests were fixed.
+
+On review (2026-11-01), four sentences added by these fixes were taken out
+again, because a spec should say what the program does, not how to build
+it (how the writer structures the code is what the project measures), and
+one was wrong:
+
+- `iou_tracker`: "sorting with `reverse=True` is wrong (it reverses the
+  ties too)". Python's sort is stable with `reverse=True`: equal amounts
+  keep their order. The worked example stays.
+- `aging_inventory`: "a list of wilted ids built up in `end_day` gets this
+  wrong ... so work it out from the batches".
+- `document_versions`: "so keep the count of revisions written separately
+  from the revisions kept".
+- `elevator_dispatch`: that the record behind `get_destination` is what
+  makes a repeated call raise, and that riders keep their destination "so
+  the car knows where each rider gets out".
 
 Still open:
 

@@ -1,21 +1,23 @@
 """Scorer: turns editing results into DPO preference pairs.
 
-A program's score on one trial is the number of fully successful changes,
-plus partial credit on its first failed edit based on the share of hidden
-tests passed. Its score for a sequence is the mean over repetitions.
+A program's score on one trial is how many changes in a row the editor
+completed before the first failure (failed hidden tests, or out of
+budget). Its score for a sequence is the mean over repetitions.
 
 Two programs from the same task are compared over their sequence scores:
 - strict: better in every sequence;
 - weak_dominance: at least as good in every sequence, better in one.
 Ties, and comparisons that are better in one sequence but worse in another,
-give no pair.
+give no pair. Neither does a win by fewer than scorer.min_step_gap changes
+in total over all sequences and reps: with 3 reps, a one-change gap is one
+trial going differently, which is often noise.
 
 Pairing modes: all_pairs (every comparison) or best_vs_worst (the best
 program against the worst, per task). A per-task cap keeps the pairs with
 the biggest score gaps. Every rule and mode is computed for the report;
 the configured one gives the training pairs. Every program or comparison
 left out is counted by reason (failed initially, duplicate, infra error,
-unfinished, tie, inconsistent, over the cap).
+unfinished, tie, inconsistent, too close, over the cap).
 
 Usage:
     scorer = Scorer(cfg.scorer, editor_reps=cfg.editor.reps)
@@ -44,7 +46,7 @@ from ..registry import Task, prompt_version
 from ..store import FAILED, Store, TrialKey
 
 Verdict = Literal["a", "b", "tie", "inconsistent"]
-TrialScore = Fraction | Literal["infra_error", "incomplete"]
+TrialScore = int | Literal["infra_error", "incomplete"]
 PAIRING_MODES = ("all_pairs", "best_vs_worst")
 # What can happen to a writer sample: scored, or excluded for one reason.
 SAMPLE_FATES = (
@@ -108,10 +110,6 @@ class CandidateRecord:
     end_reasons: Mapping[tuple[str, int], Mapping[int, str]] = field(default_factory=dict)
     # A passing program after the first tasks.max_programs: never edited.
     over_program_cap: bool = False
-    # (sequence_id, rep) -> {step: (new_pass, new_total, existing_pass, existing_total)}.
-    trial_checks: Mapping[tuple[str, int], Mapping[int, tuple[int, int, int, int]]] = field(
-        default_factory=dict
-    )
 
 
 @dataclass(frozen=True)
@@ -161,7 +159,7 @@ def load_task_record(
         passed = bool(check and check.passed)
         n_passed += passed
         over_cap = passed and max_programs is not None and n_passed > max_programs
-        trials, causes, reasons, checks = {}, {}, {}, {}
+        trials, causes, reasons = {}, {}, {}
         for sequence in sequences:
             for rep in range(editor_reps):
                 key = TrialKey(task.id, task.task_version, cid, sequence.id, rep, editor_hash)
@@ -169,19 +167,6 @@ def load_task_record(
                 if steps:
                     trials[(sequence.id, rep)] = {c.step: c.status for c in steps}
                     reasons[(sequence.id, rep)] = {c.step: c.end_reason or "" for c in steps}
-                    checks[(sequence.id, rep)] = {
-                        c.step: (c.new_pass, c.new_total, c.existing_pass, c.existing_total)
-                        for c in steps
-                        if all(
-                            value is not None
-                            for value in (
-                                c.new_pass,
-                                c.new_total,
-                                c.existing_pass,
-                                c.existing_total,
-                            )
-                        )
-                    }
                 for c in steps:
                     if c.status == "infra_error":
                         causes[(sequence.id, rep)] = c.infra_cause or "unknown"
@@ -195,7 +180,6 @@ def load_task_record(
                 infra_causes=causes,
                 end_reasons=reasons,
                 over_program_cap=over_cap,
-                trial_checks=checks,
             )
         )
     return TaskRecord(
@@ -211,19 +195,12 @@ def load_task_record(
 # --- scoring ----------------------------------------------------------------
 
 
-def trial_score(
-    steps: Mapping[int, str],
-    length: int,
-    checks: Mapping[int, tuple[int, int, int, int]] | None = None,
-) -> TrialScore:
-    """Score editing progress with partial credit for test pass rates.
-
-    Every fully successful change earns 1. A failed edit earns the fraction
-    of its new-feature and regression tests that passed; later edits do not
-    count because the trial stops at its first failure. Infrastructure errors
-    and missing steps remain unresolved rather than receiving a score.
-    """
-    score = Fraction(0)
+def trial_score(steps: Mapping[int, str], length: int) -> TrialScore:
+    """Consecutive successful steps before the first failure, counting only
+    the first `length` steps (the change-count ablation truncates here).
+    budget_exhausted is a failure. An infrastructure error or a missing step
+    before the first failure leaves the trial unresolved, never scored."""
+    score = 0
     for step in range(1, length + 1):
         status = steps.get(step)
         if status is None:
@@ -231,17 +208,6 @@ def trial_score(
         if status == "infra_error":
             return "infra_error"
         if status in FAILED:
-            outcome = (checks or {}).get(step)
-            if outcome is not None:
-                new_pass, new_total, existing_pass, existing_total = outcome
-                total = new_total + existing_total
-                if (
-                    total <= 0
-                    or not 0 <= new_pass <= new_total
-                    or not 0 <= existing_pass <= existing_total
-                ):
-                    raise ValueError(f"invalid test counts for failed step {step}: {outcome}")
-                score += Fraction(new_pass + existing_pass, total)
             return score
         if status != "success":
             raise ValueError(f"unknown step status {status!r}")
@@ -252,7 +218,7 @@ def trial_score(
 @dataclass(frozen=True)
 class CandidateScores:
     candidate_id: str
-    rep_scores: tuple[tuple[Fraction, ...], ...]  # per sequence, per rep
+    rep_scores: tuple[tuple[int, ...], ...]  # per sequence, per rep
 
     @property
     def means(self) -> tuple[Fraction, ...]:
@@ -279,6 +245,14 @@ class Comparison:
     def margin(self) -> Fraction:
         return sum(
             (abs(x - y) for x, y in zip(self.a.means, self.b.means, strict=True)), Fraction(0)
+        )
+
+    @property
+    def step_gap(self) -> int:
+        """Changes completed, summed over reps, apart in each sequence; summed
+        over sequences. Equals margin times the number of reps."""
+        return sum(
+            abs(sum(x) - sum(y)) for x, y in zip(self.a.rep_scores, self.b.rep_scores, strict=True)
         )
 
 
@@ -327,14 +301,7 @@ class Scorer:
                 excluded["over_program_cap"] += 1
                 continue
             scores = [
-                [
-                    trial_score(
-                        c.trials.get((seq, rep), {}),
-                        length,
-                        c.trial_checks.get((seq, rep), {}),
-                    )
-                    for rep in self.reps
-                ]
+                [trial_score(c.trials.get((seq, rep), {}), length) for rep in self.reps]
                 for seq in task.sequence_ids
             ]
             flat = [s for reps in scores for s in reps]
@@ -398,13 +365,16 @@ class Scorer:
         return [Comparison(a, b, decide(a.means, b.means)) for a, b in chosen]
 
     def labeled(self, comparisons: list[Comparison]) -> tuple[list[Comparison], Counter]:
-        """Keep decided comparisons (chosen first), apply the per-task cap by
-        largest margin, and count what was dropped."""
+        """Keep decided comparisons (chosen first) won by at least
+        min_step_gap, apply the per-task cap by largest margin, and count what
+        was dropped."""
         dropped: Counter = Counter()
         decided = []
         for c in comparisons:
             if c.verdict in ("tie", "inconsistent"):
                 dropped[c.verdict] += 1
+            elif c.step_gap < self.cfg.min_step_gap:
+                dropped["too_close"] += 1
             else:
                 decided.append(c if c.verdict == "a" else Comparison(c.b, c.a, "a"))
         decided.sort(key=lambda c: (-c.margin, c.a.candidate_id, c.b.candidate_id))
@@ -420,7 +390,11 @@ class Scorer:
         self, tasks: Sequence[TaskRecord], load_program: Callable[[str], Mapping[str, bytes]]
     ) -> ScoreResult:
         report: dict = {
-            "primary": {"rule": self.cfg.rule, "pairing_mode": self.cfg.pairing_mode},
+            "primary": {
+                "rule": self.cfg.rule,
+                "pairing_mode": self.cfg.pairing_mode,
+                "min_step_gap": self.cfg.min_step_gap,
+            },
             "ablation": {"max_changes": self.cfg.max_changes, "reps": list(self.reps)},
             "samples": Counter(),
             "samples_detail": Counter(),
@@ -451,7 +425,6 @@ class Scorer:
                 "excluded_detail": _nest(detail),
                 "step_endings": _nest(endings).get("step_endings", {}),
                 "score_histogram": _histograms(scored, task),
-                "score_distribution": _score_distributions(scored, task),
             }
             per_task.append((task, scored))
             report["candidates"][task.task_id] = candidate_stats(task, load_program)
@@ -474,6 +447,7 @@ class Scorer:
                     "compared": compared,
                     "tie": counts["tie"],
                     "inconsistent": counts["inconsistent"],
+                    "too_close": counts["too_close"],
                     "over_cap": counts["over_cap"],
                     "tie_rate": counts["tie"] / compared if compared else None,
                     "inconsistent_rate": counts["inconsistent"] / compared if compared else None,
@@ -499,8 +473,8 @@ class Scorer:
             "rule": self.cfg.rule,
             "pairing_mode": self.cfg.pairing_mode,
             "strict_subset": strict(c.a.means, c.b.means) == "a",
-            "chosen_scores": [[float(score) for score in r] for r in c.a.rep_scores],
-            "rejected_scores": [[float(score) for score in r] for r in c.b.rep_scores],
+            "chosen_scores": [list(r) for r in c.a.rep_scores],
+            "rejected_scores": [list(r) for r in c.b.rep_scores],
             "margin": str(c.margin),
             # The recorded writer answers behind each program (model_calls keys).
             "chosen_call_keys": list(records[c.a.candidate_id].call_keys),
@@ -518,28 +492,15 @@ def _nest(detail: Counter) -> dict[str, dict[str, int]]:
 
 
 def _histograms(scored: list[CandidateScores], task: TaskRecord) -> dict[str, list[int]]:
-    """Legacy integer-score histogram retained for existing reports."""
+    """Per sequence: how many trials scored 0, 1, ..., L. All mass at 0 or at
+    L flags a task that is too hard or too easy for the editor."""
     out = {}
     for i, seq in enumerate(task.sequence_ids):
         counts = [0] * (task.sequence_length + 1)
         for s in scored:
             for score in s.rep_scores[i]:
-                if score.denominator == 1:
-                    counts[int(score)] += 1
+                counts[score] += 1
         out[seq] = counts
-    return out
-
-
-def _score_distributions(
-    scored: list[CandidateScores], task: TaskRecord
-) -> dict[str, dict[str, int]]:
-    """Per sequence: count each exact score, including fractional outcomes."""
-    out = {}
-    for i, seq in enumerate(task.sequence_ids):
-        counts: Counter[str] = Counter(
-            str(score) for candidate in scored for score in candidate.rep_scores[i]
-        )
-        out[seq] = dict(sorted(counts.items(), key=lambda item: Fraction(item[0])))
     return out
 
 
@@ -623,10 +584,11 @@ def summary_table(report: dict) -> str:
     samples = ", ".join(f"{k} {v}" for k, v in report["samples"].items())
     out += ["", f"Samples: {samples}"]
 
-    primary = "{rule}/{pairing_mode}".format(**report["primary"])
+    primary = "{rule}/{pairing_mode}, min step gap {min_step_gap}".format(**report["primary"])
     out += ["", f"Preference pairs (primary: {primary})"]
     out.append(
         f"  {'rule/pairing':<30}{'pairs':>6}{'compared':>9}{'tie rate':>10}{'inconsistent':>13}"
+        f"{'too close':>10}"
     )
     for name, combo in report["combinations"].items():
 
@@ -636,6 +598,7 @@ def summary_table(report: dict) -> str:
         out.append(
             f"  {name:<30}{combo['pair_yield']:>6}{combo['compared']:>9}"
             f"{rate(combo['tie_rate']):>10}{rate(combo['inconsistent_rate']):>13}"
+            f"{combo['too_close']:>10}"
         )
     agreement = report["rep_agreement"]
     out += ["", f"Rep agreement: {'-' if agreement is None else f'{agreement:.2f}'}"]
@@ -644,9 +607,8 @@ def summary_table(report: dict) -> str:
     editor = ", ".join(f"{k} {v}" for k, v in report["editor_endings"].items()) or "-"
     out.append(f"Editor endings: {editor}")
     for task_id, t in sorted(report["tasks"].items()):
-        distributions = t.get("score_distribution", t["score_histogram"])
-        histograms = "; ".join(f"{seq} {counts}" for seq, counts in distributions.items())
-        out.append(f"Score distribution {task_id} (trial scores): {histograms or '-'}")
+        histograms = "; ".join(f"{seq} {counts}" for seq, counts in t["score_histogram"].items())
+        out.append(f"Score histogram {task_id} (trials scoring 0, 1, ...): {histograms or '-'}")
     return "\n".join(out)
 
 

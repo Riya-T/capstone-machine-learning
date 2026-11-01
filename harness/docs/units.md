@@ -70,7 +70,7 @@ subpackages next to `collection/`.
 | `prompts/editor_v2.md` | Editor instructions template (`$request`, `$files`, `$history`, `$feedback`, `$allowed_files`, `$turns_left`). | `tests/collection/test_editor.py` |
 | `docker/sandbox/Dockerfile` | Sandbox image `harness-sandbox:py3.11-v1`: Python 3.11 pinned by digest, with the pytest and Hypothesis versions from `uv.lock`. | `tests/sandbox/test_runner.py` |
 | `fixtures/mock/` | Mock writer and editor responses for the deterministic backend. | `tests/models/test_backends.py`, `tests/integration/test_writer_replay.py` |
-| `configs/` | `base.yaml`, `mock.yaml` (deterministic mock writer and editor on the example task), `all_tasks.yaml` (every real task, for `validate-tasks`), and `noahs_laptop.yaml` and `rtx5070_pc.yaml` (the 7B model in Ollama, for the writer check). A real-model config for the 5090 comes later. `execution` holds settings that never affect results. | `tests/test_config.py` (committed configs load) |
+| `configs/` | `base.yaml`, `mock.yaml` (deterministic mock writer and editor on the example task), `all_tasks.yaml` (every real task, for `validate-tasks`), `rtx5070_pc.yaml` (the main config: 7B writer and 14B editor in Ollama on the RTX 5070), `rtx5070_editor_probe.yaml` (a small first editor run), `rtx5070_train.yaml` (data collection on the 36 train tasks, frozen settings), and `noahs_laptop.yaml` (the 7B model as writer and editor, for cheap early checks). `execution` holds settings that never affect results. | `tests/test_config.py` (committed configs load) |
 
 ## Integration tests (`tests/integration/`)
 

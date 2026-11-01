@@ -66,8 +66,7 @@ Each page keeps the text of only its 5 most recent revisions:
 2. `get_revision` for a dropped revision raises `IndexError`.
 3. Dropping changes nothing else. Revision numbers stay the same,
    `get_revision_count` still counts every revision ever written, and the
-   authors of dropped revisions stay in `get_authors`. So keep the count of
-   revisions written separately from the revisions kept.
+   authors of dropped revisions stay in `get_authors`.
 
 For example, after `create_page` and 7 edits a page has had 8 revisions:
 `get_revision_count` returns 8, revisions 4 to 8 can be read by their

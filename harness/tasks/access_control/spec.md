@@ -44,8 +44,9 @@ class Gateway:
   does nothing.
 - `get_allowed()` returns the same ids as `get_clients()`, in the same
   order, but keeps only those that are on the allow list right now. The
-  order in which clients were allowed does not matter. For example, after registering `"a"`, `"b"` and `"c"` and then allowing
-  `"c"` and then `"a"`, `get_allowed()` returns `["a", "c"]`.
+  order in which clients were allowed does not matter. For example, after
+  registering `"a"`, `"b"` and `"c"` and then allowing `"c"` and then
+  `"a"`, `get_allowed()` returns `["a", "c"]`.
 
 ## Messages
 

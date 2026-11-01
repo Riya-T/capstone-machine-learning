@@ -227,11 +227,16 @@ class ScorerConfig:
     rule: str
     pairing_mode: Literal["all_pairs", "best_vs_worst"]
     per_task_cap: int | None = None  # max pairs per task; None = no cap
+    # A pair needs the chosen program's trials to complete at least this many
+    # more changes than the rejected one's, summed over sequences and reps.
+    # 1 keeps every decided comparison.
+    min_step_gap: int = 1
     # Ablations computed from stored results without new model calls:
     max_changes: int | None = None  # truncate trial scores to this many changes
     reps: tuple[int, ...] | None = None  # use only these rep indices
 
     def __post_init__(self) -> None:
+        _require_positive(self.min_step_gap, "min_step_gap")
         if self.per_task_cap is not None:
             _require_positive(self.per_task_cap, "per_task_cap")
         if self.max_changes is not None:
