@@ -418,14 +418,25 @@ class Store:
 
     def put_blob(self, files: Mapping[str, bytes]) -> str:
         """Store a program; returns its content hash. Storing the same program
-        twice writes nothing the second time."""
+        twice writes nothing the second time, unless the file on disk no
+        longer holds it (e.g. emptied by a crash), in which case it is
+        rewritten.
+
+        The data and the rename are flushed to disk before returning, so the
+        row recorded next never points at a blob a crash can still lose: a
+        VM crash on 2026-10-31 left two blobs empty that were written a
+        second before it."""
         data = _encode_program(files)
         digest = hashlib.sha256(data).hexdigest()
         path = self.blob_dir / f"{digest}.json"
-        if not path.exists():
+        if not path.exists() or path.read_bytes() != data:
             tmp = path.with_name(f"{path.name}.{secrets.token_hex(4)}.tmp")
-            tmp.write_bytes(data)
+            with open(tmp, "wb") as f:
+                f.write(data)
+                f.flush()
+                os.fsync(f.fileno())
             os.replace(tmp, path)  # atomic: readers never see half a blob
+            _fsync_dir(self.blob_dir)
         return digest
 
     def get_blob(self, digest: str) -> dict[str, bytes]:
@@ -603,6 +614,18 @@ class _Transaction:
 
     def __exit__(self, exc_type: object, *rest: object) -> None:
         self.db.execute("ROLLBACK" if exc_type else "COMMIT")
+
+
+def _fsync_dir(directory: Path) -> None:
+    """Flush a directory's entries (a rename into it) to disk. Windows can't
+    open a directory this way, and there it is skipped."""
+    if os.name == "nt":
+        return
+    fd = os.open(directory, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
+    try:
+        os.fsync(fd)
+    finally:
+        os.close(fd)
 
 
 def _encode_program(files: Mapping[str, bytes]) -> bytes:

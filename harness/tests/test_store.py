@@ -7,6 +7,7 @@ Usage:
 """
 
 import json
+import os
 import shutil
 import sqlite3
 import subprocess
@@ -229,6 +230,25 @@ def test_corrupt_blob_is_detected(store):
     (store.blob_dir / f"{digest}.json").write_text('{"m.py": "eCA9IDIK"}')  # x = 2
     with pytest.raises(StoreError, match="corrupt"):
         store.get_blob(digest)
+
+
+def test_a_blob_emptied_by_a_crash_is_rewritten_when_stored_again(store):
+    files = {"m.py": b"x = 1\n"}
+    digest = store.put_blob(files)
+    (store.blob_dir / f"{digest}.json").write_bytes(b"")
+    assert store.put_blob(files) == digest
+    assert store.get_blob(digest) == files
+
+
+def test_blobs_are_flushed_to_disk_before_put_blob_returns(store, monkeypatch):
+    synced = []
+    real_fsync = os.fsync
+    monkeypatch.setattr(os, "fsync", lambda fd: (synced.append(fd), real_fsync(fd)))
+    store.put_blob({"m.py": b"y = 2\n"})
+    assert len(synced) == (1 if os.name == "nt" else 2)  # the file, then its directory
+    synced.clear()
+    store.put_blob({"m.py": b"y = 2\n"})  # already stored: nothing written
+    assert synced == []
 
 
 def test_missing_blob_raises_key_error(store):
