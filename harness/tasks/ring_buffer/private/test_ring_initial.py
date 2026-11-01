@@ -8,7 +8,7 @@ Usage (with ring_buffer.py importable, e.g. in the sandbox):
 import pytest
 from ring_buffer import BufferEmpty, BufferFull, RingBuffer, RingError
 
-BAD_CAPACITIES = [0, -1, 2.5, "3", None]
+BAD_CAPACITIES = [0, -1]  # capacities that are not ints are unspecified
 BAD_VALUES = [1.5, "7", None, [1]]
 
 

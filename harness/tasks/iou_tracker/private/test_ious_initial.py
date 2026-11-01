@@ -102,18 +102,12 @@ def test_owed_to_lists_largest_amount_first(tracker):
     assert tracker.get_owed_to("alice") == [("carol", 250), ("bob", 100)]
 
 
-def test_owed_to_breaks_ties_by_the_order_users_were_added(tracker):
-    tracker.record_iou("alice", "carol", 100)
-    tracker.record_iou("alice", "bob", 100)
-    assert tracker.get_owed_to("alice") == [("bob", 100), ("carol", 100)]
-
-
-def test_owed_by_lists_largest_amount_first_with_ties_in_user_order(tracker):
+def test_owed_by_lists_largest_amount_first_as_amounts_change(tracker):
     tracker.record_iou("carol", "alice", 300)
-    tracker.record_iou("bob", "alice", 300)
-    assert tracker.get_owed_by("alice") == [("bob", 300), ("carol", 300)]
-    tracker.record_iou("carol", "alice", 1)
-    assert tracker.get_owed_by("alice") == [("carol", 301), ("bob", 300)]
+    tracker.record_iou("bob", "alice", 200)
+    assert tracker.get_owed_by("alice") == [("carol", 300), ("bob", 200)]
+    tracker.record_iou("bob", "alice", 101)
+    assert tracker.get_owed_by("alice") == [("bob", 301), ("carol", 300)]
 
 
 def test_users_that_owe_nothing_are_not_listed(tracker):

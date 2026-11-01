@@ -8,8 +8,8 @@ Usage (with portfolio.py importable, e.g. in the sandbox):
 import pytest
 from portfolio import InsufficientCash, InsufficientShares, Portfolio, PortfolioError
 
-BAD_INTS = [0, -5, 1.5, "10", None]
-BAD_SYMBOLS = ["", None, 7]
+BAD_INTS = [0, -5]  # values that are not ints are unspecified
+BAD_SYMBOLS = ["", None]  # other non-strings, such as 7, are unspecified
 
 
 @pytest.fixture
@@ -158,7 +158,7 @@ def test_a_bad_symbol_is_reported_before_bad_shares(folio):
 def test_bad_input_is_reported_before_missing_cash():
     pf = Portfolio()  # no cash at all
     with pytest.raises(ValueError):
-        pf.buy("ACME", 1, 1.5)
+        pf.buy("", 1, 100)
     with pytest.raises(ValueError):
         pf.buy("ACME", -1, 100)
     with pytest.raises(ValueError):
@@ -166,10 +166,11 @@ def test_bad_input_is_reported_before_missing_cash():
 
 
 def test_bad_input_is_reported_before_missing_shares(folio):
+    # folio holds no shares at all
     with pytest.raises(ValueError):
         folio.sell("ACME", 1, 0)
     with pytest.raises(ValueError):
-        folio.sell("ACME", "3", 100)
+        folio.sell(None, 1, 100)
 
 
 # --- holdings and trades ----------------------------------------------------

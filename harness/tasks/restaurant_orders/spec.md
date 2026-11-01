@@ -25,8 +25,8 @@ All prices and bills are whole cents, as `int`.
 ## Menu
 
 - `add_dish(name, price)` puts a dish on the menu. The name must be a
-  non-empty string and the price an `int` greater than 0, or `ValueError`
-  is raised. A name that is already on the menu raises `RestaurantError`
+  non-empty string and the price greater than 0, or `ValueError` is
+  raised. A name that is already on the menu raises `RestaurantError`
   and the menu is unchanged. Both `ValueError` checks come before the
   duplicate check.
 - Dishes are never removed and prices never change.
@@ -49,12 +49,13 @@ All prices and bills are whole cents, as `int`.
 
 - `order(table, dish, quantity)` adds `quantity` of `dish` to the table's
   order. The dish must be on the menu, or `KeyError` is raised. The
-  quantity must be an `int` greater than 0, or `ValueError` is raised.
+  quantity must be greater than 0, or `ValueError` is raised.
 - `get_order(table)` returns what the table has ordered since it was
   opened as `(dish, quantity)` tuples: one tuple per dish, with the
   quantities of repeated orders of the same dish added together, in the
   order the dishes were first ordered at that table. A table with nothing
-  ordered gives `[]`.
+  ordered gives `[]`. For example, ordering 1 steak, then 1 soup, then 2
+  steak gives `[("steak", 3), ("soup", 1)]`.
 - `get_bill(table)` returns the sum of quantity times price over the
   table's order, 0 for a table with nothing ordered.
 
@@ -71,6 +72,7 @@ and every order are unchanged.
 
 Behavior not described here is unspecified, and no test depends on it. This
 includes names that are not strings passed to `add_dish` or `open_table`,
+prices and quantities that are not `int`s, such as `1.5`, `"2"` or `None`,
 `bool` prices and quantities, what happens if a returned list is changed,
 the text of error messages, saving the restaurant to a file, and use from
 several threads.

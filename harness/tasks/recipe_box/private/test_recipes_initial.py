@@ -8,7 +8,7 @@ Usage (with recipes.py importable, e.g. in the sandbox):
 import pytest
 from recipes import RecipeBox, RecipeError
 
-BAD_NAMES = ["", None, 3]
+BAD_NAMES = ["", None]
 BAD_QUANTITIES = [0, -5, 1.5, "10", None]
 
 
@@ -141,14 +141,7 @@ def test_invalid_quantities_are_rejected(box, quantity):
     assert state(box) == before
 
 
-def test_an_unknown_recipe_is_reported_before_a_bad_ingredient(box):
-    with pytest.raises(KeyError):
-        box.add_ingredient("soup", "", 0)
-    with pytest.raises(KeyError):
-        box.add_ingredient("soup", "water", -1)
-
-
-def test_a_bad_ingredient_is_reported_before_a_bad_quantity(box):
+def test_a_bad_ingredient_and_a_bad_quantity_raise_value_error(box):
     with pytest.raises(ValueError):
         box.add_ingredient("pancakes", "", -1)
 

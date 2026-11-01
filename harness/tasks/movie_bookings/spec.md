@@ -41,9 +41,12 @@ Start times are minutes after midnight and seat counts are counts, both as
   An empty showing id raises `ValueError`, and a showing id that is already
   used raises `BookingError`. `start` must be an `int` that is 0 or more and
   `seats` an `int` greater than 0, or `ValueError` is raised.
-- `get_showings(title)` returns the ids of the movie's showings, earliest
-  start first. Showings with the same start keep the order they were added
-  in. A movie with no showings gives an empty list.
+- `get_showings(title)` returns the ids of the movie's showings sorted by
+  `start`, lowest first, whatever order they were added in. Showings with
+  the same start keep the order they were added in. For example, if `d1`
+  at 600, `d2` at 480 and `d3` at 600 are added in that order,
+  `get_showings` returns `["d2", "d1", "d3"]`. A movie with no showings
+  gives an empty list.
 - `book`, `get_free_seats` and `get_bookings` raise `KeyError` for a showing
   id that was not added, including values that are not strings at all.
 
@@ -58,10 +61,10 @@ When `add_showing` has several problems, the first of these is raised:
 ## Bookings
 
 - `book(showing_id, customer, seats)` books `seats` seats of the showing for
-  `customer`. The customer must be a non-empty string and the seat count an
-  `int` greater than 0, or `ValueError` is raised. Booking more seats than
-  are free raises `NoSeats`. The same customer may book the same showing
-  several times.
+  `customer`. An empty string or `None` as the customer raises
+  `ValueError`, and so does a seat count that is not an `int` greater than
+  0. Booking more seats than are free raises `NoSeats`. The same customer
+  may book the same showing several times.
 - `get_free_seats(showing_id)` returns the number of seats of the showing
   that are not booked.
 - `get_bookings(showing_id)` returns the showing's bookings in the order they
@@ -69,10 +72,9 @@ When `add_showing` has several problems, the first of these is raised:
 
 When `book` has several problems, the first of these is raised:
 
-1. `KeyError` for a showing id that was not added;
-2. `ValueError` for an invalid customer;
-3. `ValueError` for an invalid seat count;
-4. `NoSeats`.
+1. `ValueError` for an invalid customer;
+2. `ValueError` for an invalid seat count;
+3. `NoSeats`.
 
 A failed call has no effect: if a method raises, every movie, showing and
 booking is unchanged.
@@ -80,7 +82,10 @@ booking is unchanged.
 ## Unspecified behavior
 
 Behavior not described here is unspecified, and no test depends on it. This
-includes titles and showing ids that are not strings passed to `add_movie`
-and `add_showing`, `bool` values for `start` and `seats`, an upper bound on
-`start`, what happens if a returned list is changed, the text of error
-messages, saving the box office to a file, and use from several threads.
+includes which of `KeyError` and `ValueError` `book` raises for a showing id
+that was not added and an invalid customer or seat count, customers that
+are neither strings nor `None`, such as `7`, titles and showing ids that are
+not strings passed to `add_movie` and `add_showing`, `bool` values for
+`start` and `seats`, an upper bound on `start`, what happens if a returned
+list is changed, the text of error messages, saving the box office to a
+file, and use from several threads.

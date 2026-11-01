@@ -38,16 +38,19 @@ All amounts are whole cents, as `int`.
   `ValueError` is raised. A user cannot owe themselves: the same name for
   lender and borrower raises `ValueError`.
 - What a user owes another user is the sum of the IOUs between them in that
-  direction. Debts in the two directions are kept apart: if alice lends bob
-  1000 and bob lends alice 400, then bob owes alice 1000 and alice owes
-  bob 400.
-- `get_owed_to(name)` returns one `(borrower, amount)` tuple for every user
-  who owes `name` something, largest amount first. Users with equal amounts
-  come in the order they were added. For example, if carol and then bob
-  were added before alice, and each borrows 100 from alice, then
-  `get_owed_to("alice")` is `[("carol", 100), ("bob", 100)]`.
-- `get_owed_by(name)` returns one `(lender, amount)` tuple for every user
-  that `name` owes something, largest amount first, with the same tie rule.
+  direction.
+- `get_owed_to(name)` lists the money owed to `name`: one
+  `(borrower, amount)` tuple for every user who owes `name` something,
+  largest amount first.
+- `get_owed_by(name)` lists the money owed by `name`: one `(lender, amount)`
+  tuple for every user that `name` owes something, largest amount first.
+- For example, after `record_iou("alice", "bob", 500)`,
+  `get_owed_to("alice")` is `[("bob", 500)]` and `get_owed_by("bob")` is
+  `[("alice", 500)]`, while `get_owed_to("bob")` and `get_owed_by("alice")`
+  are both `[]`.
+- Debts in the two directions are kept apart, not netted: if alice lends
+  bob 1000 and bob lends alice 400, then `get_owed_to("alice")` is
+  `[("bob", 1000)]` and `get_owed_by("alice")` is `[("bob", 400)]`.
 - `get_balance(name)` returns everything owed to `name` minus everything
   `name` owes. It is negative when `name` owes more than they are owed.
 
@@ -70,6 +73,7 @@ history is unchanged.
 ## Unspecified behavior
 
 Behavior not described here is unspecified, and no test depends on it. This
-includes names that are not strings passed to `add_user`, `bool` amounts,
-what happens if a returned list is changed, the text of error messages,
-saving the tracker to a file, and use from several threads.
+includes the order of users with equal amounts in `get_owed_to` and
+`get_owed_by`, names that are not strings passed to `add_user`, `bool`
+amounts, what happens if a returned list is changed, the text of error
+messages, saving the tracker to a file, and use from several threads.

@@ -8,8 +8,8 @@ Usage (with fleet.py importable, e.g. in the sandbox):
 import pytest
 from fleet import FleetError, RobotFleet
 
-BAD_COMMANDS = ["X", "AAX", "a", "L R", "LR1", 5, None, ["L"]]
-BAD_HEADINGS = ["n", "North", "", "NE", None, 5]
+BAD_COMMANDS = ["X", "AAX", "a", "L R", "LR1", 5, ["L"]]  # None is unspecified
+BAD_HEADINGS = ["n", "w", "X"]  # headings that are not a single letter are unspecified
 BAD_COORDS = [1.5, "1", None]
 
 

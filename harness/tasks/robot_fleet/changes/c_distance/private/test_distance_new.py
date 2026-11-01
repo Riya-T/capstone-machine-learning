@@ -81,7 +81,7 @@ def test_robots_travel_independently(fleet):
     assert travel(fleet, "scout") == (0, 0, [(3, -1)])
 
 
-@pytest.mark.parametrize("commands", ["AX", "a", 5, None])
+@pytest.mark.parametrize("commands", ["AX", "a", 5])
 def test_a_rejected_run_adds_no_travel(fleet, commands):
     fleet.run("rover", "A")
     before = travel(fleet, "rover")

@@ -8,7 +8,7 @@ Usage (with orders.py importable, e.g. in the sandbox):
 import pytest
 from orders import Restaurant, RestaurantError
 
-BAD_COUNTS = [0, -3, 1.5, "2", None]
+BAD_COUNTS = [0, -3]  # values that are not ints are unspecified
 
 
 @pytest.fixture

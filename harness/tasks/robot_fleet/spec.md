@@ -27,9 +27,10 @@ Coordinates are `int` and may be negative; the grid has no edges.
 - `add_robot(name, x, y, heading)` places a new robot at `(x, y)` facing
   `heading`, which is one of the four letters `"N"`, `"E"`, `"S"` and `"W"`.
   An empty name raises `ValueError`, and a name that is already in use raises
-  `FleetError`. An `x` or `y` that is not an `int`, or a heading that is not
-  one of the four letters, raises `ValueError`. The name is checked before
-  the position and the heading. If `add_robot` raises, no robot is added.
+  `FleetError`. An `x` or `y` that is not an `int` raises `ValueError`, and
+  so does a heading that is any other letter, such as `"n"` or `"X"`. The
+  name is checked before the position and the heading. If `add_robot`
+  raises, no robot is added.
 - `get_robots()` returns the names of all robots, in the order they were
   added.
 - `get_position(name)` returns the robot's `(x, y)` and `get_heading(name)`
@@ -40,7 +41,8 @@ Coordinates are `int` and may be negative; the grid has no edges.
 
 ## Commands
 
-A command string is a `str` made of zero or more of these letters:
+A command string is a `str` made of zero or more of the three letters
+`"L"`, `"R"` and `"A"`:
 
 - `"L"`: turn left (counterclockwise) by 90 degrees: `N → W → S → E → N`.
 - `"R"`: turn right (clockwise) by 90 degrees: `N → E → S → W → N`.
@@ -51,11 +53,11 @@ A command string is a `str` made of zero or more of these letters:
 - `run(name, commands)` executes the commands on that robot, in order.
 - `run_all(commands)` executes the same commands on every robot, in the order
   the robots were added. With no robots it does nothing.
-- A command string that is not a `str`, or that contains any other character
-  (a lowercase letter, a space, a digit, ...), raises `ValueError`. Nothing
-  then changes: no robot moves or turns, and no command count changes, even if
-  the string starts with valid letters. An empty string is valid and does
-  nothing.
+- Commands that are not a `str`, such as `5`, or a string with any character
+  other than `"L"`, `"R"` and `"A"` (such as `"X"`, a lowercase letter, a
+  space or a digit) raise `ValueError`. Nothing then changes: no robot moves
+  or turns, and no command count changes, even if the string starts with
+  valid letters. An empty string is valid and does nothing.
 - `get_command_count(name)` returns how many commands have been executed on
   that robot so far. Every letter counts as one command, whether it came
   through `run` or `run_all`.
@@ -66,6 +68,7 @@ before `ValueError` for the commands.
 ## Unspecified behavior
 
 Behavior not described here is unspecified, and no test depends on it. This
-includes names that are not strings passed to `add_robot`, `bool`
-coordinates, what happens if a returned list is changed, the text of error
-messages, saving the fleet to a file, and use from several threads.
+includes names that are not strings passed to `add_robot`, headings that are
+not a single letter, such as `""`, `"NE"` or `None`, `None` as the commands,
+`bool` coordinates, what happens if a returned list is changed, the text of
+error messages, saving the fleet to a file, and use from several threads.

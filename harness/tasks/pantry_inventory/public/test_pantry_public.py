@@ -25,7 +25,9 @@ def test_adding_then_quantity(pantry):
 
 def test_using_takes_from_the_earliest_batch_first(pantry):
     pantry.add_item("milk", 4, 8)
-    pantry.use_item("milk", 3)
+    pantry.add_item("milk", 1, 1)
+    assert pantry.get_batches("milk") == [(1, 1), (3, 2), (8, 4)]
+    pantry.use_item("milk", 4)
     assert pantry.get_batches("milk") == [(8, 3)]
     assert pantry.get_quantity("milk") == 3
 

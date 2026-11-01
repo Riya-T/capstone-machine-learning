@@ -1,7 +1,8 @@
 # Hangman games
 
 Write a module `hangman.py` that runs several games of hangman at the same
-time. Each game has a name, a secret word and the letters guessed so far.
+time. Each game has a name, a secret word and the letters guessed so far,
+in the order they were guessed.
 
 ## Interface
 
@@ -35,10 +36,15 @@ class Hangman:
 
 - `guess(game_id, letter)` records a guess. The letter must be a `str` of
   exactly one lowercase letter `a` to `z`, or `ValueError` is raised.
-- A guess is refused with `HangmanError` when the game is already won, or
-  when the same letter was already guessed in this game.
 - `guess` returns `True` when the letter occurs in the word and `False`
   otherwise.
+- Guessing a letter that was already guessed in this game raises
+  `HangmanError`.
+- A won game is over: once every letter of the word has been guessed, every
+  later `guess` in that game raises `HangmanError`, whatever the letter,
+  including letters never guessed before. For example, in a game with the
+  word `cab`, after guessing `c`, `a` and `b` the status is `"won"`, and
+  guessing `z` then raises `HangmanError`.
 - When a call has several problems, the first of these is raised:
   `KeyError` for a game id not in use, then `ValueError` for a bad letter,
   then `HangmanError`.
@@ -48,9 +54,9 @@ class Hangman:
 - `get_progress(game_id)` returns a string with one character per letter of
   the word, in order: the letter itself if it has been guessed, and `_`
   otherwise. For the word `banana` after guessing `a`, it is `_a_a_a`.
-- `get_guesses(game_id)` returns the letters guessed so far, in the order
-  they were guessed (not sorted): after guessing `z`, `b`, `a`, `n` it is
-  `["z", "b", "a", "n"]`.
+- `get_guesses(game_id)` returns the letters guessed so far, oldest first,
+  in the order they were guessed (not sorted, and not in any other order):
+  after guessing `z`, `b`, `a`, `n` it is `["z", "b", "a", "n"]`.
 - `get_wrong_count(game_id)` returns how many guesses were letters that do
   not occur in the word.
 - `get_status(game_id)` returns `"playing"` until every letter of the word

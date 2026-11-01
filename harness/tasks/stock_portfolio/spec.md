@@ -32,16 +32,16 @@ of one share.
 ## Cash
 
 - A new portfolio has 0 cash and holds no shares.
-- `deposit_cash(amount)` adds the amount to the cash. The amount must be an
-  `int` greater than 0, or `ValueError` is raised.
+- `deposit_cash(amount)` adds the amount to the cash. The amount must be
+  greater than 0, or `ValueError` is raised.
 - `get_cash()` returns the cash available.
 
 ## Trading
 
-- A symbol must be a non-empty string, or `ValueError` is raised. This
-  applies to every method that takes a symbol.
-- The number of shares and the price must each be an `int` greater than 0,
-  or `ValueError` is raised.
+- An empty string or `None` as a symbol raises `ValueError`. This applies
+  to every method that takes a symbol.
+- The number of shares and the price must each be greater than 0, or
+  `ValueError` is raised.
 - `buy(symbol, shares, price)` takes `shares * price` out of the cash and
   adds the shares to the holding in that symbol. Buying more than the cash
   can pay for raises `InsufficientCash`.
@@ -49,7 +49,8 @@ of one share.
   `shares * price` to the cash. Selling more shares than are held raises
   `InsufficientShares`; a symbol never bought holds 0 shares.
 - `get_shares(symbol)` returns the number of shares held in that symbol, 0
-  for a symbol never bought.
+  for a symbol never bought. It too raises `ValueError` for an empty string
+  or `None`.
 - `get_holdings()` returns the symbols with more than 0 shares, in the order
   they were first bought. A symbol sold down to 0 shares is not listed.
 
@@ -72,7 +73,9 @@ the list of trades are unchanged.
 ## Unspecified behavior
 
 Behavior not described here is unspecified, and no test depends on it. This
-includes `bool` amounts, shares or prices, where a symbol sold down to 0 and
-bought again appears in `get_holdings()`, what happens if a returned list is
-changed, the text of error messages, saving the portfolio to a file, and use
-from several threads.
+includes amounts, shares or prices that are not `int`s, such as `1.5`,
+`"10"` or `None`, `bool` amounts, shares or prices, other values that are
+not strings, such as `7`, passed as a symbol, where a symbol sold down to 0
+and bought again appears in `get_holdings()`, what happens if a returned
+list is changed, the text of error messages, saving the portfolio to a file,
+and use from several threads.

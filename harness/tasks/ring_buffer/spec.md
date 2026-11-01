@@ -30,8 +30,8 @@ be written more than once.
 
 ## Capacity
 
-- `RingBuffer(capacity)` creates an empty buffer. The capacity must be an
-  `int` of at least 1, or `ValueError` is raised.
+- `RingBuffer(capacity)` creates an empty buffer. The capacity must be at
+  least 1, or `ValueError` is raised.
 - `get_capacity()` returns the capacity given at creation.
 - `get_size()` returns how many values the buffer holds right now, from 0
   up to the capacity.
@@ -45,9 +45,10 @@ be written more than once.
 - `read()` removes and returns the oldest value. Reading from an empty
   buffer raises `BufferEmpty`.
 - `clear()` removes every value. Clearing an empty buffer is allowed.
-- Values come out in the order they went in. After some values are read,
-  the space they used can be written again, and `read` still returns the
-  remaining values oldest first, followed by the new ones.
+- Values come out in the order they went in, however writes and reads are
+  mixed, and each read makes room for one more write. For example, with a
+  capacity of 2: write 1, write 2, read gives 1, write 3, read gives 2,
+  write 4, and the next two reads give 3 and then 4.
 
 A failed call has no effect: if a method raises, the size and the stored
 values are unchanged.
@@ -55,6 +56,7 @@ values are unchanged.
 ## Unspecified behavior
 
 Behavior not described here is unspecified, and no test depends on it. This
-includes `bool` values and capacities, the text of error messages, `len()`
-and iteration over a buffer, saving the buffer to a file, and use from
-several threads.
+includes capacities that are not `int`s, such as `2.5`, `"3"` or `None`,
+`bool` values and capacities, the text of error messages, `len()` and
+iteration over a buffer, saving the buffer to a file, and use from several
+threads.

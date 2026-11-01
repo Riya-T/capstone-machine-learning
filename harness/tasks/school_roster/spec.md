@@ -1,7 +1,7 @@
 # School roster
 
-Write a module `roster.py` that keeps track of which students are in which
-grade of a school.
+Write a module `roster.py` that keeps track of the students of a school
+and the grade each one is in.
 
 ## Interface
 
@@ -26,11 +26,14 @@ is a non-empty `str`.
 - `add_student(name, grade)` puts a new student in a grade. A name that is
   not a non-empty `str`, or a grade that is not an `int` from 1 to 12,
   raises `ValueError`. A name that is already on the roster raises
-  `RosterError`, whatever grade it is in. When several problems apply, the
-  `ValueError` is raised.
-- `get_grade(name)` returns the student's grade. It raises `KeyError` for a
-  name that is not on the roster, including values that are not strings at
-  all, such as `None` or `7`.
+  `RosterError`, whatever grade it is in: after `add_student("ana", 3)`,
+  adding `"ana"` again to grade 3 or to grade 8 raises `RosterError`. When
+  several problems apply, the `ValueError` is raised.
+- `get_grade(name)` returns the grade the student was added to. For
+  example, after `add_student("ana", 3)` and `add_student("ben", 5)`,
+  `get_grade("ana")` is `3` and `get_grade("ben")` is `5`. It raises
+  `KeyError` for a name that is not on the roster, including values that
+  are not strings at all, such as `None` or `7`.
 
 ## Listing students
 

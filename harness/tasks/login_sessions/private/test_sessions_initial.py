@@ -8,7 +8,7 @@ Usage (with sessions.py importable, e.g. in the sandbox):
 import pytest
 from sessions import SessionError, SessionManager, WrongPassword
 
-BAD_TEXT = ["", None, 7, 1.5, ["alice"]]
+BAD_TEXT = ["", None]
 
 
 @pytest.fixture

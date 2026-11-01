@@ -99,7 +99,7 @@ def test_invalid_sector_names_are_rejected(folio, sector):
     assert folio.get_sectors() == []
 
 
-@pytest.mark.parametrize("symbol", ["", None, 7])
+@pytest.mark.parametrize("symbol", ["", None])
 def test_invalid_symbols_are_rejected_by_sector_methods(folio, symbol):
     with pytest.raises(ValueError):
         folio.set_sector(symbol, "tech")

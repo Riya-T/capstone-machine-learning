@@ -94,18 +94,18 @@ Last updated 2026-11-01.
 | `hotel_rooms` | train | 4 | ✅ passed |
 | `staff_directory` | train | 4 | ✅ passed |
 | `job_board` | train | 3 | ✅ passed (borderline) |
-| `hangman_games` | train | 2 | ❌ failed |
-| `restaurant_orders` | train | 2 | ❌ failed |
-| `recipe_box` | train | 1 | ❌ failed |
-| `school_roster` | train | 1 | ❌ failed |
-| `iou_tracker` | train | 0 | ❌ failed |
-| `login_sessions` | train | 0 | ❌ failed |
-| `movie_bookings` | train | 0 | ❌ failed |
-| `pantry_inventory` | train | 0 | ❌ failed |
-| `ring_buffer` | train | 0 | ❌ failed |
-| `robot_fleet` | train | 0 | ❌ failed |
-| `stock_portfolio` | train | 0 | ❌ failed |
-| `ticket_desk` | train | 0 | ❌ failed |
+| `hangman_games` | train | 2 | ❌ failed; fixed, not rerun |
+| `restaurant_orders` | train | 2 | ❌ failed; fixed, not rerun |
+| `recipe_box` | train | 1 | ❌ failed; fixed, not rerun |
+| `school_roster` | train | 1 | ❌ failed; fixed, not rerun |
+| `iou_tracker` | train | 0 | ❌ failed; fixed, not rerun |
+| `login_sessions` | train | 0 | ❌ failed; fixed, not rerun |
+| `movie_bookings` | train | 0 | ❌ failed; fixed, not rerun |
+| `pantry_inventory` | train | 0 | ❌ failed; fixed, not rerun |
+| `ring_buffer` | train | 0 | ❌ failed; fixed, not rerun |
+| `robot_fleet` | train | 0 | ❌ failed; fixed, not rerun |
+| `stock_portfolio` | train | 0 | ❌ failed; fixed, not rerun |
+| `ticket_desk` | train | 0 | ❌ failed; fixed, not rerun |
 | `aging_inventory` | eval | 7 | ✅ passed |
 | `auction_house` | eval | 5 | ✅ passed |
 | `document_versions` | eval | 0 | ❌ failed |
@@ -125,8 +125,9 @@ Last updated 2026-11-01.
 
 So far 33 of the 48 tasks run pass: 7 of 8 dev, 24 of 36 train and 2 of 4
 eval. The other 12 eval tasks have not been run yet. Data collection started
-on the 24 train tasks that pass (2026-11-01); the 12 that fail are being
-looked at.
+on the 24 train tasks that pass (2026-11-01). The 12 that fail have been
+fixed (see "Fixed on 2026-11-01, not rerun yet" below) and are rerun once
+that collection is done, since the writer and the editor share the GPU.
 
 What the writer kept getting wrong, and the fixes that worked:
 
@@ -177,6 +178,68 @@ one was wrong:
 - `elevator_dispatch`: that the record behind `get_destination` is what
   makes a repeated call raise, and that riders keep their destination "so
   the car knows where each rider gets out".
+
+Fixed on 2026-11-01, not rerun yet. "Stored" is how many of the 16 stored
+programs pass the edited tests; fixes to the wording only show once the
+writer is sampled again.
+
+- **More input checks made unspecified**, as above:
+  - `7` as a name or symbol: `login_sessions`, `movie_bookings` (customers),
+    `recipe_box`, `stock_portfolio`, including the `c_profit` and
+    `c_sectors` tests, whose requests point back to the usual symbol rules.
+  - Numbers that are not `int`s, such as `1.5`, `"10"` or `None`; 0 and
+    negatives are still tested. Most programs only check `<= 0`: 14 of 15
+    in `stock_portfolio`, 12 of 15 capacities in `ring_buffer`, 10 of 15
+    in `restaurant_orders`.
+  - Headings that are not a single letter (`""`, `"NE"`, `None`) and `None`
+    as the commands in `robot_fleet` (also in the `c_distance` test). All
+    16 programs test `heading not in "NESW"`, which accepts `""` and `"NE"`.
+  - `True` as a start or seat count in `movie_bookings`; the spec already
+    listed `bool` values as unspecified, so those tests contradicted it.
+  - Error order between `KeyError` and `ValueError`: `movie_bookings`
+    (`book`), `recipe_box` (`add_ingredient`).
+  - The order of users with equal amounts in `iou_tracker`. The worked
+    example for it had not helped (0 of 16). `c_net_query` keeps its own
+    tie rule for its new methods.
+- **Behavior the writer got wrong, now stated more plainly with examples**
+  (no tests removed):
+  - `login_sessions`: all 11 programs treated "registered" as "has signed
+    in", so a registered user who never signed in raised `KeyError`. The
+    spec now says a user is known from registration on, what signing out
+    leaves, and describes `get_signed_in` like `access_control`'s list.
+  - `school_roster`: 15 of 16 checked names against the grades. The spec
+    now says it keeps each student's grade, with examples.
+  - `hangman_games`: 14 of 16 kept accepting guesses after a win; the rule
+    now has its own bullet and an example.
+  - `recipe_box`: 11 of 14 never added up a repeated ingredient; "a recipe
+    lists each ingredient once" plus examples for both lists.
+  - `pantry_inventory`: no program sorted batches by use-by day, and the
+    public checks only ever added them in order. The spec now says batches
+    come in any order, with an example, and one public check adds a batch
+    out of order. It also says a used-up batch is gone and that a shortage
+    takes nothing.
+  - `ticket_desk`: 14 of 16 never set the status to `"assigned"`; queues
+    now use the "same ids as `get_tickets()`" wording.
+  - `movie_bookings`: no program sorted showings by start; reworded with an
+    example. The sort stays: the s2 regression bug depends on it.
+  - `iou_tracker`: 5 programs read `get_owed_to(alice)` as what alice owes;
+    both methods now have an example.
+  - `ring_buffer`: 11 of 15 wrap the read position wrongly; an example with
+    capacity 2 was added.
+  - `robot_fleet`: 9 of 16 accepted only `"L"` and `"R"`. The spec now names
+    the three letters in the validation rule, with `"X"` as an example.
+  - `stock_portfolio`: 12 of 15 did not check the symbol in `get_shares`;
+    the rule is now repeated there.
+- `stock_portfolio`'s planted bug `v0_cash_checked_before_price` could only
+  be caught with a non-`int` price, so it became
+  `v0_held_checked_before_price` (`sell` checks the shares held before the
+  price).
+- Stored programs passing the edited tests: `restaurant_orders` 12,
+  `ring_buffer` 4, `stock_portfolio` 3, `robot_fleet` 3, `recipe_box` 3,
+  `iou_tracker` 2, `hangman_games` 2, `school_roster` 1, the rest 0. If a
+  rerun still fails, `recipe_box` (it returns lists of tuples) and
+  `iou_tracker` (method names that read both ways) may need a redesign:
+  a team decision.
 
 Still open:
 

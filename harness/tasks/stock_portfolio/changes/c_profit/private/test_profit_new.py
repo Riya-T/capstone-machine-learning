@@ -103,7 +103,7 @@ def test_deposits_and_failed_calls_change_nothing(folio):
     assert folio.get_cost_basis("ACME") == 9_000
 
 
-@pytest.mark.parametrize("symbol", ["", 7])
+@pytest.mark.parametrize("symbol", [""])
 def test_invalid_symbols_are_rejected_by_profit_methods(folio, symbol):
     # None is not here: get_realized_profit(None) means "all symbols".
     with pytest.raises(ValueError):

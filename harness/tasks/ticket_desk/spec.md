@@ -21,7 +21,8 @@ class TicketDesk:
 ```
 
 A ticket's status is one of the strings `"open"`, `"assigned"` and
-`"resolved"`.
+`"resolved"`. A ticket is `"open"` when it is opened, becomes `"assigned"`
+when it is given to an agent, and becomes `"resolved"` when it is resolved.
 
 ## Agents
 
@@ -40,8 +41,12 @@ A ticket's status is one of the strings `"open"`, `"assigned"` and
   these is raised: `ValueError` for the ticket id, `ValueError` for the
   priority, `DeskError` for the duplicate ticket.
 - `assign(ticket_id, agent_id)` gives the ticket to the agent and sets its
-  status to `"assigned"`. A ticket that is already assigned can be
-  reassigned to another agent, which takes it away from the first one.
+  status to `"assigned"`. For example, after `open_ticket("T1", 2)` and
+  `assign("T1", "kim")`, `get_status("T1")` is `"assigned"` and
+  `get_tickets("kim")` is `["T1"]`.
+- A ticket that is already assigned can be reassigned to another agent,
+  which takes it away from the first one: after `assign("T1", "lee")`,
+  `get_tickets("kim")` is `[]` and `get_tickets("lee")` is `["T1"]`.
   Assigning a ticket to the agent who already has it raises `DeskError`.
   A resolved ticket cannot be assigned: that raises `DeskError`.
 - `resolve(ticket_id)` sets the status to `"resolved"`. Only an assigned
@@ -61,9 +66,11 @@ for the ticket, `KeyError` for the agent, `DeskError` for a resolved ticket,
 
 - `get_tickets()` returns the ids of all tickets, in the order they were
   opened, whatever their status.
-- `get_tickets(agent_id)` returns the agent's queue: the ids of the tickets
-  that are assigned to that agent and not yet resolved, in the order they
-  were opened. An agent with nothing to do gets an empty list.
+- `get_tickets(agent_id)` returns the agent's queue: the same ids as
+  `get_tickets()`, in the same order, keeping only the tickets that are
+  assigned to that agent and not yet resolved. So if `T1` was opened before
+  `T3` but given to the agent after it, the queue is `["T1", "T3"]`. An
+  agent with nothing to do gets an empty list.
 
 A failed call has no effect: if a method raises, every ticket, every status
 and every assignment is unchanged.

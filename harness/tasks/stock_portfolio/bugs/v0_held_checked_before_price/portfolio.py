@@ -1,10 +1,10 @@
 """Stock portfolio: a cash balance, the shares held per symbol, and a record
 of every trade.
 
-Planted bug (initial version): `buy` checks the cash before the price is
-validated, so a bad price with too little cash reports InsufficientCash
-instead of ValueError. The public checks always have plenty of cash when
-they pass a bad price, so only the hidden initial tests catch it.
+Planted bug (initial version): `sell` checks the shares held before the
+price is validated, so a bad price for a symbol with too few shares reports
+InsufficientShares instead of ValueError. The public checks never sell at a
+bad price, so only the hidden initial tests catch it.
 Never shown to the writer or the editor; validate-tasks checks that the
 tests catch it.
 
@@ -52,10 +52,10 @@ class Portfolio:
     def buy(self, symbol, shares, price):
         check_symbol(symbol)
         check_positive(shares, "shares")
+        check_positive(price, "price")
         cost = shares * price
         if cost > self._cash:
             raise InsufficientCash(f"buying {shares} {symbol} costs {cost}, cash is {self._cash}")
-        check_positive(price, "price")
         self._cash -= cost
         self._shares[symbol] = self._shares.get(symbol, 0) + shares
         self._trades.append(("buy", symbol, shares, price))
@@ -63,10 +63,10 @@ class Portfolio:
     def sell(self, symbol, shares, price):
         check_symbol(symbol)
         check_positive(shares, "shares")
-        check_positive(price, "price")
         held = self._shares.get(symbol, 0)
         if shares > held:
             raise InsufficientShares(f"only {held} {symbol} held, cannot sell {shares}")
+        check_positive(price, "price")
         self._cash += shares * price
         self._shares[symbol] = held - shares
         self._trades.append(("sell", symbol, shares, price))
