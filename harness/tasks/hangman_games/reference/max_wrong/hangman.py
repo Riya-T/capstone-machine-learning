@@ -1,4 +1,5 @@
-"""Hangman games with a limit on wrong guesses.
+"""Hangman games with an optional limit on wrong guesses per game, so a
+game can be lost, and a game that is over takes no more guesses.
 
 Correct solution for hangman_games after c_max_wrong.
 Never shown to the writer or the editor; validate-tasks checks that it
@@ -7,7 +8,7 @@ passes every test it should.
 Usage:
     from hangman import Hangman
     games = Hangman()
-    games.start_game("first", "banana", max_wrong=6)
+    games.start_game("first", "banana", max_wrong=3)
     games.guess("first", "a")
 """
 
@@ -38,7 +39,7 @@ def check_limit(limit):
 class Hangman:
     def __init__(self):
         self._words = {}  # game id -> secret word, in start order
-        self._guesses = {}  # game id -> letters guessed, in order
+        self._guesses = {}  # game id -> letters guessed, in the order guessed
         self._limits = {}  # game id -> max wrong guesses, or None
 
     def start_game(self, game_id, word, max_wrong=None):
@@ -69,7 +70,7 @@ class Hangman:
 
     def get_guesses(self, game_id):
         self._require(game_id)
-        return list(self._guesses[game_id])
+        return sorted(self._guesses[game_id])
 
     def get_wrong_count(self, game_id):
         self._require(game_id)

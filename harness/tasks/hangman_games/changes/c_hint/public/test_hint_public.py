@@ -29,7 +29,7 @@ def test_the_missing_count_falls_with_each_right_guess():
     assert hm.get_missing_count("first") == 2
 
 
-def test_a_won_game_has_no_hint():
+def test_a_game_that_is_over_has_no_hint():
     hm = Hangman()
     hm.start_game("first", "cab")
     for letter in "cab":
@@ -37,3 +37,9 @@ def test_a_won_game_has_no_hint():
     assert hm.get_missing_count("first") == 0
     with pytest.raises(HangmanError):
         hm.get_hint("first")
+    hm.start_game("second", "cab", max_wrong=2)
+    for letter in "yz":
+        hm.guess("second", letter)
+    assert hm.get_missing_count("second") == 3
+    with pytest.raises(HangmanError):
+        hm.get_hint("second")

@@ -8,13 +8,13 @@ Usage:
     from fleet import RobotFleet
     fleet = RobotFleet()
     fleet.add_robot("rover", 0, 0, "N")
-    fleet.run("rover", "RAAL")
+    fleet.run("rover", "RMML")
     fleet.get_distance_travelled("rover")  # 2
 """
 
 HEADINGS = ("N", "E", "S", "W")  # clockwise order
 MOVES = {"N": (0, 1), "E": (1, 0), "S": (0, -1), "W": (-1, 0)}
-COMMANDS = ("L", "R", "A")
+COMMANDS = ("M", "L", "R")
 
 
 class FleetError(Exception):
@@ -23,7 +23,7 @@ class FleetError(Exception):
 
 def check_commands(commands):
     if not isinstance(commands, str) or any(c not in COMMANDS for c in commands):
-        raise ValueError(f"commands must be a str of L, R and A, got {commands!r}")
+        raise ValueError(f"commands must be a str of M, L and R, got {commands!r}")
 
 
 def step(x, y, heading, command):
@@ -41,7 +41,7 @@ class RobotFleet:
         self._poses = {}  # name -> (x, y, heading), in the order added
         self._counts = {}  # name -> commands executed so far
         self._starts = {}  # name -> (x, y) the robot was added at
-        self._advances = {}  # name -> advance commands executed so far
+        self._distance = {}  # name -> "M" commands executed so far
         self._visited = {}  # name -> cells in the order first entered
 
     def add_robot(self, name, x, y, heading):
@@ -56,7 +56,7 @@ class RobotFleet:
         self._poses[name] = (x, y, heading)
         self._counts[name] = 0
         self._starts[name] = (x, y)
-        self._advances[name] = 0
+        self._distance[name] = 0
         self._visited[name] = [(x, y)]
 
     def run(self, name, commands):
@@ -87,7 +87,7 @@ class RobotFleet:
 
     def get_distance_travelled(self, name):
         self._require(name)
-        return self._advances[name]
+        return self._distance[name]
 
     def get_displacement(self, name):
         self._require(name)
@@ -103,8 +103,8 @@ class RobotFleet:
         x, y, heading = self._poses[name]
         for command in commands:
             x, y, heading = step(x, y, heading, command)
-            if command == "A":
-                self._advances[name] += 1
+            if command == "M":
+                self._distance[name] += 1
                 if (x, y) not in self._visited[name]:
                     self._visited[name].append((x, y))
         self._poses[name] = (x, y, heading)

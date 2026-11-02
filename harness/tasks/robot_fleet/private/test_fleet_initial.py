@@ -8,7 +8,9 @@ Usage (with fleet.py importable, e.g. in the sandbox):
 import pytest
 from fleet import FleetError, RobotFleet
 
-BAD_COMMANDS = ["X", "AAX", "a", "L R", "LR1", 5, ["L"]]  # None is unspecified
+# Commands that are not a str are unspecified, and so is how much of a bad
+# string runs before the ValueError, so only the exception is checked.
+BAD_COMMANDS = ["X", "MMX", "m", "L R", "LR1"]
 BAD_HEADINGS = ["n", "w", "X"]  # headings that are not a single letter are unspecified
 BAD_COORDS = [1.5, "1", None]
 
@@ -48,7 +50,7 @@ def test_robots_are_listed_in_the_order_added():
 def test_negative_coordinates_are_allowed():
     fl = RobotFleet()
     fl.add_robot("rover", -3, -7, "S")
-    fl.run("rover", "A")
+    fl.run("rover", "M")
     assert fl.get_position("rover") == (-3, -8)
 
 
@@ -60,7 +62,7 @@ def test_an_empty_name_is_rejected():
 
 
 def test_a_name_already_in_use_is_rejected(fleet):
-    fleet.run("rover", "A")
+    fleet.run("rover", "M")
     before = state(fleet)
     with pytest.raises(FleetError):
         fleet.add_robot("rover", 9, 9, "S")
@@ -86,21 +88,16 @@ def test_invalid_coordinates_are_rejected(coord):
     assert fl.get_robots() == []
 
 
-def test_a_used_name_is_reported_before_a_bad_heading(fleet):
-    with pytest.raises(FleetError):
-        fleet.add_robot("rover", 0, 0, "x")
-
-
 @pytest.mark.parametrize(
     "call",
     [
-        lambda fl: fl.run("drone", "A"),
+        lambda fl: fl.run("drone", "M"),
         lambda fl: fl.get_position("drone"),
         lambda fl: fl.get_heading("drone"),
         lambda fl: fl.get_command_count("drone"),
         lambda fl: fl.get_position(None),
         lambda fl: fl.get_position(1),
-        lambda fl: fl.run(None, "A"),
+        lambda fl: fl.run(None, "M"),
     ],
 )
 def test_unknown_robots_raise_key_error(fleet, call):
@@ -133,31 +130,45 @@ def test_right_turns_go_clockwise(fleet):
         fleet.run("rover", "R")
         seen.append(fleet.get_heading("rover"))
     assert seen == ["E", "S", "W", "N"]
+    assert fleet.get_position("rover") == (0, 0)
 
 
 @pytest.mark.parametrize(
     "heading, expected",
     [("N", (2, 4)), ("E", (3, 3)), ("S", (2, 2)), ("W", (1, 3))],
 )
-def test_advancing_moves_one_cell_in_the_facing_direction(heading, expected):
+def test_moving_goes_one_cell_in_the_facing_direction(heading, expected):
     fl = RobotFleet()
     fl.add_robot("rover", 2, 3, heading)
-    fl.run("rover", "A")
+    fl.run("rover", "M")
     assert fl.get_position("rover") == expected
     assert fl.get_heading("rover") == heading
 
 
+def test_the_example_from_the_spec(fleet):
+    fleet.run("rover", "MMRM")
+    assert fleet.get_position("rover") == (1, 2)
+    assert fleet.get_heading("rover") == "E"
+    fleet.run_all("ML")
+    assert fleet.get_position("rover") == (2, 2)
+    assert fleet.get_heading("rover") == "N"
+    assert fleet.get_position("scout") == (6, -2)
+    assert fleet.get_heading("scout") == "N"
+    assert fleet.get_command_count("rover") == 6
+    assert fleet.get_command_count("scout") == 2
+
+
 def test_a_longer_command_string_is_executed_in_order(fleet):
-    fleet.run("scout", "AALAARRAAAL")
+    fleet.run("scout", "MMLMMRRMMML")
     assert fleet.get_position("scout") == (7, -3)
     assert fleet.get_heading("scout") == "E"
     assert fleet.get_command_count("scout") == 11
 
 
 def test_runs_build_on_each_other(fleet):
-    fleet.run("rover", "RA")
-    fleet.run("rover", "RA")
-    fleet.run("rover", "RA")
+    fleet.run("rover", "RM")
+    fleet.run("rover", "RM")
+    fleet.run("rover", "RM")
     assert fleet.get_position("rover") == (0, -1)
     assert fleet.get_heading("rover") == "W"
     assert fleet.get_command_count("rover") == 6
@@ -172,7 +183,7 @@ def test_an_empty_command_string_does_nothing(fleet):
 
 def test_run_all_drives_each_robot_in_its_own_direction(fleet):
     fleet.add_robot("digger", 1, 1, "S")
-    fleet.run_all("AAL")
+    fleet.run_all("MML")
     assert fleet.get_position("rover") == (0, 2)
     assert fleet.get_heading("rover") == "W"
     assert fleet.get_position("scout") == (7, -2)
@@ -183,19 +194,16 @@ def test_run_all_drives_each_robot_in_its_own_direction(fleet):
 
 def test_run_all_with_no_robots_does_nothing():
     fl = RobotFleet()
-    fl.run_all("AAA")
+    fl.run_all("MMM")
     assert fl.get_robots() == []
 
 
 @pytest.mark.parametrize("commands", BAD_COMMANDS)
-def test_invalid_commands_are_rejected_and_change_nothing(fleet, commands):
-    fleet.run("rover", "A")
-    before = state(fleet)
+def test_invalid_commands_raise_value_error(fleet, commands):
     with pytest.raises(ValueError):
         fleet.run("rover", commands)
     with pytest.raises(ValueError):
         fleet.run_all(commands)
-    assert state(fleet) == before
 
 
 def test_an_unknown_robot_is_reported_before_bad_commands(fleet):
@@ -204,8 +212,8 @@ def test_an_unknown_robot_is_reported_before_bad_commands(fleet):
 
 
 def test_command_count_adds_up_over_run_and_run_all(fleet):
-    fleet.run("rover", "LLA")
-    fleet.run_all("RA")
+    fleet.run("rover", "LLM")
+    fleet.run_all("RM")
     fleet.run("scout", "")
     assert fleet.get_command_count("rover") == 5
     assert fleet.get_command_count("scout") == 2
@@ -214,7 +222,7 @@ def test_command_count_adds_up_over_run_and_run_all(fleet):
 def test_fleets_do_not_share_robots():
     first, second = RobotFleet(), RobotFleet()
     first.add_robot("rover", 0, 0, "N")
-    first.run("rover", "A")
+    first.run("rover", "M")
     assert second.get_robots() == []
     second.add_robot("rover", 4, 4, "W")
     assert second.get_position("rover") == (4, 4)

@@ -9,13 +9,13 @@ Usage:
     from fleet import RobotFleet
     fleet = RobotFleet(width=10, height=10)
     fleet.add_robot("rover", 0, 0, "N")
-    fleet.run("rover", "RAAL")
+    fleet.run("rover", "RMML")
     fleet.get_distance_travelled("rover")  # 2
 """
 
 HEADINGS = ("N", "E", "S", "W")  # clockwise order
 MOVES = {"N": (0, 1), "E": (1, 0), "S": (0, -1), "W": (-1, 0)}
-COMMANDS = ("L", "R", "A")
+COMMANDS = ("M", "L", "R")
 
 
 class FleetError(Exception):
@@ -24,7 +24,7 @@ class FleetError(Exception):
 
 def check_commands(commands):
     if not isinstance(commands, str) or any(c not in COMMANDS for c in commands):
-        raise ValueError(f"commands must be a str of L, R and A, got {commands!r}")
+        raise ValueError(f"commands must be a str of M, L and R, got {commands!r}")
 
 
 def check_bound(value, what):
@@ -53,7 +53,7 @@ class RobotFleet:
         self._poses = {}  # name -> (x, y, heading), in the order added
         self._counts = {}  # name -> commands executed so far
         self._starts = {}  # name -> (x, y) the robot was added at
-        self._advances = {}  # name -> advance commands executed so far
+        self._distance = {}  # name -> "M" commands executed so far
         self._visited = {}  # name -> cells in the order first entered
 
     def add_robot(self, name, x, y, heading):
@@ -70,7 +70,7 @@ class RobotFleet:
         self._poses[name] = (x, y, heading)
         self._counts[name] = 0
         self._starts[name] = (x, y)
-        self._advances[name] = 0
+        self._distance[name] = 0
         self._visited[name] = [(x, y)]
 
     def run(self, name, commands):
@@ -107,7 +107,7 @@ class RobotFleet:
 
     def get_distance_travelled(self, name):
         self._require(name)
-        return self._advances[name]
+        return self._distance[name]
 
     def get_displacement(self, name):
         self._require(name)
@@ -120,21 +120,21 @@ class RobotFleet:
         return list(self._visited[name])
 
     def _simulate(self, name, commands):
-        """The final pose and the cell entered by each advance, or FleetError."""
+        """The final pose and the cell entered by each move, or FleetError."""
         x, y, heading = self._poses[name]
         cells = []
         for command in commands:
             x, y, heading = step(x, y, heading, command)
             if not self._inside(x, y):
                 raise FleetError(f"robot {name!r} would leave the grid at ({x}, {y})")
-            if command == "A":
+            if command == "M":
                 cells.append((x, y))
         return (x, y, heading), cells
 
     def _commit(self, name, pose, cells, count):
         self._poses[name] = pose
         self._counts[name] += count
-        self._advances[name] += len(cells)
+        self._distance[name] += len(cells)
         for cell in cells:
             if cell not in self._visited[name]:
                 self._visited[name].append(cell)

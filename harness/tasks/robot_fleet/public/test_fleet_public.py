@@ -24,7 +24,7 @@ def test_a_new_robot_reports_where_it_was_placed(fleet):
 
 
 def test_run_moves_and_turns_the_robot(fleet):
-    fleet.run("rover", "AARAL")
+    fleet.run("rover", "MMRML")
     assert fleet.get_position("rover") == (1, 2)
     assert fleet.get_heading("rover") == "N"
     assert fleet.get_command_count("rover") == 5
@@ -33,12 +33,13 @@ def test_run_moves_and_turns_the_robot(fleet):
 def test_turning_left_from_north_faces_west(fleet):
     fleet.run("rover", "L")
     assert fleet.get_heading("rover") == "W"
-    fleet.run("rover", "A")
+    assert fleet.get_position("rover") == (0, 0)
+    fleet.run("rover", "M")
     assert fleet.get_position("rover") == (-1, 0)
 
 
 def test_run_all_drives_every_robot(fleet):
-    fleet.run_all("A")
+    fleet.run_all("M")
     assert fleet.get_position("rover") == (0, 1)
     assert fleet.get_position("scout") == (6, -2)
 
@@ -47,11 +48,11 @@ def test_unknown_robot_raises_key_error(fleet):
     with pytest.raises(KeyError):
         fleet.get_position("drone")
     with pytest.raises(KeyError):
-        fleet.run("drone", "A")
+        fleet.run("drone", "M")
 
 
 def test_invalid_commands_raise_value_error(fleet):
     with pytest.raises(ValueError):
         fleet.run("rover", "X")
     with pytest.raises(ValueError):
-        fleet.run_all("a")
+        fleet.run_all("m")

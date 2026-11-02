@@ -11,16 +11,18 @@ driven off the edge of the grid.
 - `add_robot` raises `ValueError` for a start position outside the grid.
   This is checked after all the existing checks.
 - `run(name, commands)`: if executing the commands would take the robot
-  outside the grid at any step, raise `FleetError`. The robot then does not
-  move or turn at all and its command count is unchanged, as if `run` had
-  not been called. This holds even when later commands would bring the robot
-  back inside.
-- `run_all(commands)`: if any robot would leave the grid, raise `FleetError`
-  and change nothing: no robot moves or turns and no command count changes,
-  not even for robots earlier in the order that could have completed the
-  commands.
+  outside the grid at any step, raise `FleetError`. This holds even when
+  later commands would bring the robot back inside.
+- `run_all(commands)`: if any robot would leave the grid, raise
+  `FleetError`.
+- From now on, `run` and `run_all` either execute all their commands or
+  change nothing. Whenever they raise (`FleetError` for leaving the grid, or
+  `KeyError` and `ValueError` as before), no robot moves or turns and no
+  command count changes, not even for robots that could have completed the
+  commands. This includes a command string with an invalid character late in
+  the string: the valid commands before it are not executed either.
 - In `run` and `run_all`, `KeyError` for an unknown robot and `ValueError`
   for invalid commands are raised before `FleetError` for leaving the grid.
-- A fleet created without bounds behaves exactly as before.
+- Without bounds, robots can go anywhere, as before.
 
 All existing behavior must keep working.

@@ -44,7 +44,10 @@ sequences:
       - change: c_max_wrong
       - change: c_hint
         planted_bugs:
-          - path: bugs/hint_allows_repeat_guess  # required regression bug: breaks the initial spec
+          - path: bugs/hint_no_limit_lost_at_six  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+          - path: bugs/hint_allows_repeat_guess  # breaks the initial spec
             must_fail: [existing]
             must_pass: [new_feature]
   - id: s2
@@ -52,6 +55,6 @@ sequences:
       - change: c_take_back
       - change: c_max_wrong
         planted_bugs:
-          - path: bugs/max_wrong_take_back_keeps_won  # required regression bug: breaks step 1
+          - path: bugs/max_wrong_take_back_keeps_over  # required regression bug: breaks step 1
             must_fail: [existing]
             must_pass: [new_feature]

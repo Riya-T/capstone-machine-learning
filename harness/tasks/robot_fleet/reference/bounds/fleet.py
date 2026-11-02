@@ -8,12 +8,12 @@ Usage:
     from fleet import RobotFleet
     fleet = RobotFleet(width=10, height=10)
     fleet.add_robot("rover", 0, 0, "N")
-    fleet.run("rover", "RAAL")
+    fleet.run("rover", "RMML")
 """
 
 HEADINGS = ("N", "E", "S", "W")  # clockwise order
 MOVES = {"N": (0, 1), "E": (1, 0), "S": (0, -1), "W": (-1, 0)}
-COMMANDS = ("L", "R", "A")
+COMMANDS = ("M", "L", "R")
 
 
 class FleetError(Exception):
@@ -22,7 +22,7 @@ class FleetError(Exception):
 
 def check_commands(commands):
     if not isinstance(commands, str) or any(c not in COMMANDS for c in commands):
-        raise ValueError(f"commands must be a str of L, R and A, got {commands!r}")
+        raise ValueError(f"commands must be a str of M, L and R, got {commands!r}")
 
 
 def check_bound(value, what):

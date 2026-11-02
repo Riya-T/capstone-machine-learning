@@ -1,9 +1,9 @@
 """Robot fleet: robots on an endless grid, driven by command strings.
 
-Planted bug (initial version): commands are checked one at a time while they
-are executed, so an invalid letter in the middle of a string leaves the
-robot moved by the valid letters before it. The public checks only look at
-the exception, so only the hidden initial tests catch it.
+Planted bug (initial version): get_robots returns the names sorted
+alphabetically instead of in the order the robots were added. The public
+checks add "rover" before "scout", which sorts the same, so only the hidden
+initial tests catch it.
 Never shown to the writer or the editor; validate-tasks checks that the
 tests catch it.
 
@@ -11,11 +11,12 @@ Usage:
     from fleet import RobotFleet
     fleet = RobotFleet()
     fleet.add_robot("rover", 0, 0, "N")
-    fleet.run("rover", "RAAL")
+    fleet.run("rover", "RMML")
 """
 
 HEADINGS = ("N", "E", "S", "W")  # clockwise order
 MOVES = {"N": (0, 1), "E": (1, 0), "S": (0, -1), "W": (-1, 0)}
+COMMANDS = ("M", "L", "R")
 
 
 class FleetError(Exception):
@@ -23,8 +24,8 @@ class FleetError(Exception):
 
 
 def check_commands(commands):
-    if not isinstance(commands, str):
-        raise ValueError(f"commands must be a str, got {commands!r}")
+    if not isinstance(commands, str) or any(c not in COMMANDS for c in commands):
+        raise ValueError(f"commands must be a str of M, L and R, got {commands!r}")
 
 
 def step(x, y, heading, command):
@@ -33,15 +34,13 @@ def step(x, y, heading, command):
         return x, y, HEADINGS[(HEADINGS.index(heading) - 1) % 4]
     if command == "R":
         return x, y, HEADINGS[(HEADINGS.index(heading) + 1) % 4]
-    if command == "A":
-        dx, dy = MOVES[heading]
-        return x + dx, y + dy, heading
-    raise ValueError(f"unknown command {command!r}")
+    dx, dy = MOVES[heading]
+    return x + dx, y + dy, heading
 
 
 class RobotFleet:
     def __init__(self):
-        self._poses = {}  # name -> (x, y, heading), in the order added
+        self._poses = {}  # name -> (x, y, heading)
         self._counts = {}  # name -> commands executed so far
 
     def add_robot(self, name, x, y, heading):
@@ -76,17 +75,18 @@ class RobotFleet:
         return self._poses[name][2]
 
     def get_robots(self):
-        return list(self._poses)
+        return sorted(self._poses)
 
     def get_command_count(self, name):
         self._require(name)
         return self._counts[name]
 
     def _execute(self, name, commands):
+        x, y, heading = self._poses[name]
         for command in commands:
-            x, y, heading = self._poses[name]
-            self._poses[name] = step(x, y, heading, command)
-            self._counts[name] += 1
+            x, y, heading = step(x, y, heading, command)
+        self._poses[name] = (x, y, heading)
+        self._counts[name] += len(commands)
 
     def _require(self, name):
         # Non-str names are never stored, so they count as unknown too.

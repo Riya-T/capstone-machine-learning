@@ -1,4 +1,5 @@
-"""Hangman games where a guess can be taken back.
+"""Hangman games where a guess can be taken back. A game is won once every
+letter of its word is guessed; wrong guesses never end it.
 
 Correct solution for hangman_games after c_take_back.
 Never shown to the writer or the editor; validate-tasks checks that it
@@ -32,7 +33,7 @@ def check_letter(letter):
 class Hangman:
     def __init__(self):
         self._words = {}  # game id -> secret word, in start order
-        self._guesses = {}  # game id -> letters guessed, in order
+        self._guesses = {}  # game id -> letters guessed, in the order guessed
 
     def start_game(self, game_id, word):
         if not isinstance(game_id, str) or not game_id:
@@ -46,8 +47,6 @@ class Hangman:
     def guess(self, game_id, letter):
         self._require(game_id)
         check_letter(letter)
-        if self.get_status(game_id) != "playing":
-            raise HangmanError(f"game {game_id!r} is over")
         if letter in self._guesses[game_id]:
             raise HangmanError(f"{letter!r} was already guessed in game {game_id!r}")
         self._guesses[game_id].append(letter)
@@ -60,7 +59,7 @@ class Hangman:
 
     def get_guesses(self, game_id):
         self._require(game_id)
-        return list(self._guesses[game_id])
+        return sorted(self._guesses[game_id])
 
     def get_wrong_count(self, game_id):
         self._require(game_id)

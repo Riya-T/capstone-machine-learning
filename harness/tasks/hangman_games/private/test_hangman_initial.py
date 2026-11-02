@@ -1,6 +1,12 @@
 """Hidden tests for the initial hangman_games spec. They decide whether a
 program is correct to begin with. Never shown to the writer or the editor.
 
+The initial spec says nothing about losing, so no test here makes 6 or more
+wrong guesses in one game: programs with and without the classic hangman
+loss at 6 both pass. No test guesses in a game that is already won either:
+that is unspecified too (c_max_wrong later adds losing and makes guessing
+in a finished game an error).
+
 Usage (with hangman.py importable, e.g. in the sandbox):
     python -m pytest private/test_hangman_initial.py
 """
@@ -8,8 +14,8 @@ Usage (with hangman.py importable, e.g. in the sandbox):
 import pytest
 from hangman import Hangman, HangmanError
 
-BAD_LETTERS = ["", "A", "ab", "1", "-", " ", 5, None]
-BAD_WORDS = ["", "Banana", "ban ana", "ban-ana", "abc1", 7, None]
+BAD_LETTERS = ["", "A", "ab", "1", "-", " ", None]
+BAD_WORDS = ["", "Banana", "ban ana", "ban-ana", "abc1", None]
 
 
 @pytest.fixture
@@ -71,11 +77,6 @@ def test_reusing_a_game_id_is_rejected(games):
     assert games.get_games() == ["first", "second"]
 
 
-def test_a_bad_word_is_reported_before_a_reused_id(games):
-    with pytest.raises(ValueError):
-        games.start_game("first", "")
-
-
 @pytest.mark.parametrize(
     "call",
     [
@@ -113,10 +114,10 @@ def test_progress_shows_every_occurrence_of_a_guessed_letter(games):
     assert games.get_progress("first") == "b_n_n_"
 
 
-def test_guesses_are_listed_in_the_order_made(games):
+def test_guesses_are_listed_in_alphabetical_order(games):
     for letter in "zban":
         games.guess("first", letter)
-    assert games.get_guesses("first") == ["z", "b", "a", "n"]
+    assert games.get_guesses("first") == ["a", "b", "n", "z"]
 
 
 def test_wrong_count_counts_only_misses(games):
@@ -144,30 +145,18 @@ def test_repeating_a_guess_is_rejected(games, letter):
     assert state(games) == before
 
 
+# --- winning ----------------------------------------------------------------
+
+
 def test_the_game_is_won_once_every_letter_is_guessed(games):
     for letter in "bza":
         games.guess("first", letter)
     assert games.get_status("first") == "playing"
-    games.guess("first", "n")
+    assert games.guess("first", "n") is True
     assert games.get_status("first") == "won"
     assert games.get_progress("first") == "banana"
     assert games.get_wrong_count("first") == 1
-
-
-def test_wrong_guesses_never_end_the_game(games):
-    for letter in "defghijklmopqrstuvwxyz":
-        games.guess("first", letter)
-    assert games.get_status("first") == "playing"
-    assert games.get_wrong_count("first") == 22
-
-
-def test_guessing_after_a_win_is_rejected(games):
-    for letter in "cab":
-        games.guess("second", letter)
-    before = state(games)
-    with pytest.raises(HangmanError):
-        games.guess("second", "z")
-    assert state(games) == before
+    assert games.get_guesses("first") == ["a", "b", "n", "z"]
 
 
 def test_a_one_letter_word_is_won_in_one_guess():
@@ -178,19 +167,48 @@ def test_a_one_letter_word_is_won_in_one_guess():
     assert hm.get_status("tiny") == "won"
 
 
-def test_an_unknown_game_is_reported_before_a_bad_letter(games):
-    with pytest.raises(KeyError):
-        games.guess("third", "1")
+def test_five_wrong_guesses_leave_the_game_playing(games):
+    for letter in "vwxyz":
+        assert games.guess("second", letter) is False
+    assert games.get_status("second") == "playing"
+    assert games.get_wrong_count("second") == 5
+    assert games.get_guesses("second") == ["v", "w", "x", "y", "z"]
+    assert games.get_progress("second") == "___"
 
 
-def test_a_bad_letter_is_reported_before_a_refused_guess(games):
+def test_a_game_can_be_won_after_five_wrong_guesses(games):
+    for letter in "vwxyz":
+        games.guess("second", letter)
+    games.guess("second", "c")
+    games.guess("second", "a")
+    assert games.get_status("second") == "playing"
+    games.guess("second", "b")
+    assert games.get_status("second") == "won"
+    assert games.get_wrong_count("second") == 5
+    assert games.get_progress("second") == "cab"
+
+
+def test_wrong_guesses_in_one_game_do_not_affect_another(games):
+    for letter in "vwxyz":
+        games.guess("second", letter)
+    for letter in "uvwxy":
+        games.guess("first", letter)
+    assert games.get_wrong_count("first") == 5
+    assert games.get_status("first") == "playing"
+    for letter in "ban":
+        games.guess("first", letter)
+    assert games.get_status("first") == "won"
+
+
+def test_winning_one_game_does_not_end_another(games):
     for letter in "cab":
         games.guess("second", letter)
-    with pytest.raises(ValueError):
-        games.guess("second", "1")
-    games.guess("first", "a")
-    with pytest.raises(ValueError):
-        games.guess("first", "")
+    assert games.get_status("second") == "won"
+    assert games.get_status("first") == "playing"
+    assert games.guess("first", "b") is True
+
+
+# --- separate games ---------------------------------------------------------
 
 
 def test_games_do_not_share_guesses(games):

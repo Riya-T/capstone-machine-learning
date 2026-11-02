@@ -1,18 +1,21 @@
-"""Hangman games where a guess can be taken back, with a limit on wrong
-guesses.
+"""Hangman games with an optional limit on wrong guesses per game, so a
+game can be lost, a game that is over takes no more guesses, and players
+can ask for hints.
 
-Planted bug (after c_take_back and c_max_wrong): the limit was added
-correctly, but the status is now remembered once a game ends, so taking
-back the finishing guess no longer returns the game to "playing".
+Planted bug (after c_max_wrong and c_hint): hints were added correctly,
+but get_status was rewritten on top of get_missing_count and gives a game
+without a limit (max_wrong=None) the usual hangman limit of 6, so such a
+game is lost at its 6th wrong guess. The c_hint tests never make 6 wrong
+guesses in a game without a limit; the c_max_wrong tests do.
 Never shown to the writer or the editor; validate-tasks checks that the
 tests catch it.
 
 Usage:
     from hangman import Hangman
     games = Hangman()
-    games.start_game("first", "banana", max_wrong=6)
-    games.guess("first", "x")
-    games.take_back("first")
+    games.start_game("first", "banana", max_wrong=3)
+    games.guess("first", "a")
+    games.get_hint("first")
 """
 
 LETTERS = "abcdefghijklmnopqrstuvwxyz"
@@ -42,9 +45,8 @@ def check_limit(limit):
 class Hangman:
     def __init__(self):
         self._words = {}  # game id -> secret word, in start order
-        self._guesses = {}  # game id -> letters guessed, in order
+        self._guesses = {}  # game id -> letters guessed, in the order guessed
         self._limits = {}  # game id -> max wrong guesses, or None
-        self._over = set()  # games that have been won or lost
 
     def start_game(self, game_id, word, max_wrong=None):
         if not isinstance(game_id, str) or not game_id:
@@ -74,7 +76,7 @@ class Hangman:
 
     def get_guesses(self, game_id):
         self._require(game_id)
-        return list(self._guesses[game_id])
+        return sorted(self._guesses[game_id])
 
     def get_wrong_count(self, game_id):
         self._require(game_id)
@@ -83,15 +85,11 @@ class Hangman:
 
     def get_status(self, game_id):
         self._require(game_id)
-        if set(self._words[game_id]) <= set(self._guesses[game_id]):
-            self._over.add(game_id)
+        if self.get_missing_count(game_id) == 0:
             return "won"
-        limit = self._limits[game_id]
-        if limit is not None and self.get_wrong_count(game_id) >= limit:
-            self._over.add(game_id)
+        limit = self._limits[game_id] or 6
+        if self.get_wrong_count(game_id) >= limit:
             return "lost"
-        if game_id in self._over:
-            return "won"
         return "playing"
 
     def get_games(self):
@@ -108,11 +106,18 @@ class Hangman:
             return None
         return limit - self.get_wrong_count(game_id)
 
-    def take_back(self, game_id):
+    def get_hint(self, game_id):
         self._require(game_id)
-        if not self._guesses[game_id]:
-            raise HangmanError(f"game {game_id!r} has no guesses to take back")
-        return self._guesses[game_id].pop()
+        if self.get_status(game_id) != "playing":
+            raise HangmanError(f"game {game_id!r} is over, no hint")
+        word, guessed = self._words[game_id], set(self._guesses[game_id])
+        missing = [c for c in word if c not in guessed]
+        # max() keeps the first of equally common letters, i.e. the earliest in the word.
+        return max(dict.fromkeys(missing), key=missing.count)
+
+    def get_missing_count(self, game_id):
+        self._require(game_id)
+        return len(set(self._words[game_id]) - set(self._guesses[game_id]))
 
     def _require(self, game_id):
         # Non-str ids are never stored, so they count as "not in use" too.

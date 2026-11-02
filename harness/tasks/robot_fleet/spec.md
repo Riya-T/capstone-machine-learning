@@ -1,7 +1,8 @@
 # Robot fleet
 
 Write a module `fleet.py` that keeps track of robots on a grid: where each
-robot is, which way it faces, and how to drive it with command strings.
+robot is, which way it faces, and how it moves and turns when it is driven
+with command strings.
 
 ## Interface
 
@@ -28,9 +29,8 @@ Coordinates are `int` and may be negative; the grid has no edges.
   `heading`, which is one of the four letters `"N"`, `"E"`, `"S"` and `"W"`.
   An empty name raises `ValueError`, and a name that is already in use raises
   `FleetError`. An `x` or `y` that is not an `int` raises `ValueError`, and
-  so does a heading that is any other letter, such as `"n"` or `"X"`. The
-  name is checked before the position and the heading. If `add_robot`
-  raises, no robot is added.
+  so does a heading that is any other letter, such as `"n"` or `"X"`. If
+  `add_robot` raises, no robot is added.
 - `get_robots()` returns the names of all robots, in the order they were
   added.
 - `get_position(name)` returns the robot's `(x, y)` and `get_heading(name)`
@@ -41,34 +41,59 @@ Coordinates are `int` and may be negative; the grid has no edges.
 
 ## Commands
 
-A command string is a `str` made of zero or more of the three letters
-`"L"`, `"R"` and `"A"`:
+A command string is a `str` in which every letter is one command. There are
+three commands:
 
-- `"L"`: turn left (counterclockwise) by 90 degrees: `N → W → S → E → N`.
-- `"R"`: turn right (clockwise) by 90 degrees: `N → E → S → W → N`.
-- `"A"`: advance one cell in the direction the robot faces: facing `N`
-  adds 1 to `y`, `S` subtracts 1 from `y`, `E` adds 1 to `x`, `W` subtracts 1
-  from `x`.
+- `"M"`: move forward one cell, in the direction the robot faces. Facing
+  `"N"` adds 1 to `y`, facing `"S"` subtracts 1 from `y`, facing `"E"` adds
+  1 to `x` and facing `"W"` subtracts 1 from `x`. The heading stays the same.
+- `"L"`: turn left (counterclockwise) by 90 degrees and stay on the same
+  cell: `N → W → S → E → N`.
+- `"R"`: turn right (clockwise) by 90 degrees and stay on the same cell:
+  `N → E → S → W → N`.
+
+Driving the robots:
 
 - `run(name, commands)` executes the commands on that robot, in order.
-- `run_all(commands)` executes the same commands on every robot, in the order
-  the robots were added. With no robots it does nothing.
-- Commands that are not a `str`, such as `5`, or a string with any character
-  other than `"L"`, `"R"` and `"A"` (such as `"X"`, a lowercase letter, a
-  space or a digit) raise `ValueError`. Nothing then changes: no robot moves
-  or turns, and no command count changes, even if the string starts with
-  valid letters. An empty string is valid and does nothing.
+- `run_all(commands)` executes the same commands on every robot. With no
+  robots it does nothing.
+- A command string with any character other than `"M"`, `"L"` and `"R"`,
+  such as `"X"`, a lowercase `"m"`, a space or a digit, raises `ValueError`.
+  The empty string is valid and does nothing.
 - `get_command_count(name)` returns how many commands have been executed on
-  that robot so far. Every letter counts as one command, whether it came
-  through `run` or `run_all`.
+  that robot so far: one for each letter, whether it came through `run` or
+  `run_all`.
+- When `run` gets both an unknown robot and invalid commands, it raises
+  `KeyError`.
 
-When `run` has several problems, `KeyError` for an unknown robot is raised
-before `ValueError` for the commands.
+For example:
+
+```python
+fleet = RobotFleet()
+fleet.add_robot("rover", 0, 0, "N")
+fleet.add_robot("scout", 5, -2, "E")
+
+fleet.run("rover", "MMRM")        # move, move, turn right, move
+fleet.get_position("rover")       # (1, 2)
+fleet.get_heading("rover")        # "E"
+
+fleet.run_all("ML")               # each robot moves, then turns left
+fleet.get_position("rover")       # (2, 2), now facing "N"
+fleet.get_position("scout")       # (6, -2), now facing "N"
+fleet.get_command_count("rover")  # 6
+fleet.get_command_count("scout")  # 2
+```
 
 ## Unspecified behavior
 
 Behavior not described here is unspecified, and no test depends on it. This
-includes names that are not strings passed to `add_robot`, headings that are
-not a single letter, such as `""`, `"NE"` or `None`, `None` as the commands,
-`bool` coordinates, what happens if a returned list is changed, the text of
-error messages, saving the fleet to a file, and use from several threads.
+includes:
+
+- names that are not strings passed to `add_robot`, `bool` coordinates, and
+  headings that are not a single letter, such as `""`, `"NE"` or `None`;
+- which error `add_robot` raises when more than one argument is wrong;
+- commands that are not a `str`, such as `None`, `5` or a list;
+- how much of a command string with an invalid character is executed before
+  the `ValueError`, and whether `run_all` with no robots checks its commands;
+- what happens if a returned list is changed, the text of error messages,
+  saving the fleet to a file, and use from several threads.

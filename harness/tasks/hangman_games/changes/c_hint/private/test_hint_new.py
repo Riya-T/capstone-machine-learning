@@ -1,6 +1,10 @@
 """Hidden tests for the c_hint change (hints and missing letters). Never shown
 to the writer or the editor.
 
+Games without a limit never get 6 or more wrong guesses here, so the s1
+regression bug hint_no_limit_lost_at_six passes these tests and only the
+c_max_wrong tests catch it.
+
 Usage (with hangman.py importable, e.g. in the sandbox):
     python -m pytest changes/c_hint/private/test_hint_new.py
 """
@@ -75,15 +79,32 @@ def test_a_won_game_has_no_hint_and_nothing_missing(games):
     assert state(games) == before
 
 
-def test_a_lost_game_has_no_hint_but_letters_still_missing():
-    hm = Hangman()
-    hm.start_game("doomed", "banana", max_wrong=1)
-    hm.guess("doomed", "a")
-    hm.guess("doomed", "x")
-    assert hm.get_status("doomed") == "lost"
+def test_a_lost_game_has_no_hint_but_letters_still_missing(games):
+    games.start_game("doomed", "banana", max_wrong=2)
+    games.guess("doomed", "a")
+    games.guess("doomed", "y")
+    games.guess("doomed", "z")
+    assert games.get_status("doomed") == "lost"
+    assert games.get_missing_count("doomed") == 2
+    before = state(games)
     with pytest.raises(HangmanError):
-        hm.get_hint("doomed")
-    assert hm.get_missing_count("doomed") == 2
+        games.get_hint("doomed")
+    assert state(games) == before
+
+
+def test_a_game_one_miss_from_losing_still_gets_a_hint(games):
+    games.start_game("close", "banana", max_wrong=2)
+    games.guess("close", "z")
+    assert games.get_status("close") == "playing"
+    assert games.get_hint("close") == "a"
+
+
+def test_a_game_without_a_limit_gets_hints_after_many_misses(games):
+    for letter in "vwxyz":
+        games.guess("first", letter)
+    assert games.get_status("first") == "playing"
+    assert games.get_hint("first") == "a"
+    assert games.get_missing_count("first") == 3
 
 
 def test_missing_count_counts_different_letters_once():

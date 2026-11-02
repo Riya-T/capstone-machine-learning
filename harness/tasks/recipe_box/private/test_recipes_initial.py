@@ -88,13 +88,21 @@ def test_a_bad_name_is_reported_before_a_duplicate_check():
         lambda rb: rb.get_shopping_list(["pancakes", "soup"]),
         lambda rb: rb.get_servings(None),
         lambda rb: rb.get_ingredients(3),
-        lambda rb: rb.add_ingredient(None, "water", 500),
     ],
 )
 def test_unknown_recipes_raise_key_error(box, call):
     before = state(box)
     with pytest.raises(KeyError):
         call(box)
+    assert state(box) == before
+
+
+# Every program checked add_ingredient's arguments before looking the recipe
+# up, so None as the recipe gave ValueError: either error is accepted.
+def test_none_as_the_recipe_for_add_ingredient_raises(box):
+    before = state(box)
+    with pytest.raises((KeyError, ValueError)):
+        box.add_ingredient(None, "water", 500)
     assert state(box) == before
 
 

@@ -11,7 +11,7 @@ private_tests: [private/test_fleet_initial.py]
 reference: reference/v0
 planted_bugs:
   # Required: a bug only the hidden initial tests catch.
-  - {path: bugs/v0_partial_run_on_bad_command, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_robots_listed_sorted, must_fail: [initial], must_pass: [public]}
   - {path: bugs/v0_duplicate_robot_allowed, must_fail: [initial], must_pass: [public]}
 
 changes:

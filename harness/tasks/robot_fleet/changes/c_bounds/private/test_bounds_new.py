@@ -30,7 +30,7 @@ def test_bounds_default_to_none_and_the_grid_stays_endless():
     fl = RobotFleet()
     assert fl.get_bounds() == (None, None)
     fl.add_robot("rover", 0, 0, "S")
-    fl.run("rover", "AAA")
+    fl.run("rover", "MMM")
     assert fl.get_position("rover") == (0, -3)
 
 
@@ -46,19 +46,19 @@ def test_a_bound_in_one_direction_leaves_the_other_free():
     fl = RobotFleet(width=3)
     assert fl.get_bounds() == (3, None)
     fl.add_robot("rover", 0, 0, "S")
-    fl.run("rover", "AAAA")
+    fl.run("rover", "MMMM")
     assert fl.get_position("rover") == (0, -4)
     fl.run("rover", "R")  # now facing W at x = 0
     with pytest.raises(FleetError):
-        fl.run("rover", "A")
+        fl.run("rover", "M")
     assert fl.get_position("rover") == (0, -4)
 
 
 def test_the_last_cell_is_inside_and_the_next_is_not(fleet):
-    fleet.run("rover", "RAAA")
+    fleet.run("rover", "RMMM")
     assert fleet.get_position("rover") == (3, 0)
     with pytest.raises(FleetError):
-        fleet.run("rover", "A")
+        fleet.run("rover", "M")
     assert fleet.get_position("rover") == (3, 0)
     assert fleet.get_command_count("rover") == 4
 
@@ -66,26 +66,26 @@ def test_the_last_cell_is_inside_and_the_next_is_not(fleet):
 def test_leaving_and_coming_back_is_still_rejected(fleet):
     before = state(fleet)
     with pytest.raises(FleetError):
-        fleet.run("scout", "ALLA")
+        fleet.run("scout", "MLLM")
     assert state(fleet) == before
 
 
 def test_a_rejected_run_changes_neither_heading_nor_count(fleet):
     before = state(fleet)
     with pytest.raises(FleetError):
-        fleet.run("scout", "RRRA")  # three turns, then off the north edge
+        fleet.run("scout", "RRRM")  # three turns, then off the north edge
     assert state(fleet) == before
 
 
 def test_run_all_changes_nothing_if_any_robot_would_leave(fleet):
     before = state(fleet)
     with pytest.raises(FleetError):
-        fleet.run_all("A")  # rover could move north, scout would leave
+        fleet.run_all("M")  # rover could move north, scout would leave
     assert state(fleet) == before
 
 
 def test_run_all_moves_every_robot_when_all_stay_inside(fleet):
-    fleet.run_all("RA")
+    fleet.run_all("RM")
     assert fleet.get_position("rover") == (1, 0)
     assert fleet.get_heading("rover") == "E"
     assert fleet.get_position("scout") == (3, 3)
@@ -111,12 +111,27 @@ def test_edge_starts_are_accepted_and_a_used_name_is_reported_first(fleet):
 def test_bad_commands_are_reported_before_leaving_the_grid(fleet):
     before = state(fleet)
     with pytest.raises(ValueError):
-        fleet.run("scout", "AX")
+        fleet.run("scout", "MX")
     with pytest.raises(ValueError):
-        fleet.run_all("AX")
+        fleet.run_all("MX")
     assert state(fleet) == before
+
+
+@pytest.mark.parametrize("bounds", [{}, {"width": 10, "height": 10}])
+def test_an_invalid_character_late_in_the_string_changes_nothing(bounds):
+    fl = RobotFleet(**bounds)
+    fl.add_robot("rover", 2, 2, "N")
+    fl.add_robot("scout", 5, 5, "E")
+    fl.run("rover", "M")
+    before = state(fl)
+    for commands in ["LLX", "MMRMx", "RM M"]:  # every robot stays inside
+        with pytest.raises(ValueError):
+            fl.run("rover", commands)
+        with pytest.raises(ValueError):
+            fl.run_all(commands)
+        assert state(fl) == before
 
 
 def test_an_unknown_robot_is_reported_before_leaving_the_grid(fleet):
     with pytest.raises(KeyError):
-        fleet.run("drone", "A")
+        fleet.run("drone", "M")

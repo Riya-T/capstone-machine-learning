@@ -58,7 +58,7 @@ The eval tasks were run with `configs/noahs_laptop.yaml` in batches of 10
 through `configs/writer_check_batch.yaml` (2026-10-28). All 36 train tasks
 were run again on 2026-11-01 with `configs/rtx5070_train.yaml`, after the
 fixes below; "0 → 7" means the task was fixed after that run and rerun.
-Last updated 2026-11-01.
+Last updated 2026-11-02.
 
 | Task | Split | Passing of 16 | Writer check |
 |---|---|---|---|
@@ -94,18 +94,18 @@ Last updated 2026-11-01.
 | `hotel_rooms` | train | 4 | ✅ passed |
 | `staff_directory` | train | 4 | ✅ passed |
 | `job_board` | train | 3 | ✅ passed (borderline) |
-| `hangman_games` | train | 2 | ❌ failed; fixed, not rerun |
-| `restaurant_orders` | train | 2 | ❌ failed; fixed, not rerun |
-| `recipe_box` | train | 1 | ❌ failed; fixed, not rerun |
-| `school_roster` | train | 1 | ❌ failed; fixed, not rerun |
-| `iou_tracker` | train | 0 | ❌ failed; fixed, not rerun |
-| `login_sessions` | train | 0 | ❌ failed; fixed, not rerun |
-| `movie_bookings` | train | 0 | ❌ failed; fixed, not rerun |
-| `pantry_inventory` | train | 0 | ❌ failed; fixed, not rerun |
-| `ring_buffer` | train | 0 | ❌ failed; fixed, not rerun |
-| `robot_fleet` | train | 0 | ❌ failed; fixed, not rerun |
-| `stock_portfolio` | train | 0 | ❌ failed; fixed, not rerun |
-| `ticket_desk` | train | 0 | ❌ failed; fixed, not rerun |
+| `stock_portfolio` | train | 0 → 16 | ✅ passed after fix |
+| `restaurant_orders` | train | 2 → 13 | ✅ passed after fix |
+| `movie_bookings` | train | 0 → 6 | ✅ passed after fix |
+| `school_roster` | train | 1 → 6 | ✅ passed after fix |
+| `recipe_box` | train | 1 → 0 → 5 | ✅ passed after second fix |
+| `ring_buffer` | train | 0 → 3 | ✅ passed after fix (borderline) |
+| `login_sessions` | train | 0 → 0 → 3 | ✅ passed after second fix (borderline) |
+| `robot_fleet` | train | 0 → 0 → 14 | ✅ passed after redesign |
+| `hangman_games` | train | 2 → 0 → 8 | ✅ passed after redesign |
+| `iou_tracker` | train | 0 → 1 → 1 | ❌ failed after redesign; redesigning again |
+| `pantry_inventory` | train | 0 → 0 → 0 | ❌ failed after redesign; redesigning again |
+| `ticket_desk` | train | 0 → 0 → 0 | ❌ failed after redesign; redesigning again |
 | `aging_inventory` | eval | 7 | ✅ passed |
 | `auction_house` | eval | 5 | ✅ passed |
 | `document_versions` | eval | 0 | ❌ failed |
@@ -123,11 +123,27 @@ Last updated 2026-11-01.
 | `task_board` | eval | – | not run yet |
 | `time_clock` | eval | – | not run yet |
 
-So far 33 of the 48 tasks run pass: 7 of 8 dev, 24 of 36 train and 2 of 4
-eval. The other 12 eval tasks have not been run yet. Data collection started
-on the 24 train tasks that pass (2026-11-01). The 12 that fail have been
-fixed (see "Fixed on 2026-11-01, not rerun yet" below) and are rerun once
-that collection is done, since the writer and the editor share the GPU.
+So far 42 of the 48 tasks run pass: 7 of 8 dev, 33 of 36 train and 2 of 4
+eval. The other 12 eval tasks have not been run yet. Train tasks that fail
+are redesigned, not dropped (team decision, 2026-11-02; see "Redesigned on
+2026-11-02" below). `iou_tracker`, `pantry_inventory` and `ticket_desk`
+failed again after their redesign and are being redesigned a second time.
+
+Data collection on the train tasks, in the order the tasks passed (147
+preference pairs from 22 tasks so far):
+
+- The first 24 (2026-11-01 to 11-02): 130 pairs from 18 tasks.
+  `feature_flags`, `job_board`, `staff_directory`, `thermostat_zones`,
+  `url_shortener` and `warehouse_stock` gave none: every program got the
+  same score on each sequence, so no program beat another.
+- The 5 that passed after the 2026-11-01 fixes (2026-11-02): 14 pairs,
+  `stock_portfolio` 8 and `school_roster` 6. In `movie_bookings` and
+  `restaurant_orders` the editor finished no change in any of the 42
+  trials, so every program scored 0. `ring_buffer`'s 3 programs scored
+  differently, but none clearly beat another: every comparison was a tie,
+  mixed across the two sequences, or won by fewer than 2 changes.
+- `login_sessions` and `recipe_box` (2026-11-02): 3 pairs (1 and 2).
+- `robot_fleet` and `hangman_games`: running.
 
 What the writer kept getting wrong, and the fixes that worked:
 
@@ -179,9 +195,9 @@ one was wrong:
   makes a repeated call raise, and that riders keep their destination "so
   the car knows where each rider gets out".
 
-Fixed on 2026-11-01, not rerun yet. "Stored" is how many of the 16 stored
-programs pass the edited tests; fixes to the wording only show once the
-writer is sampled again.
+Fixed on 2026-11-01 and rerun on 2026-11-02 (16 new samples each; results
+in the table above). 5 of the 12 passed; two more passed after a second
+fix (below), and 5 were redesigned.
 
 - **More input checks made unspecified**, as above:
   - `7` as a name or symbol: `login_sessions`, `movie_bookings` (customers),
@@ -234,12 +250,107 @@ writer is sampled again.
   be caught with a non-`int` price, so it became
   `v0_held_checked_before_price` (`sell` checks the shares held before the
   price).
-- Stored programs passing the edited tests: `restaurant_orders` 12,
-  `ring_buffer` 4, `stock_portfolio` 3, `robot_fleet` 3, `recipe_box` 3,
-  `iou_tracker` 2, `hangman_games` 2, `school_roster` 1, the rest 0. If a
-  rerun still fails, `recipe_box` (it returns lists of tuples) and
-  `iou_tracker` (method names that read both ways) may need a redesign:
-  a team decision.
+- Second fix (2026-11-02), tests only, so the 16 samples from the rerun
+  could be checked again:
+  - `login_sessions`: all 13 programs raised `SessionError`, not
+    `KeyError`, when an unregistered user signs out. An unregistered user
+    is also not signed in, so both of the spec's rules for `sign_out`
+    apply and it gives no order. Either error is now accepted (3 pass).
+  - `recipe_box`: all 14 programs check `add_ingredient`'s arguments
+    before looking up the recipe, so `None` as the recipe gave
+    `ValueError`. Either error is now accepted (5 pass); the spec still
+    says `KeyError`.
+
+Redesigned on 2026-11-02 and rerun the same day (16 new samples each).
+These five still failed after the rerun, and wording alone had not helped.
+Each now fits what the writer does anyway, where that keeps the point of
+the changes. Change ids, kinds and sequences are unchanged. "Old programs"
+is a weak signal: how many of the 16 samples, written for the old spec, fit
+the new design. `robot_fleet` (14 of 16) and `hangman_games` (8) now pass.
+`iou_tracker` (1), `pantry_inventory` (0) and `ticket_desk` (0) did not,
+for the new reasons given under each; their first redesign was not
+committed, and a second one is under way.
+
+- `robot_fleet`: every program validated with `if command not in "LR":`.
+  In Qwen's tokenizer `LR` is one token and `"LRA"` splits as `L` + `RA`,
+  so after `LR` the writer cannot add `A`. The near misses on 11-01 wrote
+  `"LRAB"`, `"LRAX"` and `"LRAD"`, and the 11-01 fix (naming the three
+  letters) made it worse, 8 → 16 of 16.
+  - The advance command is now `"M"`, listed first (`LRM` = `LR` + `M`),
+    with a worked example.
+  - 13 of 16 also executed letters while checking them, so how much of a
+    bad string runs is now unspecified. `c_bounds` now requires that a raise
+    changes nothing.
+  - Non-`str` commands and `add_robot`'s error order are unspecified.
+  - Old programs with an advance, renamed to `M`: 8 of 13 pass.
+  - Rerun: 14 of 16 pass.
+- `pantry_inventory`: all 16 kept each item's batches in the order added
+  and took from the first one; 13 sorted only in `get_batches`. 12 found a
+  shortage only after taking units, so the all-or-nothing `PantryError`
+  left partial changes.
+  - Batches are now used first in, first out, and `get_batches` lists them
+    in the order added.
+  - A shortage takes what is left, and `use_item` returns the units it
+    could not take (no `PantryError`). A full worked example was added.
+  - `c_expired` skips expired batches wherever they sit and returns the
+    shortfall.
+  - Old programs, after only those two edits: 8 of 16 pass.
+  - Rerun: 0 of 16. Every program fails as soon as `use_item` takes from
+    more than one batch: each removes used-up batches from the list while
+    looping over it (`for i, b in enumerate(batches): ... batches.pop(i)`),
+    which skips the next batch.
+- `ticket_desk`: 12 of 16 never set the `"assigned"` status, which broke
+  `resolve` and everything after it. All 16 kept a per-agent list appended
+  on `assign`, only 4 took a reassigned ticket out of the old agent's list,
+  and 6 hid resolved tickets from `get_tickets()`.
+  - Queues are now in the order the agent got the tickets.
+  - A new `reassign` moves a ticket, and `assign` only takes a ticket with
+    no agent.
+  - v0 has no status strings (`get_status` is gone).
+  - `get_tickets()` lists unresolved tickets in opening order.
+  - KeyError-vs-DeskError order is unspecified.
+  - In the changes: `c_reopen` appends to the queue of the agent who
+    resolved the ticket. `c_priority`'s status filter became
+    `get_resolved`, and `get_queue` breaks ties in queue order. `c_limit`
+    also covers `reassign`.
+  - Rerun: 0 of 16, but 4 programs fail only 1 or 2 tests. 3 never check
+    for "no agent" in `resolve` (they look up the agent `None` and raise
+    `KeyError`, not `DeskError`), and 1 never checks "resolved" in
+    `reassign`. These error cases sit in run-on sentences in the spec. A
+    larger group fails about 9 tests around resolved tickets and queue
+    order.
+- `hangman_games`: no program checked the status in `guess` (16 of 16
+  accepted guesses after a win). 7 never set `"won"`, because they store the
+  status and write it only on the wrong-guess branch. 7 added the classic
+  loss after 6 misses, and 10 kept guesses in a set.
+  - The initial spec now says nothing about losing. 6 or more wrong guesses
+    in one game are unspecified, and no initial test makes more than 5, so
+    programs with or without a loss both pass.
+  - Winning is described from `guess`, with examples. Guessing in a won game
+    is unspecified, and guesses are listed alphabetically.
+  - `c_max_wrong` adds losing as a new rule: an optional per-game
+    `max_wrong` (default `None`, no limit), status `"lost"`, and finished
+    games refuse guesses. Programs with a built-in loss at 6 must drop it.
+  - A fixed loss at 6 in v0 with `c_max_wrong` making it adjustable was
+    rejected: that is the eval-only `configuration` kind.
+  - Old programs, with guesses sorted: 7 of 16 pass.
+  - Rerun: 8 of 16 pass.
+- `iou_tracker`: 6 of 16 read `get_owed_to`/`get_owed_by` the Exercism way
+  (`owed_by` lists who owes this user). 3 kept one total per user, and 8
+  rebuilt `get_history` from the summed debts instead of keeping a log.
+  - The two list methods became `get_owed(lender, borrower) -> int`, in
+    `record_iou`'s argument order, and
+    `get_debts() -> [(lender, borrower, amount)]`, so no name carries a
+    direction.
+  - A worked example shows repeated and interleaved IOUs as separate
+    history entries.
+  - KeyError/ValueError order and non-`int` amounts are unspecified.
+  - `c_net_query`'s `get_net_owed_to` became `get_net_debts()`.
+  - Old programs whose design fits the new interface: 5 of 16.
+  - Rerun: 1 of 16. `get_owed`, `get_debts` and the history are now mostly
+    right; the main failure is the sign of `get_balance` ("what the others
+    owe `name`, minus what `name` owes"). 4 programs fail only the balance
+    asserts, returning -500 for 500.
 
 Still open:
 
@@ -347,12 +458,12 @@ Still open:
 | `recipe_box` | `recipes.py` | original | recipes, ingredients, servings, shopping lists | `c_pantry` derived_value: pantry, missing items, cook<br>`c_categories` grouping: categories<br>`c_remove` undo: remove ingredient, undo last add | s1: pantry → categories<br>s2: remove → pantry |
 | `restaurant_orders` | `orders.py` | ClassEval Order | menu, open tables, orders, bills | `c_void` undo: void the last order call<br>`c_courses` grouping: courses<br>`c_service` derived_value: service charge, takings | s1: void → courses<br>s2: service → void |
 | `ring_buffer` | `ring_buffer.py` | Exercism circular-buffer | bounded first-in first-out buffer | `c_overwrite` state_flag: overwrite mode<br>`c_counts` derived_value: written, read, discarded totals<br>`c_peek` query: peek, newest, contents | s1: overwrite → counts<br>s2: peek → overwrite |
-| `robot_fleet` | `fleet.py` | Exercism robot-simulator | robots on an unbounded grid, L/R/A commands | `c_bounds` validation_rule: grid bounds<br>`c_disabled` state_flag: disabled robots<br>`c_distance` derived_value: distance, displacement, cells visited | s1: bounds → disabled<br>s2: distance → bounds |
+| `robot_fleet` | `fleet.py` | Exercism robot-simulator | robots on an unbounded grid, M/L/R commands | `c_bounds` validation_rule: grid bounds<br>`c_disabled` state_flag: disabled robots<br>`c_distance` derived_value: distance, displacement, cells visited | s1: bounds → disabled<br>s2: distance → bounds |
 | `school_roster` | `roster.py` | Exercism grade-school | students by grade 1-12 | `c_move` atomic_operation: move several students, grade cap<br>`c_homeroom` grouping: homerooms<br>`c_withdraw` undo: withdraw and reinstate | s1: move → homeroom<br>s2: withdraw → move |
 | `staff_directory` | `directory.py` | ClassEval HRManagementSystem | departments, employees, salaries | `c_leave` state_flag: employees on leave<br>`c_payroll` derived_value: payroll, salary history<br>`c_transfer` atomic_operation: headcount caps, multi-employee transfer | s1: leave → payroll<br>s2: transfer → leave |
 | `stock_portfolio` | `portfolio.py` | ClassEval StockPortfolioTracker | cash, buying and selling shares, holdings, trades | `c_sectors` grouping: sectors<br>`c_profit` derived_value: FIFO realized profit, cost basis<br>`c_undo` undo: cancel the last trade | s1: sectors → profit<br>s2: undo → sectors |
 | `thermostat_zones` | `thermostat.py` | ClassEval Thermostat | zones with a mode, a target and readings | `c_limits` validation_rule: per-zone target limits<br>`c_hold` state_flag: zones on hold<br>`c_demand` derived_value: heating and cooling demand | s1: limits → hold<br>s2: demand → limits |
-| `ticket_desk` | `desk.py` | original | support tickets, agents, assignment, resolution | `c_reopen` undo: reopen a ticket<br>`c_priority` query: queues by status and priority<br>`c_limit` validation_rule: per-agent limit | s1: reopen → priority<br>s2: limit → reopen |
+| `ticket_desk` | `desk.py` | original | support tickets, agents, assignment, resolution | `c_reopen` undo: reopen a ticket<br>`c_priority` query: queues by priority, resolved tickets<br>`c_limit` validation_rule: per-agent limit | s1: reopen → priority<br>s2: limit → reopen |
 | `token_bucket` | `limiter.py` | library: pyrate-limiter | clients, requests per fixed window, explicit ticks | `c_block` state_flag: blocked clients<br>`c_usage` query: request times, usage over a range<br>`c_refund` undo: refund a request by receipt | s1: block → usage<br>s2: refund → block |
 | `url_shortener` | `shortener.py` | library: pyshorteners | short codes, targets, hit counts | `c_disable` state_flag: disabled links<br>`c_stats` derived_value: hit statistics per target<br>`c_alias` validation_rule: code rules, case-insensitive, reserved codes | s1: disable → stats<br>s2: alias → disable |
 | `vending_machine` | `vending.py` | ClassEval VendingMachine | slots, prices, coins, purchases, change | `c_capacity` validation_rule: slot capacity<br>`c_sales` derived_value: sales and revenue report<br>`c_outage` state_flag: slots out of order | s1: capacity → sales<br>s2: outage → capacity |

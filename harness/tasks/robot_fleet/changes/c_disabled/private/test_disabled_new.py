@@ -57,18 +57,18 @@ def test_enabled_robots_keep_the_order_added(fleet):
 
 
 def test_running_a_disabled_robot_changes_nothing(fleet):
-    fleet.run("rover", "A")
+    fleet.run("rover", "M")
     fleet.disable("rover")
     before = state(fleet)
     with pytest.raises(RobotDisabled):
-        fleet.run("rover", "RAA")
+        fleet.run("rover", "RMM")
     assert state(fleet) == before
 
 
 def test_run_all_drives_only_the_enabled_robots(fleet):
-    fleet.run("scout", "A")
+    fleet.run("scout", "M")
     fleet.disable("scout")
-    fleet.run_all("AL")
+    fleet.run_all("ML")
     assert fleet.get_position("rover") == (0, 1)
     assert fleet.get_heading("rover") == "W"
     assert fleet.get_position("digger") == (-2, 2)
@@ -82,7 +82,7 @@ def test_run_all_with_every_robot_disabled_does_nothing(fleet):
     for name in fleet.get_robots():
         fleet.disable(name)
     before = state(fleet)
-    fleet.run_all("AAA")
+    fleet.run_all("MMM")
     assert state(fleet) == before
 
 
@@ -96,7 +96,7 @@ def test_invalid_commands_still_raise_when_all_are_disabled(fleet):
 
 
 def test_a_disabled_robot_still_reports_its_state(fleet):
-    fleet.run("digger", "AA")
+    fleet.run("digger", "MM")
     fleet.disable("digger")
     assert fleet.get_position("digger") == (-2, 1)
     assert fleet.get_heading("digger") == "S"
@@ -109,7 +109,7 @@ def test_a_disabled_robot_still_reports_its_state(fleet):
 def test_key_error_and_value_error_come_before_disabled(fleet):
     fleet.disable("rover")
     with pytest.raises(KeyError):
-        fleet.run("drone", "A")
+        fleet.run("drone", "M")
     with pytest.raises(ValueError):
         fleet.run("rover", "X")
 
@@ -119,7 +119,7 @@ def test_disabled_comes_before_other_fleet_errors():
     fl.add_robot("rover", 1, 1, "N")  # facing the edge
     fl.disable("rover")
     with pytest.raises(RobotDisabled):
-        fl.run("rover", "A")
+        fl.run("rover", "M")
 
 
 def test_a_disabled_robot_never_blocks_run_all():
@@ -127,6 +127,6 @@ def test_a_disabled_robot_never_blocks_run_all():
     fl.add_robot("rover", 0, 0, "N")
     fl.add_robot("scout", 1, 1, "N")  # would leave the grid
     fl.disable("scout")
-    fl.run_all("A")
+    fl.run_all("M")
     assert fl.get_position("rover") == (0, 1)
     assert fl.get_position("scout") == (1, 1)

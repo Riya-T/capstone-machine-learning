@@ -1,4 +1,6 @@
-"""Hangman games with a limit on wrong guesses and hints.
+"""Hangman games with an optional limit on wrong guesses per game, so a
+game can be lost, a game that is over takes no more guesses, and players
+can ask for hints.
 
 Planted bug (after c_max_wrong and c_hint): hints were added correctly,
 but while reworking guess the check that refuses a letter already guessed
@@ -9,7 +11,7 @@ tests catch it.
 Usage:
     from hangman import Hangman
     games = Hangman()
-    games.start_game("first", "banana", max_wrong=6)
+    games.start_game("first", "banana", max_wrong=3)
     games.guess("first", "a")
     games.get_hint("first")
 """
@@ -41,7 +43,7 @@ def check_limit(limit):
 class Hangman:
     def __init__(self):
         self._words = {}  # game id -> secret word, in start order
-        self._guesses = {}  # game id -> letters guessed, in order
+        self._guesses = {}  # game id -> letters guessed, in the order guessed
         self._limits = {}  # game id -> max wrong guesses, or None
 
     def start_game(self, game_id, word, max_wrong=None):
@@ -70,7 +72,7 @@ class Hangman:
 
     def get_guesses(self, game_id):
         self._require(game_id)
-        return list(self._guesses[game_id])
+        return sorted(self._guesses[game_id])
 
     def get_wrong_count(self, game_id):
         self._require(game_id)
@@ -103,7 +105,7 @@ class Hangman:
     def get_hint(self, game_id):
         self._require(game_id)
         if self.get_status(game_id) != "playing":
-            raise HangmanError(f"game {game_id!r} is over, nothing to hint at")
+            raise HangmanError(f"game {game_id!r} is over, no hint")
         word, guessed = self._words[game_id], set(self._guesses[game_id])
         missing = [c for c in word if c not in guessed]
         # max() keeps the first of equally common letters, i.e. the earliest in the word.

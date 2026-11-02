@@ -12,7 +12,7 @@ from fleet import FleetError, RobotFleet
 def test_a_robot_can_drive_up_to_the_edge():
     fl = RobotFleet(width=5, height=5)
     fl.add_robot("rover", 0, 0, "N")
-    fl.run("rover", "AAAA")
+    fl.run("rover", "MMMM")
     assert fl.get_position("rover") == (0, 4)
     assert fl.get_bounds() == (5, 5)
 
@@ -21,7 +21,7 @@ def test_leaving_the_grid_raises_and_the_robot_stays_put():
     fl = RobotFleet(width=5, height=5)
     fl.add_robot("rover", 0, 0, "N")
     with pytest.raises(FleetError):
-        fl.run("rover", "AAAAA")
+        fl.run("rover", "MMMMM")
     assert fl.get_position("rover") == (0, 0)
     assert fl.get_command_count("rover") == 0
 

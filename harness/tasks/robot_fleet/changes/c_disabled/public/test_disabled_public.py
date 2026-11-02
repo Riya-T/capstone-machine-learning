@@ -15,10 +15,10 @@ def test_a_disabled_robot_cannot_be_driven():
     fl.disable("rover")
     assert not fl.is_enabled("rover")
     with pytest.raises(RobotDisabled):
-        fl.run("rover", "A")
+        fl.run("rover", "M")
     assert fl.get_position("rover") == (0, 0)
     fl.enable("rover")
-    fl.run("rover", "A")
+    fl.run("rover", "M")
     assert fl.get_position("rover") == (0, 1)
 
 
@@ -27,7 +27,7 @@ def test_run_all_skips_disabled_robots():
     fl.add_robot("rover", 0, 0, "N")
     fl.add_robot("scout", 5, 5, "E")
     fl.disable("scout")
-    fl.run_all("A")
+    fl.run_all("M")
     assert fl.get_position("rover") == (0, 1)
     assert fl.get_position("scout") == (5, 5)
     assert fl.get_enabled_robots() == ["rover"]

@@ -82,11 +82,9 @@ def test_a_bad_password_is_reported_before_a_taken_name(manager):
     "call",
     [
         lambda man: man.sign_in("carol", "pw"),
-        lambda man: man.sign_out("carol"),
         lambda man: man.is_signed_in("carol"),
         lambda man: man.sign_in(None, "pw"),
         lambda man: man.is_signed_in(1),
-        lambda man: man.sign_out(None),
     ],
 )
 def test_unregistered_users_raise_key_error(manager, call):
@@ -94,6 +92,17 @@ def test_unregistered_users_raise_key_error(manager, call):
     before = state(manager)
     with pytest.raises(KeyError):
         call(manager)
+    assert state(manager) == before
+
+
+# An unregistered user is also not signed in, so the spec's two rules for
+# sign_out both apply and it gives no order: either error is accepted.
+@pytest.mark.parametrize("username", ["carol", None])
+def test_signing_out_an_unregistered_user_raises(manager, username):
+    manager.sign_in("alice", "hunter2")
+    before = state(manager)
+    with pytest.raises((KeyError, SessionError)):
+        manager.sign_out(username)
     assert state(manager) == before
 
 

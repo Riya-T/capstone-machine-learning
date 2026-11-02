@@ -18,14 +18,27 @@ def test_taking_back_a_wrong_guess_forgets_it():
     assert hm.get_wrong_count("first") == 0
 
 
-def test_taking_back_a_right_guess_hides_the_letter_again():
+def test_the_newest_guess_is_taken_back_first():
     hm = Hangman()
     hm.start_game("first", "banana")
+    hm.guess("first", "n")
+    hm.guess("first", "z")
     hm.guess("first", "b")
-    hm.guess("first", "a")
-    assert hm.take_back("first") == "a"
-    assert hm.get_progress("first") == "b_____"
-    assert hm.get_guesses("first") == ["b"]
+    assert hm.take_back("first") == "b"
+    assert hm.get_progress("first") == "__n_n_"
+    assert hm.get_guesses("first") == ["n", "z"]
+    assert hm.take_back("first") == "z"
+    assert hm.take_back("first") == "n"
+
+
+def test_taking_back_the_winning_guess_reopens_the_game():
+    hm = Hangman()
+    hm.start_game("first", "cab")
+    for letter in "cab":
+        hm.guess("first", letter)
+    assert hm.take_back("first") == "b"
+    assert hm.get_status("first") == "playing"
+    assert hm.get_progress("first") == "ca_"
 
 
 def test_nothing_to_take_back_raises():
