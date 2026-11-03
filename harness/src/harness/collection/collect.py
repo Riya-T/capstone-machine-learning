@@ -34,7 +34,7 @@ from ..models.parser import parse_program
 from ..registry import ChangeSequence, Program, Task, build_writer_prompt, load_tasks, load_template
 from ..registry import prompt_version as prompt_version_of
 from ..sandbox.evaluator import Evaluator
-from ..sandbox.runner import SandboxError, SandboxRunner
+from ..sandbox.runner import SandboxError, make_runner
 from ..store import (
     Candidate,
     CandidateKey,
@@ -82,7 +82,7 @@ class Keys:
 
 def sandbox_owner(cfg: ExperimentConfig) -> str:
     """Container label for this store, so sweeping leftovers from a crashed
-    run never touches another store's containers."""
+    run never touches another store's containers (Docker only)."""
     return f"collect-{cfg.component_hash(cfg.runs_dir)[:12]}"
 
 
@@ -98,7 +98,7 @@ def collect(cfg: ExperimentConfig, until: str = "edit") -> CollectStats:
     scorer = Scorer(cfg.scorer, cfg.editor.reps)  # fail on a bad scorer config before any work
     tasks = load_tasks(cfg.tasks)
     stats = CollectStats()
-    runner = SandboxRunner(cfg.sandbox, owner=sandbox_owner(cfg))
+    runner = make_runner(cfg, owner=sandbox_owner(cfg))
     image_id = runner.ensure_image()
     removed = runner.sweep()
     if removed:
@@ -111,9 +111,8 @@ def collect(cfg: ExperimentConfig, until: str = "edit") -> CollectStats:
     with Store(cfg.runs_dir) as store:
         stats.run_id = store.start_run(cfg)
         stats.run_dir = store.runs_dir / stats.run_id
-        log.info(
-            "run %s: %d tasks, image %s, until %s", stats.run_id, len(tasks), image_id[:19], until
-        )
+        short_id = image_id[: image_id.rindex(":") + 13]  # e.g. sha256:<12 hex>
+        log.info("run %s: %d tasks, image %s, until %s", stats.run_id, len(tasks), short_id, until)
         for task in tasks.values():
             prompt = build_writer_prompt(task.writer_view(), template)
             _write_samples(cfg, store, task, prompt, keys, stats)
@@ -150,10 +149,11 @@ def report(cfg: ExperimentConfig, out_dir: Path | None = None) -> ScoreResult:
     """Rebuild preferences.jsonl and preferences_report.json from the store.
     Builds no backend and runs no container; the sandbox image must exist
     (its id is part of the result keys)."""
-    runner = SandboxRunner(cfg.sandbox, owner=sandbox_owner(cfg))
+    runner = make_runner(cfg, owner=sandbox_owner(cfg))
     image_id = runner.existing_image_id()
     if image_id is None:
-        raise SandboxError(f"image {cfg.sandbox.image} not found; results are keyed by its id")
+        image = cfg.execution.apptainer_image or cfg.sandbox.image
+        raise SandboxError(f"image {image} not found; results are keyed by its id")
     out = out_dir or cfg.runs_dir / "report"
     with Store(cfg.runs_dir) as store:
         result = score(cfg, store, load_tasks(cfg.tasks), Keys.of(cfg, image_id), out)

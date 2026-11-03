@@ -1,6 +1,7 @@
 """Pytest setup: decides which marked tests run.
 
 - docker tests run only when Docker is up.
+- apptainer tests run only where the apptainer CLI exists.
 - slow tests (full collection, task validation, stress tests) run only
   with --slow.
 
@@ -35,6 +36,10 @@ def docker_available() -> bool:
     return result.returncode == 0
 
 
+def apptainer_available() -> bool:
+    return shutil.which("apptainer") is not None
+
+
 def pytest_collection_modifyitems(config, items):
     run_slow = config.getoption("--slow")
     for item in items:
@@ -42,3 +47,5 @@ def pytest_collection_modifyitems(config, items):
             item.add_marker(pytest.mark.skip(reason="slow; run with --slow"))
         if "docker" in item.keywords and not docker_available():
             item.add_marker(pytest.mark.skip(reason="no Docker daemon available"))
+        if "apptainer" in item.keywords and not apptainer_available():
+            item.add_marker(pytest.mark.skip(reason="no apptainer CLI available"))

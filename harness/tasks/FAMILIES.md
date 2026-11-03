@@ -463,7 +463,7 @@ Still open:
   `c_capacity`, `c_service`, `c_wait` and `c_cancel`) were rewritten, most
   of them to load cars on floor 1 instead of floor 0. A new
   `get_destination` method makes the writer keep each passenger's
-  destination. Needs a rerun (`configs/writer_check_redo.yaml`).
+  destination. Needs a rerun.
 - `access_control` lost the planted bug `v0_allowed_in_allow_order`: a
   public check now covers that order, so the bug could no longer pass the
   public checks. `v0_access_before_message` still covers the initial spec.
