@@ -8,7 +8,7 @@ Usage (with gym.py importable, e.g. in the sandbox):
 import pytest
 from gym import Gym, GymError
 
-BAD_TIERS = ["", 3, None, 2.5]
+BAD_TIERS = ["", None]
 
 
 @pytest.fixture
@@ -106,17 +106,11 @@ def test_tier_methods_reject_unknown_plans(gym):
         gym.get_tier(None)
 
 
-def test_an_unknown_plan_is_reported_before_a_bad_tier(gym):
-    with pytest.raises(KeyError):
-        gym.set_tier("family", "")
-
-
-def test_a_duplicate_plan_is_reported_after_a_bad_tier(gym):
-    with pytest.raises(ValueError):
-        gym.add_plan("basic", tier="")
+def test_a_duplicate_plan_is_still_rejected_and_keeps_its_tier(gym):
     with pytest.raises(GymError):
         gym.add_plan("basic", tier="premium")
     assert gym.get_tier("basic") == "standard"
+    assert gym.get_plans() == ["basic", "gold", "student"]
 
 
 def test_tiers_do_not_change_plan_lookups(gym):

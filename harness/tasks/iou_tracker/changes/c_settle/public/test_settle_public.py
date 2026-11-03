@@ -22,18 +22,21 @@ def tracker():
 
 def test_paying_part_of_a_debt_reduces_it(tracker):
     tracker.settle("bob", [("alice", 150)])
-    assert tracker.get_owed_by("bob") == [("alice", 350), ("carol", 200)]
-    assert tracker.get_balance("bob") == -550
+    assert tracker.get_owed("alice", "bob") == 350
+    assert tracker.get_debts() == [("alice", "bob", 350), ("carol", "bob", 200)]
+    assert tracker.get_total_borrowed("bob") == 550
+    assert tracker.get_total_lent("alice") == 350
 
 
-def test_paying_a_debt_in_full_removes_it_from_the_lists(tracker):
+def test_paying_a_debt_in_full_removes_it_from_the_debts(tracker):
     tracker.settle("bob", [("carol", 200)])
-    assert tracker.get_owed_by("bob") == [("alice", 500)]
-    assert tracker.get_owed_to("carol") == []
+    assert tracker.get_owed("carol", "bob") == 0
+    assert tracker.get_debts() == [("alice", "bob", 500)]
+    assert tracker.get_total_lent("carol") == 0
     assert tracker.get_history("carol") == [("carol", "bob", 200)]
 
 
 def test_paying_more_than_is_owed_applies_nothing(tracker):
     with pytest.raises(IouError):
         tracker.settle("bob", [("alice", 100), ("carol", 201)])
-    assert tracker.get_owed_by("bob") == [("alice", 500), ("carol", 200)]
+    assert tracker.get_debts() == [("alice", "bob", 500), ("carol", "bob", 200)]

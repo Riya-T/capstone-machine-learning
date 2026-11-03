@@ -11,14 +11,14 @@ Lock a user's account in `sessions.py` after too many wrong passwords.
   resets the attempts.
 - Add `SessionManager.is_locked(username) -> bool` and
   `SessionManager.get_failed_attempts(username) -> int`, the number of
-  failed attempts in a row so far (3 while locked, 0 after a success or an
-  unlock). New users have 0 failed attempts and are not locked.
+  failed attempts in a row so far (3 when the account becomes locked, 0
+  after a success or an unlock). New users have 0 failed attempts and are
+  not locked.
 - `unlock`, `is_locked` and `get_failed_attempts` raise `KeyError` for a
   username that is not registered.
-- In `sign_in`, `AccountLocked` is checked after `KeyError` and after the
-  check for a user who is already signed in, and before the password is
-  compared. A sign-in refused because the account is locked is not a failed
-  attempt and is not recorded anywhere.
+- A sign-in refused with `AccountLocked` is not a failed attempt and is not
+  recorded anywhere. If the account is locked and the password given is
+  also wrong, which error is raised is unspecified.
 - Locking and unlocking never change who is signed in.
 
 All existing behavior must keep working.

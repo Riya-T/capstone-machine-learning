@@ -62,7 +62,7 @@ def test_target_hits_add_up_over_codes_sharing_a_target(links):
     assert links.get_target_hits(DOCS) == 0
 
 
-@pytest.mark.parametrize("bad_target", ["", None, 7])
+@pytest.mark.parametrize("bad_target", ["", None])
 def test_target_hits_rejects_invalid_targets(links, bad_target):
     with pytest.raises(ValueError):
         links.get_target_hits(bad_target)

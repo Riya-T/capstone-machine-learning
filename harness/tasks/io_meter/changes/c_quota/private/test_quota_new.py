@@ -8,7 +8,7 @@ Usage (with meter.py importable, e.g. in the sandbox):
 import pytest
 from meter import IOMeter, MeterError, QuotaExceeded
 
-BAD_QUOTAS = [-1, 2.5, "100", True]
+BAD_QUOTAS = [-1, 2.5, "100"]
 
 
 @pytest.fixture
@@ -79,16 +79,22 @@ def test_invalid_quotas_are_rejected_when_opening(meter, quota):
     assert state(meter) == before
 
 
-def test_a_bad_quota_is_reported_before_a_duplicate_id(meter):
-    with pytest.raises(ValueError):
-        meter.open_stream("log", quota=-1)
-
-
 @pytest.mark.parametrize("method", ["get_quota", "get_quota_left"])
 @pytest.mark.parametrize("stream_id", ["other", None, 1])
 def test_quota_queries_on_unknown_streams_raise_key_error(meter, method, stream_id):
     with pytest.raises(KeyError):
         getattr(meter, method)(stream_id)
+
+
+@pytest.mark.parametrize("stream_id", ["other", None, 1])
+def test_set_quota_on_an_unknown_stream_raises_key_error(meter, stream_id):
+    before = state(meter)
+    with pytest.raises(KeyError):
+        meter.set_quota(stream_id, 50)
+    assert meter.get_streams() == ["log", "free"]
+    assert meter.get_quota("log") == 100
+    assert meter.get_quota("free") is None
+    assert state(meter) == before
 
 
 def test_set_quota_replaces_the_quota(meter):
@@ -130,21 +136,14 @@ def test_invalid_quotas_are_rejected_when_setting(meter, quota):
     assert meter.get_quota("log") == 100
 
 
-def test_set_quota_error_order(meter):
-    meter.record_write("log", 60)
-    with pytest.raises(KeyError):
-        meter.set_quota("other", -1)
-    with pytest.raises(ValueError):
-        meter.set_quota("log", -1)
-
-
-def test_a_bad_size_is_reported_before_the_quota(meter):
-    meter.record_read("log", 100)
+def test_bad_sizes_and_unknown_streams_are_still_rejected(meter):
+    meter.record_read("log", 60)
     with pytest.raises(ValueError):
         meter.record_read("log", -1)
     with pytest.raises(KeyError):
-        meter.record_read("other", 10**6)
+        meter.record_read("other", 10)
     assert meter.get_op_counts("log") == (1, 0)
+    assert meter.get_quota_left("log") == 40
 
 
 def test_quota_exceeded_is_a_meter_error():

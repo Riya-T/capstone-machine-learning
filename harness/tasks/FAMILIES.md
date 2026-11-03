@@ -103,9 +103,9 @@ Last updated 2026-11-02.
 | `login_sessions` | train | 0 → 0 → 3 | ✅ passed after second fix (borderline) |
 | `robot_fleet` | train | 0 → 0 → 14 | ✅ passed after redesign |
 | `hangman_games` | train | 2 → 0 → 8 | ✅ passed after redesign |
-| `iou_tracker` | train | 0 → 1 → 1 | ❌ failed after redesign; redesigning again |
-| `pantry_inventory` | train | 0 → 0 → 0 | ❌ failed after redesign; redesigning again |
-| `ticket_desk` | train | 0 → 0 → 0 | ❌ failed after redesign; redesigning again |
+| `ticket_desk` | train | 0 → 0 → 0 → 16 | ✅ passed after second redesign |
+| `iou_tracker` | train | 0 → 1 → 1 → 0 | ❌ failed after second redesign; third redesign under way |
+| `pantry_inventory` | train | 0 → 0 → 0 → 1 | ❌ failed after second redesign; third redesign under way |
 | `aging_inventory` | eval | 7 | ✅ passed |
 | `auction_house` | eval | 5 | ✅ passed |
 | `document_versions` | eval | 0 | ❌ failed |
@@ -123,14 +123,15 @@ Last updated 2026-11-02.
 | `task_board` | eval | – | not run yet |
 | `time_clock` | eval | – | not run yet |
 
-So far 42 of the 48 tasks run pass: 7 of 8 dev, 33 of 36 train and 2 of 4
+So far 43 of the 48 tasks run pass: 7 of 8 dev, 34 of 36 train and 2 of 4
 eval. The other 12 eval tasks have not been run yet. Train tasks that fail
 are redesigned, not dropped (team decision, 2026-11-02; see "Redesigned on
 2026-11-02" below). `iou_tracker`, `pantry_inventory` and `ticket_desk`
-failed again after their redesign and are being redesigned a second time.
+failed again after their redesign and were redesigned a second time.
+`ticket_desk` then passed; the other two are being redesigned a third time.
 
-Data collection on the train tasks, in the order the tasks passed (147
-preference pairs from 22 tasks so far):
+Data collection on the train tasks, in the order the tasks passed (155
+preference pairs from 23 tasks so far):
 
 - The first 24 (2026-11-01 to 11-02): 130 pairs from 18 tasks.
   `feature_flags`, `job_board`, `staff_directory`, `thermostat_zones`,
@@ -143,7 +144,12 @@ preference pairs from 22 tasks so far):
   differently, but none clearly beat another: every comparison was a tie,
   mixed across the two sequences, or won by fewer than 2 changes.
 - `login_sessions` and `recipe_box` (2026-11-02): 3 pairs (1 and 2).
-- `robot_fleet` and `hangman_games`: running.
+- `robot_fleet` and `hangman_games` (2026-11-02): 8 pairs, all from
+  `hangman_games`. Every `robot_fleet` trial scored 0 (see "Change tests"
+  below).
+- Most of these numbers are about to change: in 25 of the tasks the change
+  tests blocked nearly every trial, and those tasks are being collected
+  again after the fix (see "Change tests" below).
 
 What the writer kept getting wrong, and the fixes that worked:
 
@@ -269,7 +275,7 @@ is a weak signal: how many of the 16 samples, written for the old spec, fit
 the new design. `robot_fleet` (14 of 16) and `hangman_games` (8) now pass.
 `iou_tracker` (1), `pantry_inventory` (0) and `ticket_desk` (0) did not,
 for the new reasons given under each; their first redesign was not
-committed, and a second one is under way.
+committed, and each got a second one (results below).
 
 - `robot_fleet`: every program validated with `if command not in "LR":`.
   In Qwen's tokenizer `LR` is one token and `"LRA"` splits as `L` + `RA`,
@@ -298,7 +304,19 @@ committed, and a second one is under way.
   - Rerun: 0 of 16. Every program fails as soon as `use_item` takes from
     more than one batch: each removes used-up batches from the list while
     looping over it (`for i, b in enumerate(batches): ... batches.pop(i)`),
-    which skips the next batch.
+    which skips the next batch. 10 also raised `KeyError` for a bad
+    quantity, misreading the "unknown name and invalid quantity" rule.
+  - Second redesign: batches are never removed. A used-up batch stays in
+    `get_batches` as `(use_by, 0)`, so an in-place loop is right and there
+    is nothing to pop. `use_item` returns `None`. `get_expiring_by(day)`
+    returns `[(name, units)]` for items with units due by `day`, so used-up
+    batches drop out through the same "more than 0" rule. The error-order
+    sentence is gone (unspecified). Planted bug `v0_used_up_batch_kept`
+    became `v0_same_day_batches_merged`. `c_expired`'s `discard_expired` is
+    now the only thing that removes batches.
+  - Old programs with only the edits the new spec forces: 9 of 16 pass.
+    The risk: a `while ... batches[0]` loop, which only ends because it
+    pops, would now never end.
 - `ticket_desk`: 12 of 16 never set the `"assigned"` status, which broke
   `resolve` and everything after it. All 16 kept a per-agent list appended
   on `assign`, only 4 took a reassigned ticket out of the old agent's list,
@@ -316,9 +334,22 @@ committed, and a second one is under way.
   - Rerun: 0 of 16, but 4 programs fail only 1 or 2 tests. 3 never check
     for "no agent" in `resolve` (they look up the agent `None` and raise
     `KeyError`, not `DeskError`), and 1 never checks "resolved" in
-    `reassign`. These error cases sit in run-on sentences in the spec. A
-    larger group fails about 9 tests around resolved tickets and queue
-    order.
+    `reassign`. These error cases sit in run-on sentences in the spec. 11
+    of 16 had no resolved state at all (`resolve` set the agent back to
+    `None`) and read `get_tickets()` as "tickets whose agent is `None`".
+    3 more had a precedence bug in `get_tickets`'s optional argument, so
+    `get_tickets()` always raised. As with the status strings before, the
+    writer reliably mishandles a separate resolved state.
+  - Second redesign: each method lists its errors as bullets. There is no
+    desk-wide listing: `get_tickets(agent_id=None)` became
+    `get_queue(agent_id)`. Everything about a ticket after it is resolved,
+    other than leaving its agent's queue, is unspecified, so deleting the
+    ticket, clearing its agent or keeping a flag all pass.
+  - In the changes: `c_reopen` now defines resolved tickets (they keep
+    their id and priority, and assign/reassign/resolve on them raise
+    `DeskError`). `c_priority`'s `get_queue` became
+    `get_by_priority(agent_id=None, min_priority=1)`.
+  - Old programs with `get_queue` added: 11 of 16 pass.
 - `hangman_games`: no program checked the status in `guess` (16 of 16
   accepted guesses after a win). 7 never set `"won"`, because they store the
   status and write it only on the wrong-guess branch. 7 added the classic
@@ -350,7 +381,36 @@ committed, and a second one is under way.
   - Rerun: 1 of 16. `get_owed`, `get_debts` and the history are now mostly
     right; the main failure is the sign of `get_balance` ("what the others
     owe `name`, minus what `name` owes"). 4 programs fail only the balance
-    asserts, returning -500 for 500.
+    asserts, returning -500 for 500. In all, 7 of 16 flipped the sign,
+    either reading it as cash flow ("lending lowers your balance") or
+    following the word order of "X owes Y". 3 listed each IOU in
+    `get_debts` instead of one sum per pair.
+  - Second redesign: `get_balance` became `get_total_lent(name)` and
+    `get_total_borrowed(name)`, two sums that are never netted and cannot
+    be read backwards. `get_debts` says several IOUs make one debt, with an
+    example. `get_owed` raises `KeyError` for a name that is not a user.
+  - In the changes: `c_settle` now says payments lower both totals (totals
+    follow the debts, not the history), `c_forgive` lowers both totals, and
+    `c_net_query`'s net position is lent minus borrowed.
+  - Old programs with the totals written from their own data: 5 of 16
+    pass, and 9 of 16 when they also sum `get_debts` per pair and check
+    names in `get_owed`.
+
+The second redesigns passed the Docker check and were rerun on 2026-11-02
+(16 new samples each): `ticket_desk` 16 of 16 pass, `pantry_inventory` 1,
+`iou_tracker` 0.
+
+- `pantry_inventory`: 15 of 16 still remove a used-up batch, now mostly
+  with `while quantity > 0 and batches: ... batches.pop(0)`, which is right
+  for removing. The second redesign keeps the batch as `(use_by, 0)`, which
+  is the risk noted above. One more never set a used-up batch to 0.
+- `iou_tracker`: 14 of 16 store each user's history in their own shape,
+  often with the amount negated on the borrower's side
+  (`(lender, borrower, -amount)`). 12 of 16 keep one signed number per pair
+  (`ious[lender][borrower] -= amount`), which nets the two directions the
+  spec keeps apart. 3 programs fail only the history tests.
+
+Both get a third redesign.
 
 Still open:
 
@@ -370,6 +430,83 @@ Still open:
 - `access_control` lost the planted bug `v0_allowed_in_allow_order`: a
   public check now covers that order, so the bug could no longer pass the
   public checks. `v0_access_before_message` still covers the initial spec.
+
+## Change tests
+
+On 2026-11-02 the editor's stored failed edits from every collection were
+run again against the change tests, to see which tests fail whatever program
+the editor started from. A failed change ends the trial, so such a test
+gives every program the same score and no pairs.
+
+In 25 of the 31 collected train tasks, the change tests still checked the
+three things the initial specs had stopped testing (see "What the writer
+kept getting wrong"). The 14B editor fails them just like the 7B writer:
+
+- **`True` as a number.** For example `thermostat_zones` `c_limits` failed
+  in 44 of 48 steps, `vending_machine` `c_capacity` in 43 of 48,
+  `io_meter` `c_quota` in 34 of 36, and `restaurant_orders` `c_service`
+  and `warehouse_stock` `c_lowstock` in 24 of 24.
+- **A non-string as a name** (`7` as a customer, `4` as a group name).
+  For example `movie_bookings` `c_cancel` failed in 17 of 18 steps,
+  `url_shortener` `c_stats` in 18 of 23, and `event_bus` `c_groups` in 13
+  of 13.
+- **Which error comes first.** For example `gym_memberships` `c_freeze`
+  ("bad input is reported before frozen") failed in 25 of 26 steps,
+  `budget_envelopes` `c_lock` and `warehouse_stock` `c_bundle` in 24 of
+  24, and `staff_directory` `c_leave` in 12 of 12.
+
+This covers all 6 tasks that gave no pairs, as well as `movie_bookings` and
+`restaurant_orders`.
+
+Fixed on 2026-11-02 in every change of the 25 tasks, with the same rules as
+for the initial specs:
+
+- `bool` values and non-string names (other than `""` and `None`) are no
+  longer tested, and requests no longer say "(not a `bool`)". A non-string
+  that must raise `KeyError` as an unknown id is still tested.
+- Which error is raised when one call has several problems is now
+  unspecified. Each error is still tested on its own, with nothing changed.
+  Tests whose calls secretly had a second problem were given valid values.
+
+Where every failed edit went wrong the same way for another reason, the
+request was unclear, and it now has a short worked example. Where the
+public check could not tell the right behavior from the wrong one, it now
+can, because the editor stops as soon as the public checks pass:
+
+- `restaurant_orders` `c_void`: every edit voided the last dish in
+  `get_order` instead of the last call to `order`.
+- `stock_portfolio` `c_sectors`: setting a sector again did not drop the
+  old one (36 of 36).
+- `gradebook` `c_drop_lowest`: dropped titles were listed lowest score
+  first, not in the order added (24 of 24).
+- `playlist_manager` `c_by_artist`, `recipe_box` `c_categories` and
+  `token_bucket` `c_usage`: lists built with `list(set(...))`, which the
+  2-item public checks passed by luck.
+- `high_scores` `c_remove`: `list.remove` takes the first of repeated
+  scores, not the most recent.
+- Also `event_bus` `c_unsubscribe` and `c_counts`, `gym_memberships`
+  `c_freeze`, `login_sessions` `c_capacity`, `movie_bookings` `c_search`,
+  `school_roster` `c_move` and `token_bucket` `c_refund`.
+- `recipe_box` `c_remove` and `high_scores` `c_best` now accept either
+  error where the editor copied the v0 checks that the 11-02 fixes allow.
+
+Left as real difficulty: failures that depend on the starting program or
+vary between trials, such as `io_meter` `c_totals`' tie rule and
+`budget_envelopes` `c_move` summing amounts before checking them.
+
+`robot_fleet` was collected before this check and has the same problem:
+`c_bounds` still tested `True` as a bound and error order (16 of 24 steps
+failed), and in all 24 `c_distance` trials the editor ran out of turns
+before the public checks passed. Every trial scored 0, so it gave no pairs.
+It is being fixed. In `hangman_games` (8 pairs) no test failed in most
+steps.
+
+The pairs from these 25 tasks are replaced by a re-collection (started
+2026-11-02 on the 25 tasks plus the 3 redesigned a second time; all 28
+passed the Docker check; `configs/tmp_recollect.yaml`, local only). Not done
+yet: the dev tasks show the same problem (`bank_ledger` `c_overdraft` `True`, 26 of
+28; `team_roster` `c_trades` error order, 29 of 41), and the eval tasks'
+change tests have not been checked.
 
 ## How the families were chosen
 

@@ -69,15 +69,6 @@ def test_removing_with_unknown_names_raises_key_error_and_changes_nothing(librar
     assert state(library) == before
 
 
-def test_an_unknown_playlist_wins_over_an_unknown_song_when_taking_out(library):
-    # Both would be KeyError; a missing song in a known playlist is LibraryError,
-    # so a missing playlist must be reported before the playlist check.
-    with pytest.raises(KeyError):
-        library.remove_from_playlist("evening", "Green")
-    with pytest.raises(KeyError):
-        library.remove_from_playlist("late", "Green")
-
-
 def test_removing_a_song_drops_every_queued_copy_in_order(library):
     for title in ["Blue", "Red", "Blue", "Gold", "Blue"]:
         library.enqueue(title)

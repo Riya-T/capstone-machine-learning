@@ -18,7 +18,7 @@ def test_items_below_their_minimum_are_on_the_list():
     assert pan.get_shopping_list() == [("milk", 4)]
 
 
-def test_a_day_leaves_out_batches_used_up_by_then():
+def test_a_day_leaves_out_batches_past_their_use_by_day():
     pan = Pantry()
     pan.add_item("milk", 2, 3)
     pan.add_item("milk", 4, 8)

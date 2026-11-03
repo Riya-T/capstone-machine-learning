@@ -13,8 +13,11 @@ do while the effect lasts.
   character raise `Incapacitated` and change nothing. While a character is
   petrified, `give_item` to that character also raises `Incapacitated` and
   changes nothing. A character with both effects is treated as petrified.
-- `Incapacitated` is checked after every `KeyError` and `ValueError` check
-  and before any other `PartyError`.
+- When one call has several problems and at least one of them comes from
+  this change (an unknown effect, or an incapacitated character), which
+  error it raises is unspecified. For example, a petrified character
+  equipping an item they do not hold may raise `Incapacitated` or another
+  `PartyError`.
 - Applying or removing an effect changes no bag and no equipment: items
   that were equipped stay equipped.
 

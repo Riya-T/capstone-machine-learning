@@ -11,8 +11,9 @@ private_tests: [private/test_desk_initial.py]
 reference: reference/v0
 planted_bugs:
   # Required: bugs only the hidden initial tests catch.
-  - {path: bugs/v0_assign_resolved_ticket, must_fail: [initial], must_pass: [public]}
   - {path: bugs/v0_same_agent_reassign, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_assign_takes_assigned_ticket, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_reassign_checks_agent_late, must_fail: [initial], must_pass: [public]}
 
 changes:
   - id: c_reopen

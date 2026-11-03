@@ -8,8 +8,8 @@ spiral is being repaired.
   disabled slot, or enabling an enabled one, does nothing.
 - Add `class SlotDisabled(VendingError)` to `vending.py`.
 - While a slot is disabled, `buy` on it raises `SlotDisabled` and changes
-  nothing. `SlotDisabled` is checked after `KeyError` and before `SoldOut`
-  and `NotEnoughCredit`.
+  nothing. Which error `buy` raises for a disabled slot that is also sold
+  out, or when the credit is also too small, is unspecified.
 - `restock` and `get_stock` still work on a disabled slot, and `get_slots`
   still lists it.
 - Add `VendingMachine.get_working_slots() -> list[str]`: the ids of the

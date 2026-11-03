@@ -8,7 +8,7 @@ whole group at once.
 - Add `Gateway.assign_group(client_id, group)`, which puts the client in
   the group. A client is in at most one group, so this takes it out of
   any group it was in. It raises `KeyError` for a client that is not
-  registered, then `KeyError` for a group that does not exist.
+  registered or a group that does not exist.
 - Add `Gateway.get_group(client_id) -> str | None`: the client's group,
   or `None` when it is in no group. It raises `KeyError` for a client that
   is not registered.

@@ -20,10 +20,18 @@ def test_songs_by_an_artist_come_back_in_the_order_added():
 
 def test_artists_are_listed_once_by_first_song():
     lib = MusicLibrary()
-    lib.add_song("Blue", "Nina", 200)
-    lib.add_song("Gold", "Omar", 240)
-    lib.add_song("Red", "Nina", 180)
-    assert lib.get_artists() == ["Nina", "Omar"]
+    songs = [
+        ("Dusk", "Pia"),
+        ("Blue", "Nina"),
+        ("Rain", "Pia"),
+        ("Gold", "Omar"),
+        ("Red", "Nina"),
+        ("Mist", "Lev"),
+        ("Ash", "Kai"),
+    ]
+    for title, artist in songs:
+        lib.add_song(title, artist, 100)
+    assert lib.get_artists() == ["Pia", "Nina", "Omar", "Lev", "Kai"]
 
 
 def test_a_playlist_can_be_filtered_by_artist():

@@ -49,7 +49,7 @@ def test_the_charge_follows_the_order_as_it_grows(rest):
     assert rest.get_bill("t1") == 3050 + 457
 
 
-@pytest.mark.parametrize("percent", [-1, 2.5, "10", True, None])
+@pytest.mark.parametrize("percent", [-1, 2.5, "10", None])
 def test_invalid_percentages_are_rejected(percent):
     with pytest.raises(ValueError):
         Restaurant(service_percent=percent)

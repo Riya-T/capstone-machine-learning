@@ -81,26 +81,20 @@ def test_pausing_and_resuming_change_no_counts(meter):
     assert state(meter) == before
 
 
-def test_bad_input_is_reported_before_paused(meter):
-    meter.pause("log")
-    with pytest.raises(ValueError):
-        meter.record_read("log", -1)
-    with pytest.raises(ValueError):
-        meter.record_write("log", "10")
-    with pytest.raises(KeyError):
-        meter.record_read("other", 1)
-
-
-def test_paused_is_reported_before_the_quota():
+def test_a_paused_stream_keeps_its_quota():
     io = IOMeter()
     io.open_stream("capped", quota=10)
-    io.record_read("capped", 10)
+    io.record_read("capped", 4)
     io.pause("capped")
     with pytest.raises(StreamPaused):
         io.record_read("capped", 1)
+    assert io.get_quota_left("capped") == 6
     io.resume("capped")
+    io.record_read("capped", 6)
     with pytest.raises(QuotaExceeded):
         io.record_read("capped", 1)
+    assert io.get_bytes_read("capped") == 10
+    assert io.get_op_counts("capped") == (2, 0)
 
 
 def test_stream_paused_is_a_meter_error_but_not_quota_exceeded():

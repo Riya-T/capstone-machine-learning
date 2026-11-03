@@ -11,7 +11,8 @@ Add delivery statistics to `bus.py`.
 - Add `EventBus.get_topics_by_deliveries() -> list[str]`: every topic, the
   one with the most deliveries first. Topics with equal delivery counts keep
   the order they were added in. Topics with no deliveries are included.
-- `get_publish_count` and `get_topic_delivery_count` raise `KeyError` for a
+- `get_publish_count` and `get_topic_delivery_count` give 0 for a topic that
+  exists but has not been published to yet, and raise `KeyError` for a
   topic that does not exist.
 
 All existing behavior must keep working.

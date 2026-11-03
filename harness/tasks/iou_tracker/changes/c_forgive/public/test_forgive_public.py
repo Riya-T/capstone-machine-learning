@@ -21,7 +21,9 @@ def tracker():
 
 def test_the_most_recent_iou_is_cancelled(tracker):
     assert tracker.forgive_last("alice", "bob") == 200
-    assert tracker.get_owed_to("alice") == [("bob", 300)]
+    assert tracker.get_owed("alice", "bob") == 300
+    assert tracker.get_total_lent("alice") == 300
+    assert tracker.get_total_borrowed("bob") == 300
     assert tracker.get_history("alice") == [("alice", "bob", 300)]
     assert tracker.get_history("bob") == [("alice", "bob", 300)]
 
@@ -29,6 +31,7 @@ def test_the_most_recent_iou_is_cancelled(tracker):
 def test_forgiving_with_nothing_left_raises(tracker):
     tracker.forgive_last("alice", "bob")
     tracker.forgive_last("alice", "bob")
-    assert tracker.get_owed_to("alice") == []
+    assert tracker.get_owed("alice", "bob") == 0
+    assert tracker.get_debts() == []
     with pytest.raises(IouError):
         tracker.forgive_last("alice", "bob")

@@ -10,7 +10,7 @@ from shortener import ReservedCode, Shortener, ShortenerError
 
 SALE = "https://example.com/sale"
 DOCS = "https://example.com/docs"
-BAD_CODES = ["spring sale", "sale!", "café", "a/b", "a" * 33, "", None, 7]
+BAD_CODES = ["spring sale", "sale!", "café", "a/b", "a" * 33, "", None]
 GOOD_CODES = ["a", "A-1", "under_score", "MiXeD", "a" * 32, "0123456789"]
 
 
@@ -104,15 +104,3 @@ def test_invalid_reserved_entries_are_rejected(bad):
 
 def test_reserved_code_is_a_shortener_error():
     assert issubclass(ReservedCode, ShortenerError)
-
-
-def test_error_order_when_adding(links):
-    with pytest.raises(ValueError):
-        links.add_link("bad code", "")  # bad code before bad target
-    with pytest.raises(ValueError):
-        links.add_link("admin", "")  # bad target before reserved
-    with pytest.raises(ValueError):
-        links.add_link("promo", "")  # bad target before duplicate
-    with pytest.raises(ReservedCode):
-        links.add_link("ADMIN", SALE)
-    assert links.get_codes() == ["Promo", "docs"]

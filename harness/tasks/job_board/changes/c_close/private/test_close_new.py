@@ -105,19 +105,11 @@ def test_job_closed_is_a_board_error():
     assert issubclass(JobClosed, BoardError)
 
 
-def test_key_errors_are_reported_before_job_closed(board):
+def test_a_reopened_job_still_refuses_a_repeated_application(board):
     board.close_job("j1")
-    with pytest.raises(KeyError):
-        board.apply("cat", "j1")
-    with pytest.raises(KeyError):
-        board.apply("ann", "j9")
-
-
-def test_job_closed_is_reported_before_a_repeated_application(board):
-    board.close_job("j1")
-    with pytest.raises(JobClosed):
-        board.apply("ann", "j1")
     board.reopen_job("j1")
-    with pytest.raises(BoardError):
+    before = state(board)
+    with pytest.raises(BoardError) as info:
         board.apply("ann", "j1")
-    assert board.get_applicants("j1") == ["ann"]
+    assert not isinstance(info.value, JobClosed)
+    assert state(board) == before

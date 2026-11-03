@@ -13,7 +13,8 @@ investigated.
 - Unblocking restores the client's normal behavior. Successful requests made
   before the block still count in their window, so `get_remaining` goes back
   to what it would have been without the block.
-- `ClientBlocked` is checked after `KeyError` and before `RateLimited`.
+- Which error `request` raises for a blocked client that has also used up
+  its allowance in the current window is unspecified.
 - Blocking and unblocking do not change the time or the receipt numbers.
 
 All existing behavior must keep working.

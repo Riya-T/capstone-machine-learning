@@ -39,4 +39,4 @@ def test_tiers_must_be_non_empty_strings():
     with pytest.raises(ValueError):
         g.add_plan("basic", tier="")
     with pytest.raises(ValueError):
-        g.get_plans(tier=3)
+        g.get_plans(tier="")

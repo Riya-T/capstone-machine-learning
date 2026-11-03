@@ -11,6 +11,8 @@ Usage:
     tracker.add_user("bob")
     tracker.record_iou("alice", "bob", 500)
     tracker.settle("bob", [("alice", 200)])
+    tracker.get_owed("alice", "bob")  # 300
+    tracker.get_total_lent("alice")  # 300: the totals follow get_owed
 """
 
 
@@ -63,21 +65,22 @@ class IouTracker:
         for lender, amount in payments:
             self._owed[(lender, borrower)] -= amount
 
-    def get_owed_to(self, name):
-        self._require(name)
-        debts = [(b, amt) for (l, b), amt in self._owed.items() if l == name and amt > 0]
-        return self._largest_first(debts)
+    def get_owed(self, lender, borrower):
+        self._require(lender)
+        self._require(borrower)
+        return self._owed.get((lender, borrower), 0)
 
-    def get_owed_by(self, name):
-        self._require(name)
-        debts = [(l, amt) for (l, b), amt in self._owed.items() if b == name and amt > 0]
-        return self._largest_first(debts)
+    def get_debts(self):
+        debts = [(l, b, amt) for (l, b), amt in self._owed.items() if amt > 0]
+        return sorted(debts, key=lambda d: -d[2])
 
-    def get_balance(self, name):
+    def get_total_lent(self, name):
         self._require(name)
-        owed_to = sum(amt for _, amt in self.get_owed_to(name))
-        owed_by = sum(amt for _, amt in self.get_owed_by(name))
-        return owed_to - owed_by
+        return sum(amt for (lender, _), amt in self._owed.items() if lender == name)
+
+    def get_total_borrowed(self, name):
+        self._require(name)
+        return sum(amt for (_, borrower), amt in self._owed.items() if borrower == name)
 
     def get_history(self, name):
         self._require(name)
@@ -90,6 +93,3 @@ class IouTracker:
         # Non-str names are never stored, so they count as "not a user" too.
         if not isinstance(name, str) or name not in self._users:
             raise KeyError(name)
-
-    def _largest_first(self, debts):
-        return sorted(debts, key=lambda d: (-d[1], self._users.index(d[0])))

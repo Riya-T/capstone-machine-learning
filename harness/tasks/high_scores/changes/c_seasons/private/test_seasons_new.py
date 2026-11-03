@@ -8,7 +8,7 @@ Usage (with scores.py importable, e.g. in the sandbox):
 import pytest
 from scores import ScoreBoard, ScoreError
 
-BAD_SEASON_NAMES = ["", None, 3]
+BAD_SEASON_NAMES = ["", None]
 
 
 @pytest.fixture
@@ -114,10 +114,3 @@ def test_leaderboard_is_filtered_by_season(board):
 def test_a_season_never_started_raises_key_error(board, call):
     with pytest.raises(KeyError):
         call(board)
-
-
-def test_errors_are_reported_in_order(board):
-    with pytest.raises(ValueError):
-        board.get_top_scores(0, season="winter")
-    with pytest.raises(KeyError):
-        board.get_scores("dan", season="winter")

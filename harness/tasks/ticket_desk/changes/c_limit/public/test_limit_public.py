@@ -12,13 +12,18 @@ from desk import AgentFull, TicketDesk
 def test_a_full_agent_takes_no_more_tickets():
     d = TicketDesk()
     d.add_agent("kim", limit=1)
+    d.add_agent("lee")
     d.open_ticket("T1", 1)
     d.open_ticket("T2", 1)
     d.assign("T1", "kim")
     with pytest.raises(AgentFull):
         d.assign("T2", "kim")
-    assert d.get_tickets("kim") == ["T1"]
-    assert d.get_status("T2") == "open"
+    assert d.get_queue("kim") == ["T1"]
+    d.assign("T2", "lee")
+    with pytest.raises(AgentFull):
+        d.reassign("T2", "kim")
+    assert d.get_queue("kim") == ["T1"]
+    assert d.get_queue("lee") == ["T2"]
     assert d.get_limit("kim") == 1
 
 
@@ -29,4 +34,4 @@ def test_agents_have_no_limit_by_default():
     for n in range(5):
         d.open_ticket(f"T{n}", 1)
         d.assign(f"T{n}", "kim")
-    assert len(d.get_tickets("kim")) == 5
+    assert len(d.get_queue("kim")) == 5

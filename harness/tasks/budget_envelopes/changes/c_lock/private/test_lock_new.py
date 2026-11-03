@@ -88,24 +88,6 @@ def test_locking_changes_no_money(budget):
     assert (budget.get_unassigned(), budget.get_balance("rent"), budget.get_balance("food")) == before
 
 
-def test_locked_is_reported_before_missing_money(budget):
-    budget.lock("food")  # food holds 0
-    with pytest.raises(EnvelopeLocked):
-        budget.spend("food", 1)
-    with pytest.raises(EnvelopeLocked):
-        budget.allocate("food", 10**6)
-
-
-def test_bad_input_is_reported_before_locked(budget):
-    budget.lock("rent")
-    with pytest.raises(ValueError):
-        budget.spend("rent", -1)
-    with pytest.raises(ValueError):
-        budget.allocate("rent", 0)
-    with pytest.raises(KeyError):
-        budget.spend("travel", 10)
-
-
 def test_an_unlocked_envelope_works_normally_again(budget):
     budget.lock("rent")
     budget.unlock("rent")

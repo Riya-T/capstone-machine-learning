@@ -92,16 +92,6 @@ def test_holding_keeps_mode_target_and_readings(stat):
     assert stat.get_reading("hall") == 18
 
 
-def test_bad_input_is_reported_before_the_hold(stat):
-    stat.hold("hall")
-    with pytest.raises(ValueError):
-        stat.set_target("hall", 21.5)
-    with pytest.raises(ValueError):
-        stat.set_mode("hall", "warm")
-    with pytest.raises(KeyError):
-        stat.set_target("garage", 21)
-
-
 def test_zone_held_is_a_thermostat_error():
     assert issubclass(ZoneHeld, ThermostatError)
 

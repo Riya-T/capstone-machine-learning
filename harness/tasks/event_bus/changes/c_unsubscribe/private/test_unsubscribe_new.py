@@ -74,10 +74,10 @@ def test_leaving_twice_raises_the_second_time(bus):
 
 
 @pytest.mark.parametrize("topic", ["payments", None, 1])
-def test_leaving_a_missing_topic_raises_key_error_first(bus, topic):
+def test_leaving_a_missing_topic_raises_key_error(bus, topic):
     before = state(bus)
     with pytest.raises(KeyError):
-        bus.unsubscribe(topic, "audit")  # not subscribed either: KeyError wins
+        bus.unsubscribe(topic, "audit")
     assert state(bus) == before
 
 

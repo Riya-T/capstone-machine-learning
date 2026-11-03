@@ -81,17 +81,6 @@ def test_moving_an_invalid_amount_is_rejected(budget, amount):
     assert state(budget) == before
 
 
-def test_move_error_order(budget):
-    with pytest.raises(KeyError):
-        budget.move("travel", "travel", -1)  # missing source before everything
-    with pytest.raises(KeyError):
-        budget.move("food", "travel", -1)  # missing destination before bad amount
-    with pytest.raises(ValueError):
-        budget.move("food", "food", -1)  # bad amount and same name: ValueError
-    with pytest.raises(ValueError):
-        budget.move("food", "food", 10**6)  # same name before missing money
-
-
 # --- allocate_many ----------------------------------------------------------
 
 
@@ -133,10 +122,3 @@ def test_allocate_many_fails_whole_on_a_bad_amount(budget, amount):
     with pytest.raises(ValueError):
         budget.allocate_many({"fun": 100, "rent": amount})
     assert state(budget) == before
-
-
-def test_allocate_many_error_order(budget):
-    with pytest.raises(KeyError):
-        budget.allocate_many({"fun": -1, "travel": 10**6})  # any missing name first
-    with pytest.raises(ValueError):
-        budget.allocate_many({"fun": 10**6, "rent": -1})  # bad amount before missing money

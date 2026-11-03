@@ -14,10 +14,6 @@ Usage:
 """
 
 
-class PantryError(Exception):
-    pass
-
-
 def check_quantity(quantity):
     if isinstance(quantity, bool) or not isinstance(quantity, int) or quantity <= 0:
         raise ValueError(f"quantity must be a positive int, got {quantity!r}")
@@ -30,7 +26,8 @@ def check_day(day):
 
 class Pantry:
     def __init__(self):
-        self._batches = {}  # name -> list of [use_by, quantity], in the order added
+        # name -> list of [use_by, left], in the order added; batches are never removed
+        self._batches = {}
         self._minimums = {}  # name -> minimum stock; missing means 0
 
     def add_item(self, name, quantity, use_by):
@@ -43,32 +40,30 @@ class Pantry:
     def use_item(self, name, quantity):
         self._require(name)
         check_quantity(quantity)
-        if quantity > self.get_quantity(name):
-            raise PantryError(f"only {self.get_quantity(name)} of {name!r} left")
-        left = quantity
-        for batch in self._earliest_first(name):
-            taken = min(batch[1], left)
-            batch[1] -= taken
-            left -= taken
-            if left == 0:
+        wanted = quantity
+        for batch in self._batches[name]:  # first in, first out
+            if wanted == 0:
                 break
-        self._batches[name] = [b for b in self._batches[name] if b[1] > 0]
+            taken = min(batch[1], wanted)
+            batch[1] -= taken
+            wanted -= taken
 
     def get_quantity(self, name):
         self._require(name)
-        return sum(quantity for _, quantity in self._batches[name])
+        return sum(left for _, left in self._batches[name])
 
     def get_batches(self, name):
         self._require(name)
-        return [(use_by, quantity) for use_by, quantity in self._earliest_first(name)]
+        return [(use_by, left) for use_by, left in self._batches[name]]
 
     def get_expiring_by(self, day):
         check_day(day)
-        return [
-            name
-            for name, batches in self._batches.items()
-            if any(use_by <= day for use_by, _ in batches)
-        ]
+        expiring = []
+        for name, batches in self._batches.items():
+            units = sum(left for use_by, left in batches if use_by <= day)
+            if units > 0:
+                expiring.append((name, units))
+        return expiring
 
     def get_items(self):
         return list(self._batches)
@@ -87,7 +82,7 @@ class Pantry:
             check_day(day)
         shopping = []
         for name, batches in self._batches.items():
-            stock = sum(q for use_by, q in batches if day is None or use_by >= day)
+            stock = sum(left for use_by, left in batches if day is None or use_by >= day)
             missing = self.get_minimum(name) - stock
             if missing > 0:
                 shopping.append((name, missing))
@@ -97,7 +92,3 @@ class Pantry:
         # Non-str names are never stored, so they count as "not an item" too.
         if not isinstance(name, str) or name not in self._batches:
             raise KeyError(name)
-
-    def _earliest_first(self, name):
-        # sorted() is stable, so batches with the same day keep their order.
-        return sorted(self._batches[name], key=lambda b: b[0])

@@ -8,7 +8,7 @@ Usage (with sessions.py importable, e.g. in the sandbox):
 import pytest
 from sessions import SessionError, SessionLimitReached, SessionManager, WrongPassword
 
-BAD_LIMITS = [-1, 1.5, "2", True, [2]]
+BAD_LIMITS = [-1, 1.5, "2", [2]]
 
 
 @pytest.fixture
@@ -97,40 +97,18 @@ def test_none_removes_the_limit(manager):
     assert len(manager.get_signed_in()) == 3
 
 
-def test_a_bad_limit_is_reported_before_the_count_check(manager):
-    manager.sign_in("alice", "pw")
-    manager.sign_in("bob", "pw")
-    with pytest.raises(ValueError):
-        manager.set_max_signed_in(-1)
-
-
-def test_other_errors_come_before_the_limit(manager):
-    manager.sign_in("alice", "pw")
-    manager.sign_in("bob", "pw")
-    with pytest.raises(KeyError):
-        manager.sign_in("dave", "pw")
-    with pytest.raises(WrongPassword):
-        manager.sign_in("carol", "wrong")
-    try:
-        manager.sign_in("alice", "pw")
-    except SessionLimitReached:
-        pytest.fail("already signed in should come before the limit")
-    except SessionError:
-        pass
-    assert manager.get_signed_in() == ["alice", "bob"]
-
-
 def test_a_refused_sign_in_leaves_earlier_failures_in_place(manager):
-    # The limit check comes last and changes nothing, so it must not reset
+    # A sign-in refused by the limit changes nothing, so it must not reset
     # the failed attempts a correct password would normally clear.
     manager.sign_in("alice", "pw")
-    manager.sign_in("bob", "pw")
     for _ in range(2):
         with pytest.raises(WrongPassword):
             manager.sign_in("carol", "wrong")
+    manager.sign_in("bob", "pw")
     with pytest.raises(SessionLimitReached):
         manager.sign_in("carol", "pw")
     assert manager.get_failed_attempts("carol") == 2
+    manager.sign_out("bob")
     with pytest.raises(WrongPassword):
         manager.sign_in("carol", "wrong")
     assert manager.is_locked("carol")

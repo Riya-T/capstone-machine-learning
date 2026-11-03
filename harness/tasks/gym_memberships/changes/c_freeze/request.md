@@ -7,13 +7,15 @@ or has stopped paying.
   member, or unfreezing one that is not frozen, does nothing.
 - Add `class MembershipFrozen(GymError)` to `gym.py`.
 - While a member is frozen, `check_in` and `change_plan` for that member
-  raise `MembershipFrozen` and change nothing. `MembershipFrozen` is checked
-  after every `KeyError` and `ValueError` check and before the `GymError`
-  for a repeated day or for the plan the member is already on.
+  raise `MembershipFrozen` and change nothing. When such a call also has
+  another problem (a plan that does not exist, an invalid or repeated day,
+  or the plan the member is already on), which error is raised is
+  unspecified.
 - `get_members` takes a new keyword argument `active_only=False`. With
   `active_only=True` frozen members are left out, with or without a
   `plan_id`. Otherwise frozen members are listed as before.
 - Freezing and unfreezing change nothing else: the member's plan and their
-  check-ins stay as they are.
+  check-ins stay as they are, and `get_plan` and `get_check_ins` still work
+  for a frozen member.
 
 All existing behavior must keep working.

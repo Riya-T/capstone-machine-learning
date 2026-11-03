@@ -110,18 +110,6 @@ def test_banning_keeps_earlier_messages(gateway):
     assert gateway.get_messages("alpha") == ["hello"]
 
 
-def test_bad_input_is_reported_before_the_ban(gateway):
-    gateway.ban("alpha")
-    with pytest.raises(KeyError):
-        gateway.send("delta", "hello")
-    with pytest.raises(KeyError):
-        gateway.allow("delta")
-    with pytest.raises(ValueError):
-        gateway.send("alpha", "")
-    with pytest.raises(ValueError):
-        gateway.send("alpha", None)
-
-
 def test_the_ban_is_reported_rather_than_access_denied(gateway):
     gateway.ban("charlie")
     with pytest.raises(ClientBanned):

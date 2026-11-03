@@ -64,17 +64,7 @@ def test_other_slots_still_sell_while_one_is_disabled(machine):
     assert machine.get_credit() == 400
 
 
-def test_disabled_is_reported_before_sold_out_and_credit(machine):
-    machine.add_slot("C3", 200)  # empty
-    machine.disable_slot("C3")
-    with pytest.raises(SlotDisabled):
-        machine.buy("C3")
-    machine.disable_slot("A1")  # stocked, but no credit
-    with pytest.raises(SlotDisabled):
-        machine.buy("A1")
-
-
-def test_a_missing_slot_is_reported_before_disabled(machine):
+def test_a_missing_slot_still_raises_key_error_while_another_is_disabled(machine):
     machine.disable_slot("A1")
     with pytest.raises(KeyError):
         machine.buy("Z9")

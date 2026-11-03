@@ -4,8 +4,9 @@ Split the scores in `scores.py` into seasons.
   called `"default"`. Every score is recorded into the season that is
   current at the time.
 - Add `ScoreBoard.start_season(season)`: makes `season` the new current
-  season. It must be a non-empty `str`, or `ValueError` is raised; a name
-  already used for a season (including `"default"`) raises `ScoreError`.
+  season. An empty string or `None` as the season raises `ValueError`; a
+  name already used for a season (including `"default"`) raises
+  `ScoreError`.
   Starting a season adds no players and changes no scores.
 - Add `ScoreBoard.get_seasons() -> list[str]`: every season in the order
   started, beginning with `"default"`. Add
@@ -19,7 +20,8 @@ Split the scores in `scores.py` into seasons.
   started raises `KeyError`.
 - Players are shared by all seasons: `get_players()` is unchanged, and
   `get_latest_score` still returns the most recent score of any season.
-- When a call has several problems, `KeyError` for the player comes first,
-  then `ValueError` for `n`, then `KeyError` for the season.
+- When a call has several problems, for example an unknown player or an
+  invalid `n` together with a season that was never started, which error
+  is raised is unspecified.
 
 All existing behavior must keep working.

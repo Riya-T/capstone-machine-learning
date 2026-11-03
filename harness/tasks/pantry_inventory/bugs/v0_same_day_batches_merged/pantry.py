@@ -1,9 +1,11 @@
 """Pantry inventory: how much of each item is in the pantry, in batches that
-each have a use-by day.
+each have a use-by day, used first in, first out. Used-up batches stay
+listed with 0 units left.
 
-Planted bug (initial version): using exactly everything that is left
-raises PantryError. The public checks never empty an item, so only the
-hidden initial tests catch it.
+Planted bug (initial version): add_item tops up an earlier batch with the
+same use-by day instead of adding a separate batch. The public checks never
+add two batches of an item with the same day, so only the hidden initial
+tests catch it.
 Never shown to the writer or the editor; validate-tasks checks that the
 tests catch it.
 
@@ -11,12 +13,9 @@ Usage:
     from pantry import Pantry
     pantry = Pantry()
     pantry.add_item("milk", 2, use_by=3)
-    pantry.use_item("milk", 1)
+    pantry.use_item("milk", 3)
+    pantry.get_batches("milk")  # [(3, 0)]: only 2 were left
 """
-
-
-class PantryError(Exception):
-    pass
 
 
 def check_quantity(quantity):
@@ -31,44 +30,48 @@ def check_day(day):
 
 class Pantry:
     def __init__(self):
-        self._batches = {}  # name -> list of [use_by, quantity], in the order added
+        # name -> list of [use_by, left], in the order added; batches are never removed
+        self._batches = {}
 
     def add_item(self, name, quantity, use_by):
         if not isinstance(name, str) or not name:
             raise ValueError("name must be a non-empty str")
         check_quantity(quantity)
         check_day(use_by)
-        self._batches.setdefault(name, []).append([use_by, quantity])
+        batches = self._batches.setdefault(name, [])
+        for batch in batches:
+            if batch[0] == use_by:  # same day: top up that batch
+                batch[1] += quantity
+                return
+        batches.append([use_by, quantity])
 
     def use_item(self, name, quantity):
         self._require(name)
         check_quantity(quantity)
-        if quantity >= self.get_quantity(name):
-            raise PantryError(f"only {self.get_quantity(name)} of {name!r} left")
-        left = quantity
-        for batch in self._earliest_first(name):
-            taken = min(batch[1], left)
-            batch[1] -= taken
-            left -= taken
-            if left == 0:
+        wanted = quantity
+        for batch in self._batches[name]:  # first in, first out
+            if wanted == 0:
                 break
-        self._batches[name] = [b for b in self._batches[name] if b[1] > 0]
+            taken = min(batch[1], wanted)
+            batch[1] -= taken
+            wanted -= taken
 
     def get_quantity(self, name):
         self._require(name)
-        return sum(quantity for _, quantity in self._batches[name])
+        return sum(left for _, left in self._batches[name])
 
     def get_batches(self, name):
         self._require(name)
-        return [(use_by, quantity) for use_by, quantity in self._earliest_first(name)]
+        return [(use_by, left) for use_by, left in self._batches[name]]
 
     def get_expiring_by(self, day):
         check_day(day)
-        return [
-            name
-            for name, batches in self._batches.items()
-            if any(use_by <= day for use_by, _ in batches)
-        ]
+        expiring = []
+        for name, batches in self._batches.items():
+            units = sum(left for use_by, left in batches if use_by <= day)
+            if units > 0:
+                expiring.append((name, units))
+        return expiring
 
     def get_items(self):
         return list(self._batches)
@@ -77,7 +80,3 @@ class Pantry:
         # Non-str names are never stored, so they count as "not an item" too.
         if not isinstance(name, str) or name not in self._batches:
             raise KeyError(name)
-
-    def _earliest_first(self, name):
-        # sorted() is stable, so batches with the same day keep their order.
-        return sorted(self._batches[name], key=lambda b: b[0])

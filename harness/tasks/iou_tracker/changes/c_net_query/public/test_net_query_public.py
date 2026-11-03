@@ -12,12 +12,12 @@ from ious import IouTracker
 @pytest.fixture
 def tracker():
     trk = IouTracker()
-    trk.add_user("alice")
-    trk.add_user("bob")
-    trk.add_user("carol")
+    for name in ["alice", "bob", "carol", "dave"]:
+        trk.add_user(name)
     trk.record_iou("alice", "bob", 1000)
     trk.record_iou("bob", "alice", 400)
     trk.record_iou("carol", "alice", 100)
+    trk.record_iou("alice", "dave", 150)
     return trk
 
 
@@ -27,12 +27,24 @@ def test_net_owed_cancels_the_two_directions(tracker):
     assert tracker.get_net_owed("alice", "carol") == -100
 
 
-def test_net_owed_to_lists_only_users_who_owe_on_net(tracker):
-    assert tracker.get_net_owed_to("alice") == [("bob", 600)]
-    assert tracker.get_net_owed_to("bob") == []
-    assert tracker.get_owed_to("bob") == [("alice", 400)]
+def test_net_debts_list_each_pair_once(tracker):
+    assert tracker.get_net_debts() == [
+        ("alice", "bob", 600),
+        ("alice", "dave", 150),
+        ("carol", "alice", 100),
+    ]
+    assert tracker.get_debts() == [
+        ("alice", "bob", 1000),
+        ("bob", "alice", 400),
+        ("alice", "dave", 150),
+        ("carol", "alice", 100),
+    ]
 
 
-def test_debtors_and_creditors_come_from_the_balances(tracker):
-    assert tracker.get_debtors() == ["bob"]
+def test_debtors_and_creditors_come_from_the_net_positions(tracker):
+    # lent minus borrowed: alice 1150 - 500 = 650, bob 400 - 1000 = -600,
+    # carol 100 - 0 = 100, dave 0 - 150 = -150
+    assert tracker.get_total_lent("alice") == 1150
+    assert tracker.get_total_borrowed("alice") == 500
+    assert tracker.get_debtors() == ["bob", "dave"]
     assert tracker.get_creditors() == ["alice", "carol"]

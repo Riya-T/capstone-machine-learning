@@ -22,19 +22,30 @@ def tracker():
     return trk
 
 
+def totals(trk, name):
+    return (trk.get_total_lent(name), trk.get_total_borrowed(name))
+
+
 def state(trk):
+    users = trk.get_users()
     return {
-        u: (trk.get_balance(u), trk.get_owed_to(u), trk.get_owed_by(u), trk.get_history(u))
-        for u in trk.get_users()
+        "debts": trk.get_debts(),
+        "owed": {(l, b): trk.get_owed(l, b) for l in users for b in users if l != b},
+        "users": {u: (totals(trk, u), trk.get_history(u)) for u in users},
     }
 
 
 def test_forgiving_returns_the_amount_and_lowers_the_debt(tracker):
     assert tracker.forgive_last("alice", "bob") == 200
-    assert tracker.get_owed_to("alice") == [("bob", 300), ("carol", 100)]
-    assert tracker.get_owed_by("bob") == [("alice", 300)]
-    assert tracker.get_balance("alice") == 350
-    assert tracker.get_balance("bob") == -250
+    assert tracker.get_owed("alice", "bob") == 300
+    assert tracker.get_debts() == [
+        ("alice", "bob", 300),
+        ("alice", "carol", 100),
+        ("bob", "alice", 50),
+    ]
+    assert totals(tracker, "alice") == (400, 50)
+    assert totals(tracker, "bob") == (50, 300)
+    assert totals(tracker, "carol") == (0, 100)
 
 
 def test_the_cancelled_iou_leaves_both_histories(tracker):
@@ -51,16 +62,17 @@ def test_the_cancelled_iou_leaves_both_histories(tracker):
 def test_forgiving_again_cancels_the_next_most_recent_iou(tracker):
     tracker.forgive_last("alice", "bob")
     assert tracker.forgive_last("alice", "bob") == 300
-    assert tracker.get_owed_to("alice") == [("carol", 100)]
-    assert tracker.get_owed_by("bob") == []
+    assert tracker.get_owed("alice", "bob") == 0
+    assert tracker.get_debts() == [("alice", "carol", 100), ("bob", "alice", 50)]
     assert tracker.get_history("bob") == [("bob", "alice", 50)]
 
 
 def test_the_other_direction_is_never_touched(tracker):
     tracker.forgive_last("alice", "bob")
     tracker.forgive_last("alice", "bob")
-    assert tracker.get_owed_to("bob") == [("alice", 50)]
-    assert tracker.get_owed_by("alice") == [("bob", 50)]
+    assert tracker.get_owed("bob", "alice") == 50
+    assert totals(tracker, "bob") == (50, 0)
+    assert totals(tracker, "alice") == (100, 50)
     before = state(tracker)
     with pytest.raises(IouError):
         tracker.forgive_last("alice", "bob")
@@ -69,10 +81,11 @@ def test_the_other_direction_is_never_touched(tracker):
 
 def test_forgiving_picks_the_right_pair(tracker):
     assert tracker.forgive_last("alice", "carol") == 100
-    assert tracker.get_owed_to("alice") == [("bob", 500)]
+    assert tracker.get_owed("alice", "carol") == 0
+    assert tracker.get_debts() == [("alice", "bob", 500), ("bob", "alice", 50)]
     assert tracker.get_history("carol") == []
     assert tracker.forgive_last("bob", "alice") == 50
-    assert tracker.get_owed_by("alice") == []
+    assert tracker.get_debts() == [("alice", "bob", 500)]
 
 
 def test_forgiving_with_no_iou_between_the_pair_changes_nothing(tracker):
@@ -87,13 +100,14 @@ def test_forgiving_with_no_iou_between_the_pair_changes_nothing(tracker):
 def test_a_new_iou_after_forgiving_can_be_forgiven_too(tracker):
     tracker.forgive_last("alice", "carol")
     tracker.record_iou("alice", "carol", 40)
+    assert tracker.get_history("carol") == [("alice", "carol", 40)]
     assert tracker.forgive_last("alice", "carol") == 40
-    assert tracker.get_owed_to("alice") == [("bob", 500)]
+    assert tracker.get_debts() == [("alice", "bob", 500), ("bob", "alice", 50)]
 
 
 @pytest.mark.parametrize(
     "lender, borrower",
-    [("dave", "bob"), ("alice", "dave"), (None, "bob"), ("alice", 1)],
+    [("dave", "bob"), ("alice", "dave"), (None, "bob")],
 )
 def test_names_that_are_not_users_raise_key_error(tracker, lender, borrower):
     before = state(tracker)
@@ -107,11 +121,6 @@ def test_forgiving_yourself_is_rejected(tracker):
     with pytest.raises(ValueError):
         tracker.forgive_last("alice", "alice")
     assert state(tracker) == before
-
-
-def test_an_unknown_user_is_reported_before_the_same_name_check(tracker):
-    with pytest.raises(KeyError):
-        tracker.forgive_last("dave", "dave")
 
 
 def test_the_same_name_is_reported_before_a_missing_iou(tracker):

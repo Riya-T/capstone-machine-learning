@@ -7,15 +7,15 @@ Let employees in `directory.py` go on leave.
   one who is not, does nothing.
 - Add `class OnLeave(DirectoryError)` to `directory.py`.
 - While an employee is on leave, `set_salary` for them raises `OnLeave` and
-  changes nothing. `OnLeave` is checked after the `KeyError` and
-  `ValueError` checks.
+  changes nothing.
 - `get_staff` takes a new keyword argument `include_on_leave=True`. With
   `include_on_leave=False` the employees on leave are left out and the rest
   keep their order. The argument must be a `bool`, or `ValueError` is
-  raised; it is checked after the `KeyError` for a department that does not
-  exist.
+  raised.
 - Leave changes nothing else: `get_salary` and `get_department` work as
   before for an employee on leave, and the employee is still counted as a
   member of their department.
+- Which error is raised when one call has several of these problems (for
+  example a bad salary for an employee on leave) is unspecified.
 
 All existing behavior must keep working.

@@ -7,8 +7,7 @@ cancelled by mistake.
 - `rollback` raises `KeyError` for an order that does not exist;
   `InvalidTransition` when the order is `"delivered"`, because a delivery
   cannot be undone; and `WorkflowError` when the order has no move left to
-  undo. Errors are checked in that order, and a call that raises changes
-  nothing.
+  undo. A call that raises changes nothing.
 - After a rollback the order behaves as if the undone move had never been
   made: `get_state` and `get_orders_in` show the restored state, and the
   order may move again along any allowed path from there. An order that

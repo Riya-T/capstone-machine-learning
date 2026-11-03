@@ -11,8 +11,8 @@ for example once the rent for the month is set aside.
   that is `allocate` and `spend`; any method added later that moves money
   must respect locks the same way. `get_balance` still works, and the
   envelope still appears in `get_envelopes`.
-- `EnvelopeLocked` is checked after every `KeyError` and `ValueError` check
-  and before `NotEnoughMoney`.
+- When a call to a locked envelope also has another problem, such as an
+  invalid amount or too little money, which error is raised is unspecified.
 - Locking and unlocking change no balance and not the unassigned money.
 
 All existing behavior must keep working.

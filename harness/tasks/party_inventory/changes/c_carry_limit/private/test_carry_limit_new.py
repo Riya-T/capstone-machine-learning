@@ -62,17 +62,6 @@ def test_too_heavy_is_a_party_error():
     assert issubclass(TooHeavy, PartyError)
 
 
-def test_too_heavy_comes_after_the_other_checks(party):
-    party.give_item("bo", "lamp")
-    with pytest.raises(KeyError):
-        party.give_item("cy", "sword")
-    with pytest.raises(KeyError):
-        party.give_item("bo", "anvil")
-    with pytest.raises(PartyError) as excinfo:
-        party.give_item("bo", "lamp")
-    assert not isinstance(excinfo.value, TooHeavy)
-
-
 def test_strength_is_reported_as_given(party):
     assert party.get_strength("ana") == 40
     assert party.get_strength("bo") == 10
@@ -117,17 +106,11 @@ def test_invalid_new_strengths_are_refused(party, strength):
     ],
 )
 def test_strength_calls_for_unknown_characters_raise_key_error(party, call):
+    before = state(party)
     with pytest.raises(KeyError):
         call(party)
-
-
-def test_set_strength_reports_errors_in_order(party):
-    party.give_item("ana", "sword")
-    with pytest.raises(KeyError):
-        party.set_strength("cy", -1)
-    with pytest.raises(ValueError):
-        party.set_strength("ana", -1)
-    assert party.get_strength("ana") == 40
+    assert state(party) == before
+    assert [party.get_strength(n) for n in NAMES] == [40, 10]
 
 
 def test_raising_strength_lets_a_refused_item_be_given(party):

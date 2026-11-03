@@ -1,7 +1,8 @@
 # Ticket desk
 
-Write a module `desk.py` that tracks support tickets, the agents who work on
-them, and which agent each ticket is assigned to.
+Write a module `desk.py` that tracks support tickets and the agents who work
+on them. Each agent has a queue: the tickets they are working on, in the
+order they got them.
 
 ## Interface
 
@@ -14,71 +15,110 @@ class TicketDesk:
     def add_agent(self, agent_id: str) -> None: ...
     def open_ticket(self, ticket_id: str, priority: int) -> None: ...
     def assign(self, ticket_id: str, agent_id: str) -> None: ...
+    def reassign(self, ticket_id: str, agent_id: str) -> None: ...
     def resolve(self, ticket_id: str) -> None: ...
-    def get_status(self, ticket_id: str) -> str: ...
     def get_priority(self, ticket_id: str) -> int: ...
-    def get_tickets(self, agent_id: str | None = None) -> list[str]: ...
+    def get_queue(self, agent_id: str) -> list[str]: ...
 ```
 
-A ticket's status is one of the strings `"open"`, `"assigned"` and
-`"resolved"`. A ticket is `"open"` when it is opened, becomes `"assigned"`
-when it is given to an agent, and becomes `"resolved"` when it is resolved.
+A ticket is opened with no agent. `assign` gives it to its first agent,
+`reassign` moves it from one agent to another, and `resolve` closes it,
+which takes it out of its agent's queue.
+
+## Unknown ids
+
+Every method except `add_agent` and `open_ticket` raises `KeyError` when it
+is given an agent id or a ticket id that the desk does not have, including
+values that are not strings at all, such as `None` or `1`.
 
 ## Agents
 
-- `add_agent(agent_id)` adds an agent. An empty id raises `ValueError`, and
-  adding an id that already exists raises `DeskError`.
-- Every other method that takes an `agent_id` raises `KeyError` when the
-  agent does not exist, including values that are not strings at all, such
-  as `1`.
+`add_agent(agent_id)` adds an agent with an empty queue. It raises:
+
+- `ValueError` if `agent_id` is an empty string;
+- `DeskError` if an agent with that id already exists.
+
+`get_queue(agent_id)` returns the ids of the tickets the agent has, in the
+order the agent got them. A ticket that is reassigned to the agent goes
+last, like one that was just assigned. An agent with no tickets gets `[]`.
 
 ## Tickets
 
-- `open_ticket(ticket_id, priority)` opens a ticket with status `"open"`.
-  An empty ticket id raises `ValueError`. The priority must be an `int`
-  greater than 0, or `ValueError` is raised. A ticket id that is already in
-  use raises `DeskError`. When a call has several problems, the first of
-  these is raised: `ValueError` for the ticket id, `ValueError` for the
-  priority, `DeskError` for the duplicate ticket.
-- `assign(ticket_id, agent_id)` gives the ticket to the agent and sets its
-  status to `"assigned"`. For example, after `open_ticket("T1", 2)` and
-  `assign("T1", "kim")`, `get_status("T1")` is `"assigned"` and
-  `get_tickets("kim")` is `["T1"]`.
-- A ticket that is already assigned can be reassigned to another agent,
-  which takes it away from the first one: after `assign("T1", "lee")`,
-  `get_tickets("kim")` is `[]` and `get_tickets("lee")` is `["T1"]`.
-  Assigning a ticket to the agent who already has it raises `DeskError`.
-  A resolved ticket cannot be assigned: that raises `DeskError`.
-- `resolve(ticket_id)` sets the status to `"resolved"`. Only an assigned
-  ticket can be resolved: resolving an open or an already resolved ticket
-  raises `DeskError`.
-- `get_status(ticket_id)` and `get_priority(ticket_id)` return the ticket's
-  current status and its priority.
-- Every method that takes a `ticket_id` other than `open_ticket` raises
-  `KeyError` when the ticket does not exist, including values that are not
-  strings at all, such as `None` or `1`.
+`open_ticket(ticket_id, priority)` opens a ticket with no agent. It raises:
 
-When `assign` has several problems, the first of these is raised: `KeyError`
-for the ticket, `KeyError` for the agent, `DeskError` for a resolved ticket,
-`DeskError` for the agent who already has it.
+- `ValueError` if `ticket_id` is an empty string;
+- `ValueError` if `priority` is not an `int` greater than 0, such as `0`,
+  `-2`, `1.5`, `"3"` or `None`;
+- `DeskError` if `ticket_id` is already in use.
 
-## Listing tickets
+When a call has several of these problems, the first one in this list is
+raised.
 
-- `get_tickets()` returns the ids of all tickets, in the order they were
-  opened, whatever their status.
-- `get_tickets(agent_id)` returns the agent's queue: the same ids as
-  `get_tickets()`, in the same order, keeping only the tickets that are
-  assigned to that agent and not yet resolved. So if `T1` was opened before
-  `T3` but given to the agent after it, the queue is `["T1", "T3"]`. An
-  agent with nothing to do gets an empty list.
+`get_priority(ticket_id)` returns the ticket's priority.
 
-A failed call has no effect: if a method raises, every ticket, every status
-and every assignment is unchanged.
+## Assigning, reassigning and resolving
+
+`assign(ticket_id, agent_id)` gives a ticket that has no agent to the agent.
+The ticket goes at the end of the agent's queue. It raises:
+
+- `KeyError` if the ticket or the agent does not exist;
+- `DeskError` if the ticket already has an agent (`reassign` moves it).
+
+`reassign(ticket_id, agent_id)` moves a ticket from the agent who has it to
+`agent_id`. The ticket leaves the first agent's queue and goes at the end of
+the new agent's queue. It raises:
+
+- `KeyError` if the ticket or the agent does not exist;
+- `DeskError` if the ticket has no agent (`assign` gives it one);
+- `DeskError` if `agent_id` is the agent who already has the ticket.
+
+`resolve(ticket_id)` resolves a ticket that an agent has. The ticket leaves
+that agent's queue. It raises:
+
+- `KeyError` if the ticket does not exist;
+- `DeskError` if the ticket has no agent.
+
+A failed call has no effect: if a method raises, every ticket and every
+queue is unchanged.
+
+## Example
+
+```python
+desk = TicketDesk()
+desk.add_agent("kim")
+desk.add_agent("lee")
+desk.open_ticket("T1", 2)
+desk.open_ticket("T2", 5)
+desk.open_ticket("T3", 1)
+desk.assign("T3", "kim")
+desk.assign("T1", "kim")
+desk.get_queue("kim")       # ["T3", "T1"]: the order kim got them
+desk.assign("T1", "lee")    # raises DeskError: kim has T1
+desk.reassign("T2", "lee")  # raises DeskError: T2 has no agent
+desk.resolve("T2")          # raises DeskError: T2 has no agent
+desk.reassign("T3", "lee")
+desk.get_queue("kim")       # ["T1"]
+desk.get_queue("lee")       # ["T3"]
+desk.reassign("T3", "lee")  # raises DeskError: lee already has T3
+desk.assign("T2", "kim")
+desk.reassign("T3", "kim")
+desk.get_queue("kim")       # ["T1", "T2", "T3"]: T3 came back last
+desk.get_queue("lee")       # []
+desk.resolve("T1")
+desk.get_queue("kim")       # ["T2", "T3"]
+desk.get_priority("T2")     # 5
+desk.get_queue("max")       # raises KeyError: there is no agent max
+```
 
 ## Unspecified behavior
 
 Behavior not described here is unspecified, and no test depends on it. This
-includes ids that are not strings passed to `add_agent` or as the new id in
-`open_ticket`, `bool` priorities, what happens if a returned list is
-changed, the text of error messages, saving the desk to a file, and use from
-several threads.
+includes everything about a ticket after it is resolved, other than leaving
+its agent's queue: whether `get_priority` still returns its priority,
+whether `open_ticket` can use its id again, and what `assign`, `reassign`
+and `resolve` do with it. It also includes which error is raised when a call
+has both a `KeyError` problem and a `DeskError` problem (such as an unknown
+agent and a ticket that already has an agent), ids that are not strings
+passed to `add_agent` or as the new id in `open_ticket`, `bool` priorities,
+what happens if a returned list is changed, the text of error messages,
+saving the desk to a file, and use from several threads.

@@ -1,9 +1,10 @@
 Group the dishes in `orders.py` into courses, so the kitchen can see what a
 table has ordered for each course.
 
-- `add_dish` takes a new keyword argument `course="main"`. It must be a
-  non-empty string, or `ValueError` is raised and the dish is not added.
-  Like the other `ValueError` checks, this comes before the duplicate check.
+- `add_dish` takes a new keyword argument `course="main"`. An empty string
+  or `None` as the course raises `ValueError`, and the dish is not added.
+  When the course is invalid and the name is already on the menu, which of
+  the two errors is raised is unspecified.
 - Add `Restaurant.get_courses() -> list[str]`: every course that at least
   one dish on the menu belongs to, each listed once, in the order the
   courses first appeared on the menu.
@@ -14,7 +15,7 @@ table has ordered for each course.
 - Add `Restaurant.get_course_bill(table, course) -> int`: the sum of
   quantity times price over the dishes of that course in the table's
   order.
-- Both new table methods raise `KeyError` for a table that is not open,
-  then `KeyError` for a course that no dish on the menu belongs to.
+- Both new table methods raise `KeyError` for a table that is not open or
+  for a course that no dish on the menu belongs to.
 
 All existing behavior must keep working.

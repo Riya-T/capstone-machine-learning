@@ -2,11 +2,8 @@ Add per-stream quotas to `meter.py`, so a stream can be capped at a total
 number of bytes.
 
 - `open_stream` takes a new keyword argument `quota=None`. `None` means no
-  quota, as before. Otherwise it must be an `int` of 0 or more (not a
-  `bool`); anything else raises `ValueError` and no stream is opened. If
-  the id and the quota are both invalid, either `ValueError` may come
-  first; `MeterError` for an id already open is still raised after both
-  checks.
+  quota, as before. Otherwise it must be an `int` of 0 or more; anything
+  else raises `ValueError` and no stream is opened.
 - A quota is the most bytes the stream may move in total, reads and writes
   added together. A `record_read` or `record_write` whose size would take
   that total above the quota raises `QuotaExceeded` and changes nothing.
@@ -19,11 +16,15 @@ number of bytes.
   bytes moved so far, or `None` when the stream has no quota.
 - Add `IOMeter.set_quota(stream_id, quota)`, which replaces the quota
   (`None` removes it). It raises `KeyError` for a stream that is not open,
-  then `ValueError` for an invalid quota, then `MeterError` when the bytes
-  already moved are more than the new quota. In each case nothing changes.
+  `ValueError` for an invalid quota (the same rule as in `open_stream`), and
+  `MeterError` when the bytes already moved are more than the new quota. In
+  each case nothing changes.
 - `get_quota` and `get_quota_left` raise `KeyError` for a stream that is
   not open.
-- In `record_read` and `record_write`, `QuotaExceeded` is checked after
-  `KeyError` and `ValueError`.
+- When one call has several problems and at least one of them comes from
+  this change (an invalid quota, a quota that would be exceeded, or any
+  problem in `set_quota`), which error it raises is unspecified. For
+  example, `open_stream` with an id that is already open and an invalid
+  quota may raise either `MeterError` or `ValueError`.
 
 All existing behavior must keep working.

@@ -8,7 +8,7 @@ Usage (with gradebook.py importable, e.g. in the sandbox):
 import pytest
 from gradebook import Gradebook
 
-BAD_COUNTS = [-1, 1.5, "1", True, None]
+BAD_COUNTS = [-1, 1.5, "1", None]
 
 
 @pytest.fixture
@@ -126,13 +126,6 @@ def test_invalid_counts_are_rejected(book, method, count):
 def test_unknown_students_raise_key_error(book, method, name):
     with pytest.raises(KeyError):
         getattr(book, method)(name, 1)
-
-
-def test_an_unknown_student_is_reported_before_a_bad_count(book):
-    with pytest.raises(KeyError):
-        book.get_total_dropping("dan", -1)
-    with pytest.raises(KeyError):
-        book.get_dropped("dan", -1)
 
 
 def test_dropping_does_not_change_the_gradebook(book):

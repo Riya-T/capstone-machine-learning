@@ -12,7 +12,7 @@ reference: reference/v0
 planted_bugs:
   # Required: a bug only the hidden initial tests catch.
   - {path: bugs/v0_expiring_by_excludes_the_day, must_fail: [initial], must_pass: [public]}
-  - {path: bugs/v0_cannot_use_everything, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_same_day_batches_merged, must_fail: [initial], must_pass: [public]}
 
 changes:
   - id: c_expired

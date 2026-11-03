@@ -94,7 +94,7 @@ def test_cooking_one_recipe_can_make_another_uncookable(box):
     assert box.get_missing("omelette") == [("egg", 1)]
 
 
-@pytest.mark.parametrize("ingredient", ["", None, 3])
+@pytest.mark.parametrize("ingredient", ["", None])
 def test_invalid_pantry_ingredients_are_rejected(box, ingredient):
     with pytest.raises(ValueError):
         box.stock(ingredient, 10)
@@ -106,11 +106,6 @@ def test_invalid_pantry_quantities_are_rejected(box, quantity):
     with pytest.raises(ValueError):
         box.stock("flour", quantity)
     assert box.get_pantry() == []
-
-
-def test_a_bad_ingredient_is_reported_before_a_bad_pantry_quantity(box):
-    with pytest.raises(ValueError):
-        box.stock("", 0)
 
 
 @pytest.mark.parametrize(

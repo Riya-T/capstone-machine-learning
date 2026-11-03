@@ -92,7 +92,7 @@ def test_buying_later_adds_to_sector_holdings(folio):
     assert folio.get_sector_holdings("energy") == ["DELTA"]
 
 
-@pytest.mark.parametrize("sector", ["", None, 3])
+@pytest.mark.parametrize("sector", ["", None])
 def test_invalid_sector_names_are_rejected(folio, sector):
     with pytest.raises(ValueError):
         folio.set_sector("ACME", sector)
@@ -105,13 +105,7 @@ def test_invalid_symbols_are_rejected_by_sector_methods(folio, symbol):
         folio.set_sector(symbol, "tech")
     with pytest.raises(ValueError):
         folio.get_sector(symbol)
-
-
-def test_a_bad_symbol_is_reported_before_a_bad_sector(folio):
-    with pytest.raises(ValueError):
-        folio.set_sector("", "")
-    with pytest.raises(ValueError):
-        folio.set_sector(None, "")
+    assert folio.get_sectors() == []
 
 
 def test_unknown_sectors_raise_key_error(folio):

@@ -81,10 +81,19 @@ def test_leaderboard_follows_later_scores(board):
     assert board.get_leaderboard() == [("ana", 250), ("ben", 200)]
 
 
-@pytest.mark.parametrize("method", ["get_personal_best", "get_personal_best_count"])
+@pytest.mark.parametrize(
+    "method, errors",
+    [
+        # Not on the board and without scores: either error is allowed, as
+        # for get_latest_score.
+        ("get_personal_best", (KeyError, ScoreError)),
+        ("get_personal_best_count", KeyError),
+    ],
+    ids=["get_personal_best", "get_personal_best_count"],
+)
 @pytest.mark.parametrize("name", ["dan", None, 1])
-def test_unknown_players_raise_key_error(board, method, name):
-    with pytest.raises(KeyError):
+def test_unknown_players_raise_key_error(board, method, errors, name):
+    with pytest.raises(errors):
         getattr(board, method)(name)
 
 

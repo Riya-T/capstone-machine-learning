@@ -12,8 +12,9 @@ Add personal bests to `scores.py`.
   highest personal best first. Players with the same personal best keep the
   order they were added in. Players without scores are left out; an empty
   board gives `[]`.
-- `get_personal_best` and `get_personal_best_count` raise `KeyError` for a
-  name that is not on the board.
+- `get_personal_best_count` raises `KeyError` for a name that is not on the
+  board. For such a name `get_personal_best` may raise either `KeyError` or
+  `ScoreError`, as `get_latest_score` may.
 - These values are computed from the scores on the board at the time of the
   call. If the board lets scores be removed, a removed score counts as never
   having been recorded.

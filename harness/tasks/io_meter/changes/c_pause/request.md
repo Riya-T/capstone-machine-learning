@@ -10,8 +10,10 @@ swapped out.
   `StreamPaused` and change nothing, whatever the size, including 0. The
   reading methods (`get_bytes_read`, `get_bytes_written`, `get_op_counts`
   and any others) keep working on a paused stream.
-- `StreamPaused` is checked after every `KeyError` and `ValueError` check
-  and before any other `MeterError`.
+- When one call has several problems and one of them is a paused stream
+  (for example a bad size on a paused stream, or an operation on a paused
+  stream that would also go over its quota), which error it raises is
+  unspecified.
 - Pausing and resuming change no byte total and no operation count.
 
 All existing behavior must keep working.

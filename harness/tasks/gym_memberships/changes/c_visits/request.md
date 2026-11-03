@@ -6,8 +6,7 @@ actually used.
   check-ins recorded while the member was on that plan: a check-in belongs
   to the plan the member was on at the moment it was recorded, and a later
   `change_plan` does not move it. A plan the member has never been on gives
-  0. `KeyError` is raised for a member that does not exist, then `KeyError`
-  for a plan that does not exist.
+  0. `KeyError` is raised for a member or a plan that does not exist.
 - Add `Gym.get_plan_visits(plan_id) -> int`: the total number of check-ins
   recorded by any member while on that plan, including members who have
   since moved to another plan. `KeyError` for a plan that does not exist.

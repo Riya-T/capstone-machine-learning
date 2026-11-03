@@ -8,7 +8,7 @@ Usage (with thermostat.py importable, e.g. in the sandbox):
 import pytest
 from thermostat import Thermostat, ThermostatError
 
-BAD_BOUNDS = [(1.5, 25), (15, "25"), (None, 25), (True, 25), (15, False), (26, 25)]
+BAD_BOUNDS = [(1.5, 25), (15, "25"), (None, 25), (26, 25)]
 
 
 @pytest.fixture
@@ -107,17 +107,11 @@ def test_invalid_bounds_are_rejected(stat, low, high):
     assert state(stat) == before
 
 
-def test_bad_bounds_are_reported_before_the_target_check(stat):
-    stat.set_target("attic", 50)
-    with pytest.raises(ValueError):
-        stat.set_limits("attic", 30, 10)
-
-
 @pytest.mark.parametrize("zone", ["garage", None, 1])
 def test_limit_methods_need_an_added_zone(stat, zone):
+    before = state(stat)
     with pytest.raises(KeyError):
         stat.set_limits(zone, 10, 30)
-    with pytest.raises(KeyError):
-        stat.set_limits(zone, 30, 10)
+    assert state(stat) == before
     with pytest.raises(KeyError):
         stat.get_limits(zone)

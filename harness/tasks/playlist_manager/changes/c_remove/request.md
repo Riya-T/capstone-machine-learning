@@ -3,8 +3,8 @@ and from the whole library.
 
 - Add `MusicLibrary.remove_from_playlist(name, title)`. It takes the song
   out of that playlist; the other songs keep their order. It raises
-  `KeyError` for a playlist that does not exist, then `KeyError` for a song
-  that was never added, then `LibraryError` if the song is not in that
+  `KeyError` for a playlist that does not exist or a title that is not in
+  the library, and `LibraryError` if both exist but the song is not in that
   playlist. The song stays in the library, in every other playlist and in
   the queue.
 - Add `MusicLibrary.remove_song(title)`. It removes the song from the

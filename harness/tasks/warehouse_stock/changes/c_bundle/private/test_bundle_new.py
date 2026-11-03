@@ -92,15 +92,6 @@ def test_a_short_line_fails_the_whole_bundle_even_when_earlier_lines_fit(warehou
     assert warehouse.place_order("bolt", 1) == 1
 
 
-def test_bundle_errors_are_reported_in_order(warehouse):
-    with pytest.raises(KeyError):
-        warehouse.place_bundle([("bolt", 0), ("screw", -1), ("bolt", 1000)])
-    with pytest.raises(ValueError):
-        warehouse.place_bundle([("bolt", 0), ("bolt", 1000)])
-    with pytest.raises(ValueError):
-        warehouse.place_bundle([("bolt", 1000), ("bolt", 1)])
-
-
 def test_each_order_of_a_bundle_can_be_returned_on_its_own(warehouse):
     ids = warehouse.place_bundle([("bolt", 30), ("nut", 5)])
     warehouse.return_order(ids[1])

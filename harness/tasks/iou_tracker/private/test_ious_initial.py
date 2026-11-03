@@ -8,7 +8,7 @@ Usage (with ious.py importable, e.g. in the sandbox):
 import pytest
 from ious import IouError, IouTracker
 
-BAD_AMOUNTS = [0, -5, 1.5, "10", None]
+BAD_AMOUNTS = [0, -5]
 
 
 @pytest.fixture
@@ -20,21 +20,28 @@ def tracker():
     return trk
 
 
+def totals(trk, name):
+    return (trk.get_total_lent(name), trk.get_total_borrowed(name))
+
+
 def state(trk):
-    """Every debt and history, to check that a failed call changed nothing."""
+    """Every debt, total and history, to check that a failed call changed nothing."""
+    users = trk.get_users()
     return {
-        u: (trk.get_balance(u), trk.get_owed_to(u), trk.get_owed_by(u), trk.get_history(u))
-        for u in trk.get_users()
+        "debts": trk.get_debts(),
+        "owed": {(l, b): trk.get_owed(l, b) for l in users for b in users if l != b},
+        "users": {u: (totals(trk, u), trk.get_history(u)) for u in users},
     }
 
 
 # --- users ------------------------------------------------------------------
 
 
-def test_a_new_user_owes_nothing_and_is_owed_nothing(tracker):
-    assert tracker.get_balance("alice") == 0
-    assert tracker.get_owed_to("alice") == []
-    assert tracker.get_owed_by("alice") == []
+def test_a_new_user_has_no_ious(tracker):
+    assert totals(tracker, "alice") == (0, 0)
+    assert tracker.get_owed("alice", "bob") == 0
+    assert tracker.get_owed("bob", "alice") == 0
+    assert tracker.get_debts() == []
     assert tracker.get_history("alice") == []
 
 
@@ -45,11 +52,10 @@ def test_users_are_listed_in_the_order_added():
     assert trk.get_users() == ["carol", "alice", "bob"]
 
 
-@pytest.mark.parametrize("bad_name", [""])
-def test_invalid_names_are_rejected(bad_name):
+def test_an_empty_name_is_rejected():
     trk = IouTracker()
     with pytest.raises(ValueError):
-        trk.add_user(bad_name)
+        trk.add_user("")
     assert trk.get_users() == []
 
 
@@ -67,13 +73,14 @@ def test_adding_a_user_twice_is_rejected(tracker):
     [
         lambda trk: trk.record_iou("dave", "bob", 10),
         lambda trk: trk.record_iou("alice", "dave", 10),
-        lambda trk: trk.get_owed_to("dave"),
-        lambda trk: trk.get_owed_by("dave"),
-        lambda trk: trk.get_balance("dave"),
+        lambda trk: trk.get_owed("dave", "bob"),
+        lambda trk: trk.get_owed("alice", "dave"),
+        lambda trk: trk.get_total_lent("dave"),
+        lambda trk: trk.get_total_borrowed("dave"),
         lambda trk: trk.get_history("dave"),
-        lambda trk: trk.get_balance(None),
-        lambda trk: trk.get_balance(1),
-        lambda trk: trk.record_iou(None, "bob", 10),
+        lambda trk: trk.get_total_lent(None),
+        lambda trk: trk.get_total_borrowed(None),
+        lambda trk: trk.get_history(None),
     ],
 )
 def test_names_that_are_not_users_raise_key_error(tracker, call):
@@ -84,54 +91,50 @@ def test_names_that_are_not_users_raise_key_error(tracker, call):
     assert state(tracker) == before
 
 
-# --- ious -------------------------------------------------------------------
+# --- ious and debts ---------------------------------------------------------
 
 
 def test_ious_between_the_same_pair_add_up(tracker):
     tracker.record_iou("alice", "bob", 300)
     tracker.record_iou("alice", "bob", 200)
-    assert tracker.get_owed_to("alice") == [("bob", 500)]
-    assert tracker.get_owed_by("bob") == [("alice", 500)]
-    assert tracker.get_balance("alice") == 500
-    assert tracker.get_balance("bob") == -500
+    assert tracker.get_owed("alice", "bob") == 500
+    assert tracker.get_owed("bob", "alice") == 0
+    assert tracker.get_debts() == [("alice", "bob", 500)]
 
 
-def test_owed_to_lists_largest_amount_first(tracker):
+def test_users_with_no_ious_between_them_owe_nothing(tracker):
+    tracker.record_iou("alice", "bob", 300)
+    assert tracker.get_owed("bob", "alice") == 0
+    assert tracker.get_owed("alice", "carol") == 0
+    assert tracker.get_owed("carol", "bob") == 0
+
+
+def test_debts_list_the_largest_amount_first(tracker):
     tracker.record_iou("alice", "bob", 100)
-    tracker.record_iou("alice", "carol", 250)
-    assert tracker.get_owed_to("alice") == [("carol", 250), ("bob", 100)]
+    tracker.record_iou("carol", "alice", 250)
+    tracker.record_iou("bob", "carol", 175)
+    assert tracker.get_debts() == [
+        ("carol", "alice", 250),
+        ("bob", "carol", 175),
+        ("alice", "bob", 100),
+    ]
 
 
-def test_owed_by_lists_largest_amount_first_as_amounts_change(tracker):
+def test_debts_are_reordered_as_amounts_change(tracker):
     tracker.record_iou("carol", "alice", 300)
     tracker.record_iou("bob", "alice", 200)
-    assert tracker.get_owed_by("alice") == [("carol", 300), ("bob", 200)]
+    assert tracker.get_debts() == [("carol", "alice", 300), ("bob", "alice", 200)]
     tracker.record_iou("bob", "alice", 101)
-    assert tracker.get_owed_by("alice") == [("bob", 301), ("carol", 300)]
-
-
-def test_users_that_owe_nothing_are_not_listed(tracker):
-    tracker.record_iou("alice", "bob", 100)
-    assert tracker.get_owed_to("alice") == [("bob", 100)]
-    assert tracker.get_owed_by("carol") == []
-    assert tracker.get_owed_to("carol") == []
+    assert tracker.get_debts() == [("bob", "alice", 301), ("carol", "alice", 300)]
 
 
 def test_debts_in_the_two_directions_are_kept_apart(tracker):
     tracker.record_iou("alice", "bob", 1000)
     tracker.record_iou("bob", "alice", 400)
-    assert tracker.get_owed_to("alice") == [("bob", 1000)]
-    assert tracker.get_owed_by("alice") == [("bob", 400)]
-    assert tracker.get_owed_to("bob") == [("alice", 400)]
-    assert tracker.get_owed_by("bob") == [("alice", 1000)]
-
-
-def test_balance_can_be_negative(tracker):
-    tracker.record_iou("alice", "bob", 700)
-    tracker.record_iou("bob", "carol", 100)
-    assert tracker.get_balance("alice") == 700
-    assert tracker.get_balance("bob") == -600
-    assert tracker.get_balance("carol") == -100
+    tracker.record_iou("alice", "bob", 100)
+    assert tracker.get_owed("alice", "bob") == 1100
+    assert tracker.get_owed("bob", "alice") == 400
+    assert tracker.get_debts() == [("alice", "bob", 1100), ("bob", "alice", 400)]
 
 
 def test_a_user_cannot_owe_themselves(tracker):
@@ -151,16 +154,64 @@ def test_invalid_amounts_are_rejected(tracker, amount):
     assert state(tracker) == before
 
 
-def test_an_unknown_user_is_reported_before_a_bad_amount(tracker):
-    with pytest.raises(KeyError):
-        tracker.record_iou("dave", "bob", -1)
-    with pytest.raises(KeyError):
-        tracker.record_iou("alice", "dave", -1)
+# --- totals -----------------------------------------------------------------
 
 
-def test_an_unknown_user_is_reported_before_the_same_name_check(tracker):
-    with pytest.raises(KeyError):
-        tracker.record_iou("dave", "dave", 10)
+def test_totals_add_up_repeated_ious(tracker):
+    tracker.record_iou("alice", "bob", 300)
+    tracker.record_iou("alice", "bob", 200)
+    assert totals(tracker, "alice") == (500, 0)
+    assert totals(tracker, "bob") == (0, 500)
+    assert totals(tracker, "carol") == (0, 0)
+
+
+def test_totals_add_up_every_other_user(tracker):
+    tracker.record_iou("alice", "bob", 700)
+    tracker.record_iou("bob", "carol", 100)
+    tracker.record_iou("carol", "alice", 30)
+    tracker.record_iou("alice", "carol", 5)
+    assert totals(tracker, "alice") == (705, 30)
+    assert totals(tracker, "bob") == (100, 700)
+    assert totals(tracker, "carol") == (30, 105)
+
+
+def test_lent_and_borrowed_are_never_netted(tracker):
+    tracker.record_iou("alice", "bob", 1000)
+    tracker.record_iou("bob", "alice", 400)
+    assert totals(tracker, "alice") == (1000, 400)
+    assert totals(tracker, "bob") == (400, 1000)
+
+
+def test_the_example_from_the_spec(tracker):
+    tracker.record_iou("alice", "bob", 300)
+    tracker.record_iou("carol", "alice", 50)
+    tracker.record_iou("alice", "bob", 200)
+    tracker.record_iou("bob", "alice", 100)
+    assert tracker.get_owed("alice", "bob") == 500
+    assert tracker.get_owed("bob", "alice") == 100
+    assert tracker.get_owed("alice", "carol") == 0
+    assert tracker.get_debts() == [
+        ("alice", "bob", 500),
+        ("bob", "alice", 100),
+        ("carol", "alice", 50),
+    ]
+    assert [totals(tracker, u) for u in ["alice", "bob", "carol"]] == [
+        (500, 150),
+        (100, 500),
+        (50, 0),
+    ]
+    assert tracker.get_history("alice") == [
+        ("alice", "bob", 300),
+        ("carol", "alice", 50),
+        ("alice", "bob", 200),
+        ("bob", "alice", 100),
+    ]
+    assert tracker.get_history("bob") == [
+        ("alice", "bob", 300),
+        ("alice", "bob", 200),
+        ("bob", "alice", 100),
+    ]
+    assert tracker.get_history("carol") == [("carol", "alice", 50)]
 
 
 # --- history ----------------------------------------------------------------
@@ -186,7 +237,13 @@ def test_history_leaves_out_ious_between_other_users(tracker):
 
 def test_history_keeps_repeated_ious_separate(tracker):
     tracker.record_iou("alice", "bob", 100)
+    tracker.record_iou("carol", "bob", 40)
     tracker.record_iou("alice", "bob", 100)
+    assert tracker.get_history("bob") == [
+        ("alice", "bob", 100),
+        ("carol", "bob", 40),
+        ("alice", "bob", 100),
+    ]
     assert tracker.get_history("alice") == [("alice", "bob", 100), ("alice", "bob", 100)]
 
 
@@ -210,5 +267,8 @@ def test_trackers_do_not_share_users():
     first.record_iou("alice", "bob", 5)
     assert second.get_users() == []
     second.add_user("alice")
-    assert second.get_balance("alice") == 0
+    second.add_user("bob")
+    assert second.get_owed("alice", "bob") == 0
+    assert second.get_debts() == []
+    assert totals(second, "alice") == (0, 0)
     assert second.get_history("alice") == []

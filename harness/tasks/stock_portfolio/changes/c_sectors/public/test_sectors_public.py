@@ -20,13 +20,21 @@ def folio():
 
 
 def test_sector_holdings_list_held_symbols_in_that_sector(folio):
-    folio.set_sector("ACME", "industrials")
-    folio.set_sector("BOLT", "tech")
     folio.set_sector("CORE", "industrials")
+    folio.set_sector("BOLT", "tech")
+    folio.set_sector("ACME", "industrials")
     assert folio.get_sector("ACME") == "industrials"
     assert folio.get_sectors() == ["industrials", "tech"]
+    # In the order of get_holdings(), not the order the sectors were set.
     assert folio.get_sector_holdings("industrials") == ["ACME", "CORE"]
     assert folio.get_sector_holdings("tech") == ["BOLT"]
+
+
+def test_a_sector_no_symbol_has_any_more_is_not_listed(folio):
+    folio.set_sector("ACME", "industrials")
+    folio.set_sector("ACME", "tech")
+    assert folio.get_sector("ACME") == "tech"
+    assert folio.get_sectors() == ["tech"]
 
 
 def test_a_sector_nobody_uses_raises_key_error(folio):

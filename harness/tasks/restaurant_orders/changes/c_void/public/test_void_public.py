@@ -22,6 +22,19 @@ def test_voiding_removes_the_most_recent_order():
     assert r.get_voided("t1") == [("steak", 1)]
 
 
+def test_voiding_takes_back_one_call_not_the_whole_dish():
+    r = Restaurant()
+    r.add_dish("soup", 650)
+    r.add_dish("cake", 700)
+    r.open_table("t1")
+    r.order("t1", "soup", 1)
+    r.order("t1", "cake", 2)
+    r.order("t1", "soup", 3)
+    assert r.void_last("t1") == ("soup", 3)
+    assert r.get_order("t1") == [("soup", 1), ("cake", 2)]
+    assert r.get_bill("t1") == 650 + 1400
+
+
 def test_nothing_left_to_void_raises():
     r = Restaurant()
     r.open_table("t1")

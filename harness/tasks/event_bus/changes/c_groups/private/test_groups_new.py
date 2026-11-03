@@ -42,7 +42,7 @@ def test_a_fresh_group_is_empty_and_listed_in_creation_order(bus):
     assert bus.publish_group("ops", "hello") == 0
 
 
-@pytest.mark.parametrize("bad", ["", None, 4])
+@pytest.mark.parametrize("bad", ["", None])
 def test_bad_group_names_are_rejected(bus, bad):
     with pytest.raises(ValueError):
         bus.add_group(bad)
@@ -124,8 +124,6 @@ def test_group_publish_rejects_bad_messages(bus, bad):
     with pytest.raises(ValueError):
         bus.publish_group("money", bad)
     assert state(bus) == before
-    with pytest.raises(KeyError):
-        bus.publish_group("people", bad)  # the missing group wins
 
 
 def test_group_subscribers_are_distinct_in_first_appearance_order(bus):

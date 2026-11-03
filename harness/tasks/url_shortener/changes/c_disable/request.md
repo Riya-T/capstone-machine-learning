@@ -6,8 +6,7 @@ example while a campaign is paused.
   `Shortener.is_enabled(code) -> bool`. All three raise `KeyError` for a code
   that does not exist. New links are enabled. Disabling a disabled link, or
   enabling an enabled one, does nothing.
-- `visit` on a disabled link raises `LinkDisabled` and records no hit. In
-  `visit`, `KeyError` is checked before `LinkDisabled`.
+- `visit` on a disabled link raises `LinkDisabled` and records no hit.
 - Every other method treats a disabled link like any other: `get_target`,
   `get_hits` and `set_target` keep working, and the code still appears in
   `get_codes` and `get_most_visited`.

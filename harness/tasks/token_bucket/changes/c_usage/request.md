@@ -7,13 +7,17 @@ made its requests.
 - Add `RateLimiter.get_usage(client_id, start, end) -> int`: the number of
   successful requests the client made at a time `t` with
   `start <= t < end`.
-- Add `RateLimiter.get_active_clients(start, end) -> list[str]`: the ids of
-  the clients that made at least one successful request at a time `t` with
-  `start <= t < end`, in the order the clients were added.
-- `start` and `end` must each be an `int` that is 0 or more (not a `bool`),
-  and `start` must not be greater than `end`; otherwise `ValueError` is
-  raised. A range with `start == end` contains no times. `KeyError` for a
-  client that is not registered is raised before any `ValueError`.
+- Add `RateLimiter.get_active_clients(start, end) -> list[str]`: the same
+  ids as `get_clients()`, in the same order, keeping only the clients that
+  made at least one successful request at a time `t` with
+  `start <= t < end`. For example, if `alice`, `bob` and `carol` were added
+  in that order and only `carol` and then `alice` made requests in the
+  range, the result is `["alice", "carol"]`.
+- `start` and `end` must each be an `int` that is 0 or more, and `start`
+  must not be greater than `end`; otherwise `ValueError` is raised. A range
+  with `start == end` contains no times. Which error `get_usage` raises
+  for a client that is not registered when the range is also invalid is
+  unspecified.
 - Only successful requests appear in these queries. A `request` call that
   raised is never counted, whatever the reason it raised.
 

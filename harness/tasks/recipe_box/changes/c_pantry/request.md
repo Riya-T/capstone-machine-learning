@@ -2,10 +2,10 @@ Add a pantry to `recipes.py`, so the box can tell which recipes can be
 cooked with what is in stock.
 
 - Add `RecipeBox.stock(ingredient, quantity)`, which adds `quantity` of the
-  ingredient to the pantry. The ingredient must be a non-empty string and
-  the quantity an `int` greater than 0, or `ValueError` is raised (the
-  ingredient is checked first). The pantry is independent of the recipes:
-  stocking an ingredient no recipe uses is fine.
+  ingredient to the pantry. An empty string or `None` as the ingredient, or
+  a quantity that is not an `int` greater than 0, raises `ValueError`; if
+  both are invalid, either `ValueError` may come first. The pantry is
+  independent of the recipes: stocking an ingredient no recipe uses is fine.
 - Add `RecipeBox.get_pantry() -> list[tuple[str, int]]`: every stocked
   ingredient with the quantity currently in the pantry, in the order the
   ingredients were first stocked. An ingredient stays listed when its
@@ -20,7 +20,7 @@ cooked with what is in stock.
   with nothing missing, in the order the recipes were added. A recipe
   without ingredients is always cookable.
 - Add `RecipeBox.cook(recipe)`, which takes the recipe's ingredients out of
-  the pantry. Raises `KeyError` for a recipe that does not exist, then
+  the pantry. Raises `KeyError` for a recipe that does not exist and
   `RecipeError` if anything is missing. A failed call changes nothing. The
   recipe itself is unchanged by cooking.
 

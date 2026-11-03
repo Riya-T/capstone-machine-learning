@@ -8,7 +8,7 @@ Usage (with limiter.py importable, e.g. in the sandbox):
 import pytest
 from limiter import ClientBlocked, RateLimited, RateLimiter
 
-BAD_BOUNDS = [-1, 1.5, "3", True, None]
+BAD_BOUNDS = [-1, 1.5, "3", None]
 
 
 @pytest.fixture
@@ -89,11 +89,6 @@ def test_a_start_after_the_end_is_rejected(limiter):
         limiter.get_usage("alice", 6, 5)
     with pytest.raises(ValueError):
         limiter.get_active_clients(6, 5)
-
-
-def test_unknown_client_is_reported_before_bad_bounds(limiter):
-    with pytest.raises(KeyError):
-        limiter.get_usage("dave", 6, 5)
 
 
 def test_refused_requests_never_appear(limiter):

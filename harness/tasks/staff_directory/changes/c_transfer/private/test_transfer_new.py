@@ -8,7 +8,7 @@ Usage (with directory.py importable, e.g. in the sandbox):
 import pytest
 from directory import DepartmentFull, Directory, DirectoryError
 
-BAD_CAPS = [-1, 1.5, "2", True, None]
+BAD_CAPS = [-1, 1.5, "2", None]
 
 
 @pytest.fixture
@@ -117,20 +117,6 @@ def test_an_employee_already_in_the_department_blocks_the_transfer(directory):
     assert state(directory) == before
 
 
-def test_transfer_errors_are_reported_in_order(directory):
-    directory.set_cap("ops", 1)
-    with pytest.raises(KeyError):
-        directory.transfer([], "hr")  # missing department before empty list
-    with pytest.raises(ValueError):
-        directory.transfer(["eve", "eve"], "ops")  # repeated ids before unknown id
-    with pytest.raises(KeyError):
-        directory.transfer(["dan", "eve"], "ops")  # unknown id before already there
-    with pytest.raises(DirectoryError) as info:
-        directory.transfer(["ana", "dan"], "ops")  # already there before the cap
-    assert not isinstance(info.value, DepartmentFull)
-    assert state(directory)[0] == {"sales": ["ana", "ben", "cho"], "ops": ["dan"], "legal": []}
-
-
 # --- caps and hiring ----------------------------------------------------------
 
 
@@ -149,15 +135,6 @@ def test_hiring_up_to_the_cap_is_allowed_and_then_refused(directory):
     assert state(directory) == before
     with pytest.raises(KeyError):
         directory.get_salary("fay")
-
-
-def test_the_cap_is_checked_after_the_other_hire_errors(directory):
-    directory.set_cap("ops", 1)
-    with pytest.raises(ValueError):
-        directory.hire("eve", "ops", -1)
-    with pytest.raises(DirectoryError) as info:
-        directory.hire("ana", "ops", 100000)
-    assert not isinstance(info.value, DepartmentFull)
 
 
 def test_setting_a_cap_again_replaces_it(directory):
@@ -189,11 +166,12 @@ def test_invalid_caps_are_rejected(directory, cap):
     assert directory.get_staff("ops") == ["dan", "eve"]
 
 
-def test_set_cap_errors_are_reported_in_order(directory):
+@pytest.mark.parametrize("department", ["hr", None, 1])
+def test_set_cap_on_a_missing_department_raises_key_error(directory, department):
+    before = state(directory)
     with pytest.raises(KeyError):
-        directory.set_cap("hr", -1)
-    with pytest.raises(ValueError):
-        directory.set_cap("sales", -1)  # bad cap before "too many staff"
+        directory.set_cap(department, 5)
+    assert state(directory) == before
 
 
 def test_department_full_is_a_directory_error():

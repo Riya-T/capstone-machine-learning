@@ -86,13 +86,6 @@ def test_unknown_players_raise_key_error(board, name):
     assert state(board) == before
 
 
-def test_errors_are_reported_in_order(board):
-    with pytest.raises(KeyError):
-        board.remove_score("dan", -1)
-    with pytest.raises(ValueError):
-        board.remove_score("ben", -1)  # ben has no -1 either, but the value is bad first
-
-
 def test_undo_last_score_works_across_players(board):
     assert board.undo_last_score() == ("ana", 300)
     assert board.undo_last_score() == ("ana", 120)

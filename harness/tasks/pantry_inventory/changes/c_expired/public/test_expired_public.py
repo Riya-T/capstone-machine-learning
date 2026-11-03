@@ -6,7 +6,7 @@ Usage (with pantry.py importable, e.g. in the sandbox):
 """
 
 import pytest
-from pantry import Pantry, PantryError
+from pantry import Pantry
 
 
 @pytest.fixture
@@ -29,10 +29,8 @@ def test_moving_the_day_on_expires_earlier_batches(pantry):
 
 def test_expired_batches_cannot_be_used(pantry):
     pantry.set_day(5)
-    with pytest.raises(PantryError):
-        pantry.use_item("milk", 6)
-    pantry.use_item("milk", 5)
-    assert pantry.get_batches("milk") == [(3, 2)]
+    pantry.use_item("milk", 6)
+    assert pantry.get_batches("milk") == [(3, 2), (8, 0)]
 
 
 def test_discarding_removes_expired_batches(pantry):

@@ -1,20 +1,22 @@
 """Ticket desk: support tickets, agents, assignment and resolution.
 
-Planted bug (initial version): assigning a ticket to the agent who already
-has it is allowed instead of raising DeskError. The public checks never try
-it, so only the hidden initial tests catch it. Never shown to the writer or
-the editor; validate-tasks checks that the tests catch it.
+Planted bug (initial version): reassigning a ticket to the agent who
+already has it is allowed instead of raising DeskError, and moves the ticket
+to the end of that agent's queue. The public checks never try it, so only
+the hidden initial tests catch it. Never shown to the writer or the editor;
+validate-tasks checks that the tests catch it.
 
 Usage:
     from desk import TicketDesk
     desk = TicketDesk()
     desk.add_agent("kim")
+    desk.add_agent("lee")
     desk.open_ticket("T1", 3)
     desk.assign("T1", "kim")
+    desk.reassign("T1", "lee")
     desk.resolve("T1")
+    desk.get_queue("lee")
 """
-
-OPEN, ASSIGNED, RESOLVED = "open", "assigned", "resolved"
 
 
 class DeskError(Exception):
@@ -34,20 +36,22 @@ def check_priority(priority):
 class Ticket:
     def __init__(self, priority):
         self.priority = priority
-        self.status = OPEN
-        self.agent = None  # the agent who has the ticket, once assigned
+        self.agent = None  # the agent who has the ticket, kept once it is resolved
+        # The spec leaves resolved tickets unspecified; this one keeps them and
+        # refuses to assign, reassign or resolve them again.
+        self.resolved = False
 
 
 class TicketDesk:
     def __init__(self):
-        self._agents = []  # agent ids in the order added
+        self._queues = {}  # agent id -> ticket ids, in the order the agent got them
         self._tickets = {}  # ticket id -> Ticket, in opening order
 
     def add_agent(self, agent_id):
         check_id(agent_id, "agent_id")
-        if agent_id in self._agents:
+        if agent_id in self._queues:
             raise DeskError(f"agent {agent_id!r} already exists")
-        self._agents.append(agent_id)
+        self._queues[agent_id] = []
 
     def open_ticket(self, ticket_id, priority):
         check_id(ticket_id, "ticket_id")
@@ -59,35 +63,42 @@ class TicketDesk:
     def assign(self, ticket_id, agent_id):
         ticket = self._require_ticket(ticket_id)
         self._require_agent(agent_id)
-        if ticket.status == RESOLVED:
+        if ticket.resolved:
             raise DeskError(f"ticket {ticket_id!r} is resolved")
+        if ticket.agent is not None:
+            raise DeskError(f"ticket {ticket_id!r} already has an agent; reassign it")
         ticket.agent = agent_id
-        ticket.status = ASSIGNED
+        self._queues[agent_id].append(ticket_id)
+
+    def reassign(self, ticket_id, agent_id):
+        ticket = self._require_ticket(ticket_id)
+        self._require_agent(agent_id)
+        if ticket.resolved:
+            raise DeskError(f"ticket {ticket_id!r} is resolved")
+        if ticket.agent is None:
+            raise DeskError(f"ticket {ticket_id!r} has no agent; assign it")
+        self._queues[ticket.agent].remove(ticket_id)
+        ticket.agent = agent_id
+        self._queues[agent_id].append(ticket_id)
 
     def resolve(self, ticket_id):
         ticket = self._require_ticket(ticket_id)
-        if ticket.status != ASSIGNED:
-            raise DeskError(f"ticket {ticket_id!r} is {ticket.status}, not assigned")
-        ticket.status = RESOLVED
-
-    def get_status(self, ticket_id):
-        return self._require_ticket(ticket_id).status
+        if ticket.resolved:
+            raise DeskError(f"ticket {ticket_id!r} is already resolved")
+        if ticket.agent is None:
+            raise DeskError(f"ticket {ticket_id!r} has no agent")
+        self._queues[ticket.agent].remove(ticket_id)
+        ticket.resolved = True
 
     def get_priority(self, ticket_id):
         return self._require_ticket(ticket_id).priority
 
-    def get_tickets(self, agent_id=None):
-        if agent_id is None:
-            return list(self._tickets)
+    def get_queue(self, agent_id):
         self._require_agent(agent_id)
-        return [
-            tid
-            for tid, t in self._tickets.items()
-            if t.agent == agent_id and t.status == ASSIGNED
-        ]
+        return list(self._queues[agent_id])
 
     def _require_agent(self, agent_id):
-        if not isinstance(agent_id, str) or agent_id not in self._agents:
+        if not isinstance(agent_id, str) or agent_id not in self._queues:
             raise KeyError(agent_id)
 
     def _require_ticket(self, ticket_id):

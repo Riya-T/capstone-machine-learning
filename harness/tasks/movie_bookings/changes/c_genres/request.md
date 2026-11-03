@@ -1,9 +1,9 @@
 Sort movies into genres in `bookings.py`.
 
-- `add_movie` takes a new keyword argument `genre="general"`. It must be a
-  non-empty string; anything else raises `ValueError` and no movie is added.
-  An invalid title is reported before an invalid genre, and an invalid genre
-  before a title that was already added.
+- `add_movie` takes a new keyword argument `genre="general"`. An empty
+  string or `None` as the genre raises `ValueError`, and no movie is added.
+  When an `add_movie` call has several problems and one of them is an
+  invalid genre, which error it raises is unspecified.
 - Add `BoxOffice.get_genre(title) -> str`, which returns the movie's genre.
   It raises `KeyError` for a title that was not added.
 - Add `BoxOffice.get_genres() -> list[str]`: every genre that at least one

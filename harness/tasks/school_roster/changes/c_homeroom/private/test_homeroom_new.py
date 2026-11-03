@@ -8,7 +8,7 @@ Usage (with roster.py importable, e.g. in the sandbox):
 import pytest
 from roster import Roster, RosterError
 
-BAD_ROOMS = ["", None, 3]
+BAD_ROOMS = ["", None]
 
 
 @pytest.fixture
@@ -103,11 +103,13 @@ def test_an_emptied_room_can_take_another_grade(roster):
 
 @pytest.mark.parametrize("name", ["zed", None, 7])
 def test_names_not_on_the_roster_raise_key_error(roster, name):
+    before = state(roster)
     with pytest.raises(KeyError):
-        roster.assign_homeroom(name, "east")
+        roster.assign_homeroom(name, "south")  # an empty room: no grade to clash with
     with pytest.raises(KeyError):
         roster.get_homeroom(name)
-    assert roster.get_homeroom_students("east") == ["ana", "ben"]
+    assert state(roster) == before
+    assert roster.get_homeroom_students("south") == []
 
 
 @pytest.mark.parametrize("room", BAD_ROOMS)
@@ -118,16 +120,6 @@ def test_invalid_rooms_are_rejected(roster, room):
     with pytest.raises(ValueError):
         roster.get_homeroom_students(room)
     assert state(roster) == before
-
-
-def test_an_unknown_name_is_reported_before_a_bad_room(roster):
-    with pytest.raises(KeyError):
-        roster.assign_homeroom("zed", "")
-
-
-def test_a_bad_room_is_reported_before_a_grade_mismatch(roster):
-    with pytest.raises(ValueError):
-        roster.assign_homeroom("dev", None)
 
 
 # --- moving grades ----------------------------------------------------------

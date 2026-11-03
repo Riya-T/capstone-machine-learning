@@ -131,10 +131,3 @@ def test_marking_records_no_score(book):
     with pytest.raises(GradebookError):
         book.get_score("ana", "essay")
     assert book.get_total("ana") == 0
-
-
-def test_an_unknown_student_is_reported_before_an_unknown_title(book):
-    with pytest.raises(KeyError):
-        book.mark_late("dan", "lab")
-    assert book.get_students() == ["ana", "ben"]
-    assert book.get_assignments() == ["quiz", "essay", "final"]

@@ -9,8 +9,8 @@ cannot change its setting while, for example, a room is being painted.
 - While a zone is held, `set_target` and `set_mode` raise `ZoneHeld` and
   change nothing. Readings are still recorded, and every method that only
   reads data keeps working.
-- `ZoneHeld` is raised after every `KeyError` and `ValueError` check that
-  the call already makes, and before any other `ThermostatError`.
+- Which error `set_target` or `set_mode` raises for a held zone when the
+  temperature or mode is also invalid is unspecified.
 - Holding and releasing do not change the zone's mode, target or readings.
 
 All existing behavior must keep working.

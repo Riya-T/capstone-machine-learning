@@ -3,8 +3,7 @@ taken over the day.
 
 - `Restaurant` takes a new keyword argument `service_percent=0`: the
   service charge as a whole percentage of what a table ordered. It must be
-  an `int` that is 0 or more (not a `bool`); anything else raises
-  `ValueError`.
+  an `int` that is 0 or more; anything else raises `ValueError`.
 - Add `Restaurant.get_subtotal(table) -> int`: the sum of quantity times
   price over the table's order, which is what `get_bill` returned until
   now.

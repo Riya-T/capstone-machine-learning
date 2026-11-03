@@ -8,7 +8,7 @@ Usage (with board.py importable, e.g. in the sandbox):
 import pytest
 from board import BoardError, JobBoard, LimitReached
 
-BAD_LIMITS = [0, -1, 2.5, "2", True]
+BAD_LIMITS = [0, -1, 2.5, "2"]
 NAMES = ["ann", "bob", "cat"]
 
 
@@ -106,27 +106,3 @@ def test_get_max_applicants_of_an_unknown_job_raises_key_error(board, job_id):
 
 def test_limit_reached_is_a_board_error():
     assert issubclass(LimitReached, BoardError)
-
-
-def test_a_bad_job_limit_is_reported_after_other_post_job_errors(board):
-    with pytest.raises(BoardError):
-        board.post_job("j1", "Role", 50000, max_applicants=0)
-    with pytest.raises(ValueError):
-        board.post_job("j4", "", 50000, max_applicants=0)
-    with pytest.raises(ValueError):
-        board.post_job("j4", "Role", -5, max_applicants=0)
-    assert board.get_jobs() == ["j1", "j2", "j3"]
-
-
-def test_limit_reached_is_reported_after_every_other_apply_error(board):
-    board.apply("ann", "j1")
-    board.apply("ann", "j2")
-    board.apply("bob", "j1")
-    with pytest.raises(KeyError):
-        board.apply("dan", "j1")
-    with pytest.raises(KeyError):
-        board.apply("ann", "j9")
-    with pytest.raises(BoardError) as info:
-        board.apply("ann", "j1")  # repeated, and both limits are reached
-    assert not isinstance(info.value, LimitReached)
-    assert board.get_applicants("j1") == ["ann", "bob"]

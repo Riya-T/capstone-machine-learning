@@ -54,8 +54,6 @@ def test_the_third_failure_locks_and_the_right_password_is_then_refused(manager)
     before = state(manager)
     with pytest.raises(AccountLocked):
         manager.sign_in("alice", "hunter2")
-    with pytest.raises(AccountLocked):
-        manager.sign_in("alice", "wrong")
     assert state(manager) == before  # a locked refusal is not a failed attempt
 
 
@@ -104,32 +102,6 @@ def test_unlock_on_an_unlocked_account_only_resets_the_count(manager):
 def test_lock_methods_reject_unregistered_users(manager, method, username):
     with pytest.raises(KeyError):
         getattr(manager, method)(username)
-
-
-def test_already_signed_in_is_reported_before_locked(manager):
-    manager.sign_in("bob", "secret")
-    fail(manager, "alice", 3)
-    # bob is signed in; alice is locked. Signing bob in again is the
-    # already-signed-in error, not a lock or a password problem.
-    try:
-        manager.sign_in("bob", "wrong")
-    except (WrongPassword, AccountLocked):
-        pytest.fail("already signed in should come first")
-    except SessionError:
-        pass
-    assert manager.get_failed_attempts("bob") == 0
-
-
-def test_locked_is_reported_before_the_password_check(manager):
-    fail(manager, "alice", 3)
-    with pytest.raises(AccountLocked):
-        manager.sign_in("alice", "wrong")
-    assert manager.get_failed_attempts("alice") == 3
-
-
-def test_unknown_user_is_reported_before_locked(manager):
-    with pytest.raises(KeyError):
-        manager.sign_in("carol", "wrong")
 
 
 def test_locking_does_not_touch_signed_in_users(manager):

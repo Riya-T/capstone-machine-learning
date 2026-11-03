@@ -65,20 +65,6 @@ def test_set_salary_on_leave_raises_and_changes_nothing(directory):
     assert state(directory) == before
 
 
-def test_a_bad_salary_is_reported_before_on_leave(directory):
-    directory.start_leave("ana")
-    with pytest.raises(ValueError):
-        directory.set_salary("ana", -1)
-    with pytest.raises(ValueError):
-        directory.set_salary("ana", "100")
-
-
-def test_an_unknown_employee_is_reported_before_anything_else(directory):
-    directory.start_leave("ana")
-    with pytest.raises(KeyError):
-        directory.set_salary("eve", -1)
-
-
 def test_ending_leave_allows_salary_changes_again(directory):
     directory.start_leave("ana")
     directory.end_leave("ana")
@@ -125,9 +111,9 @@ def test_the_include_flag_must_be_a_bool(directory, flag):
         directory.get_staff("sales", include_on_leave=flag)
 
 
-def test_a_missing_department_is_reported_before_a_bad_flag(directory):
+def test_a_missing_department_still_raises_key_error_with_the_flag(directory):
     with pytest.raises(KeyError):
-        directory.get_staff("hr", include_on_leave=None)
+        directory.get_staff("hr", include_on_leave=False)
 
 
 def test_on_leave_is_a_directory_error():

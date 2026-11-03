@@ -8,7 +8,7 @@ Usage (with desk.py importable, e.g. in the sandbox):
 import pytest
 from desk import AgentFull, DeskError, TicketDesk
 
-BAD_LIMITS = [-1, 1.5, "2", True, "none"]
+BAD_LIMITS = [-1, 1.5, "2", "none"]
 AGENTS = ["kim", "lee"]
 
 
@@ -23,9 +23,7 @@ def desk():
 
 
 def state(d):
-    tickets = {t: d.get_status(t) for t in d.get_tickets()}
-    queues = {a: (d.get_tickets(a), d.get_limit(a)) for a in AGENTS}
-    return tickets, queues
+    return {a: (list(d.get_queue(a)), d.get_limit(a)) for a in AGENTS}
 
 
 def test_the_limit_is_reported(desk):
@@ -36,11 +34,13 @@ def test_the_limit_is_reported(desk):
 def test_the_queue_can_be_filled_exactly_to_the_limit(desk):
     desk.assign("T1", "kim")
     desk.assign("T2", "kim")
-    assert desk.get_tickets("kim") == ["T1", "T2"]
+    assert desk.get_queue("kim") == ["T1", "T2"]
     before = state(desk)
     with pytest.raises(AgentFull):
         desk.assign("T3", "kim")
     assert state(desk) == before
+    desk.assign("T3", "lee")
+    assert desk.get_queue("lee") == ["T3"]
 
 
 def test_resolving_frees_room(desk):
@@ -48,27 +48,42 @@ def test_resolving_frees_room(desk):
     desk.assign("T2", "kim")
     desk.resolve("T1")
     desk.assign("T3", "kim")
-    assert desk.get_tickets("kim") == ["T2", "T3"]
+    assert desk.get_queue("kim") == ["T2", "T3"]
+
+
+def test_reassigning_to_a_full_agent_is_rejected(desk):
+    desk.assign("T1", "kim")
+    desk.assign("T2", "kim")
+    desk.assign("T3", "lee")
+    before = state(desk)
+    with pytest.raises(AgentFull):
+        desk.reassign("T3", "kim")
+    assert state(desk) == before
 
 
 def test_reassigning_away_frees_room_and_counts_for_the_receiver(desk):
     desk.set_limit("lee", 1)
     desk.assign("T1", "kim")
     desk.assign("T2", "kim")
-    desk.assign("T1", "lee")
+    desk.reassign("T1", "lee")
     desk.assign("T3", "kim")
-    assert desk.get_tickets("kim") == ["T2", "T3"]
-    assert desk.get_tickets("lee") == ["T1"]
+    assert desk.get_queue("kim") == ["T2", "T3"]
+    assert desk.get_queue("lee") == ["T1"]
     with pytest.raises(AgentFull):
-        desk.assign("T2", "lee")
-    assert desk.get_tickets("kim") == ["T2", "T3"]
+        desk.reassign("T2", "lee")
+    assert desk.get_queue("kim") == ["T2", "T3"]
+    assert desk.get_queue("lee") == ["T1"]
 
 
 def test_a_limit_of_zero_takes_nothing(desk):
     desk.add_agent("max", limit=0)
     with pytest.raises(AgentFull):
         desk.assign("T1", "max")
-    assert desk.get_status("T1") == "open"
+    assert desk.get_queue("max") == []
+    desk.assign("T1", "lee")
+    with pytest.raises(AgentFull):
+        desk.reassign("T1", "max")
+    assert desk.get_queue("lee") == ["T1"]
 
 
 @pytest.mark.parametrize("limit", BAD_LIMITS)
@@ -114,7 +129,7 @@ def test_set_limit_replaces_the_limit(desk):
     desk.set_limit("kim", None)
     assert desk.get_limit("kim") is None
     desk.assign("T4", "kim")
-    assert desk.get_tickets("kim") == ["T1", "T2", "T3", "T4"]
+    assert desk.get_queue("kim") == ["T1", "T2", "T3", "T4"]
 
 
 def test_a_limit_below_the_queue_size_is_rejected(desk):
@@ -135,19 +150,23 @@ def test_a_bad_limit_is_reported_before_the_queue_size_check(desk):
         desk.set_limit("kim", -1)
 
 
-def test_agent_full_is_checked_after_the_other_assign_errors(desk):
+def test_agent_full_is_checked_after_the_other_errors(desk):
     desk.assign("T1", "kim")
     desk.assign("T2", "kim")
     with pytest.raises(DeskError) as err:
-        desk.assign("T1", "kim")  # already has it
+        desk.assign("T1", "kim")  # already has an agent
     assert not isinstance(err.value, AgentFull)
-    desk.assign("T3", "lee")
-    desk.resolve("T3")
     with pytest.raises(DeskError) as err:
-        desk.assign("T3", "kim")  # resolved
+        desk.reassign("T1", "kim")  # kim already has it
+    assert not isinstance(err.value, AgentFull)
+    with pytest.raises(DeskError) as err:
+        desk.reassign("T3", "kim")  # no agent yet
     assert not isinstance(err.value, AgentFull)
     with pytest.raises(KeyError):
         desk.assign("T9", "kim")
+    with pytest.raises(KeyError):
+        desk.reassign("T9", "kim")
+    assert desk.get_queue("kim") == ["T1", "T2"]
 
 
 def test_agent_full_is_a_desk_error():

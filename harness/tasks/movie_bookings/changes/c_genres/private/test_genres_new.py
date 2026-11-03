@@ -73,7 +73,7 @@ def test_a_failed_booking_adds_nothing_to_the_genre_total(office):
     assert office.get_genre_seats_booked("crime") == 3
 
 
-@pytest.mark.parametrize("genre", ["", None, 5])
+@pytest.mark.parametrize("genre", ["", None])
 def test_invalid_genres_are_rejected(office, genre):
     with pytest.raises(ValueError):
         office.add_movie("Up", genre=genre)
@@ -88,17 +88,10 @@ def test_get_genre_of_an_unknown_title_raises_key_error(office):
         office.get_genre(None)
 
 
-def test_a_bad_title_is_reported_before_a_bad_genre(office):
-    with pytest.raises(ValueError):
-        office.add_movie("", genre=None)
-    assert office.get_genres() == ["scifi", "crime"]
-
-
-def test_a_bad_genre_is_reported_before_a_repeated_title(office):
-    with pytest.raises(ValueError):
-        office.add_movie("Dune", genre="")
-    assert office.get_genre("Dune") == "scifi"
+def test_a_repeated_title_with_a_new_genre_changes_nothing(office):
     with pytest.raises(BookingError):
         office.add_movie("Dune", genre="crime")
     assert office.get_genre("Dune") == "scifi"
     assert office.get_movies_in_genre("crime") == ["Heat"]
+    assert office.get_movies_in_genre("scifi") == ["Dune", "Alien"]
+    assert office.get_movies() == ["Dune", "Heat", "Alien"]

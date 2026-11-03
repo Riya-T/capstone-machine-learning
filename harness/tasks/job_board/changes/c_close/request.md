@@ -6,8 +6,9 @@ Let jobs in `board.py` be closed once the position is filled.
   reopening an open one, does nothing.
 - Add `class JobClosed(BoardError)` to `board.py`.
 - While a job is closed, `apply` to it raises `JobClosed` and changes
-  nothing. `JobClosed` is checked after both `KeyError` checks and before
-  the check for a repeated application.
+  nothing. When an `apply` call has several problems and one of them is a
+  closed job (for example a repeated application to a closed job), which
+  error it raises is unspecified.
 - A closed job keeps its applicants, is still listed by `get_jobs` and can
   still be read with `get_job`.
 - Add `JobBoard.get_open_jobs() -> list[str]`: the ids of the jobs that are

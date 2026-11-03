@@ -64,24 +64,6 @@ def test_a_plan_change_while_frozen_changes_nothing(gym):
     assert gym.get_members("basic") == ["ann"]
 
 
-def test_frozen_is_reported_before_a_repeated_day_or_same_plan(gym):
-    gym.freeze("ann")
-    with pytest.raises(MembershipFrozen):
-        gym.check_in("ann", 1)
-    with pytest.raises(MembershipFrozen):
-        gym.change_plan("ann", "basic")
-
-
-def test_bad_input_is_reported_before_frozen(gym):
-    gym.freeze("ann")
-    with pytest.raises(ValueError):
-        gym.check_in("ann", 0)
-    with pytest.raises(KeyError):
-        gym.change_plan("ann", "gold")
-    with pytest.raises(KeyError):
-        gym.check_in("cat", 1)
-
-
 def test_other_members_are_not_affected_by_a_freeze(gym):
     gym.freeze("ann")
     gym.check_in("ben", 1)

@@ -58,7 +58,7 @@ def test_a_visit_to_a_disabled_link_changes_nothing(links):
     assert links.get_hits("promo") == 1
 
 
-def test_a_missing_code_is_reported_before_disabled(links):
+def test_a_missing_code_still_raises_key_error_while_another_is_disabled(links):
     links.disable("promo")
     with pytest.raises(KeyError):
         links.visit("missing")

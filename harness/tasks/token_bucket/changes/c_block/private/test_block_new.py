@@ -89,14 +89,7 @@ def test_a_new_window_still_refreshes_a_blocked_client_once_unblocked(limiter):
     assert limiter.get_remaining("alice") == 3
 
 
-def test_blocked_is_reported_before_rate_limited(limiter):
-    limiter.request("bob")
-    limiter.block("bob")
-    with pytest.raises(ClientBlocked):
-        limiter.request("bob")
-
-
-def test_unknown_client_is_reported_before_blocked(limiter):
+def test_an_unknown_client_still_raises_key_error_while_another_is_blocked(limiter):
     limiter.block("alice")
     with pytest.raises(KeyError):
         limiter.request("carol")

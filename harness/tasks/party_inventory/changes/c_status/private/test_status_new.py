@@ -65,12 +65,12 @@ def test_unknown_effects_are_rejected(party, effect):
 @pytest.mark.parametrize("method", ["apply_effect", "remove_effect"])
 @pytest.mark.parametrize("name", ["cy", None, 2])
 def test_effects_on_unknown_characters_raise_key_error(party, method, name):
+    before = state(party)
     with pytest.raises(KeyError):
         getattr(party, method)(name, "stunned")
     with pytest.raises(KeyError):
-        getattr(party, method)(name, "asleep")
-    with pytest.raises(KeyError):
         party.get_effects(name)
+    assert state(party) == before
 
 
 def test_a_stunned_character_cannot_equip_or_unequip(party):
@@ -107,28 +107,6 @@ def test_effects_change_nothing_else_and_can_be_removed(party):
     party.remove_effect("ana", "stunned")
     party.equip("ana", "rope")
     assert party.get_equipped("ana") == ["sword", "rope"]
-
-
-def test_incapacitation_is_checked_before_other_party_errors(party):
-    party.apply_effect("ana", "petrified")
-    with pytest.raises(Incapacitated):
-        party.equip("ana", "rope")  # not held
-    with pytest.raises(Incapacitated):
-        party.equip("ana", "sword")  # already equipped
-    with pytest.raises(Incapacitated):
-        party.unequip("ana", "shield")  # not equipped
-    with pytest.raises(Incapacitated):
-        party.give_item("ana", "sword")  # already held
-
-
-def test_bad_input_is_reported_before_incapacitation(party):
-    party.apply_effect("ana", "petrified")
-    with pytest.raises(KeyError):
-        party.equip("ana", "anvil")
-    with pytest.raises(KeyError):
-        party.give_item("ana", None)
-    with pytest.raises(KeyError):
-        party.equip("cy", "sword")
 
 
 def test_other_characters_are_unaffected(party):

@@ -2,7 +2,7 @@ Let orders in `warehouse.py` be returned, so the units come back into
 stock.
 
 - Add `Warehouse.return_order(order_id)`. It raises `KeyError` for an id
-  that is not an order id, then `WarehouseError` if the order has already
+  that is not an order id, and `WarehouseError` if the order has already
   been returned. In each case nothing changes.
 - A successful return adds the order's quantity back to its product's stock
   and appends `("returned", quantity)` to that product's history.

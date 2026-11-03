@@ -8,8 +8,10 @@ Keep an activity log for every user in `sessions.py`.
   because the user is already signed in leave no event.
 - Add `SessionManager.get_activity(username, kind=None) -> list[str]`: the
   user's events, oldest first. With `kind` given, only the events of that
-  kind. It raises `KeyError` for a username that is not registered, then
-  `ValueError` if `kind` is neither `None` nor one of the three event names.
+  kind. It raises `KeyError` for a username that is not registered, and
+  `ValueError` if `kind` is a string other than the three event names, such
+  as `"login"` or `""`. Which of the two is raised when both apply is
+  unspecified.
 - Add `SessionManager.get_users_by_activity() -> list[str]`: every
   registered user, the one with the most events first. Users with the same
   number of events keep their registration order.

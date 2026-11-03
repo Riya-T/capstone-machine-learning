@@ -11,7 +11,7 @@ private_tests: [private/test_ious_initial.py]
 reference: reference/v0
 planted_bugs:
   # Required: a bug only the hidden initial tests catch.
-  - {path: bugs/v0_history_lender_only, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_owed_unknown_name_is_zero, must_fail: [initial], must_pass: [public]}
   - {path: bugs/v0_same_user_iou, must_fail: [initial], must_pass: [public]}
 
 changes:
@@ -44,7 +44,7 @@ sequences:
       - change: c_settle
       - change: c_net_query
         planted_bugs:
-          - path: bugs/net_query_nets_owed_lists  # required regression bug: breaks the initial spec
+          - path: bugs/net_query_nets_debts  # required regression bug: breaks the initial spec
             must_fail: [existing]
             must_pass: [new_feature]
   - id: s2

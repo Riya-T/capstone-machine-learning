@@ -45,7 +45,7 @@ def test_a_category_nobody_uses_lists_no_rooms(hotel):
     assert hotel.get_categories() == ["single", "suite"]
 
 
-@pytest.mark.parametrize("category", ["", None, 3])
+@pytest.mark.parametrize("category", ["", None])
 def test_invalid_categories_are_rejected_when_adding_a_room(hotel, category):
     with pytest.raises(ValueError):
         hotel.add_room("301", category=category)
@@ -102,16 +102,6 @@ def test_book_any_checks_guest_and_nights(hotel, guest, first, last, error):
     with pytest.raises(error):
         hotel.book_any("single", guest, first, last)
     assert state(hotel) == before
-
-
-def test_book_any_reports_errors_in_order(hotel):
-    with pytest.raises(KeyError):
-        hotel.book_any("penthouse", "", 2, 1)
-    with pytest.raises(ValueError):
-        hotel.book_any("suite", "", 2, 1)
-    hotel.book("201", "ana", 1, 3)
-    with pytest.raises(ValueError):
-        hotel.book_any("suite", "ben", 3, 1)
 
 
 def test_a_cancelled_room_is_free_for_book_any(hotel):

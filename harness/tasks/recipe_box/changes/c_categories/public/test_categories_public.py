@@ -20,6 +20,19 @@ def test_recipes_can_be_listed_by_category():
     assert rb.get_categories() == ["breakfast", "dessert"]
 
 
+def test_categories_are_listed_in_the_order_of_the_recipe_list():
+    rb = RecipeBox()
+    rb.add_recipe("toast", 1, category="breakfast")
+    rb.add_recipe("cake", 8, category="dessert")
+    rb.add_recipe("soup", 4, category="lunch")
+    rb.add_recipe("eggs", 2, category="breakfast")
+    rb.add_recipe("stew", 6, category="dinner")
+    rb.add_recipe("tea", 1)
+    assert rb.get_categories() == ["breakfast", "dessert", "lunch", "dinner", "uncategorized"]
+    rb.set_category("cake", "snack")
+    assert rb.get_categories() == ["breakfast", "snack", "lunch", "dinner", "uncategorized"]
+
+
 def test_the_default_category_and_moving_a_recipe():
     rb = RecipeBox()
     rb.add_recipe("pancakes", 4)

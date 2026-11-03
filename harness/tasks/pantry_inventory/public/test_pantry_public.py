@@ -5,7 +5,7 @@ Usage (with pantry.py importable, e.g. in the sandbox):
 """
 
 import pytest
-from pantry import Pantry, PantryError
+from pantry import Pantry
 
 
 @pytest.fixture
@@ -20,28 +20,35 @@ def test_adding_then_quantity(pantry):
     assert pantry.get_quantity("milk") == 2
     pantry.add_item("milk", 4, 8)
     assert pantry.get_quantity("milk") == 6
+    assert pantry.get_batches("milk") == [(3, 2), (8, 4)]
     assert pantry.get_items() == ["rice", "milk"]
 
 
-def test_using_takes_from_the_earliest_batch_first(pantry):
+def test_using_takes_from_the_batch_added_first(pantry):
     pantry.add_item("milk", 4, 8)
     pantry.add_item("milk", 1, 1)
-    assert pantry.get_batches("milk") == [(1, 1), (3, 2), (8, 4)]
     pantry.use_item("milk", 4)
-    assert pantry.get_batches("milk") == [(8, 3)]
+    assert pantry.get_batches("milk") == [(3, 0), (8, 2), (1, 1)]
     assert pantry.get_quantity("milk") == 3
+    pantry.use_item("milk", 2)
+    assert pantry.get_batches("milk") == [(3, 0), (8, 0), (1, 1)]
 
 
-def test_using_more_than_there_is_raises(pantry):
-    with pytest.raises(PantryError):
-        pantry.use_item("milk", 3)
-    assert pantry.get_quantity("milk") == 2
+def test_using_more_than_there_is_takes_what_is_left(pantry):
+    pantry.add_item("milk", 1, 5)
+    pantry.use_item("milk", 5)
+    assert pantry.get_quantity("milk") == 0
+    assert pantry.get_batches("milk") == [(3, 0), (5, 0)]
+    assert pantry.get_items() == ["rice", "milk"]
 
 
-def test_expiring_by_lists_items_in_the_order_added(pantry):
-    pantry.add_item("beans", 5, 4)
-    assert pantry.get_expiring_by(6) == ["milk", "beans"]
+def test_expiring_by_adds_up_the_units_left_that_are_due(pantry):
+    pantry.add_item("beans", 5, 2)
+    pantry.add_item("milk", 3, 5)
+    assert pantry.get_expiring_by(6) == [("milk", 5), ("beans", 5)]
     assert pantry.get_expiring_by(1) == []
+    pantry.use_item("milk", 2)  # the day-3 batch is used up
+    assert pantry.get_expiring_by(4) == [("beans", 5)]
 
 
 def test_quantities_must_be_positive(pantry):

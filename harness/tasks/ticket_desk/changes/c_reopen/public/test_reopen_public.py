@@ -13,12 +13,27 @@ def test_reopening_puts_the_ticket_back_with_its_agent():
     d = TicketDesk()
     d.add_agent("kim")
     d.open_ticket("T1", 3)
+    d.open_ticket("T2", 1)
+    d.assign("T1", "kim")
+    d.assign("T2", "kim")
+    d.resolve("T1")
+    assert d.get_queue("kim") == ["T2"]
+    d.reopen("T1")
+    assert d.get_queue("kim") == ["T2", "T1"]
+    assert d.get_reopen_count("T1") == 1
+
+
+def test_a_resolved_ticket_stays_on_the_desk():
+    d = TicketDesk()
+    d.add_agent("kim")
+    d.open_ticket("T1", 3)
     d.assign("T1", "kim")
     d.resolve("T1")
-    d.reopen("T1")
-    assert d.get_status("T1") == "assigned"
-    assert d.get_tickets("kim") == ["T1"]
-    assert d.get_reopen_count("T1") == 1
+    assert d.get_priority("T1") == 3
+    with pytest.raises(DeskError):
+        d.open_ticket("T1", 2)
+    with pytest.raises(DeskError):
+        d.assign("T1", "kim")
 
 
 def test_only_resolved_tickets_can_be_reopened():

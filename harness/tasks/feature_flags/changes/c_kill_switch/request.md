@@ -7,8 +7,8 @@ at once when a feature misbehaves, without losing its settings.
   flag, or reviving one that is not killed, does nothing.
 - While a flag is killed, `is_enabled` returns `False` for every user and
   `get_enabled_users` returns `[]`, whatever the rollout and the switches
-  say. The `KeyError` checks for the flag and the user still come first and
-  still apply.
+  say. `is_enabled` on a killed flag still raises `KeyError` for a user that
+  is not registered.
 - The rollout and the switches of a killed flag can still be changed, and
   the flag can still be switched on for users; all of it takes effect as
   before once the flag is revived.

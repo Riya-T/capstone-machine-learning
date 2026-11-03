@@ -10,8 +10,11 @@ Let clients of `gateway.py` be banned, for example after abuse.
 - While a client is banned, `allow(client_id)` raises `ClientBanned` and
   changes nothing, and `send(client_id, message)` raises `ClientBanned` and
   records nothing. `revoke` on a banned client does nothing.
-- In `allow`, `ClientBanned` is checked after `KeyError`. In `send`, it is
-  checked after `KeyError` and `ValueError` and before `AccessDenied`.
+- A banned client is off the allow list, but `send` reports the ban: it
+  raises `ClientBanned`, not `AccessDenied`. A client that is not
+  registered still raises `KeyError`. When a `send` to a banned client also
+  has an invalid message, which of `ValueError` and `ClientBanned` is raised
+  is unspecified.
 - Add `Gateway.get_banned() -> list[str]`: the banned clients, in the order
   they were registered.
 - Banning and unbanning leave the client's messages as they are.

@@ -68,7 +68,7 @@ def test_course_queries_are_per_table(rest):
     assert rest.get_course_order("t1", "starter") == [("soup", 1)]
 
 
-@pytest.mark.parametrize("course", ["", None, 7])
+@pytest.mark.parametrize("course", ["", None])
 def test_invalid_courses_are_rejected_when_adding_a_dish(rest, course):
     with pytest.raises(ValueError):
         rest.add_dish("pie", 800, course=course)
@@ -77,12 +77,12 @@ def test_invalid_courses_are_rejected_when_adding_a_dish(rest, course):
     assert rest.get_courses() == ["starter", "main", "dessert"]
 
 
-def test_a_bad_course_is_reported_before_a_duplicate_dish(rest):
-    with pytest.raises(ValueError):
-        rest.add_dish("soup", 650, course="")
+def test_a_duplicate_dish_with_a_new_course_changes_nothing(rest):
     with pytest.raises(RestaurantError):
-        rest.add_dish("soup", 650, course="dessert")
+        rest.add_dish("soup", 650, course="brunch")
     assert rest.get_courses() == ["starter", "main", "dessert"]
+    rest.order("t1", "soup", 1)
+    assert rest.get_course_order("t1", "starter") == [("soup", 1)]
 
 
 @pytest.mark.parametrize("course", ["brunch", None, 7])

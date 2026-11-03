@@ -6,7 +6,7 @@ Usage (with pantry.py importable, e.g. in the sandbox):
 """
 
 import pytest
-from pantry import Pantry, PantryError
+from pantry import Pantry
 
 
 @pytest.fixture
@@ -46,6 +46,13 @@ def test_usable_and_expired_add_up_to_the_quantity(pantry):
     assert pantry.get_batches("milk") == [(3, 2), (8, 5)]
 
 
+def test_usable_and_expired_count_only_units_left(pantry):
+    pantry.use_item("milk", 3)  # the day-3 batch is used up, 1 unit of day 8 taken
+    pantry.set_day(4)
+    assert pantry.get_usable_quantity("milk") == 4
+    assert pantry.get_expired_quantity("milk") == 0
+
+
 def test_using_skips_expired_batches(pantry):
     pantry.set_day(4)
     pantry.use_item("milk", 1)
@@ -53,23 +60,36 @@ def test_using_skips_expired_batches(pantry):
     assert pantry.get_usable_quantity("milk") == 4
 
 
-def test_using_more_than_the_usable_amount_changes_nothing(pantry):
-    pantry.set_day(4)
-    before = state(pantry)
-    with pytest.raises(PantryError):
-        pantry.use_item("milk", 6)
-    assert state(pantry) == before
-    pantry.set_day(9)
-    with pytest.raises(PantryError):
-        pantry.use_item("milk", 1)
-    assert state(pantry) == before
+def test_using_skips_an_expired_batch_between_usable_ones():
+    pan = Pantry()
+    pan.add_item("milk", 4, 8)
+    pan.add_item("milk", 2, 3)
+    pan.add_item("milk", 3, 6)
+    pan.set_day(4)
+    pan.use_item("milk", 6)
+    assert pan.get_batches("milk") == [(8, 0), (3, 2), (6, 1)]
 
 
-def test_using_takes_from_the_earliest_usable_batch(pantry):
+def test_using_stays_first_in_first_out_among_usable_batches(pantry):
     pantry.add_item("milk", 3, 6)
     pantry.set_day(4)
     pantry.use_item("milk", 4)
-    assert pantry.get_batches("milk") == [(3, 2), (8, 4)]
+    assert pantry.get_batches("milk") == [(3, 2), (8, 1), (6, 3)]
+
+
+def test_using_more_than_the_usable_amount_takes_only_usable_units(pantry):
+    pantry.set_day(4)
+    pantry.use_item("milk", 6)
+    assert pantry.get_batches("milk") == [(3, 2), (8, 0)]
+    assert pantry.get_usable_quantity("milk") == 0
+    assert pantry.get_expired_quantity("milk") == 2
+
+
+def test_using_when_everything_is_expired_takes_nothing(pantry):
+    pantry.set_day(9)
+    before = state(pantry)
+    pantry.use_item("milk", 1)
+    assert state(pantry) == before
 
 
 def test_discarding_returns_the_units_thrown_away(pantry):
@@ -80,6 +100,32 @@ def test_discarding_returns_the_units_thrown_away(pantry):
     assert pantry.get_quantity("milk") == 5
     assert pantry.get_expired_quantity("milk") == 0
     assert pantry.discard_expired("milk") == 0
+
+
+def test_discarding_keeps_the_order_of_the_batches_left():
+    pan = Pantry()
+    pan.add_item("milk", 4, 8)
+    pan.add_item("milk", 2, 3)
+    pan.add_item("milk", 3, 6)
+    pan.set_day(4)
+    assert pan.discard_expired("milk") == 2
+    assert pan.get_batches("milk") == [(8, 4), (6, 3)]
+
+
+def test_discarding_also_throws_away_used_up_expired_batches(pantry):
+    pantry.use_item("milk", 2)
+    assert pantry.get_batches("milk") == [(3, 0), (8, 5)]
+    pantry.set_day(4)
+    assert pantry.discard_expired("milk") == 0
+    assert pantry.get_batches("milk") == [(8, 5)]
+
+
+def test_discarding_keeps_used_up_batches_that_are_not_expired(pantry):
+    pantry.add_item("milk", 1, 2)
+    pantry.use_item("milk", 7)  # the day-3 and day-8 batches are used up
+    pantry.set_day(4)
+    assert pantry.discard_expired("milk") == 1
+    assert pantry.get_batches("milk") == [(8, 0)]
 
 
 def test_discarding_leaves_other_items_alone(pantry):
@@ -95,6 +141,8 @@ def test_discarding_everything_leaves_the_item_listed(pantry):
     assert pantry.discard_expired("milk") == 7
     assert pantry.get_items() == ["milk", "rice"]
     assert pantry.get_batches("milk") == []
+    pantry.add_item("milk", 2, 25)
+    assert pantry.get_batches("milk") == [(25, 2)]
 
 
 def test_the_day_can_stay_but_never_go_back(pantry):
@@ -133,4 +181,4 @@ def test_batches_added_on_the_current_day_are_usable(pantry):
     pantry.add_item("milk", 4, 10)
     assert pantry.get_usable_quantity("milk") == 4
     pantry.use_item("milk", 4)
-    assert pantry.get_batches("milk") == [(3, 2), (8, 5)]
+    assert pantry.get_batches("milk") == [(3, 2), (8, 5), (10, 0)]

@@ -35,3 +35,11 @@ def test_dropping_nothing_equals_the_total(book):
 def test_dropping_more_scores_than_recorded_gives_zero(book):
     assert book.get_total_dropping("ana", 5) == 0
     assert book.get_dropped("ana", 5) == ["quiz", "essay", "final"]
+
+
+def test_dropped_titles_are_listed_in_the_order_assignments_were_added(book):
+    book.record_score("ana", "quiz", 8)
+    book.record_score("ana", "essay", 3)
+    # essay (3) is the lowest and quiz (8) the next, but quiz was added first.
+    assert book.get_dropped("ana", 2) == ["quiz", "essay"]
+    assert book.get_total_dropping("ana", 2) == 70

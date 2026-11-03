@@ -3,8 +3,8 @@ partial credit.
 
 - Add `Gradebook.mark_late(name, title)`, `Gradebook.clear_late(name, title)`
   and `Gradebook.is_late(name, title) -> bool`. All three raise `KeyError`
-  for a name that is not a student (checked first) or a title that is not an
-  assignment. A submission starts out not late. Marking a late submission
+  for a name that is not a student or a title that is not an assignment. A
+  submission starts out not late. Marking a late submission
   late again, or clearing one that is not late, does nothing.
 - The flag belongs to the student's submission for that assignment: it can
   be set before or after a score is recorded, and recording a score again
