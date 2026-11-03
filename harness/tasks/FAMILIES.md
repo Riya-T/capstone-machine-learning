@@ -104,8 +104,8 @@ Last updated 2026-11-02.
 | `robot_fleet` | train | 0 → 0 → 14 | ✅ passed after redesign |
 | `hangman_games` | train | 2 → 0 → 8 | ✅ passed after redesign |
 | `ticket_desk` | train | 0 → 0 → 0 → 16 | ✅ passed after second redesign |
-| `iou_tracker` | train | 0 → 1 → 1 → 0 | ❌ failed after second redesign; third redesign under way |
-| `pantry_inventory` | train | 0 → 0 → 0 → 1 | ❌ failed after second redesign; third redesign under way |
+| `iou_tracker` | train | 0 → 1 → 1 → 0 | ❌ failed after second redesign; redesigned a third time, not rerun |
+| `pantry_inventory` | train | 0 → 0 → 0 → 1 | ❌ failed after second redesign; redesigned a third time, not rerun |
 | `aging_inventory` | eval | 7 | ✅ passed |
 | `auction_house` | eval | 5 | ✅ passed |
 | `document_versions` | eval | 0 | ❌ failed |
@@ -128,7 +128,8 @@ eval. The other 12 eval tasks have not been run yet. Train tasks that fail
 are redesigned, not dropped (team decision, 2026-11-02; see "Redesigned on
 2026-11-02" below). `iou_tracker`, `pantry_inventory` and `ticket_desk`
 failed again after their redesign and were redesigned a second time.
-`ticket_desk` then passed; the other two are being redesigned a third time.
+`ticket_desk` then passed; the other two were redesigned a third time and
+are rerun after the re-collection below.
 
 Data collection on the train tasks, in the order the tasks passed (155
 preference pairs from 23 tasks so far):
@@ -410,7 +411,43 @@ The second redesigns passed the Docker check and were rerun on 2026-11-02
   (`ious[lender][borrower] -= amount`), which nets the two directions the
   spec keeps apart. 3 programs fail only the history tests.
 
-Both get a third redesign.
+Redesigned a third time on 2026-11-02, validated locally, not rerun yet.
+The measure is how many stored programs pass the new tests unmodified,
+which is stronger than the "old programs" counts above (the second
+redesigns were predicted at 9 of 16 that way and got 0 and 1).
+
+- `pantry_inventory`: whether `get_batches` still lists a used-up batch,
+  as `(use_by, 0)`, is now up to the program; every test skips 0-unit
+  entries. Everything else stays. Two initial tests now use up a batch
+  exactly, the case where programs that sometimes pop differ. `c_expired`
+  no longer says nothing else removes a batch.
+  - Stored programs from the second redesign's run, unmodified: 10 of 16
+    pass (1 under the second redesign; 4 if a used-up batch had to be
+    removed). The 6 that fail have bugs of their own, such as never writing
+    the new amounts back.
+  - The `bool`, non-string category and error-order tests left in the
+    three changes were removed.
+- `iou_tracker`: v0 is down to five methods: `add_user`, `get_users`,
+  `record_iou`, `get_ious()` (one list for the whole group, oldest first)
+  and `get_owed`, defined as the sum of the matching tuples in
+  `get_ious()`. `get_debts`, the totals and the per-user history are gone,
+  so the per-user signed lists are no longer needed. Errors are bullets.
+  - In the first redesign's run, 11 of 16 programs kept such a group list,
+    and in the second redesign's run 1 did. The likely cause is the second
+    redesign's sentence "each IOU is in two histories".
+  - Stored programs from the first redesign's run pass the new tests in 7
+    of 16 when `get_ious` returns the program's own group list (no stored
+    program has the method itself).
+  - In the changes: `c_settle` lowers `get_owed` and leaves `get_ious()`
+    alone, so a program that only keeps the list must now record payments.
+    `c_forgive` removes the IOU from `get_ious()`, and a public check with
+    two equal IOUs catches `list.remove`. `c_net_query` is where the two
+    directions net. Error-order tests were removed, and unknown names in
+    `settle`/`forgive_last` accept `KeyError` or `IouError`.
+  - Planted bug `net_query_nets_debts` now makes `get_owed` return the net
+    amount. The other three keep their roles on the new v0.
+  - Risk: with a smaller v0, programs may score more alike in the editor
+    trials, which means fewer pairs.
 
 Still open:
 
@@ -498,8 +535,24 @@ vary between trials, such as `io_meter` `c_totals`' tie rule and
 `c_bounds` still tested `True` as a bound and error order (16 of 24 steps
 failed), and in all 24 `c_distance` trials the editor ran out of turns
 before the public checks passed. Every trial scored 0, so it gave no pairs.
-It is being fixed. In `hangman_games` (8 pairs) no test failed in most
-steps.
+In `hangman_games` (8 pairs) no test failed in most steps.
+
+Fixed on 2026-11-02, validated locally, not collected yet:
+
+- `c_distance`: 168 of the editor's 191 replies returned the existing
+  command counter from `get_distance_travelled`. With every command
+  counted, the distance checks failed; with only moves counted, the v0
+  public check for `get_command_count` failed, so the editor went back and
+  forth until it ran out of turns. The request now says the command count
+  does not change, with an example (`"MMRM"`: count 4, distance 3), and
+  the public check asserts both.
+- `c_bounds` and `c_disabled`: the same rules as above (no `True`, error
+  order unspecified, tests whose calls had two problems fixed). Of the 16
+  stored `c_bounds` outputs that failed, 7 now pass every hidden test.
+- Kept: `run_all` changing nothing when any robot would leave (9 of 16
+  failed it). It fails only the programs whose `run_all` calls `run` once
+  per robot, so it tells programs apart. The request now has an example,
+  but no public check.
 
 The pairs from these 25 tasks are replaced by a re-collection (started
 2026-11-02 on the 25 tasks plus the 3 redesigned a second time; all 28

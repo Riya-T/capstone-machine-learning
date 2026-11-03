@@ -18,7 +18,7 @@ def tracker():
     trk.record_iou("bob", "alice", 400)
     trk.record_iou("carol", "alice", 100)
     trk.record_iou("alice", "dave", 150)
-    # net positions, lent minus borrowed: alice 650, bob -600, carol 100, dave -150
+    # net positions: alice 650, bob -600, carol 100, dave -150
     return trk
 
 
@@ -122,11 +122,8 @@ def test_net_queries_change_nothing(tracker):
     def snapshot():
         users = tracker.get_users()
         return (
-            tracker.get_debts(),
-            {
-                u: (tracker.get_total_lent(u), tracker.get_total_borrowed(u), tracker.get_history(u))
-                for u in users
-            },
+            list(tracker.get_ious()),
+            {(l, b): tracker.get_owed(l, b) for l in users for b in users if l != b},
         )
 
     before = snapshot()

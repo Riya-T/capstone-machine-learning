@@ -1,8 +1,9 @@
 """IOU tracker with group payments and net views of the debts.
 
 Planted bug (after c_settle and c_net_query): the net views were added
-correctly, but get_debts was rewritten on top of them and now lists the
-netted debts instead of each direction on its own.
+correctly, but get_owed was rewritten on top of them and now nets the two
+directions (what is left of get_net_owed, or 0) instead of counting each
+direction on its own.
 Never shown to the writer or the editor; validate-tasks checks that the
 tests catch it.
 
@@ -30,8 +31,8 @@ def check_amount(amount):
 class IouTracker:
     def __init__(self):
         self._users = []  # names in the order they were added
-        self._owed = {}  # (lender, borrower) -> amount the borrower owes the lender
-        self._history = []  # (lender, borrower, amount), oldest first
+        self._ious = []  # (lender, borrower, amount), oldest first
+        self._paid = {}  # (lender, borrower) -> everything borrower has paid lender
 
     def add_user(self, name):
         if not isinstance(name, str) or not name:
@@ -40,62 +41,49 @@ class IouTracker:
             raise IouError(f"{name!r} is already a user")
         self._users.append(name)
 
+    def get_users(self):
+        return list(self._users)
+
     def record_iou(self, lender, borrower, amount):
         self._require(lender)
         self._require(borrower)
         check_amount(amount)
         if lender == borrower:
-            raise ValueError("a user cannot owe themselves")
-        pair = (lender, borrower)
-        self._owed[pair] = self._owed.get(pair, 0) + amount
-        self._history.append((lender, borrower, amount))
+            raise ValueError("a user cannot lend to themselves")
+        self._ious.append((lender, borrower, amount))
+
+    def get_ious(self):
+        return list(self._ious)
+
+    def get_owed(self, lender, borrower):
+        self._require(lender)
+        self._require(borrower)
+        if lender == borrower:
+            return 0
+        return max(0, self.get_net_owed(lender, borrower))
 
     def settle(self, borrower, payments):
         self._require(borrower)
         for lender, amount in payments:
             self._require(lender)
             check_amount(amount)
-            if lender == borrower:
-                raise ValueError("a user cannot pay themselves")
         lenders = [lender for lender, _ in payments]
         if len(set(lenders)) != len(lenders):
             raise ValueError("a lender may appear only once")
         for lender, amount in payments:
-            if amount > self._owed.get((lender, borrower), 0):
+            if amount > self._owed(lender, borrower):
                 raise IouError(f"{borrower!r} does not owe {lender!r} {amount}")
         # Every payment has been checked, so none can fail from here on.
         for lender, amount in payments:
-            self._owed[(lender, borrower)] -= amount
-
-    def get_owed(self, lender, borrower):
-        self._require(lender)
-        self._require(borrower)
-        return self._owed.get((lender, borrower), 0)
-
-    def get_debts(self):
-        return self.get_net_debts()
-
-    def get_total_lent(self, name):
-        self._require(name)
-        return sum(amt for (lender, _), amt in self._owed.items() if lender == name)
-
-    def get_total_borrowed(self, name):
-        self._require(name)
-        return sum(amt for (_, borrower), amt in self._owed.items() if borrower == name)
-
-    def get_history(self, name):
-        self._require(name)
-        return [iou for iou in self._history if name in iou[:2]]
-
-    def get_users(self):
-        return list(self._users)
+            pair = (lender, borrower)
+            self._paid[pair] = self._paid.get(pair, 0) + amount
 
     def get_net_owed(self, lender, borrower):
         self._require(lender)
         self._require(borrower)
         if lender == borrower:
             raise ValueError("a user has no net debt with themselves")
-        return self._owed.get((lender, borrower), 0) - self._owed.get((borrower, lender), 0)
+        return self._owed(lender, borrower) - self._owed(borrower, lender)
 
     def get_net_debts(self):
         nets = []
@@ -116,15 +104,19 @@ class IouTracker:
         creditors = [(u, self._net(u)) for u in self._users if self._net(u) > 0]
         return [u for u, _ in self._largest_first(creditors)]
 
-    def _require(self, name):
-        # Non-str names are never stored, so they count as "not a user" too.
-        if not isinstance(name, str) or name not in self._users:
-            raise KeyError(name)
+    def _owed(self, lender, borrower):
+        lent = sum(amt for l, b, amt in self._ious if (l, b) == (lender, borrower))
+        return lent - self._paid.get((lender, borrower), 0)
 
     def _net(self, name):
         # What the others still owe name, minus what name still owes them.
-        return self.get_total_lent(name) - self.get_total_borrowed(name)
+        return sum(self.get_net_owed(name, other) for other in self._users if other != name)
 
     def _largest_first(self, amounts):
         # Ties keep the order the users were added in.
         return sorted(amounts, key=lambda a: (-a[1], self._users.index(a[0])))
+
+    def _require(self, name):
+        # Non-str names are never stored, so they count as "not a user" too.
+        if not isinstance(name, str) or name not in self._users:
+            raise KeyError(name)

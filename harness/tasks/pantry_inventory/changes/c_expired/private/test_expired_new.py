@@ -18,8 +18,14 @@ def pantry():
     return pan
 
 
+def left(pan, name):
+    """The item's batches that still have units. Whether a used-up batch is
+    still listed, as (use_by, 0), is unspecified, so those are skipped."""
+    return [batch for batch in pan.get_batches(name) if batch[1] != 0]
+
+
 def state(pan):
-    return {name: pan.get_batches(name) for name in pan.get_items()}
+    return {name: left(pan, name) for name in pan.get_items()}
 
 
 def test_nothing_is_expired_on_day_zero(pantry):
@@ -56,7 +62,7 @@ def test_usable_and_expired_count_only_units_left(pantry):
 def test_using_skips_expired_batches(pantry):
     pantry.set_day(4)
     pantry.use_item("milk", 1)
-    assert pantry.get_batches("milk") == [(3, 2), (8, 4)]
+    assert left(pantry, "milk") == [(3, 2), (8, 4)]
     assert pantry.get_usable_quantity("milk") == 4
 
 
@@ -67,20 +73,22 @@ def test_using_skips_an_expired_batch_between_usable_ones():
     pan.add_item("milk", 3, 6)
     pan.set_day(4)
     pan.use_item("milk", 6)
-    assert pan.get_batches("milk") == [(8, 0), (3, 2), (6, 1)]
+    assert left(pan, "milk") == [(3, 2), (6, 1)]
+    assert pan.get_usable_quantity("milk") == 1
+    assert pan.get_expired_quantity("milk") == 2
 
 
 def test_using_stays_first_in_first_out_among_usable_batches(pantry):
     pantry.add_item("milk", 3, 6)
     pantry.set_day(4)
     pantry.use_item("milk", 4)
-    assert pantry.get_batches("milk") == [(3, 2), (8, 1), (6, 3)]
+    assert left(pantry, "milk") == [(3, 2), (8, 1), (6, 3)]
 
 
 def test_using_more_than_the_usable_amount_takes_only_usable_units(pantry):
     pantry.set_day(4)
     pantry.use_item("milk", 6)
-    assert pantry.get_batches("milk") == [(3, 2), (8, 0)]
+    assert left(pantry, "milk") == [(3, 2)]
     assert pantry.get_usable_quantity("milk") == 0
     assert pantry.get_expired_quantity("milk") == 2
 
@@ -112,20 +120,13 @@ def test_discarding_keeps_the_order_of_the_batches_left():
     assert pan.get_batches("milk") == [(8, 4), (6, 3)]
 
 
-def test_discarding_also_throws_away_used_up_expired_batches(pantry):
-    pantry.use_item("milk", 2)
-    assert pantry.get_batches("milk") == [(3, 0), (8, 5)]
-    pantry.set_day(4)
-    assert pantry.discard_expired("milk") == 0
-    assert pantry.get_batches("milk") == [(8, 5)]
-
-
-def test_discarding_keeps_used_up_batches_that_are_not_expired(pantry):
+def test_discarding_after_using_counts_only_units_left(pantry):
     pantry.add_item("milk", 1, 2)
-    pantry.use_item("milk", 7)  # the day-3 and day-8 batches are used up
+    pantry.use_item("milk", 6)  # the day-3 batch is used up, 4 units of day 8 taken
     pantry.set_day(4)
     assert pantry.discard_expired("milk") == 1
-    assert pantry.get_batches("milk") == [(8, 0)]
+    assert left(pantry, "milk") == [(8, 1)]
+    assert pantry.get_quantity("milk") == 1
 
 
 def test_discarding_leaves_other_items_alone(pantry):
@@ -155,7 +156,7 @@ def test_the_day_can_stay_but_never_go_back(pantry):
     assert pantry.get_day() == 6
 
 
-@pytest.mark.parametrize("day", [-1, 1.5, "3", None, True])
+@pytest.mark.parametrize("day", [-1, 1.5, "3", None])
 def test_invalid_days_are_rejected_when_setting(pantry, day):
     pantry.set_day(2)
     with pytest.raises(ValueError):
@@ -181,4 +182,4 @@ def test_batches_added_on_the_current_day_are_usable(pantry):
     pantry.add_item("milk", 4, 10)
     assert pantry.get_usable_quantity("milk") == 4
     pantry.use_item("milk", 4)
-    assert pantry.get_batches("milk") == [(3, 2), (8, 5), (10, 0)]
+    assert left(pantry, "milk") == [(3, 2), (8, 5)]

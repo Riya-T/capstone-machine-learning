@@ -6,8 +6,8 @@ Let robots in `fleet.py` be disabled, for example while they are charging.
   robot, or enabling an enabled one, does nothing.
 - Add `class RobotDisabled(FleetError)` to `fleet.py`.
 - `run(name, commands)` on a disabled robot raises `RobotDisabled` and
-  changes nothing. It is checked after `KeyError` and `ValueError` and before
-  any other `FleetError`.
+  changes nothing. When the commands are also invalid, or would also take
+  the robot off the grid, which error is raised is unspecified.
 - `run_all(commands)` drives only the enabled robots; disabled robots keep
   their position, heading and command count. Whether `run_all` raises is
   decided by looking at the enabled robots alone: a disabled robot never

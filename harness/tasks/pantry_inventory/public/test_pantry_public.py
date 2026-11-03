@@ -16,6 +16,12 @@ def pantry():
     return pan
 
 
+def left(pan, name):
+    """The item's batches that still have units. Whether a used-up batch is
+    still listed, as (use_by, 0), is up to the program, so those are skipped."""
+    return [batch for batch in pan.get_batches(name) if batch[1] != 0]
+
+
 def test_adding_then_quantity(pantry):
     assert pantry.get_quantity("milk") == 2
     pantry.add_item("milk", 4, 8)
@@ -28,17 +34,17 @@ def test_using_takes_from_the_batch_added_first(pantry):
     pantry.add_item("milk", 4, 8)
     pantry.add_item("milk", 1, 1)
     pantry.use_item("milk", 4)
-    assert pantry.get_batches("milk") == [(3, 0), (8, 2), (1, 1)]
+    assert left(pantry, "milk") == [(8, 2), (1, 1)]
     assert pantry.get_quantity("milk") == 3
     pantry.use_item("milk", 2)
-    assert pantry.get_batches("milk") == [(3, 0), (8, 0), (1, 1)]
+    assert left(pantry, "milk") == [(1, 1)]
 
 
 def test_using_more_than_there_is_takes_what_is_left(pantry):
     pantry.add_item("milk", 1, 5)
     pantry.use_item("milk", 5)
     assert pantry.get_quantity("milk") == 0
-    assert pantry.get_batches("milk") == [(3, 0), (5, 0)]
+    assert left(pantry, "milk") == []
     assert pantry.get_items() == ["rice", "milk"]
 
 

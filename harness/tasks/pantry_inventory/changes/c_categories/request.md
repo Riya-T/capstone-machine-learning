@@ -4,14 +4,12 @@ Sort the items in `pantry.py` into categories such as "dairy" or "grains".
   is not yet an item, the category given becomes the item's category, and
   `None` means the category `"other"`. For an existing item, `None` keeps
   its current category and a string replaces it.
-- A category must be a non-empty `str`; anything else (including `None`
-  where a string is required by `set_category`) raises `ValueError`. In
-  `add_item` the category is checked after the name, quantity and use-by
-  day, and on failure no item or batch is added and no category changes.
+- An empty category raises `ValueError`, in `add_item` and in
+  `set_category`, and so does `None` in `set_category`. When `add_item`
+  raises, no item or batch is added and no category changes.
 - Add `Pantry.set_category(name, category)`, which moves the item to the
   category, and `Pantry.get_category(name) -> str`. Both raise `KeyError`
-  for a name that is not an item, and `set_category` then `ValueError` for
-  an invalid category.
+  for a name that is not an item.
 - Add `Pantry.get_categories() -> list[str]`: every category that currently
   holds at least one item, in the order of the first item in each category
   as listed by `get_items`.

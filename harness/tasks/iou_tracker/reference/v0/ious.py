@@ -1,5 +1,5 @@
-"""IOU tracker: money lent within a group of users, with a history of
-every IOU.
+"""IOU tracker: money lent within a group of users, as a list of every IOU
+and how much each borrower owes each lender.
 
 Correct solution for iou_tracker before any change (the initial spec).
 Never shown to the writer or the editor; validate-tasks checks that it
@@ -11,9 +11,8 @@ Usage:
     tracker.add_user("alice")
     tracker.add_user("bob")
     tracker.record_iou("alice", "bob", 500)
+    tracker.get_ious()  # [("alice", "bob", 500)]
     tracker.get_owed("alice", "bob")  # 500
-    tracker.get_total_lent("alice")  # 500
-    tracker.get_total_borrowed("bob")  # 500
 """
 
 
@@ -29,8 +28,7 @@ def check_amount(amount):
 class IouTracker:
     def __init__(self):
         self._users = []  # names in the order they were added
-        self._owed = {}  # (lender, borrower) -> amount the borrower owes the lender
-        self._history = []  # (lender, borrower, amount), oldest first
+        self._ious = []  # (lender, borrower, amount), oldest first
 
     def add_user(self, name):
         if not isinstance(name, str) or not name:
@@ -39,39 +37,24 @@ class IouTracker:
             raise IouError(f"{name!r} is already a user")
         self._users.append(name)
 
+    def get_users(self):
+        return list(self._users)
+
     def record_iou(self, lender, borrower, amount):
         self._require(lender)
         self._require(borrower)
         check_amount(amount)
         if lender == borrower:
-            raise ValueError("a user cannot owe themselves")
-        pair = (lender, borrower)
-        self._owed[pair] = self._owed.get(pair, 0) + amount
-        self._history.append((lender, borrower, amount))
+            raise ValueError("a user cannot lend to themselves")
+        self._ious.append((lender, borrower, amount))
+
+    def get_ious(self):
+        return list(self._ious)
 
     def get_owed(self, lender, borrower):
         self._require(lender)
         self._require(borrower)
-        return self._owed.get((lender, borrower), 0)
-
-    def get_debts(self):
-        debts = [(l, b, amt) for (l, b), amt in self._owed.items() if amt > 0]
-        return sorted(debts, key=lambda d: -d[2])
-
-    def get_total_lent(self, name):
-        self._require(name)
-        return sum(amt for (lender, _), amt in self._owed.items() if lender == name)
-
-    def get_total_borrowed(self, name):
-        self._require(name)
-        return sum(amt for (_, borrower), amt in self._owed.items() if borrower == name)
-
-    def get_history(self, name):
-        self._require(name)
-        return [iou for iou in self._history if name in iou[:2]]
-
-    def get_users(self):
-        return list(self._users)
+        return sum(amt for l, b, amt in self._ious if (l, b) == (lender, borrower))
 
     def _require(self, name):
         # Non-str names are never stored, so they count as "not a user" too.

@@ -12,7 +12,7 @@ Usage:
     tracker.record_iou("alice", "bob", 500)
     tracker.record_iou("alice", "bob", 200)
     tracker.forgive_last("alice", "bob")  # 200
-    tracker.get_owed("alice", "bob")  # 500
+    tracker.get_ious()  # [("alice", "bob", 500)]
 """
 
 
@@ -28,8 +28,7 @@ def check_amount(amount):
 class IouTracker:
     def __init__(self):
         self._users = []  # names in the order they were added
-        self._owed = {}  # (lender, borrower) -> amount the borrower owes the lender
-        self._history = []  # (lender, borrower, amount), oldest first
+        self._ious = []  # (lender, borrower, amount), oldest first
 
     def add_user(self, name):
         if not isinstance(name, str) or not name:
@@ -38,60 +37,41 @@ class IouTracker:
             raise IouError(f"{name!r} is already a user")
         self._users.append(name)
 
+    def get_users(self):
+        return list(self._users)
+
     def record_iou(self, lender, borrower, amount):
         self._require(lender)
         self._require(borrower)
         check_amount(amount)
         if lender == borrower:
-            raise ValueError("a user cannot owe themselves")
-        pair = (lender, borrower)
-        self._owed[pair] = self._owed.get(pair, 0) + amount
-        self._history.append((lender, borrower, amount))
+            raise ValueError("a user cannot lend to themselves")
+        self._ious.append((lender, borrower, amount))
 
-    def forgive_last(self, lender, borrower):
-        self._require(lender)
-        self._require(borrower)
-        if lender == borrower:
-            raise ValueError("a user cannot forgive themselves")
-        index = self._last_iou_index(lender, borrower)
-        if index is None:
-            raise IouError(f"no IOU from {lender!r} to {borrower!r} remains")
-        amount = self._history[index][2]
-        del self._history[index]
-        self._owed[(lender, borrower)] -= amount
-        return amount
+    def get_ious(self):
+        return list(self._ious)
 
     def get_owed(self, lender, borrower):
         self._require(lender)
         self._require(borrower)
-        return self._owed.get((lender, borrower), 0)
+        return sum(amt for l, b, amt in self._ious if (l, b) == (lender, borrower))
 
-    def get_debts(self):
-        debts = [(l, b, amt) for (l, b), amt in self._owed.items() if amt > 0]
-        return sorted(debts, key=lambda d: -d[2])
+    def forgive_last(self, lender, borrower):
+        self._require(lender)
+        self._require(borrower)
+        index = self._last_iou_index(lender, borrower)
+        if index is None:
+            raise IouError(f"no IOU from {lender!r} to {borrower!r} remains")
+        _, _, amount = self._ious.pop(index)
+        return amount
 
-    def get_total_lent(self, name):
-        self._require(name)
-        return sum(amt for (lender, _), amt in self._owed.items() if lender == name)
-
-    def get_total_borrowed(self, name):
-        self._require(name)
-        return sum(amt for (_, borrower), amt in self._owed.items() if borrower == name)
-
-    def get_history(self, name):
-        self._require(name)
-        return [iou for iou in self._history if name in iou[:2]]
-
-    def get_users(self):
-        return list(self._users)
+    def _last_iou_index(self, lender, borrower):
+        for index in range(len(self._ious) - 1, -1, -1):
+            if self._ious[index][:2] == (lender, borrower):
+                return index
+        return None
 
     def _require(self, name):
         # Non-str names are never stored, so they count as "not a user" too.
         if not isinstance(name, str) or name not in self._users:
             raise KeyError(name)
-
-    def _last_iou_index(self, lender, borrower):
-        for index in range(len(self._history) - 1, -1, -1):
-            if self._history[index][:2] == (lender, borrower):
-                return index
-        return None

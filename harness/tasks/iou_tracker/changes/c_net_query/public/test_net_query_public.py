@@ -33,18 +33,12 @@ def test_net_debts_list_each_pair_once(tracker):
         ("alice", "dave", 150),
         ("carol", "alice", 100),
     ]
-    assert tracker.get_debts() == [
-        ("alice", "bob", 1000),
-        ("bob", "alice", 400),
-        ("alice", "dave", 150),
-        ("carol", "alice", 100),
-    ]
+    # get_owed still counts each direction on its own.
+    assert tracker.get_owed("alice", "bob") == 1000
+    assert tracker.get_owed("bob", "alice") == 400
 
 
 def test_debtors_and_creditors_come_from_the_net_positions(tracker):
-    # lent minus borrowed: alice 1150 - 500 = 650, bob 400 - 1000 = -600,
-    # carol 100 - 0 = 100, dave 0 - 150 = -150
-    assert tracker.get_total_lent("alice") == 1150
-    assert tracker.get_total_borrowed("alice") == 500
+    # alice 600 - 100 + 150 = 650, bob -600, carol 100, dave -150
     assert tracker.get_debtors() == ["bob", "dave"]
     assert tracker.get_creditors() == ["alice", "carol"]

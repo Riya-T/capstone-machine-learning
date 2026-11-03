@@ -20,9 +20,15 @@ def pantry():
     return pan
 
 
+def left(pan, name):
+    """The item's batches that still have units. Whether a used-up batch is
+    still listed, as (use_by, 0), is unspecified, so those are skipped."""
+    return [batch for batch in pan.get_batches(name) if batch[1] != 0]
+
+
 def state(pan):
     """Every item's batches, to check that a failed call changed nothing."""
-    return {name: pan.get_batches(name) for name in pan.get_items()}
+    return {name: left(pan, name) for name in pan.get_items()}
 
 
 # --- adding -----------------------------------------------------------------
@@ -111,7 +117,7 @@ def test_a_use_by_day_of_zero_is_allowed(pantry):
 def test_using_takes_from_the_batch_added_first(pantry):
     pantry.add_item("milk", 5, 1)  # added later, though it must be used sooner
     pantry.use_item("milk", 1)
-    assert pantry.get_batches("milk") == [(3, 1), (1, 5)]
+    assert left(pantry, "milk") == [(3, 1), (1, 5)]
     assert pantry.get_quantity("milk") == 6
 
 
@@ -119,7 +125,7 @@ def test_using_spans_several_batches(pantry):
     pantry.add_item("milk", 5, 8)
     pantry.add_item("milk", 1, 1)
     pantry.use_item("milk", 4)
-    assert pantry.get_batches("milk") == [(3, 0), (8, 3), (1, 1)]
+    assert left(pantry, "milk") == [(8, 3), (1, 1)]
     assert pantry.get_quantity("milk") == 4
 
 
@@ -128,16 +134,17 @@ def test_using_spans_more_than_two_batches(pantry):
     pantry.add_item("milk", 3, 9)
     pantry.add_item("milk", 4, 2)
     pantry.use_item("milk", 7)
-    assert pantry.get_batches("milk") == [(3, 0), (1, 0), (9, 0), (2, 3)]
+    assert left(pantry, "milk") == [(2, 3)]
     assert pantry.get_quantity("milk") == 3
 
 
-def test_a_used_up_batch_stays_listed_with_nothing_left(pantry):
+def test_using_exactly_what_the_first_batch_holds(pantry):
     pantry.add_item("milk", 5, 8)
     pantry.use_item("milk", 2)
-    assert pantry.get_batches("milk") == [(3, 0), (8, 5)]
+    assert left(pantry, "milk") == [(8, 5)]
+    assert pantry.get_quantity("milk") == 5
     pantry.use_item("milk", 5)
-    assert pantry.get_batches("milk") == [(3, 0), (8, 0)]
+    assert left(pantry, "milk") == []
     assert pantry.get_quantity("milk") == 0
 
 
@@ -145,35 +152,46 @@ def test_later_uses_go_on_past_used_up_batches(pantry):
     pantry.add_item("milk", 5, 8)
     pantry.add_item("milk", 1, 1)
     pantry.use_item("milk", 2)
-    assert pantry.get_batches("milk") == [(3, 0), (8, 5), (1, 1)]
+    assert left(pantry, "milk") == [(8, 5), (1, 1)]
     pantry.use_item("milk", 3)
-    assert pantry.get_batches("milk") == [(3, 0), (8, 2), (1, 1)]
+    assert left(pantry, "milk") == [(8, 2), (1, 1)]
     pantry.use_item("milk", 3)
-    assert pantry.get_batches("milk") == [(3, 0), (8, 0), (1, 0)]
+    assert left(pantry, "milk") == []
+    assert pantry.get_quantity("milk") == 0
+
+
+def test_using_one_unit_at_a_time(pantry):
+    pantry.add_item("milk", 1, 9)
+    pantry.add_item("milk", 2, 4)
+    for expected in ([(3, 1), (9, 1), (4, 2)], [(9, 1), (4, 2)], [(4, 2)], [(4, 1)], []):
+        pantry.use_item("milk", 1)
+        assert left(pantry, "milk") == expected
+    assert pantry.get_quantity("milk") == 0
 
 
 def test_using_only_changes_the_item_used(pantry):
     pantry.use_item("milk", 1)
     assert pantry.get_batches("rice") == [(30, 10)]
-    assert pantry.get_batches("milk") == [(3, 1)]
+    assert left(pantry, "milk") == [(3, 1)]
 
 
 def test_everything_can_be_used_and_the_item_stays_listed(pantry):
     pantry.use_item("milk", 2)
     assert pantry.get_quantity("milk") == 0
-    assert pantry.get_batches("milk") == [(3, 0)]
+    assert left(pantry, "milk") == []
     assert pantry.get_items() == ["milk", "rice"]
     pantry.add_item("milk", 3, 9)
-    assert pantry.get_batches("milk") == [(3, 0), (9, 3)]
+    assert left(pantry, "milk") == [(9, 3)]
     pantry.use_item("milk", 1)
-    assert pantry.get_batches("milk") == [(3, 0), (9, 2)]
+    assert left(pantry, "milk") == [(9, 2)]
+    assert pantry.get_quantity("milk") == 2
 
 
 def test_using_more_than_there_is_takes_everything_left(pantry):
     pantry.add_item("milk", 5, 8)
     pantry.use_item("milk", 10)
     assert pantry.get_quantity("milk") == 0
-    assert pantry.get_batches("milk") == [(3, 0), (8, 0)]
+    assert left(pantry, "milk") == []
     assert pantry.get_items() == ["milk", "rice"]
     assert pantry.get_quantity("rice") == 10
 
@@ -181,9 +199,19 @@ def test_using_more_than_there_is_takes_everything_left(pantry):
 def test_using_from_an_item_with_nothing_left_takes_nothing(pantry):
     pantry.use_item("milk", 2)
     pantry.use_item("milk", 4)
-    assert pantry.get_batches("milk") == [(3, 0)]
+    assert left(pantry, "milk") == []
     assert pantry.get_quantity("milk") == 0
     assert pantry.get_items() == ["milk", "rice"]
+    pantry.add_item("milk", 3, 9)
+    pantry.use_item("milk", 1)
+    assert left(pantry, "milk") == [(9, 2)]
+
+
+def test_a_used_up_batch_if_listed_has_nothing_left(pantry):
+    pantry.add_item("milk", 5, 8)
+    pantry.use_item("milk", 4)
+    assert all(units >= 0 for _, units in pantry.get_batches("milk"))
+    assert sum(units for _, units in pantry.get_batches("milk")) == 3
 
 
 @pytest.mark.parametrize("quantity", BAD_QUANTITIES)

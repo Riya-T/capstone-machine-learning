@@ -1,6 +1,6 @@
 """Pantry inventory: how much of each item is in the pantry, in batches that
-each have a use-by day, used first in, first out. Used-up batches stay
-listed with 0 units left.
+each have a use-by day, used first in, first out. This one keeps used-up
+batches listed with 0 units left; the spec also allows dropping them.
 
 Correct solution for pantry_inventory before any change (the initial spec).
 Never shown to the writer or the editor; validate-tasks checks that it
@@ -27,7 +27,7 @@ def check_day(day):
 
 class Pantry:
     def __init__(self):
-        # name -> list of [use_by, left], in the order added; batches are never removed
+        # name -> list of [use_by, left], in the order added; used-up batches are kept
         self._batches = {}
 
     def add_item(self, name, quantity, use_by):

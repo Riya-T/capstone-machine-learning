@@ -27,8 +27,8 @@ def check_day(day):
 
 class Pantry:
     def __init__(self):
-        # name -> list of [use_by, left], in the order added; only
-        # discard_expired removes batches
+        # name -> list of [use_by, left], in the order added; used-up
+        # batches are kept, and only discard_expired removes batches
         self._batches = {}
         self._minimums = {}  # name -> minimum stock; missing means 0
         self._day = 0

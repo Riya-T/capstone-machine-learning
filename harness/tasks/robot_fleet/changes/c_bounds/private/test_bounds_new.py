@@ -8,7 +8,7 @@ Usage (with fleet.py importable, e.g. in the sandbox):
 import pytest
 from fleet import FleetError, RobotFleet
 
-BAD_BOUNDS = [0, -1, 1.5, "3", True]
+BAD_BOUNDS = [0, -1, 1.5, "3"]
 
 
 @pytest.fixture
@@ -100,20 +100,21 @@ def test_start_positions_outside_the_grid_are_rejected(fleet, x, y):
     assert fleet.get_robots() == ["rover", "scout"]
 
 
-def test_edge_starts_are_accepted_and_a_used_name_is_reported_first(fleet):
+def test_edge_starts_are_accepted_and_a_used_name_still_raises(fleet):
     fleet.add_robot("a", 0, 4, "N")
     fleet.add_robot("b", 3, 0, "N")
     assert fleet.get_robots() == ["rover", "scout", "a", "b"]
     with pytest.raises(FleetError):
-        fleet.add_robot("rover", 9, 9, "N")
+        fleet.add_robot("rover", 1, 1, "N")  # inside the grid
+    assert fleet.get_robots() == ["rover", "scout", "a", "b"]
 
 
-def test_bad_commands_are_reported_before_leaving_the_grid(fleet):
+def test_bad_commands_on_a_bounded_grid_raise_value_error(fleet):
     before = state(fleet)
     with pytest.raises(ValueError):
-        fleet.run("scout", "MX")
+        fleet.run("scout", "RMX")  # scout turns south and stays inside
     with pytest.raises(ValueError):
-        fleet.run_all("MX")
+        fleet.run_all("RMX")  # every robot stays inside
     assert state(fleet) == before
 
 
@@ -132,6 +133,6 @@ def test_an_invalid_character_late_in_the_string_changes_nothing(bounds):
         assert state(fl) == before
 
 
-def test_an_unknown_robot_is_reported_before_leaving_the_grid(fleet):
+def test_an_unknown_robot_on_a_bounded_grid_raises_key_error(fleet):
     with pytest.raises(KeyError):
         fleet.run("drone", "M")

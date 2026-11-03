@@ -8,7 +8,7 @@ Usage (with pantry.py importable, e.g. in the sandbox):
 import pytest
 from pantry import Pantry
 
-BAD_CATEGORIES = ["", 3, 1.5, ["dairy"]]
+BAD_CATEGORIES = [""]  # non-string categories other than None are unspecified
 
 
 @pytest.fixture
@@ -21,7 +21,11 @@ def pantry():
 
 
 def state(pan):
-    return {name: (pan.get_batches(name), pan.get_category(name)) for name in pan.get_items()}
+    # Whether a used-up batch is still listed, as (use_by, 0), is unspecified.
+    return {
+        name: ([b for b in pan.get_batches(name) if b[1] != 0], pan.get_category(name))
+        for name in pan.get_items()
+    }
 
 
 def test_items_without_a_category_go_to_other(pantry):
@@ -120,15 +124,3 @@ def test_category_methods_raise_key_error_for_names_that_are_not_items(pantry, c
     with pytest.raises(KeyError):
         call(pantry)
     assert state(pantry) == before
-
-
-def test_an_unknown_item_is_reported_before_a_bad_category(pantry):
-    with pytest.raises(KeyError):
-        pantry.set_category("eggs", "")
-
-
-def test_a_bad_quantity_is_reported_before_a_bad_category(pantry):
-    # Both are ValueError; the point is that nothing is added either way.
-    with pytest.raises(ValueError):
-        pantry.add_item("eggs", 0, 5, category="")
-    assert pantry.get_items() == ["milk", "rice", "cheese"]

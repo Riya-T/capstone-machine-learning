@@ -18,6 +18,12 @@ def pantry():
     return pan
 
 
+def left(pan, name):
+    """The item's batches that still have units (whether a used-up batch is
+    still listed, as (use_by, 0), is up to the program)."""
+    return [batch for batch in pan.get_batches(name) if batch[1] != 0]
+
+
 def test_moving_the_day_on_expires_earlier_batches(pantry):
     assert pantry.get_day() == 0
     pantry.set_day(5)
@@ -30,7 +36,8 @@ def test_moving_the_day_on_expires_earlier_batches(pantry):
 def test_expired_batches_cannot_be_used(pantry):
     pantry.set_day(5)
     pantry.use_item("milk", 6)
-    assert pantry.get_batches("milk") == [(3, 2), (8, 0)]
+    assert left(pantry, "milk") == [(3, 2)]
+    assert pantry.get_usable_quantity("milk") == 0
 
 
 def test_discarding_removes_expired_batches(pantry):

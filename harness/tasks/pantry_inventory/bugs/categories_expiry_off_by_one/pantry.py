@@ -36,8 +36,8 @@ def check_category(category):
 
 class Pantry:
     def __init__(self):
-        # name -> list of [use_by, left], in the order added; only
-        # discard_expired removes batches
+        # name -> list of [use_by, left], in the order added; used-up
+        # batches are kept, and only discard_expired removes batches
         self._batches = {}
         self._categories = {}  # name -> category
         self._day = 0

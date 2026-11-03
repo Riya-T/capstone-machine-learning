@@ -3,6 +3,11 @@ Report how far each robot in `fleet.py` has travelled.
 - Add `RobotFleet.get_distance_travelled(name) -> int`: the number of `"M"`
   commands executed on the robot so far, each of which moved it one cell.
   Turns add nothing.
+- The distance is a new number next to `get_command_count`, which does not
+  change: it still counts every command, turns included. For example, after
+  `run("rover", "MMRM")` on a robot that has not run any commands yet,
+  `get_command_count("rover")` is 4 and `get_distance_travelled("rover")`
+  is 3.
 - Add `RobotFleet.get_displacement(name) -> int`: the Manhattan distance
   between the robot's current position and the position it was added at,
   `abs(x - start_x) + abs(y - start_y)`.

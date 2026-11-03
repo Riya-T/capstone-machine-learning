@@ -8,8 +8,8 @@ Usage (with pantry.py importable, e.g. in the sandbox):
 import pytest
 from pantry import Pantry
 
-BAD_VALUES = [-1, 1.5, "3", None, True]
-BAD_DAYS = [-1, 1.5, "3", True]  # None is the default: no day
+BAD_VALUES = [-1, 1.5, "3", None]
+BAD_DAYS = [-1, 1.5, "3"]  # None is the default: no day
 
 
 @pytest.fixture
@@ -23,7 +23,11 @@ def pantry():
 
 
 def state(pan):
-    return {name: (pan.get_batches(name), pan.get_minimum(name)) for name in pan.get_items()}
+    # Whether a used-up batch is still listed, as (use_by, 0), is unspecified.
+    return {
+        name: ([b for b in pan.get_batches(name) if b[1] != 0], pan.get_minimum(name))
+        for name in pan.get_items()
+    }
 
 
 def test_every_item_starts_with_a_minimum_of_zero(pantry):
@@ -117,8 +121,3 @@ def test_names_that_are_not_items_raise_key_error(pantry, call):
     with pytest.raises(KeyError):
         call(pantry)
     assert state(pantry) == before
-
-
-def test_an_unknown_item_is_reported_before_a_bad_minimum(pantry):
-    with pytest.raises(KeyError):
-        pantry.set_minimum("bread", -1)

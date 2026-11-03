@@ -89,10 +89,10 @@ def test_run_all_with_every_robot_disabled_does_nothing(fleet):
 def test_invalid_commands_still_raise_when_all_are_disabled(fleet):
     for name in fleet.get_robots():
         fleet.disable(name)
+    before = state(fleet)
     with pytest.raises(ValueError):
         fleet.run_all("X")
-    with pytest.raises(ValueError):
-        fleet.run("rover", "X")
+    assert state(fleet) == before
 
 
 def test_a_disabled_robot_still_reports_its_state(fleet):
@@ -106,20 +106,22 @@ def test_a_disabled_robot_still_reports_its_state(fleet):
     assert fleet.get_command_count("digger") == 2  # not commands
 
 
-def test_key_error_and_value_error_come_before_disabled(fleet):
+def test_unknown_robots_and_bad_commands_still_raise(fleet):
     fleet.disable("rover")
     with pytest.raises(KeyError):
         fleet.run("drone", "M")
     with pytest.raises(ValueError):
-        fleet.run("rover", "X")
+        fleet.run("scout", "X")  # scout is enabled
 
 
-def test_disabled_comes_before_other_fleet_errors():
+def test_a_disabled_robot_on_a_bounded_grid_cannot_be_driven():
     fl = RobotFleet(width=2, height=2)
-    fl.add_robot("rover", 1, 1, "N")  # facing the edge
+    fl.add_robot("rover", 0, 0, "N")  # "M" would stay inside
     fl.disable("rover")
     with pytest.raises(RobotDisabled):
         fl.run("rover", "M")
+    assert fl.get_position("rover") == (0, 0)
+    assert fl.get_command_count("rover") == 0
 
 
 def test_a_disabled_robot_never_blocks_run_all():

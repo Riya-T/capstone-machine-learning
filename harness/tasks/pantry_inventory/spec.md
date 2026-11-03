@@ -31,10 +31,9 @@ may still be used. Quantities are counts, as `int`.
   `ValueError`.
 - `get_items()` returns the names of all items in the order they were first
   added.
-- `get_batches(name)` returns every batch of the item as a
-  `(use_by, quantity)` tuple, where `quantity` is how many units of that
-  batch are left, in the order the batches were added, whatever their use-by
-  days.
+- `get_batches(name)` returns the item's batches as `(use_by, quantity)`
+  tuples, where `quantity` is how many units of that batch are left, in the
+  order the batches were added, whatever their use-by days.
 - `get_quantity(name)` returns how many units of the item are left, over all
   of its batches.
 
@@ -45,12 +44,10 @@ may still be used. Quantities are counts, as `int`.
   that was added first, then goes on to the next batch in the order added,
   and so on, until it has taken `quantity` units. The use-by days do not
   change this order.
-- Batches are never removed. A batch that is used up stays in its place
-  with 0 units left: `get_batches` still lists it, as `(use_by, 0)`, and the
-  next `use_item` goes on to the batches after it.
 - If the item has fewer than `quantity` units left, `use_item` takes all
-  that is left, which leaves every batch of the item at 0. This is not an
-  error.
+  that is left. This is not an error.
+- Whether `get_batches` still lists a batch that has no units left, as
+  `(use_by, 0)`, is up to you: both are correct.
 - The quantity must be an `int` greater than 0, or `ValueError` is raised.
 - An item with nothing left is still an item: `get_items` still lists it,
   and `add_item` adds a new batch to it.
@@ -76,21 +73,19 @@ pantry.add_item("rice", 8, 30)
 pantry.get_batches("milk")    # [(10, 2), (4, 5), (7, 4)]: in the order added
 pantry.get_quantity("milk")   # 11
 pantry.use_item("milk", 3)    # 2 units from the first batch, then 1 from the second
-pantry.get_batches("milk")    # [(10, 0), (4, 4), (7, 4)]: the used-up batch stays
+pantry.get_batches("milk")    # [(4, 4), (7, 4)], or [(10, 0), (4, 4), (7, 4)]
 pantry.get_expiring_by(3)     # []
 pantry.get_expiring_by(4)     # [("milk", 4)]: the day-4 batch counts on day 4 itself
-pantry.get_expiring_by(7)     # [("milk", 8)]: 4 units of day 4 and 4 of day 7
-pantry.use_item("milk", 4)    # the 4 units left in the day-4 batch
-pantry.get_batches("milk")    # [(10, 0), (4, 0), (7, 4)]
+pantry.get_expiring_by(10)    # [("milk", 8)]: 4 units of day 4 and 4 of day 7
+pantry.use_item("milk", 6)    # the 4 units left of day 4, then 2 of day 7
+pantry.get_batches("milk")    # [(7, 2)], or [(10, 0), (4, 0), (7, 2)]
 pantry.get_expiring_by(4)     # []: the day-4 batch has nothing left
-pantry.get_expiring_by(10)    # [("milk", 4)]: 0 of day 10, 0 of day 4, 4 of day 7
-pantry.use_item("milk", 6)    # only 4 units are left, and all 4 are taken
-pantry.get_batches("milk")    # [(10, 0), (4, 0), (7, 0)]
+pantry.use_item("milk", 5)    # only 2 units are left, and both are taken
 pantry.get_quantity("milk")   # 0
 pantry.get_items()            # ["milk", "rice"]: milk is still an item
 pantry.get_expiring_by(100)   # [("rice", 8)]: milk has nothing left
 pantry.add_item("milk", 1, 12)
-pantry.get_batches("milk")    # [(10, 0), (4, 0), (7, 0), (12, 1)]
+pantry.get_batches("milk")    # [(12, 1)], or [(10, 0), (4, 0), (7, 0), (12, 1)]
 ```
 
 ## Errors
@@ -104,7 +99,8 @@ pantry.get_batches("milk")    # [(10, 0), (4, 0), (7, 0), (12, 1)]
 ## Unspecified behavior
 
 Behavior not described here is unspecified, and no test depends on it. This
-includes names that are not strings passed to `add_item`, `bool` quantities
-and days, which error `use_item` raises when both its name and its quantity
-are wrong, what happens if a returned list is changed, the text of error
-messages, saving the pantry to a file, and use from several threads.
+includes whether a batch with no units left is still listed, names that are
+not strings passed to `add_item`, `bool` quantities and days, which error
+`use_item` raises when both its name and its quantity are wrong, what
+happens if a returned list is changed, the text of error messages, saving
+the pantry to a file, and use from several threads.
