@@ -117,12 +117,8 @@ def test_invalid_values_are_rejected(buf, value):
     assert drain(buf) == [1]
 
 
-def test_a_bad_value_is_reported_before_a_full_buffer(buf):
-    for value in (1, 2, 3):
-        buf.write(value)
-    with pytest.raises(ValueError):
-        buf.write("4")
-    assert drain(buf) == [1, 2, 3]
+# Which error a value that is not an int raises on a full buffer is
+# unspecified, so no test writes one there.
 
 
 def test_zero_negative_and_repeated_values_are_stored(buf):

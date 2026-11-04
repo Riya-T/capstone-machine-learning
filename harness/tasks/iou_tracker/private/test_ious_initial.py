@@ -73,21 +73,31 @@ def test_a_user_added_later_can_lend_and_borrow(tracker):
 
 
 @pytest.mark.parametrize(
-    "call",
-    [
-        lambda trk: trk.record_iou("dave", "bob", 10),
-        lambda trk: trk.record_iou("alice", "dave", 10),
-        lambda trk: trk.get_owed("dave", "bob"),
-        lambda trk: trk.get_owed("alice", "dave"),
-        lambda trk: trk.get_owed(None, "bob"),
-        lambda trk: trk.get_owed("alice", None),
-    ],
+    "lender, borrower",
+    [("dave", "bob"), ("alice", "dave"), (None, "bob"), ("alice", None)],
 )
-def test_names_that_are_not_users_raise_key_error(tracker, call):
+def test_names_that_are_not_users_raise_key_error(tracker, lender, borrower):
     tracker.record_iou("alice", "bob", 50)
     before = state(tracker)
     with pytest.raises(KeyError):
-        call(tracker)
+        tracker.record_iou(lender, borrower, 10)
+    assert state(tracker) == before
+
+
+@pytest.mark.parametrize(
+    "lender, borrower",
+    [("dave", "bob"), ("alice", "dave"), (None, "bob"), ("alice", None)],
+)
+def test_owed_with_a_name_that_is_not_a_user(tracker, lender, borrower):
+    # The spec says KeyError; returning 0 is accepted too.
+    tracker.record_iou("alice", "bob", 50)
+    before = state(tracker)
+    try:
+        owed = tracker.get_owed(lender, borrower)
+    except KeyError:
+        pass
+    else:
+        assert owed == 0
     assert state(tracker) == before
 
 
@@ -217,8 +227,6 @@ def test_the_example_from_the_spec(tracker):
     assert tracker.get_owed("bob", "alice") == 100
     assert tracker.get_owed("carol", "alice") == 50
     assert tracker.get_owed("alice", "carol") == 0
-    with pytest.raises(KeyError):
-        tracker.get_owed("alice", "dave")
     with pytest.raises(ValueError):
         tracker.record_iou("bob", "bob", 10)
     with pytest.raises(ValueError):

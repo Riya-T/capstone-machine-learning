@@ -42,3 +42,16 @@ def test_debtors_and_creditors_come_from_the_net_positions(tracker):
     # alice 600 - 100 + 150 = 650, bob -600, carol 100, dave -150
     assert tracker.get_debtors() == ["bob", "dave"]
     assert tracker.get_creditors() == ["alice", "carol"]
+
+
+def test_the_lists_are_sorted_by_amount_not_by_user(tracker):
+    tracker.record_iou("dave", "carol", 900)
+    # alice 650, bob -600, carol 100 - 900 = -800, dave -150 + 900 = 750
+    assert tracker.get_net_debts() == [
+        ("dave", "carol", 900),
+        ("alice", "bob", 600),
+        ("alice", "dave", 150),
+        ("carol", "alice", 100),
+    ]
+    assert tracker.get_creditors() == ["dave", "alice"]
+    assert tracker.get_debtors() == ["carol", "bob"]

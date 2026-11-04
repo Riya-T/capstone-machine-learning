@@ -162,3 +162,102 @@ def test_without_guards_payment_rules_still_apply():
     wf.move("o1", "shipped")
     with pytest.raises(WorkflowError):
         wf.set_address("o1", "1 Main St")
+
+
+# can_move: one order in each situation that matters for a move, as
+# (state, fully paid, has an address).
+SITUATIONS = {
+    "unpaid": ("new", False, False),
+    "part_paid": ("new", False, True),
+    "paid_up": ("new", True, False),
+    "paid_no_address": ("paid", True, False),
+    "paid_addressed": ("paid", True, True),
+    "shipped": ("shipped", True, True),
+    "delivered": ("delivered", True, True),
+    "cancelled": ("cancelled", False, False),
+}
+TARGETS = ["new", "paid", "shipped", "delivered", "cancelled"]
+PATHS = {
+    ("new", "paid"),
+    ("paid", "shipped"),
+    ("shipped", "delivered"),
+    ("new", "cancelled"),
+    ("paid", "cancelled"),
+}
+
+
+def situations(guarded):
+    wf = OrderWorkflow(guarded=guarded)
+    for name in SITUATIONS:
+        wf.create_order(name, 100)
+    wf.record_payment("part_paid", 40)
+    wf.set_address("part_paid", "1 Main St")
+    wf.record_payment("paid_up", 100)
+    for name in ["paid_no_address", "paid_addressed", "shipped", "delivered"]:
+        wf.record_payment(name, 100)
+        wf.move(name, "paid")
+    for name in ["paid_addressed", "shipped", "delivered"]:
+        wf.set_address(name, "2 Side St")
+    wf.move("shipped", "shipped")
+    wf.move("delivered", "shipped")
+    wf.move("delivered", "delivered")
+    wf.move("cancelled", "cancelled")
+    return wf
+
+
+def move_would_succeed(name, target, guarded):
+    state, paid_up, addressed = SITUATIONS[name]
+    if (state, target) not in PATHS:
+        return False
+    if guarded and target == "paid" and not paid_up:
+        return False
+    if guarded and target == "shipped" and not addressed:
+        return False
+    return True
+
+
+@pytest.mark.parametrize("guarded", [True, False])
+def test_can_move_follows_the_paths_and_the_guards(guarded):
+    wf = situations(guarded)
+    for name in SITUATIONS:
+        for target in TARGETS:
+            want = move_would_succeed(name, target, guarded)
+            assert bool(wf.can_move(name, target)) == want, (name, target)
+
+
+def test_can_move_changes_nothing():
+    wf = situations(True)
+    before = state(wf), {o: wf.get_move_count(o) for o in wf.get_orders()}
+    for name in SITUATIONS:
+        for target in TARGETS:
+            wf.can_move(name, target)
+    assert (state(wf), {o: wf.get_move_count(o) for o in wf.get_orders()}) == before
+
+
+def test_can_move_follows_payments_and_addresses_as_they_change(flow):
+    assert not flow.can_move("o1", "paid")
+    flow.record_payment("o1", 999)
+    assert not flow.can_move("o1", "paid")
+    flow.record_payment("o1", 1)
+    assert flow.can_move("o1", "paid")
+    flow.move("o1", "paid")
+    assert not flow.can_move("o1", "shipped")
+    assert flow.can_move("o1", "cancelled")
+    flow.set_address("o1", "1 Main St")
+    assert flow.can_move("o1", "shipped")
+    flow.move("o1", "shipped")
+    assert flow.can_move("o1", "delivered")
+    assert not flow.can_move("o1", "cancelled")
+    assert not flow.can_move("o1", "shipped")
+
+
+@pytest.mark.parametrize("order_id", ["o9", None, 1])
+def test_can_move_raises_key_error_for_orders_that_do_not_exist(flow, order_id):
+    with pytest.raises(KeyError):
+        flow.can_move(order_id, "cancelled")
+
+
+@pytest.mark.parametrize("name", ["", "Paid", "refunded", None])
+def test_can_move_rejects_unknown_state_names(flow, name):
+    with pytest.raises(ValueError):
+        flow.can_move("o1", name)

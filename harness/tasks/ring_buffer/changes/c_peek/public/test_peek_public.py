@@ -27,6 +27,8 @@ def test_contents_are_listed_oldest_first():
     buf.read()
     buf.write(4)
     assert buf.get_contents() == [2, 3, 4]
+    buf.read()
+    assert buf.get_contents() == [3, 4]
 
 
 def test_peeking_at_an_empty_buffer_raises():

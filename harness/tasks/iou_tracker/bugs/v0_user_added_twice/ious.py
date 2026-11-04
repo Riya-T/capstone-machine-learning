@@ -1,11 +1,11 @@
 """IOU tracker: money lent within a group of users, as a list of every IOU
 and how much each borrower owes each lender.
 
-Planted bug (initial version): get_owed never checks its names, so a name
-that is not a user gives 0 instead of KeyError. The public checks only try
-an unknown name with record_iou, so only the hidden initial tests catch
-it. Never shown to the writer or the editor; validate-tasks checks that
-the tests catch it.
+Planted bug (initial version): add_user never checks for an existing user,
+so adding a name twice raises nothing and lists it twice. The public checks
+never add a user twice, so only the hidden initial tests catch it.
+Never shown to the writer or the editor; validate-tasks checks that the
+tests catch it.
 
 Usage:
     from ious import IouTracker
@@ -35,8 +35,6 @@ class IouTracker:
     def add_user(self, name):
         if not isinstance(name, str) or not name:
             raise ValueError("name must be a non-empty str")
-        if name in self._users:
-            raise IouError(f"{name!r} is already a user")
         self._users.append(name)
 
     def get_users(self):
@@ -54,6 +52,8 @@ class IouTracker:
         return list(self._ious)
 
     def get_owed(self, lender, borrower):
+        self._require(lender)
+        self._require(borrower)
         return sum(amt for l, b, amt in self._ious if (l, b) == (lender, borrower))
 
     def _require(self, name):

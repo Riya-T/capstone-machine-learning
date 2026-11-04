@@ -30,8 +30,9 @@ be written more than once.
 
 ## Capacity
 
-- `RingBuffer(capacity)` creates an empty buffer. The capacity must be at
-  least 1, or `ValueError` is raised.
+- `RingBuffer(capacity)` creates a buffer with room for exactly `capacity`
+  values. All of that room is free at first. The capacity must be at least
+  1, or `ValueError` is raised.
 - `get_capacity()` returns the capacity given at creation.
 - `get_size()` returns how many values the buffer holds right now, from 0
   up to the capacity.
@@ -40,8 +41,7 @@ be written more than once.
 
 - `write(value)` stores a value as the newest. A value that is not an `int`
   raises `ValueError`. Writing when the buffer already holds `capacity`
-  values raises `BufferFull`. When both problems apply, `ValueError` is
-  raised.
+  values raises `BufferFull`.
 - `read()` removes and returns the oldest value. Reading from an empty
   buffer raises `BufferEmpty`.
 - `clear()` removes every value. Clearing an empty buffer is allowed.
@@ -57,6 +57,7 @@ values are unchanged.
 
 Behavior not described here is unspecified, and no test depends on it. This
 includes capacities that are not `int`s, such as `2.5`, `"3"` or `None`,
-`bool` values and capacities, the text of error messages, `len()` and
-iteration over a buffer, saving the buffer to a file, and use from several
-threads.
+`bool` values and capacities, which error is raised when a value that is
+not an `int` is written to a full buffer, the text of error messages,
+`len()` and iteration over a buffer, saving the buffer to a file, and use
+from several threads.

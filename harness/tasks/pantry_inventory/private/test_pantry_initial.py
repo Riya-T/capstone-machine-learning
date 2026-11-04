@@ -230,13 +230,21 @@ def test_invalid_quantities_are_rejected_when_using(pantry, quantity):
         lambda pan: pan.get_batches("eggs"),
         lambda pan: pan.get_quantity(None),
         lambda pan: pan.get_quantity(1),
-        lambda pan: pan.use_item(None, 1),
     ],
 )
 def test_names_that_are_not_items_raise_key_error(pantry, call):
     before = state(pantry)
     with pytest.raises(KeyError):
         call(pantry)
+    assert state(pantry) == before
+
+
+def test_using_none_as_the_name_raises(pantry):
+    # The spec says KeyError. ValueError is accepted too: some programs check
+    # the types of all of use_item's arguments first (as in recipe_box).
+    before = state(pantry)
+    with pytest.raises((KeyError, ValueError)):
+        pantry.use_item(None, 1)
     assert state(pantry) == before
 
 

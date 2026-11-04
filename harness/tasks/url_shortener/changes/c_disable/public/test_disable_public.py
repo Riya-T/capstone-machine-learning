@@ -23,6 +23,17 @@ def test_a_disabled_link_refuses_visits_until_enabled():
     assert sh.get_hits("promo") == 2
 
 
+def test_switching_a_code_that_does_not_exist_raises_key_error():
+    sh = Shortener()
+    sh.add_link("promo", "https://example.com/sale")
+    for method in (sh.disable, sh.enable, sh.is_enabled):
+        with pytest.raises(KeyError):
+            method("missing")
+        with pytest.raises(KeyError):
+            method(None)
+    assert sh.is_enabled("promo")
+
+
 def test_disabled_links_still_report_their_target():
     sh = Shortener()
     sh.add_link("promo", "https://example.com/sale")

@@ -2,11 +2,11 @@
 order is paid only once its payments cover the total, and shipped only once
 it has an address.
 
-Planted bug (after c_history and c_guards): the guards were added
-correctly, but while rewriting move the state-name check was dropped, so an
-unknown state name raises InvalidTransition instead of ValueError. Never
-shown to the writer or the editor; validate-tasks checks that the tests
-catch it.
+Planted bug (after c_history and c_guards): the guards and can_move were
+added correctly, but while rewriting move the state-name check was dropped,
+so an unknown state name passed to move raises InvalidTransition instead of
+ValueError. Never shown to the writer or the editor; validate-tasks checks
+that the tests catch it.
 
 Usage:
     from workflow import OrderWorkflow
@@ -85,6 +85,14 @@ class OrderWorkflow:
         if guard is not None and not guard(order_id):
             raise GuardFailed(f"order {order_id!r} is not ready to be {state}")
         self._history[order_id].append(state)
+
+    def can_move(self, order_id, state):
+        self._require(order_id)
+        check_state_name(state)
+        if (self._history[order_id][-1], state) not in ALLOWED:
+            return False
+        guard = self._guards.get(state)
+        return guard is None or guard(order_id)
 
     def get_state(self, order_id):
         self._require(order_id)

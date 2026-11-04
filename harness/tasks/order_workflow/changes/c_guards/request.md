@@ -24,11 +24,20 @@ money is in, and only be shipped once it has an address.
   cancelling needs neither payment nor address. With `guarded=False` no move
   is guarded, but addresses and payments are still recorded and checked as
   above. A move refused by a guard changes nothing.
-- All four new methods raise `KeyError` for an order that does not exist.
+- Add `OrderWorkflow.can_move(order_id, state) -> bool`: whether
+  `move(order_id, state)` would succeed right now, without moving the
+  order. It returns `False` exactly when `move` would raise
+  `InvalidTransition` or `GuardFailed`, raises `KeyError` and `ValueError`
+  in the same cases as `move`, and never changes anything. For example, for
+  a `"new"` order with no payments, `can_move(order_id, "paid")` is `False`
+  with `guarded=True` and `True` with `guarded=False`, and
+  `can_move(order_id, "cancelled")` is `True` in both.
+- All five new methods raise `KeyError` for an order that does not exist.
 - When one call has several problems and at least one of them comes from
   this change (a bad address or payment, an address that can no longer be
-  changed, or a guard), which error it raises is unspecified. For example,
-  a guarded move of a `"new"` order with no address straight to `"shipped"`
-  may raise either `InvalidTransition` or `GuardFailed`.
+  changed, or a guard), or the call is to `can_move`, which error it raises
+  is unspecified. For example, a guarded move of a `"new"` order with no
+  address straight to `"shipped"` may raise either `InvalidTransition` or
+  `GuardFailed`.
 
 All existing behavior must keep working.

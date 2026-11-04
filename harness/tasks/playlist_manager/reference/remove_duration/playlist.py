@@ -11,6 +11,7 @@ Usage:
     library.enqueue("Blue")
     library.play_next()
     library.get_time_played()
+    library.get_song_time_played("Blue")
 """
 
 
@@ -38,6 +39,7 @@ class MusicLibrary:
         self._playlists = {}  # name -> list of titles, in creation order
         self._queue = []  # titles, next to play first
         self._played = []  # (title, duration) of every song play_next returned
+        self._song_time = {}  # title -> seconds played since the song was added
 
     def add_song(self, title, artist, duration):
         check_name(title, "title")
@@ -46,10 +48,12 @@ class MusicLibrary:
         if title in self._songs:
             raise LibraryError(f"song {title!r} was already added")
         self._songs[title] = (artist, duration)
+        self._song_time[title] = 0
 
     def remove_song(self, title):
         self._require_song(title)
         del self._songs[title]
+        del self._song_time[title]  # a title added again starts from 0
         for titles in self._playlists.values():
             if title in titles:
                 titles.remove(title)
@@ -91,7 +95,9 @@ class MusicLibrary:
         if not self._queue:
             raise QueueEmpty("nothing is queued")
         title = self._queue.pop(0)
-        self._played.append((title, self._songs[title][1]))
+        duration = self._songs[title][1]
+        self._played.append((title, duration))
+        self._song_time[title] += duration
         return title
 
     def get_queue(self):
@@ -102,6 +108,10 @@ class MusicLibrary:
 
     def get_time_played(self):
         return sum(duration for _, duration in self._played)
+
+    def get_song_time_played(self, title):
+        self._require_song(title)
+        return self._song_time[title]
 
     def _total(self, titles):
         return sum(self._songs[title][1] for title in titles)

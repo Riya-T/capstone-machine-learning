@@ -12,6 +12,15 @@ seconds, as `int`.
   starts at 0 and only grows. A song that is later removed with
   `remove_song` still counts, with the duration it had when it was played,
   even if a new song with the same title is added afterwards.
+- Add `MusicLibrary.get_song_time_played(title) -> int`: how long that song
+  has been played, that is its duration for every time `play_next` has
+  returned it since the song was added. A song that has not been played
+  gives 0. It raises `KeyError` for a title that is not in the library.
+- A removed title that is added again is a fresh song: its own time played
+  starts again from 0, while `get_time_played()` keeps every play. For
+  example, if `"Blue"` (200 seconds) is played twice, removed, added again
+  with 5 seconds and played once, `get_song_time_played("Blue")` is 5 and
+  `get_time_played()` is 405.
 - Failed calls change none of these values.
 
 All existing behavior must keep working.

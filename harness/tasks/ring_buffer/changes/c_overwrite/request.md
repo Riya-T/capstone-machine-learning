@@ -11,8 +11,9 @@ the oldest value than fail when the buffer is full.
   remaining values oldest first, ending with the new one.
 - While overwrite mode is disabled, `write` on a full buffer raises
   `BufferFull` as before.
-- A value that is not an `int` still raises `ValueError`, before anything
-  is removed, whether or not overwrite mode is enabled.
+- A value that is not an `int` still raises `ValueError` and changes
+  nothing. In overwrite mode this holds on a full buffer too: nothing is
+  removed.
 - Switching overwrite mode on or off never changes the stored values or the
   size.
 

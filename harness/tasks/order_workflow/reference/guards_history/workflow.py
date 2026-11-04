@@ -76,6 +76,19 @@ class OrderWorkflow:
         self._paid[order_id] = 0
 
     def move(self, order_id, state):
+        self._check_move(order_id, state)
+        self._history[order_id].append(state)
+
+    def can_move(self, order_id, state):
+        # KeyError and ValueError propagate, just as they do from move.
+        try:
+            self._check_move(order_id, state)
+        except (InvalidTransition, GuardFailed):
+            return False
+        return True
+
+    def _check_move(self, order_id, state):
+        """Raise what move would raise; return normally if it would succeed."""
         self._require(order_id)
         check_state_name(state)
         if (self._history[order_id][-1], state) not in ALLOWED:
@@ -83,7 +96,6 @@ class OrderWorkflow:
         guard = self._guards.get(state)
         if guard is not None and not guard(order_id):
             raise GuardFailed(f"order {order_id!r} is not ready to be {state}")
-        self._history[order_id].append(state)
 
     def get_state(self, order_id):
         self._require(order_id)

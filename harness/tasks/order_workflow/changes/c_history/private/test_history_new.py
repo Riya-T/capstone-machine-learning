@@ -113,3 +113,81 @@ def test_queries_do_not_change_the_orders(flow):
     assert flow.get_state("o1") == "paid"
     flow.move("o1", "shipped")
     assert flow.get_history("o1") == ["new", "paid", "shipped"]
+
+
+# The rollback rules below apply only to a workflow that already has
+# `rollback` (sequence s2, where c_rollback comes first). Without it these
+# tests check nothing, so they pass in sequence s1.
+
+
+def can_roll_back(wf):
+    return callable(getattr(wf, "rollback", None))
+
+
+def test_a_rolled_back_move_leaves_the_history_and_the_count(flow):
+    if not can_roll_back(flow):
+        return
+    flow.move("o1", "paid")
+    flow.move("o1", "cancelled")
+    flow.rollback("o1")
+    assert flow.get_history("o1") == ["new", "paid"]
+    assert flow.get_move_count("o1") == 1
+    assert flow.get_orders_that_passed("cancelled") == []
+    assert flow.get_orders_that_passed("paid") == ["o1"]
+
+
+def test_rolling_back_to_new_leaves_only_new(flow):
+    if not can_roll_back(flow):
+        return
+    flow.move("o1", "paid")
+    flow.move("o1", "shipped")
+    flow.rollback("o1")
+    flow.rollback("o1")
+    assert flow.get_history("o1") == ["new"]
+    assert flow.get_move_count("o1") == 0
+    assert flow.get_orders_that_passed("paid") == []
+    assert flow.get_orders_that_passed("shipped") == []
+
+
+def test_moves_after_a_rollback_are_recorded_and_counted(flow):
+    if not can_roll_back(flow):
+        return
+    flow.move("o1", "paid")
+    flow.rollback("o1")
+    flow.move("o1", "cancelled")
+    assert flow.get_history("o1") == ["new", "cancelled"]
+    assert flow.get_move_count("o1") == 1
+    assert flow.get_orders_that_passed("paid") == []
+    assert flow.get_orders_that_passed("cancelled") == ["o1"]
+    flow.rollback("o1")
+    flow.move("o1", "paid")
+    flow.move("o1", "shipped")
+    assert flow.get_history("o1") == ["new", "paid", "shipped"]
+    assert flow.get_move_count("o1") == 2
+
+
+def test_a_rollback_changes_only_its_own_orders_history(flow):
+    if not can_roll_back(flow):
+        return
+    flow.move("o1", "paid")
+    flow.move("o2", "paid")
+    flow.move("o2", "cancelled")
+    flow.rollback("o2")
+    assert flow.get_history("o1") == ["new", "paid"]
+    assert flow.get_history("o2") == ["new", "paid"]
+    assert flow.get_move_count("o1") == 1
+    assert flow.get_move_count("o2") == 1
+    assert flow.get_orders_that_passed("paid") == ["o1", "o2"]
+    assert flow.get_orders_that_passed("cancelled") == []
+
+
+def test_a_rollback_that_raised_changes_no_history(flow):
+    if not can_roll_back(flow):
+        return
+    flow.move("o1", "paid")
+    before = record(flow)
+    with pytest.raises(WorkflowError):
+        flow.rollback("o2")  # nothing to undo
+    with pytest.raises(KeyError):
+        flow.rollback("o9")
+    assert record(flow) == before

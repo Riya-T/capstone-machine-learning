@@ -19,6 +19,19 @@ def test_codes_match_without_regard_to_case():
     assert sh.get_codes() == ["Sale"]
 
 
+def test_values_that_are_not_strings_are_unknown_codes():
+    sh = Shortener()
+    sh.add_link("Sale", "https://example.com/sale")
+    with pytest.raises(KeyError):
+        sh.visit(None)
+    with pytest.raises(KeyError):
+        sh.get_target(1)
+    with pytest.raises(KeyError):
+        sh.set_target(None, "https://example.com/other")
+    assert sh.get_hits("SALE") == 0
+    assert sh.get_target("sale") == "https://example.com/sale"
+
+
 def test_codes_with_other_characters_are_rejected():
     sh = Shortener()
     with pytest.raises(ValueError):

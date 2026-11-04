@@ -13,8 +13,12 @@ Let a user pay back several lenders at once in `ious.py`, all or nothing.
 - A payment may not be more than what `borrower` owes that lender when
   `settle` is called. If any payment in the list is too large, raise
   `IouError` and apply none of the payments.
+- A borrower may pay the same lender again in a later call: the limit is
+  then what is still owed after the earlier payments. Only a lender listed
+  twice in the same `payments` list is an error.
 - `settle` also raises:
-  - `KeyError` if `borrower` or a lender is not a user;
+  - `KeyError` if `borrower` or a lender is not a user (`None` is not a
+    user either);
   - `ValueError` if an amount is not greater than 0;
   - `ValueError` if the same lender appears more than once in the list.
 - An empty list is allowed and does nothing.
@@ -34,6 +38,10 @@ tracker.get_owed("carol", "bob")  # 0
 tracker.get_ious()  # [("alice", "bob", 600), ("carol", "bob", 250)]: unchanged
 tracker.settle("bob", [("alice", 100), ("carol", 1)])  # raises IouError: bob owes carol 0
 tracker.get_owed("alice", "bob")  # still 450: the payment to alice was not applied
+tracker.settle("bob", [("alice", 400)])  # alice again, in a new call: allowed
+tracker.get_owed("alice", "bob")  # 50
+tracker.settle("bob", [("alice", 60)])  # raises IouError: bob owes alice only 50 now
+tracker.settle("bob", [("alice", 20), ("alice", 20)])  # raises ValueError: alice is listed twice
 tracker.record_iou("carol", "bob", 30)
 tracker.get_owed("carol", "bob")  # 30
 ```

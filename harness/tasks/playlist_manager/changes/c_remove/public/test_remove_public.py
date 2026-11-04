@@ -36,3 +36,15 @@ def test_removing_a_song_clears_it_from_playlists_and_queue():
     assert lib.get_queue() == ["Red"]
     with pytest.raises(KeyError):
         lib.enqueue("Blue")
+
+
+def test_removing_an_artists_last_song_drops_the_artist_from_searches():
+    lib = MusicLibrary()
+    if not hasattr(lib, "get_artists"):
+        return  # only for a library that can be searched by artist
+    lib.add_song("Blue", "Nina", 200)
+    lib.add_song("Gold", "Omar", 240)
+    lib.add_song("Red", "Nina", 180)
+    lib.remove_song("Gold")
+    assert lib.get_artists() == ["Nina"]
+    assert lib.get_songs_by_artist("Omar") == []

@@ -34,6 +34,16 @@ def test_an_order_needs_an_address_before_shipping():
     assert wf.get_state("o1") == "shipped"
 
 
+def test_can_move_says_whether_a_move_would_succeed():
+    wf = OrderWorkflow(guarded=True)
+    wf.create_order("o1", 1000)
+    assert wf.can_move("o1", "paid") is False
+    assert wf.can_move("o1", "cancelled") is True
+    assert wf.get_state("o1") == "new"
+    wf.record_payment("o1", 1000)
+    assert wf.can_move("o1", "paid") is True
+
+
 def test_without_guards_moves_work_as_before():
     wf = OrderWorkflow()
     wf.create_order("o1", 1000)

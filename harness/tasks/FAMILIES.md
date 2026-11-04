@@ -164,7 +164,8 @@ latest run):
 - After the re-collection (2026-11-03): `robot_fleet` 8 pairs (14 of 16
   programs pass). The third redesigns pass the writer check:
   `iou_tracker` 4 of 16 (0 pairs) and `pantry_inventory` 4 of 16 (2 pairs).
-- Few or no pairs, being looked at (2026-11-03):
+- Few or no pairs (2026-11-03), fixed the same day and collected again
+  (see "Fixed on 2026-11-03" below):
   - `pantry_inventory` `c_expired`: the editor ran out of turns in all 21
     trials that reached it.
   - `iou_tracker` `c_settle`: failed in 9 of 12 trials as the first change
@@ -174,6 +175,76 @@ latest run):
   - `order_workflow` and `playlist_manager`: too easy now (above).
   - `ring_buffer` (0 pairs): only 3 programs pass the writer check, and
     their scores differ by less than 2 changes.
+
+### Fixed on 2026-11-03
+
+Measured offline on the stored programs and editor outputs, then collected
+again. Unless noted, only change files changed, so the writer samples are
+kept.
+
+- `url_shortener` `c_alias`: to match codes without regard to case, every
+  edit wrote `code.lower()` in each lookup, which raises `AttributeError`
+  for `None` or `1`. The existing tests expect `KeyError` there, and the
+  editor never sees the v0 spec, so it could not know. The request now says
+  non-strings are unknown codes (`KeyError`), with a public check. The same
+  trap in `c_disable` got the same fix. With a guard added by script, 13 of
+  the 24 stored outputs pass every test, from 1 to 3 of 3 per program.
+  `c_stats` is unchanged: it ran out of turns mostly on one storage design
+  (one dict per link), and that is where the task's 2 pairs come from.
+- `iou_tracker`:
+  - `c_settle` failed mostly on two rules no public check covered: paying
+    the same lender again in a later call, and a lender listed twice in one
+    call. Both now have public checks and examples; 7 of the 8 stored
+    fail_new outputs fail them. `c_net_query`'s public check passed an
+    unsorted program by luck and now sorts a fixture whose order differs.
+  - Writer check: all 9 failing programs failed only `get_owed` with a name
+    that is not a user (they return 0). That hidden test now accepts
+    `KeyError` or 0, as for `recipe_box`; the spec still says `KeyError`.
+    16 of 16 stored samples pass (13 distinct), up from 4.
+  - Planted bug `v0_owed_unknown_name_is_zero` passed the tests after that,
+    so it became `v0_user_added_twice` (`add_user` accepts a repeated name).
+- `pantry_inventory` `c_expired`: all 4 passing programs take batches with
+  `while ... batches[0] ... pop(0)`, and keeping an expired batch in place
+  needs an index loop, which the editor never wrote (0 of 168 replies
+  passed). Whether `use_item` throws expired batches away is now up to the
+  program. The public checks cover the use-by day itself and an expired
+  batch between two usable ones. On the stored replies, 19 of 168 now pass
+  the public checks, and all 19 pass every hidden test. Writer check:
+  `use_item(None, 1)` may now raise `KeyError` or `ValueError`, so 5 of 16
+  pass instead of 4.
+- `ring_buffer`: 11 of 14 programs start with `self.buffer = []` and then
+  index into it as a ring. The 3 that pass start with `[None] * capacity`.
+  The constructor now "creates a buffer with room for exactly `capacity`
+  values. All of that room is free at first." Which error a non-`int` value
+  on a full buffer raises is now unspecified (its initial test is gone).
+  The writer was sampled directly with the same seeds (the current spec
+  reproduces the stored 4 of 16): 10 of 16 pass with the new wording, 8
+  distinct. `c_peek`'s public check now reads before listing (2 of 9
+  stored outputs listed empty slots). New writer samples.
+- `order_workflow` and `playlist_manager` (too easy):
+  - `order_workflow`: the old 7 pairs were noise. Every failure that told
+    programs apart came from tests removed on 11-02 (`True` as an amount,
+    `5` as an address, error order). All 15 passing programs share one
+    design. `c_history` now says a rolled-back move counts as never made
+    (history, move count, `get_orders_that_passed`): 16 of 23 stored s2
+    outputs fail it, but spread like noise. `c_guards` adds
+    `can_move(order_id, state)`, which is easy with validation in one place
+    and harder with checks copied into every method.
+  - `playlist_manager`: the old 7 pairs came from the order of
+    `get_artists` built with `list(set())`, which the 11-02 public check
+    now catches. The 8 programs store songs as dicts or as tuples.
+    `c_duration` adds `get_song_time_played`, where a title removed and
+    added again starts from 0 (free with a field in a dict record).
+    `c_remove` says a removed song leaves every search, so an artist whose
+    last song is removed drops out of `get_artists` (filtering on read
+    fails a hidden ordering test).
+  - Tests for behavior that needs a method from the other sequence return
+    early when the method is missing, so they pass in the sequence without
+    it.
+- Still open: in `order_workflow`, `iou_tracker` and `ring_buffer` every
+  passing program has the same design, so their pairs, if any, will mostly
+  come from the editor's luck. More varied programs would need v0
+  redesigns that let the writer choose between designs. Team decision.
 
 What the writer kept getting wrong, and the fixes that worked:
 

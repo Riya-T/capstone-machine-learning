@@ -1,6 +1,11 @@
 """Hidden tests for the c_remove change (removing songs). Never shown to the
 writer or the editor.
 
+c_remove is the first change of s1 and the second of s2, after c_by_artist.
+The tests at the end check that removed songs leave the artist searches;
+they return early, and so pass, when the library has no artist search (s1).
+A skipped test would count as failed.
+
 Usage (with playlist.py importable, e.g. in the sandbox):
     python -m pytest changes/c_remove/private/test_remove_new.py
 """
@@ -26,7 +31,9 @@ def library():
 
 
 def state(lib):
-    return ({n: lib.get_playlist(n) for n in PLAYLISTS}, lib.get_queue())
+    # Copies, so a program that returns its own lists can't pass the
+    # "nothing changes" checks by comparing a list with itself.
+    return ({n: list(lib.get_playlist(n)) for n in PLAYLISTS}, list(lib.get_queue()))
 
 
 def test_taking_a_song_out_of_a_playlist_leaves_other_playlists_alone(library):
@@ -120,3 +127,68 @@ def test_removing_the_last_song_leaves_an_empty_library(library):
     library.add_song("Blue", "Nina", 1)
     library.add_to_playlist("morning", "Blue")
     assert library.get_playlist("morning") == ["Blue"]
+
+
+ARTIST_SEARCH = ("get_songs_by_artist", "get_artists", "get_playlist_by_artist")
+
+
+def artist_library():
+    """A library for the artist checks, or None if it has no artist search."""
+    lib = MusicLibrary()
+    if not all(hasattr(lib, method) for method in ARTIST_SEARCH):
+        return None
+    for title, artist in [
+        ("Dusk", "Pia"),
+        ("Gold", "Omar"),
+        ("Blue", "Nina"),
+        ("Rain", "Pia"),
+        ("Red", "Nina"),
+    ]:
+        lib.add_song(title, artist, 100)
+    lib.create_playlist("morning")
+    for title in ["Red", "Gold", "Dusk", "Blue"]:
+        lib.add_to_playlist("morning", title)
+    return lib
+
+
+def test_removed_songs_leave_the_artist_searches():
+    lib = artist_library()
+    if lib is None:
+        return
+    lib.remove_song("Blue")
+    assert lib.get_songs_by_artist("Nina") == ["Red"]
+    assert lib.get_playlist_by_artist("morning", "Nina") == ["Red"]
+    lib.remove_song("Red")
+    lib.add_song("Red", "Omar", 30)
+    assert lib.get_songs_by_artist("Nina") == []
+    assert lib.get_songs_by_artist("Omar") == ["Gold", "Red"]
+    assert lib.get_playlist_by_artist("morning", "Omar") == ["Gold"]
+
+
+def test_an_artist_whose_songs_are_all_removed_is_no_longer_listed():
+    lib = artist_library()
+    if lib is None:
+        return
+    lib.remove_song("Gold")
+    assert lib.get_artists() == ["Pia", "Nina"]
+    lib.remove_song("Blue")
+    assert lib.get_artists() == ["Pia", "Nina"]
+    lib.remove_song("Red")
+    assert lib.get_artists() == ["Pia"]
+    lib.remove_song("Dusk")
+    lib.remove_song("Rain")
+    assert lib.get_artists() == []
+
+
+def test_an_artist_listed_again_takes_the_place_of_their_new_song():
+    lib = artist_library()
+    if lib is None:
+        return
+    lib.remove_song("Gold")
+    lib.add_song("Sun", "Omar", 60)
+    assert lib.get_artists() == ["Pia", "Nina", "Omar"]
+    lib.remove_song("Blue")
+    lib.remove_song("Red")
+    lib.add_song("Blue", "Nina", 200)
+    assert lib.get_artists() == ["Pia", "Omar", "Nina"]
+    assert lib.get_songs_by_artist("Nina") == ["Blue"]

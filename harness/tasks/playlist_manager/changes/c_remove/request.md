@@ -11,6 +11,9 @@ and from the whole library.
   library, from every playlist it is in, and drops every copy of it from
   the queue, leaving everything else in order. It raises `KeyError` for a
   song that was never added or was already removed.
+- After `remove_song`, the library behaves as if the song had never been
+  added: it is gone from every playlist, the queue and every search, and
+  nothing is listed any more only because of it.
 - Once removed, the title counts as unknown everywhere: `enqueue`,
   `add_to_playlist` and `remove_from_playlist` raise `KeyError` for it. The
   same title may then be added again with `add_song`, with any artist and

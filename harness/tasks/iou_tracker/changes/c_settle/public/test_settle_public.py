@@ -38,3 +38,18 @@ def test_paying_more_than_is_owed_applies_nothing(tracker):
         tracker.settle("bob", [("alice", 100), ("carol", 201)])
     assert tracker.get_owed("alice", "bob") == 500
     assert tracker.get_owed("carol", "bob") == 200
+
+
+def test_a_lender_can_be_paid_again_in_a_later_call(tracker):
+    tracker.settle("bob", [("alice", 300)])
+    tracker.settle("bob", [("alice", 150)])
+    assert tracker.get_owed("alice", "bob") == 50
+    with pytest.raises(IouError):
+        tracker.settle("bob", [("alice", 60)])
+    assert tracker.get_owed("alice", "bob") == 50
+
+
+def test_a_lender_listed_twice_in_one_call_is_rejected(tracker):
+    with pytest.raises(ValueError):
+        tracker.settle("bob", [("alice", 100), ("alice", 50)])
+    assert tracker.get_owed("alice", "bob") == 500
