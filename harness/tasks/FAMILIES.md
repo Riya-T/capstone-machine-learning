@@ -104,8 +104,8 @@ Last updated 2026-11-02.
 | `robot_fleet` | train | 0 → 0 → 14 | ✅ passed after redesign |
 | `hangman_games` | train | 2 → 0 → 8 | ✅ passed after redesign |
 | `ticket_desk` | train | 0 → 0 → 0 → 16 | ✅ passed after second redesign |
-| `iou_tracker` | train | 0 → 1 → 1 → 0 | ❌ failed after second redesign; redesigned a third time, not rerun |
-| `pantry_inventory` | train | 0 → 0 → 0 → 1 | ❌ failed after second redesign; redesigned a third time, not rerun |
+| `iou_tracker` | train | 0 → 1 → 1 → 0 → 4 | ✅ passed after third redesign |
+| `pantry_inventory` | train | 0 → 0 → 0 → 1 → 4 | ✅ passed after third redesign |
 | `aging_inventory` | eval | 7 | ✅ passed |
 | `auction_house` | eval | 5 | ✅ passed |
 | `document_versions` | eval | 0 | ❌ failed |
@@ -123,16 +123,16 @@ Last updated 2026-11-02.
 | `task_board` | eval | – | not run yet |
 | `time_clock` | eval | – | not run yet |
 
-So far 43 of the 48 tasks run pass: 7 of 8 dev, 34 of 36 train and 2 of 4
+So far 45 of the 48 tasks run pass: 7 of 8 dev, all 36 train and 2 of 4
 eval. The other 12 eval tasks have not been run yet. Train tasks that fail
 are redesigned, not dropped (team decision, 2026-11-02; see "Redesigned on
 2026-11-02" below). `iou_tracker`, `pantry_inventory` and `ticket_desk`
 failed again after their redesign and were redesigned a second time.
-`ticket_desk` then passed; the other two were redesigned a third time and
-are rerun after the re-collection below.
+`ticket_desk` then passed, and the other two passed after a third redesign.
 
-Data collection on the train tasks, in the order the tasks passed (155
-preference pairs from 23 tasks so far):
+Data collection on the train tasks, in the order the tasks passed (210
+preference pairs from 32 of the 36 tasks so far, counting each task's
+latest run):
 
 - The first 24 (2026-11-01 to 11-02): 130 pairs from 18 tasks.
   `feature_flags`, `job_board`, `staff_directory`, `thermostat_zones`,
@@ -148,9 +148,32 @@ preference pairs from 23 tasks so far):
 - `robot_fleet` and `hangman_games` (2026-11-02): 8 pairs, all from
   `hangman_games`. Every `robot_fleet` trial scored 0 (see "Change tests"
   below).
-- Most of these numbers are about to change: in 25 of the tasks the change
-  tests blocked nearly every trial, and those tasks are being collected
-  again after the fix (see "Change tests" below).
+- Re-collection after the change-test fix (2026-11-02 to 11-03; the 25
+  tasks in "Change tests" below, plus `ticket_desk`, `iou_tracker` and
+  `pantry_inventory`): 159 pairs from 24 tasks, replacing those tasks'
+  earlier pairs. 16 tasks reached the cap of 8.
+  - All 6 tasks that had given none now give some: `thermostat_zones` and
+    `warehouse_stock` 8, `feature_flags` 6, `staff_directory` 3,
+    `job_board` 2 and `url_shortener` 2. So do `movie_bookings` and
+    `restaurant_orders` (8 each).
+  - `order_workflow` and `playlist_manager` went from 7 pairs each to
+    none. With the blocking tests gone, the editor finished both changes in
+    47 of 48 and 45 of 48 trials, so the programs tie.
+  - `iou_tracker` and `pantry_inventory` still had their second design here
+    (0 and 1 programs), so they gave none.
+- After the re-collection (2026-11-03): `robot_fleet` 8 pairs (14 of 16
+  programs pass). The third redesigns pass the writer check:
+  `iou_tracker` 4 of 16 (0 pairs) and `pantry_inventory` 4 of 16 (2 pairs).
+- Few or no pairs, being looked at (2026-11-03):
+  - `pantry_inventory` `c_expired`: the editor ran out of turns in all 21
+    trials that reached it.
+  - `iou_tracker` `c_settle`: failed in 9 of 12 trials as the first change
+    of s1, but passed in 9 of 11 after `c_forgive` in s2. So each program
+    loses s1 and wins s2, and none beats another.
+  - `url_shortener` `c_alias`: all 24 edits broke existing tests.
+  - `order_workflow` and `playlist_manager`: too easy now (above).
+  - `ring_buffer` (0 pairs): only 3 programs pass the writer check, and
+    their scores differ by less than 2 changes.
 
 What the writer kept getting wrong, and the fixes that worked:
 
@@ -411,10 +434,12 @@ The second redesigns passed the Docker check and were rerun on 2026-11-02
   (`ious[lender][borrower] -= amount`), which nets the two directions the
   spec keeps apart. 3 programs fail only the history tests.
 
-Redesigned a third time on 2026-11-02, validated locally, not rerun yet.
-The measure is how many stored programs pass the new tests unmodified,
-which is stronger than the "old programs" counts above (the second
-redesigns were predicted at 9 of 16 that way and got 0 and 1).
+Redesigned a third time on 2026-11-02 and rerun on 2026-11-03: both pass,
+4 of 16 each. The measure used for the designs was how many stored
+programs pass the new tests unmodified, which is stronger than the "old
+programs" counts above (the second redesigns were predicted at 9 of 16
+that way and got 0 and 1). It still overestimated: 10 and 7 of 16 were
+predicted.
 
 - `pantry_inventory`: whether `get_batches` still lists a used-up batch,
   as `(use_by, 0)`, is now up to the program; every test skips 0-unit
@@ -537,7 +562,7 @@ failed), and in all 24 `c_distance` trials the editor ran out of turns
 before the public checks passed. Every trial scored 0, so it gave no pairs.
 In `hangman_games` (8 pairs) no test failed in most steps.
 
-Fixed on 2026-11-02, validated locally, not collected yet:
+Fixed on 2026-11-02 and collected on 2026-11-03 (8 pairs):
 
 - `c_distance`: 168 of the editor's 191 replies returned the existing
   command counter from `get_distance_travelled`. With every command
@@ -554,9 +579,9 @@ Fixed on 2026-11-02, validated locally, not collected yet:
   per robot, so it tells programs apart. The request now has an example,
   but no public check.
 
-The pairs from these 25 tasks are replaced by a re-collection (started
-2026-11-02 on the 25 tasks plus the 3 redesigned a second time; all 28
-passed the Docker check; `configs/tmp_recollect.yaml`, local only). Not done
+The pairs from these 25 tasks were replaced by a re-collection (2026-11-02
+to 11-03, on the 25 tasks plus the 3 redesigned a second time; all 28
+passed the Docker check; results at the top). Not done
 yet: the dev tasks show the same problem (`bank_ledger` `c_overdraft` `True`, 26 of
 28; `team_roster` `c_trades` error order, 29 of 41), and the eval tasks'
 change tests have not been checked.
