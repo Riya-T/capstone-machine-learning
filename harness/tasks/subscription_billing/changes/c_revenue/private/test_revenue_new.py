@@ -59,7 +59,8 @@ def test_revenue_total_matches_every_charge(billing):
     billing.cancel("bob")
     billing.subscribe("carol", "lite")
     billing.run_cycle()
-    total = sum(sum(billing.get_charges(c)) for c in ["alice", "bob", "carol"])
+    # bob was charged 1500 before cancelling
+    total = sum(sum(billing.get_charges(c)) for c in ["alice", "carol"]) + 1500
     assert billing.get_total_revenue() == total == 900 + 1500 + 600 + 1500 + 400
 
 

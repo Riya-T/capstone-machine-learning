@@ -35,3 +35,4 @@ def test_groups_filter_the_coach_list(planner):
     planner.add_coach("D", 12, group="comfort")
     assert planner.get_coaches(group="comfort") == ["C", "D"]
     assert planner.get_coaches() == ["A", "C", "D"]
+    assert planner.get_group_available("comfort") == 15

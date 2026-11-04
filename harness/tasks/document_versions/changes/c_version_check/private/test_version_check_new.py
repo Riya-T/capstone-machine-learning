@@ -88,9 +88,8 @@ def test_version_bad_arguments_still_raise_value_error(wiki):
         wiki.edit_page("home", "bob", None, expected_version=1)
 
 
-def test_version_keeps_counting_after_old_revisions_are_dropped(wiki):
+def test_version_keeps_counting_past_the_history(wiki):
     for n in range(2, 9):
         wiki.edit_page("home", "bob", f"v{n}", expected_version=n - 1)
     assert wiki.get_version("home") == 8
-    with pytest.raises(IndexError):
-        wiki.get_revision("home", 3)
+    assert [n for n, _ in wiki.get_history("home")] == [4, 5, 6, 7, 8]

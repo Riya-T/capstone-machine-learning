@@ -86,26 +86,7 @@ def test_pause_blocks_plan_changes_and_quotes(billing):
 def test_pause_a_paused_customer_may_cancel(billing):
     billing.pause("alice")
     billing.cancel("alice")
-    assert billing.get_plan("alice") is None
-    assert not billing.is_paused("alice")
     assert billing.run_cycle() == 1500
-
-
-def test_pause_cancelled_customers(billing):
-    billing.cancel("alice")
-    for method in ("pause", "resume"):
-        with pytest.raises(BillingError) as info:
-            getattr(billing, method)("alice")
-        assert not isinstance(info.value, SubscriptionPaused)
-    assert not billing.is_paused("alice")
-
-
-def test_pause_resubscribing_starts_unpaused(billing):
-    billing.pause("alice")
-    billing.cancel("alice")
-    billing.subscribe("alice", "pro")
-    assert not billing.is_paused("alice")
-    assert billing.run_cycle() == 3000
 
 
 @pytest.mark.parametrize("method", ["pause", "resume", "is_paused"])

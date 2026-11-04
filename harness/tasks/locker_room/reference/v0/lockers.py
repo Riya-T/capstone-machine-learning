@@ -1,4 +1,4 @@
-"""Locker room: items go into the smallest free locker that fits them, a fee
+"""Locker room: items go into a free locker of their own size, a fee
 is taken per locker size, and items are handed back later.
 
 Correct solution for locker_room before any change (the initial spec).
@@ -13,7 +13,7 @@ Usage:
     room.retrieve("umbrella")
 """
 
-SIZES = ["small", "medium", "large"]  # smallest first
+SIZES = ["small", "medium", "large"]
 FEES = {"small": 200, "medium": 300, "large": 500}  # cents per stored item
 
 
@@ -80,8 +80,8 @@ class LockerRoom:
 
     def _choose(self, size):
         free = self.get_free_lockers()
-        for locker_size in SIZES[SIZES.index(size):]:
+        for locker_size in [size]:
             for locker_id in free:
                 if self._sizes[locker_id] == locker_size:
                     return locker_id
-        raise NoLockerFree(f"no free locker fits a {size} item")
+        raise NoLockerFree(f"no free {size} locker")

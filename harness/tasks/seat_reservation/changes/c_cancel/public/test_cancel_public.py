@@ -26,17 +26,17 @@ def test_cancelling_a_whole_booking(planner):
         planner.get_booking("smith")
 
 
-def test_cancelling_part_of_a_booking_frees_its_highest_seats(planner):
+def test_cancelling_part_of_a_booking(planner):
     planner.reserve("smith", 4)
     planner.cancel("smith", 1)
-    assert planner.get_booking("smith") == ("A", [1, 2, 3])
+    assert planner.get_booking("smith") == ("A", 3)
     assert planner.get_reserved("A") == 3
     assert planner.get_cancelled() == []
 
 
-def test_cancelled_seats_are_booked_again(planner):
-    planner.reserve("smith", 2)
-    planner.reserve("jones", 2)
+def test_cancelled_room_is_booked_again(planner):
+    planner.reserve("smith", 4)
+    planner.reserve("jones", 3)
     planner.cancel("smith")
-    assert planner.reserve("brown", 3) == "A"
-    assert planner.get_booking("brown") == ("A", [1, 2, 5])
+    assert planner.reserve("brown", 4) == "A"
+    assert planner.get_available("A") == 0

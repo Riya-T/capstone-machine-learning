@@ -9,13 +9,16 @@ from telemetry import RaceTelemetry
 
 
 def make():
-    t = RaceTelemetry()
+    t = RaceTelemetry(1)
     t.add_car("red", car_class="pro")
     t.add_car("blue", car_class="amateur")
     t.add_car("green", car_class="pro")
     t.add_car("grey")
-    t.add_race("spa", 1)
     return t
+
+
+def results(t, **kwargs):
+    return [tuple(pair) for pair in t.get_results(**kwargs)]
 
 
 def test_class_lists():
@@ -23,12 +26,12 @@ def test_class_lists():
     assert t.get_car_class("grey") == "open"
     assert t.get_classes() == ["pro", "amateur", "open"]
     assert t.get_cars(car_class="pro") == ["red", "green"]
+    assert t.get_cars() == ["red", "blue", "green", "grey"]
 
 
-def test_class_results_and_points():
+def test_class_results_score_places_within_the_class():
     t = make()
     for car, lap in [("blue", 90000), ("green", 91000), ("red", 92000)]:
-        t.record_lap("spa", car, lap)
-    assert t.get_results("spa", car_class="pro") == ["green", "red"]
-    assert t.get_class_points("green") == 10
-    assert t.get_points("green") == 6
+        t.record_lap(car, lap)
+    assert results(t, car_class="pro") == [("green", 10), ("red", 6)]
+    assert results(t) == [("blue", 10), ("green", 6), ("red", 4)]

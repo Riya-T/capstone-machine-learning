@@ -1,5 +1,5 @@
-"""Hidden tests for the c_retention change (adjustable number of kept
-revisions). Never shown to the writer or the editor.
+"""Hidden tests for the c_retention change (adjustable number of
+revisions in the history). Never shown to the writer or the editor.
 
 Usage (with wiki.py importable, e.g. in the sandbox):
     python -m pytest changes/c_retention/private/test_retention_new.py
@@ -12,14 +12,8 @@ BAD_KEEPS = [0, -2, 2.0, "3"]
 
 
 def readable(w, page):
-    found = []
-    for number in range(1, w.get_revision_count(page) + 1):
-        try:
-            w.get_revision(page, number)
-        except IndexError:
-            continue
-        found.append(number)
-    return found
+    """The revision numbers in a page's history."""
+    return [number for number, _ in w.get_history(page)]
 
 
 def write(w, page, count):
@@ -52,7 +46,7 @@ def test_retention_a_limit_of_one_keeps_only_the_latest():
     w = Wiki(keep=1)
     w.create_page("home", "ann", "r1")
     write(w, "home", 2)
-    assert readable(w, "home") == [3]
+    assert w.get_history("home") == [(3, "r3")]
     assert w.get_text("home") == "r3"
     assert w.get_revision_count("home") == 3
 
@@ -70,7 +64,7 @@ def test_retention_page_limits_are_independent():
     assert [w.get_keep(p) for p in ("long", "short", "tiny")] == [6, 2, 1]
 
 
-def test_retention_dropped_revisions_still_count_elsewhere():
+def test_retention_older_revisions_still_count_elsewhere():
     w = Wiki(keep=2)
     w.create_page("home", "ann", "r1")
     w.edit_page("home", "cy", "r2")

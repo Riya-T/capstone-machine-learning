@@ -85,16 +85,7 @@ def test_versioned_stale_calls_change_nothing(billing, call):
 def test_versioned_cancel_with_the_right_version(billing):
     billing.change_plan("bob", "basic")
     billing.cancel("bob", expected_version=2)
-    assert billing.get_plan("bob") is None
-
-
-def test_versioned_resubscribing_starts_again_at_one(billing):
-    billing.change_plan("alice", "pro")
-    billing.cancel("alice")
-    with pytest.raises(BillingError):
-        billing.get_version("alice")
-    billing.subscribe("alice", "lite")
-    assert billing.get_version("alice") == 1
+    assert billing.run_cycle() == 900
 
 
 def test_versioned_matching_version_still_applies_the_rules(billing):

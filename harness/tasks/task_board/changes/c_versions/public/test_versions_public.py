@@ -17,7 +17,7 @@ def test_versions_start_at_one_and_count_changes():
     b.rename_task(task_id, "home page")
     b.set_due_day(task_id, 4)
     assert b.get_version(task_id) == 3
-    assert b.get_task(task_id) == ("web", "home page", 4, False)
+    assert b.get_task(task_id) == ("home page", 4)
 
 
 def test_versions_a_stale_edit_is_refused():
@@ -27,6 +27,6 @@ def test_versions_a_stale_edit_is_refused():
     b.rename_task(task_id, "home page", expected_version=1)
     with pytest.raises(VersionConflict):
         b.complete(task_id, expected_version=1)
-    assert b.get_task(task_id)[3] is False
+    assert b.get_open_tasks("web") == [task_id]
     b.complete(task_id, expected_version=2)
     assert b.get_version(task_id) == 3

@@ -11,7 +11,7 @@ private_tests: [private/test_lockers_initial.py]
 reference: reference/v0
 planted_bugs:
   # Required: a bug only the hidden initial tests catch.
-  - {path: bugs/v0_fee_by_item_size, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_retrieved_item_refused, must_fail: [initial], must_pass: [public]}
   - {path: bugs/v0_item_stored_twice, must_fail: [initial], must_pass: [public]}
 
 changes:

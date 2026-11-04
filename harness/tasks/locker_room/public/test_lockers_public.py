@@ -5,7 +5,7 @@ Usage (with lockers.py importable, e.g. in the sandbox):
 """
 
 import pytest
-from lockers import LockerRoom, NoLockerFree
+from lockers import LockerError, LockerRoom, NoLockerFree
 
 
 @pytest.fixture
@@ -24,18 +24,23 @@ def test_an_item_goes_into_a_locker_of_its_size(room):
     assert room.get_takings() == 200
 
 
-def test_the_smallest_locker_that_fits_is_used(room):
+def test_an_item_goes_only_into_a_locker_of_its_size(room):
     assert room.store("coat", "medium") == "M1"
-    assert room.store("boots", "medium") == "L1"
-    assert room.get_free_lockers() == ["S1"]
+    with pytest.raises(NoLockerFree):
+        room.store("boots", "medium")
+    assert room.get_free_lockers() == ["S1", "L1"]
+    assert room.get_takings() == 300
 
 
-def test_a_small_item_goes_up_a_size_when_the_small_lockers_are_taken(room):
+def test_lockers_of_one_size_are_used_in_the_order_added(room):
+    room.add_locker("S2", "small")
     assert room.store("scarf", "small") == "S1"
-    assert room.store("hat", "small") == "M1"
-    assert room.store("cap", "small") == "L1"
-    assert room.get_locker("hat") == "M1"
-    assert room.get_free_lockers() == []
+    assert room.store("hat", "small") == "S2"
+    with pytest.raises(NoLockerFree):
+        room.store("cap", "small")
+    assert room.get_locker("hat") == "S2"
+    assert room.get_free_lockers() == ["M1", "L1"]
+    assert room.get_takings() == 400
 
 
 def test_retrieving_frees_the_locker(room):
@@ -59,6 +64,12 @@ def test_an_item_that_fits_nowhere_raises(room):
     with pytest.raises(NoLockerFree):
         room.store("suitcase", "large")
     assert room.get_free_lockers() == ["S1", "M1"]
+
+
+def test_adding_a_locker_twice_is_rejected(room):
+    with pytest.raises(LockerError):
+        room.add_locker("S1", "large")
+    assert room.get_free_lockers() == ["S1", "M1", "L1"]
 
 
 def test_an_unknown_size_is_rejected(room):

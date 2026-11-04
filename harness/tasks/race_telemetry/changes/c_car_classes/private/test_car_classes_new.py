@@ -11,29 +11,36 @@ from telemetry import RaceTelemetry, TelemetryError
 CARS = [("red", "pro"), ("blue", "amateur"), ("green", "pro"), ("pink", "amateur"), ("gold", "pro")]
 
 
-@pytest.fixture
-def tel():
-    t = RaceTelemetry()
+def make(**kwargs):
+    t = RaceTelemetry(1, **kwargs)
     for car, car_class in CARS:
         t.add_car(car, car_class=car_class)
-    t.add_race("spa", 1)
-    t.add_race("finale", 1, points_table=[20, 12, 8])
     return t
 
 
-def run(t, race, order):
-    """Finish a one-lap race with the cars in `order`, fastest first."""
+@pytest.fixture
+def tel():
+    return make()
+
+
+def results(t, **kwargs):
+    return [tuple(pair) for pair in t.get_results(**kwargs)]
+
+
+def run(t, order):
+    """Finish the one-lap race with the cars in `order`, fastest first."""
     for i, car in enumerate(order):
-        t.record_lap(race, car, 90000 + 100 * i)
+        t.record_lap(car, 90000 + 100 * i)
 
 
 def test_class_default_is_open():
-    t = RaceTelemetry()
+    t = RaceTelemetry(1)
     t.add_car("red")
     t.add_car("blue", car_class="pro")
     assert t.get_car_class("red") == "open"
     assert t.get_classes() == ["open", "pro"]
     assert t.get_cars() == ["red", "blue"]
+    assert t.get_cars(car_class="open") == ["red"]
 
 
 def test_class_of_each_car(tel):
@@ -49,36 +56,33 @@ def test_class_filter_on_cars(tel):
 
 
 def test_class_filter_on_results(tel):
-    run(tel, "spa", ["pink", "gold", "blue", "red"])  # green has not finished
-    assert tel.get_results("spa") == ["pink", "gold", "blue", "red"]
-    assert tel.get_results("spa", car_class="pro") == ["gold", "red"]
-    assert tel.get_results("spa", car_class="amateur") == ["pink", "blue"]
-    assert tel.get_results("spa", car_class="rookie") == []
+    run(tel, ["pink", "gold", "blue", "red"])  # green has not finished
+    assert results(tel) == [("pink", 10), ("gold", 6), ("blue", 4), ("red", 3)]
+    assert results(tel, car_class="pro") == [("gold", 10), ("red", 6)]
+    assert results(tel, car_class="amateur") == [("pink", 10), ("blue", 6)]
+    assert results(tel, car_class="rookie") == []
+    assert results(tel, car_class=None) == results(tel)
 
 
-def test_class_points_use_places_within_the_class(tel):
-    run(tel, "spa", ["pink", "gold", "blue", "red", "green"])
-    assert [tel.get_class_points(c) for c, _ in CARS] == [6, 6, 4, 10, 10]
-    assert [tel.get_points(c) for c, _ in CARS] == [3, 4, 2, 10, 6]
+def test_class_results_use_the_points_table():
+    t = make(points_table=[20, 12])
+    run(t, ["red", "blue", "green", "gold", "pink"])
+    assert results(t, car_class="pro") == [("red", 20), ("green", 12), ("gold", 0)]
+    assert results(t, car_class="amateur") == [("blue", 20), ("pink", 12)]
+    t.set_points_table([1])
+    assert results(t, car_class="pro") == [("red", 1), ("green", 0), ("gold", 0)]
 
 
-def test_class_points_use_each_race_table(tel):
-    run(tel, "spa", ["red", "blue", "green"])
-    run(tel, "finale", ["green", "pink", "red", "blue"])
-    # spa: pro red 1st, green 2nd; amateur blue 1st.
-    # finale: pro green 1st, red 2nd; amateur pink 1st, blue 2nd.
-    assert tel.get_class_points("red") == 10 + 12
-    assert tel.get_class_points("green") == 6 + 20
-    assert tel.get_class_points("blue") == 10 + 12
-    assert tel.get_class_points("pink") == 20
-    assert tel.get_class_points("gold") == 0
+def test_class_results_include_penalties(tel):
+    run(tel, ["red", "green", "gold"])
+    tel.add_penalty("red", 150)  # 90150, behind green's 90100
+    assert results(tel, car_class="pro") == [("green", 10), ("red", 6), ("gold", 4)]
 
 
 def test_class_ties_keep_the_order_cars_were_added(tel):
     for car in ["gold", "green", "red"]:
-        tel.record_lap("spa", car, 90000)
-    assert tel.get_results("spa", car_class="pro") == ["red", "green", "gold"]
-    assert [tel.get_class_points(c) for c in ["red", "green", "gold"]] == [10, 6, 4]
+        tel.record_lap(car, 90000)
+    assert results(tel, car_class="pro") == [("red", 10), ("green", 6), ("gold", 4)]
 
 
 @pytest.mark.parametrize("car_class", ["", None])
@@ -86,19 +90,18 @@ def test_class_must_be_a_non_empty_string(tel, car_class):
     with pytest.raises(ValueError):
         tel.add_car("white", car_class=car_class)
     assert "white" not in tel.get_cars()
+    assert tel.get_classes() == ["pro", "amateur"]
 
 
 def test_class_a_car_id_in_use_is_still_refused(tel):
     with pytest.raises(TelemetryError):
         tel.add_car("red", car_class="amateur")
     assert tel.get_car_class("red") == "pro"
-    assert tel.get_classes() == ["pro", "amateur"]
+    assert tel.get_cars(car_class="amateur") == ["blue", "pink"]
 
 
-def test_class_methods_raise_key_error_for_unknown_ids(tel):
+def test_class_of_an_unknown_car_raises_key_error(tel):
     with pytest.raises(KeyError):
         tel.get_car_class("white")
     with pytest.raises(KeyError):
-        tel.get_class_points(None)
-    with pytest.raises(KeyError):
-        tel.get_results("imola", car_class="pro")
+        tel.get_car_class(None)

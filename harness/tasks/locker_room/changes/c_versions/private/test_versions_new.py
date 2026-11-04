@@ -104,23 +104,22 @@ def test_move_frees_the_old_locker_and_charges_nothing(room):
     assert room.retrieve("hat") == "S2"
 
 
-def test_move_to_a_larger_locker_and_back(room):
-    room.move("hat", "L1", expected_version=1)
+def test_move_to_another_locker_and_back(room):
+    room.move("hat", "S2", expected_version=1)
     room.move("hat", "S1", expected_version=3)
     assert room.get_locker("hat") == "S1"
     assert room.get_version("S1") == 4
-    assert room.get_version("L1") == 3
+    assert room.get_version("S2") == 3
 
 
 def test_move_keeps_the_size_the_item_was_stored_with(room):
-    room.store("bag", "small")  # goes into S2
-    room.move("bag", "L1")
-    room.retrieve("hat")
-    room.move("bag", "S1")
-    assert room.get_locker("bag") == "S1"
-    with pytest.raises(LockerError):
-        # coat was stored as medium; S2 is empty but small.
-        room.move("coat", "S2")
+    before = state(room)
+    # S2 and L1 are empty, but not of the item's size.
+    for item, target in [("hat", "L1"), ("coat", "S2"), ("coat", "L1")]:
+        with pytest.raises(LockerError) as caught:
+            room.move(item, target)
+        assert not isinstance(caught.value, VersionConflict)
+    assert state(room) == before
 
 
 def test_move_errors_change_nothing(room):

@@ -36,11 +36,6 @@ def check_keep(keep):
         raise ValueError(f"keep must be an int >= 1, got {keep!r}")
 
 
-def check_number(number):
-    if not isinstance(number, int) or number < 1:
-        raise ValueError(f"revision number must be an int >= 1, got {number!r}")
-
-
 class _Page:
     def __init__(self, keep):
         self.keep = keep
@@ -95,12 +90,8 @@ class Wiki:
     def get_text(self, page):
         return self._require(page).latest()
 
-    def get_revision(self, page, number):
-        record = self._require(page)
-        check_number(number)
-        if number not in record.texts:
-            raise IndexError(f"revision {number} of {page!r} is not available")
-        return record.texts[number]
+    def get_history(self, page):
+        return sorted(self._require(page).texts.items())
 
     def get_revision_count(self, page):
         return len(self._require(page).writers)

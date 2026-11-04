@@ -18,7 +18,7 @@ def wiki():
 def test_a_new_page_has_one_revision(wiki):
     assert wiki.get_text("home") == "Welcome"
     assert wiki.get_revision_count("home") == 1
-    assert wiki.get_revision("home", 1) == "Welcome"
+    assert wiki.get_history("home") == [(1, "Welcome")]
 
 
 def test_edits_add_numbered_revisions(wiki):
@@ -26,7 +26,7 @@ def test_edits_add_numbered_revisions(wiki):
     wiki.edit_page("home", "ann", "Welcome, all")
     assert wiki.get_text("home") == "Welcome, all"
     assert wiki.get_revision_count("home") == 3
-    assert wiki.get_revision("home", 2) == "Welcome!"
+    assert wiki.get_history("home") == [(1, "Welcome"), (2, "Welcome!"), (3, "Welcome, all")]
 
 
 def test_authors_are_listed_once_each(wiki):
@@ -42,22 +42,21 @@ def test_an_edit_that_changes_nothing_is_refused(wiki):
     assert wiki.get_revision_count("home") == 1
 
 
-def test_a_revision_that_does_not_exist_yet_raises_index_error(wiki):
-    with pytest.raises(IndexError):
-        wiki.get_revision("home", 2)
-
-
 def test_unknown_page_raises_key_error(wiki):
     with pytest.raises(KeyError):
         wiki.get_text("about")
 
 
-def test_old_revisions_are_dropped_but_keep_their_numbers(wiki):
-    for n in range(2, 9):
-        wiki.edit_page("home", "bob", f"v{n}")
-    assert wiki.get_revision_count("home") == 8
-    assert wiki.get_text("home") == "v8"
-    assert wiki.get_revision("home", 8) == "v8"
-    assert wiki.get_revision("home", 4) == "v4"
-    with pytest.raises(IndexError):
-        wiki.get_revision("home", 1)
+def test_the_history_keeps_the_5_latest_revisions():
+    w = Wiki()
+    w.create_page("home", "ann", "v1")
+    for n in range(2, 6):
+        w.edit_page("home", "bob", f"v{n}")
+    assert w.get_history("home") == [(1, "v1"), (2, "v2"), (3, "v3"), (4, "v4"), (5, "v5")]
+    w.edit_page("home", "bob", "v6")
+    assert w.get_history("home") == [(2, "v2"), (3, "v3"), (4, "v4"), (5, "v5"), (6, "v6")]
+    w.edit_page("home", "bob", "v7")
+    w.edit_page("home", "bob", "v8")
+    assert w.get_history("home") == [(4, "v4"), (5, "v5"), (6, "v6"), (7, "v7"), (8, "v8")]
+    assert w.get_revision_count("home") == 8
+    assert w.get_text("home") == "v8"

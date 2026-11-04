@@ -10,7 +10,9 @@ deleted, and brought back later if needed.
   project's open tasks and counts toward its limit again; a restored done
   task stays done. Restoring a task that is not archived raises
   `BoardError`, and so does restoring an open task into a project that
-  already has as many open tasks as its limit.
+  already has as many open tasks as its limit. Whether done tasks count
+  toward the limit stays unspecified, so restoring a done task into such a
+  project is unspecified too.
 - Add `Board.is_archived(task_id) -> bool` and
   `Board.get_archived(project) -> list[int]`: the ids of the project's
   archived tasks, in the order they were archived. Both raise `KeyError`

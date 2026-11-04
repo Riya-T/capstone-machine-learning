@@ -8,8 +8,8 @@ editors want to see what one person has written across the whole wiki.
   contains gives `[]`.
 - Add `Wiki.get_contributions(author) -> list[tuple[str, int]]`. It returns
   a `(page, revision number)` pair for every revision the author wrote, on
-  any page, in the order the revisions were written. Revisions that are no
-  longer kept are included. An author who has written nothing gives `[]`;
-  it is not an error.
+  any page, in the order the revisions were written. Revisions that
+  `get_history` no longer lists are included. An author who has written
+  nothing gives `[]`; it is not an error.
 
 All existing behavior must keep working.

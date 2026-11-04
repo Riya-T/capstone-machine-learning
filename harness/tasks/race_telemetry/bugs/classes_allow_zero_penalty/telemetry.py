@@ -1,20 +1,16 @@
-"""Race telemetry with adjustable points tables, time penalties and car classes.
+"""Race telemetry: one race, its cars, lap times, and the results with points.
 
-Planted bug (after c_points_table, c_penalties and c_car_classes): classes
-were added correctly, but add_penalty now accepts a penalty of 0.
+Planted bug in race_telemetry after c_points_table, c_penalties and c_car_classes.
 Never shown to the writer or the editor; validate-tasks checks that the
-tests catch it.
+tests catch it. The bug: a penalty of 0 is accepted.
 
 Usage:
     from telemetry import RaceTelemetry
-    tel = RaceTelemetry(points_table=(25, 18, 15))
-    tel.add_car("red", car_class="pro")
-    tel.add_race("finale", 3, points_table=[50, 36, 30])
-    tel.record_lap("finale", "red", 81250)
-    tel.add_penalty("finale", "red", 5000)
+    tel = RaceTelemetry(3)
+    tel.add_car("red")
+    tel.record_lap("red", 81250)
 """
 
-DEFAULT_POINTS = (10, 6, 4, 3, 2, 1)  # points for 1st, 2nd, ... place
 
 
 class TelemetryError(Exception):
@@ -32,140 +28,95 @@ def check_positive(value, what):
 
 
 def check_table(table):
-    if not isinstance(table, (list, tuple)):
-        raise ValueError(f"points table must be a list or tuple, got {table!r}")
-    for points in table:
-        if isinstance(points, bool) or not isinstance(points, int) or points < 0:
-            raise ValueError(f"points must be ints >= 0, got {points!r}")
+    if not isinstance(table, (list, tuple)) or not all(
+        isinstance(p, int) and not isinstance(p, bool) and p >= 0 for p in table
+    ):
+        raise ValueError(f"invalid points table {table!r}")
     return list(table)
 
 
 class RaceTelemetry:
-    def __init__(self, points_table=DEFAULT_POINTS):
-        self._table = check_table(points_table)  # the series table
-        self._cars = {}  # car id -> class, in the order cars were added
-        self._races = {}  # race id -> number of laps
-        self._race_tables = {}  # race id -> its own table, or None for the series table
-        self._laps = {}  # (race id, car id) -> lap times in recording order
-        self._penalties = {}  # (race id, car id) -> sum of penalties in ms
+    def __init__(self, laps, points_table=(10, 6, 4, 3, 2, 1)):
+        check_positive(laps, "laps")
+        self._table = check_table(points_table)  # points for 1st, 2nd, ... place
+        self._laps = laps  # laps a car must drive to finish
+        self._cars = []  # car ids in the order they were added
+        self._times = {}  # car id -> lap times in recording order
+        self._penalties = {}  # car id -> sum of its penalties
+        self._classes = {}  # car id -> its class
 
     def add_car(self, car_id, car_class="open"):
         check_id(car_id, "car_id")
         check_id(car_class, "car_class")
-        if car_id in self._cars:
+        if car_id in self._times:
             raise TelemetryError(f"car {car_id!r} is already entered")
-        self._cars[car_id] = car_class
+        self._cars.append(car_id)
+        self._times[car_id] = []
+        self._penalties[car_id] = 0
+        self._classes[car_id] = car_class
 
-    def get_car_class(self, car_id):
+    def get_cars(self, car_class=None):
+        if car_class is not None:
+            return [c for c in self._cars if self._classes[c] == car_class]
+        return list(self._cars)
+
+    def record_lap(self, car_id, lap_time):
         self._require_car(car_id)
-        return self._cars[car_id]
+        check_positive(lap_time, "lap_time")
+        if self._finished(car_id):
+            raise TelemetryError(f"car {car_id!r} has already finished")
+        self._times[car_id].append(lap_time)
 
-    def get_classes(self):
-        classes = []
-        for car_class in self._cars.values():
-            if car_class not in classes:
-                classes.append(car_class)
-        return classes
+    def get_lap_times(self, car_id):
+        self._require_car(car_id)
+        return list(self._times[car_id])
 
-    def add_race(self, race_id, laps, points_table=None):
-        check_id(race_id, "race_id")
-        check_positive(laps, "laps")
-        table = None if points_table is None else check_table(points_table)
-        if race_id in self._races:
-            raise TelemetryError(f"race {race_id!r} already exists")
-        self._races[race_id] = laps
-        self._race_tables[race_id] = table
+    def get_results(self, car_class=None):
+        finished = [c for c in self._cars if self._finished(c)]
+        if car_class is not None:
+            finished = [c for c in finished if self._classes[c] == car_class]
+        # sorted() is stable, so equal times keep the order cars were added.
+        order = sorted(finished, key=self._total)
+        table = self._table
+        return [(c, table[i] if i < len(table) else 0) for i, c in enumerate(order)]
 
     def set_points_table(self, points_table):
         self._table = check_table(points_table)
 
-    def get_points_table(self, race_id=None):
-        if race_id is None:
-            return list(self._table)
-        self._require_race(race_id)
-        return list(self._table_for(race_id))
+    def get_points_table(self):
+        return list(self._table)
 
-    def record_lap(self, race_id, car_id, lap_time):
-        self._require_race(race_id)
+    def add_penalty(self, car_id, penalty):
         self._require_car(car_id)
-        check_positive(lap_time, "lap_time")
-        if self._finished(race_id, car_id):
-            raise TelemetryError(f"car {car_id!r} has already finished {race_id!r}")
-        self._laps.setdefault((race_id, car_id), []).append(lap_time)
+        if penalty < 0:
+            raise ValueError(f"penalty must not be negative, got {penalty!r}")
+        self._penalties[car_id] += penalty
 
-    def get_lap_times(self, race_id, car_id):
-        self._require_race(race_id)
+    def get_penalty(self, car_id):
         self._require_car(car_id)
-        return list(self._laps.get((race_id, car_id), []))
+        return self._penalties[car_id]
 
-    def add_penalty(self, race_id, car_id, penalty):
-        self._require_race(race_id)
+    def get_total_time(self, car_id):
         self._require_car(car_id)
-        if isinstance(penalty, bool) or not isinstance(penalty, int) or penalty < 0:
-            raise ValueError(f"penalty must be a positive int, got {penalty!r}")
-        key = (race_id, car_id)
-        self._penalties[key] = self._penalties.get(key, 0) + penalty
+        return self._total(car_id)
 
-    def get_penalty(self, race_id, car_id):
-        self._require_race(race_id)
+    def get_car_class(self, car_id):
         self._require_car(car_id)
-        return self._penalties.get((race_id, car_id), 0)
+        return self._classes[car_id]
 
-    def get_total_time(self, race_id, car_id):
-        self._require_race(race_id)
-        self._require_car(car_id)
-        return self._total(race_id, car_id)
+    def get_classes(self):
+        classes = []
+        for c in self._cars:
+            if self._classes[c] not in classes:
+                classes.append(self._classes[c])
+        return classes
 
-    def get_results(self, race_id, car_class=None):
-        self._require_race(race_id)
-        finished = [
-            c
-            for c in self.get_cars(car_class)
-            if self._finished(race_id, c)
-        ]
-        # sorted() is stable, so equal times keep the order cars were added.
-        return sorted(finished, key=lambda c: self._total(race_id, c))
+    def _total(self, car_id):
+        return sum(self._times[car_id]) + self._penalties[car_id]
 
-    def get_points(self, car_id):
-        self._require_car(car_id)
-        return self._points(car_id, None)
-
-    def get_class_points(self, car_id):
-        self._require_car(car_id)
-        return self._points(car_id, self._cars[car_id])
-
-    def get_cars(self, car_class=None):
-        if car_class is None:
-            return list(self._cars)
-        return [c for c, k in self._cars.items() if k == car_class]
-
-    def _points(self, car_id, car_class):
-        total = 0
-        for race_id in self._races:
-            results = self.get_results(race_id, car_class)
-            if car_id in results:
-                total += self._score(race_id, results.index(car_id))
-        return total
-
-    def _table_for(self, race_id):
-        own = self._race_tables[race_id]
-        return self._table if own is None else own
-
-    def _score(self, race_id, place):
-        table = self._table_for(race_id)
-        return table[place] if place < len(table) else 0
-
-    def _total(self, race_id, car_id):
-        key = (race_id, car_id)
-        return sum(self._laps.get(key, [])) + self._penalties.get(key, 0)
-
-    def _finished(self, race_id, car_id):
-        return len(self._laps.get((race_id, car_id), [])) >= self._races[race_id]
-
-    def _require_race(self, race_id):
-        if not isinstance(race_id, str) or race_id not in self._races:
-            raise KeyError(race_id)
+    def _finished(self, car_id):
+        return len(self._times[car_id]) >= self._laps
 
     def _require_car(self, car_id):
-        if not isinstance(car_id, str) or car_id not in self._cars:
+        if not isinstance(car_id, str) or car_id not in self._times:
             raise KeyError(car_id)

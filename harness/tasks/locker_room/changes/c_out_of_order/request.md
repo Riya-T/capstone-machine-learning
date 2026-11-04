@@ -8,7 +8,7 @@ back once they are repaired.
   not strings. New lockers are in service. Marking a locker out of order
   when it already is, or in service when it already is, does nothing.
 - No item can be put into a locker while it is out of order: `store` never
-  picks one, and when the only lockers that would fit are out of order,
+  picks one, and when every free locker of the item's size is out of order,
   `store` raises `NoLockerFree` and changes nothing.
 - An out-of-order locker is never listed by `get_free_lockers`, even when
   it is empty.

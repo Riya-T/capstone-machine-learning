@@ -8,7 +8,10 @@ Usage (with rooms.py importable, e.g. in the sandbox):
 import pytest
 from rooms import BookingError, RoomBusy, RoomPlanner
 
-BAD_TIMES = [(-1, 30), (30, 30), (40, 30), (1.5, 30), (0, 30.0), ("0", 30), (0, None)]
+
+def room_bookings(p, room):
+    """The ids of the room's bookings, read through get_bookings()."""
+    return [b for b in p.get_bookings() if p.get_booking(b)[0] == room]
 
 
 @pytest.fixture
@@ -16,15 +19,15 @@ def planner():
     p = RoomPlanner()
     p.add_room("oak")
     p.add_room("elm")
-    p.book("a", "oak", 100, 160)
+    p.book("a", "oak", 10)
     return p
 
 
 def state(p):
-    """Every room's bookings and their times, to check that a failed call
+    """Every room's bookings and their slots, to check that a failed call
     changed nothing."""
     return {
-        room: [(b, p.get_booking(b)) for b in p.get_room_bookings(room)]
+        room: sorted((b, p.get_booking(b)) for b in room_bookings(p, room))
         for room in p.get_rooms()
     }
 
@@ -37,6 +40,7 @@ def test_rooms_are_listed_in_the_order_added():
     for name in ["pine", "ash", "birch"]:
         p.add_room(name)
     assert p.get_rooms() == ["pine", "ash", "birch"]
+    assert p.get_bookings() == []
 
 
 def test_an_empty_room_name_is_rejected():
@@ -57,12 +61,10 @@ def test_adding_a_room_twice_is_rejected(planner):
 @pytest.mark.parametrize(
     "call",
     [
-        lambda p: p.book("b", "pine", 0, 30),
-        lambda p: p.get_room_bookings("pine"),
+        lambda p: p.book("b", "pine", 0),
         lambda p: p.get_booking("zz"),
-        lambda p: p.reschedule("zz", 0, 30),
         lambda p: p.get_booking(None),
-        lambda p: p.get_room_bookings(1),
+        lambda p: p.get_booking(1),
     ],
 )
 def test_rooms_and_bookings_that_do_not_exist_raise_key_error(planner, call):
@@ -76,46 +78,62 @@ def test_rooms_and_bookings_that_do_not_exist_raise_key_error(planner, call):
 
 
 def test_bookings_in_different_rooms_do_not_interfere(planner):
-    planner.book("b", "elm", 100, 160)
-    planner.book("c", "elm", 170, 200)
-    assert planner.get_room_bookings("elm") == ["b", "c"]
-    assert planner.get_booking("b") == ("elm", 100, 160)
+    planner.book("b", "elm", 10)
+    planner.book("c", "elm", 12)
+    assert sorted(room_bookings(planner, "elm")) == ["b", "c"]
+    assert planner.get_booking("b") == ("elm", 10)
+    assert room_bookings(planner, "oak") == ["a"]
 
 
-def test_a_booking_exactly_ten_minutes_later_is_allowed(planner):
-    planner.book("b", "oak", 170, 200)
-    planner.book("c", "oak", 50, 90)
-    assert planner.get_room_bookings("oak") == ["c", "a", "b"]
+def test_neighbouring_slots_can_be_booked(planner):
+    planner.book("b", "oak", 11)
+    planner.book("c", "oak", 9)
+    planner.book("d", "oak", 12)
+    assert sorted(room_bookings(planner, "oak")) == ["a", "b", "c", "d"]
+    assert planner.get_booking("c") == ("oak", 9)
 
 
-@pytest.mark.parametrize(
-    "start,end",
-    [(169, 200), (50, 91), (120, 140), (90, 300), (0, 100), (160, 170), (159, 165)],
-)
-def test_bookings_too_close_or_overlapping_are_refused(planner, start, end):
+def test_a_booked_slot_is_refused(planner):
     before = state(planner)
     with pytest.raises(RoomBusy):
-        planner.book("b", "oak", start, end)
+        planner.book("b", "oak", 10)
     assert state(planner) == before
 
 
-def test_a_one_minute_booking_works():
+def test_each_booking_is_checked_against_every_booking_of_the_room():
     p = RoomPlanner()
     p.add_room("oak")
-    p.book("x", "oak", 0, 1)
-    p.book("y", "oak", 11, 12)
-    assert p.get_booking("y") == ("oak", 11, 12)
+    p.book("a", "oak", 2)
+    p.book("b", "oak", 6)
+    p.book("c", "oak", 10)
+    for slot in (2, 6, 10):
+        with pytest.raises(RoomBusy):
+            p.book("d", "oak", slot)
+    p.book("d", "oak", 3)
+    p.book("e", "oak", 7)
+    with pytest.raises(RoomBusy):
+        p.book("f", "oak", 3)
+    assert sorted(room_bookings(p, "oak")) == ["a", "b", "c", "d", "e"]
 
 
-@pytest.mark.parametrize("start,end", BAD_TIMES)
-def test_invalid_times_are_rejected(planner, start, end):
+def test_slot_zero_can_be_booked():
+    p = RoomPlanner()
+    p.add_room("oak")
+    p.book("x", "oak", 0)
+    with pytest.raises(RoomBusy):
+        p.book("y", "oak", 0)
+    p.book("y", "oak", 1)
+    assert p.get_booking("x") == ("oak", 0)
+    assert p.get_booking("y") == ("oak", 1)
+
+
+@pytest.mark.parametrize("slot", [-1, -5])
+def test_slots_below_zero_are_rejected(planner, slot):
     before = state(planner)
     with pytest.raises(ValueError):
-        planner.book("b", "elm", start, end)
+        planner.book("b", "elm", slot)
     with pytest.raises(ValueError):
-        planner.reschedule("a", start, end)
-    with pytest.raises(ValueError):
-        planner.get_free_rooms(start, end)
+        planner.get_free_rooms(slot)
     assert state(planner) == before
 
 
@@ -123,81 +141,55 @@ def test_invalid_times_are_rejected(planner, start, end):
 def test_invalid_booking_ids_are_rejected(planner, booking_id):
     before = state(planner)
     with pytest.raises(ValueError):
-        planner.book(booking_id, "elm", 0, 30)
+        planner.book(booking_id, "elm", 0)
     assert state(planner) == before
 
 
 def test_a_booking_id_is_unique_across_rooms(planner):
     before = state(planner)
     with pytest.raises(BookingError) as caught:
-        planner.book("a", "elm", 500, 530)
+        planner.book("a", "elm", 30)
     assert caught.type is BookingError
     assert state(planner) == before
 
 
-def test_room_busy_comes_after_the_other_booking_errors(planner):
-    # Each call would also clash with booking "a".
-    with pytest.raises(ValueError):
-        planner.book("", "oak", 100, 160)
-    with pytest.raises(BookingError) as caught:
-        planner.book("a", "oak", 100, 160)
-    assert caught.type is BookingError
+def test_a_refused_booking_uses_up_no_id(planner):
+    with pytest.raises(RoomBusy):
+        planner.book("b", "oak", 10)
+    with pytest.raises(KeyError):
+        planner.get_booking("b")
+    planner.book("b", "oak", 11)
+    assert planner.get_booking("b") == ("oak", 11)
 
 
 def test_room_busy_is_a_booking_error():
     assert issubclass(RoomBusy, BookingError)
 
 
-# --- rescheduling -----------------------------------------------------------
-
-
-def test_reschedule_moves_the_booking(planner):
-    planner.reschedule("a", 400, 430)
-    assert planner.get_booking("a") == ("oak", 400, 430)
-    planner.book("b", "oak", 100, 160)
-    assert planner.get_room_bookings("oak") == ["b", "a"]
-
-
-def test_reschedule_to_the_same_times_is_allowed(planner):
-    planner.reschedule("a", 100, 160)
-    assert planner.get_booking("a") == ("oak", 100, 160)
-
-
-def test_reschedule_respects_the_gap_to_other_bookings(planner):
-    planner.book("b", "oak", 200, 260)
-    before = state(planner)
-    with pytest.raises(RoomBusy):
-        planner.reschedule("a", 150, 195)
-    assert state(planner) == before
-    planner.reschedule("a", 120, 190)
-    assert planner.get_booking("a") == ("oak", 120, 190)
-
-
-def test_reschedule_frees_the_old_times(planner):
-    planner.reschedule("a", 500, 560)
-    planner.book("b", "oak", 100, 160)
-    assert planner.get_free_rooms(300, 330) == ["oak", "elm"]
-
-
-def test_bad_times_are_reported_before_a_busy_room(planner):
-    planner.book("b", "oak", 200, 260)
-    with pytest.raises(ValueError):
-        planner.reschedule("b", 100, 100)
-
-
 # --- free rooms ---------------------------------------------------------------
 
 
-def test_free_rooms_respect_the_gap(planner):
-    assert planner.get_free_rooms(165, 200) == ["elm"]
-    assert planner.get_free_rooms(170, 200) == ["oak", "elm"]
-    assert planner.get_free_rooms(40, 91) == ["elm"]
-    assert planner.get_free_rooms(40, 90) == ["oak", "elm"]
+def test_free_rooms_only_skip_the_booked_slot(planner):
+    assert planner.get_free_rooms(10) == ["elm"]
+    assert planner.get_free_rooms(11) == ["oak", "elm"]
+    assert planner.get_free_rooms(9) == ["oak", "elm"]
+
+
+def test_free_rooms_follow_new_bookings(planner):
+    planner.book("b", "elm", 20)
+    planner.book("c", "oak", 30)
+    assert planner.get_free_rooms(20) == ["oak"]
+    assert planner.get_free_rooms(21) == ["oak", "elm"]
+    assert planner.get_free_rooms(10) == ["elm"]
+    planner.book("d", "oak", 20)
+    assert planner.get_free_rooms(20) == []
+    assert planner.get_free_rooms(30) == ["elm"]
 
 
 def test_free_rooms_change_nothing(planner):
     before = state(planner)
-    planner.get_free_rooms(0, 1000)
+    planner.get_free_rooms(10)
+    planner.get_free_rooms(0)
     assert state(planner) == before
 
 
@@ -206,5 +198,5 @@ def test_planners_do_not_share_rooms():
     first.add_room("oak")
     assert second.get_rooms() == []
     second.add_room("oak")
-    second.book("a", "oak", 0, 10)
-    first.book("a", "oak", 0, 10)
+    second.book("a", "oak", 0)
+    first.book("a", "oak", 0)

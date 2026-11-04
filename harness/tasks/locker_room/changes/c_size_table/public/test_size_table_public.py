@@ -19,9 +19,9 @@ def test_table_defaults_to_the_three_sizes():
 def test_table_of_my_own_sizes():
     r = LockerRoom(size_table={"s": 100, "m": 250, "l": 400})
     r.add_locker("L1", "l")
-    r.add_locker("S1", "s")
-    assert r.store("coat", "m") == "L1"
-    assert r.get_takings() == 400
+    r.add_locker("M1", "m")
+    assert r.store("coat", "m") == "M1"
+    assert r.get_takings() == 250
     with pytest.raises(ValueError):
         r.add_locker("X1", "small")
 

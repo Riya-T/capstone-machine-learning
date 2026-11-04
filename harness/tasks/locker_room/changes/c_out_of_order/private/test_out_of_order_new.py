@@ -46,10 +46,9 @@ def test_broken_flag_can_be_set_and_cleared_repeatedly(room):
     assert room.get_free_lockers() == ["S1", "S2", "M1", "L1"]
 
 
-def test_broken_lockers_push_items_to_the_next_size(room):
+def test_broken_lockers_are_never_chosen(room):
     room.set_out_of_order("S1")
-    room.set_out_of_order("S2")
-    assert room.store("hat", "small") == "M1"
+    assert room.store("hat", "small") == "S2"
     room.set_out_of_order("L1")
     before = state(room)
     with pytest.raises(NoLockerFree):
@@ -57,7 +56,8 @@ def test_broken_lockers_push_items_to_the_next_size(room):
     with pytest.raises(NoLockerFree):
         room.store("skis", "large")
     assert state(room) == before
-    assert room.get_takings() == 300
+    assert room.store("coat", "medium") == "M1"
+    assert room.get_takings() == 500
 
 
 def test_broken_lockers_are_never_free(room):
@@ -65,7 +65,7 @@ def test_broken_lockers_are_never_free(room):
     room.set_out_of_order("L1")
     assert room.get_free_lockers() == ["S1", "M1"]
     room.store("hat", "small")
-    room.store("coat", "small")
+    room.store("coat", "medium")
     assert room.get_free_lockers() == []
 
 
@@ -77,7 +77,10 @@ def test_broken_locker_keeps_its_item_until_retrieved(room):
     assert room.is_out_of_order("M1")
     assert room.retrieve("coat") == "M1"
     assert room.get_free_lockers() == ["S2", "L1"]
-    assert room.store("bag", "medium") == "L1"
+    with pytest.raises(NoLockerFree):
+        room.store("bag", "medium")
+    room.set_in_service("M1")
+    assert room.store("bag", "medium") == "M1"
 
 
 def test_broken_locker_back_in_service_takes_its_place_again(room):

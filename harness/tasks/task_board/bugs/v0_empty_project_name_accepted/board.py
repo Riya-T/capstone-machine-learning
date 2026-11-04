@@ -1,8 +1,7 @@
 """Task board: projects, their tasks, due days and which tasks are done.
 
-Planted bug (initial version): move_task checks the open-task limit for
-done tasks too, so a done task cannot move into a project that already has
-5 open tasks. The public checks only move open tasks into a full project.
+Planted bug (initial version): add_project accepts an empty name. The
+public checks never add a project with an empty name.
 Never shown to the writer or the editor; validate-tasks checks that the
 tests catch it.
 
@@ -38,8 +37,8 @@ class Board:
         self._next_id = 1
 
     def add_project(self, name):
-        if not isinstance(name, str) or not name:
-            raise ValueError("name must be a non-empty str")
+        if not isinstance(name, str):
+            raise ValueError("name must be a str")
         if name in self._projects:
             raise BoardError(f"project {name!r} already exists")
         self._projects[name] = []
@@ -73,16 +72,16 @@ class Board:
         target = self._project(project)
         if task["project"] == project:
             raise ValueError(f"task {task_id} is already in {project!r}")
-        if len(target) >= OPEN_LIMIT:
-            raise BoardError(f"project {project!r} already has {OPEN_LIMIT} open tasks")
         if not task["done"]:
+            if len(target) >= OPEN_LIMIT:
+                raise BoardError(f"project {project!r} already has {OPEN_LIMIT} open tasks")
             self._projects[task["project"]].remove(task_id)
             target.append(task_id)
         task["project"] = project
 
     def get_task(self, task_id):
         task = self._task(task_id)
-        return (task["project"], task["title"], task["due_day"], task["done"])
+        return (task["title"], task["due_day"])
 
     def get_open_tasks(self, project):
         return list(self._project(project))

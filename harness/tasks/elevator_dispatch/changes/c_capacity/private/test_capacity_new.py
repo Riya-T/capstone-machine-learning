@@ -29,9 +29,9 @@ def state(b, cars=CARS, top=TOP):
     )
 
 
-def board(b, car, names, floor=1, destination=5):
+def board(b, car, names, floor=1):
     for name in names:
-        b.call(name, floor, destination)
+        b.call(name, floor)
     b.move_car(car, floor)
 
 
@@ -125,13 +125,14 @@ def test_capacity_below_the_current_riders_is_rejected(building):
 
 def test_capacity_raised_capacity_is_used_at_the_next_stop(building):
     building.set_capacity("east", 1)
-    building.call("ann", 1, 4)
-    building.call("ben", 1, 4)
+    for name in ["ann", "ben", "cy", "dee"]:
+        building.call(name, 1)
     building.move_car("east", 1)
     assert building.get_riders("east") == ["ann"]
     building.set_capacity("east", 3)
     assert building.get_riders("east") == ["ann"]
-    assert building.get_waiting(1) == ["ben"]
+    assert building.get_waiting(1) == ["ben", "cy", "dee"]
     building.move_car("east", 2)
     building.move_car("east", 1)
-    assert building.get_riders("east") == ["ann", "ben"]
+    assert building.get_riders("east") == ["ben", "cy", "dee"]
+    assert building.get_delivered() == ["ann"]

@@ -54,7 +54,7 @@ def test_service_unknown_cars_raise_key_error(building, method):
 
 
 def test_service_a_car_with_riders_cannot_be_taken_out(building):
-    building.call("ann", 2, 5)
+    building.call("ann", 2)
     building.move_car("east", 2)
     before = state(building)
     with pytest.raises(ElevatorError):
@@ -64,7 +64,7 @@ def test_service_a_car_with_riders_cannot_be_taken_out(building):
 
 
 def test_service_a_car_can_be_taken_out_once_everyone_arrived(building):
-    building.call("ann", 2, 5)
+    building.call("ann", 2)
     building.move_car("east", 2)
     building.move_car("east", 5)
     building.take_out_of_service("east")
@@ -73,7 +73,7 @@ def test_service_a_car_can_be_taken_out_once_everyone_arrived(building):
 
 
 def test_service_moving_a_car_out_of_service_changes_nothing(building):
-    building.call("ann", 3, 1)
+    building.call("ann", 3)
     building.move_car("east", 2)
     building.take_out_of_service("east")
     before = state(building)
@@ -116,7 +116,7 @@ def test_service_a_car_out_of_service_can_still_be_inspected(building):
 
 def test_service_other_cars_keep_working(building):
     building.take_out_of_service("east")
-    building.call("ann", 2, 4)
+    building.call("ann", 2)
     building.move_car("west", 2)
     building.move_car("west", 4)
     assert building.get_delivered() == ["ann"]
@@ -124,7 +124,7 @@ def test_service_other_cars_keep_working(building):
 
 def test_service_a_returned_car_picks_people_up_again(building):
     building.take_out_of_service("east")
-    building.call("ann", 1, 3)
+    building.call("ann", 1)
     building.return_to_service("east")
     building.move_car("east", 1)
     assert building.get_riders("east") == ["ann"]

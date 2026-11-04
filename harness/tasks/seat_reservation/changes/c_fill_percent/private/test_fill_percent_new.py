@@ -8,7 +8,7 @@ Usage (with seats.py importable, e.g. in the sandbox):
 import pytest
 from seats import NotEnoughSeats, ReservationError, SeatPlanner
 
-BAD_PERCENTS = [0, 101, -5, 50.0, "70", None]
+BAD_PERCENTS = [0, 101, -5]
 
 
 @pytest.fixture
@@ -23,7 +23,7 @@ def state(p, bookings=()):
     coaches = {
         c: (p.get_reserved(c), p.get_available(c), p.get_fill_percent(c)) for c in p.get_coaches()
     }
-    return coaches, {b: p.get_booking(b) for b in bookings}
+    return coaches, {b: tuple(p.get_booking(b)) for b in bookings}
 
 
 def test_fill_percent_defaults_to_seventy(planner):
@@ -55,7 +55,7 @@ def test_fill_percent_invalid_for_the_planner(percent):
         SeatPlanner(fill_percent=percent)
 
 
-@pytest.mark.parametrize("percent", [p for p in BAD_PERCENTS if p is not None])
+@pytest.mark.parametrize("percent", BAD_PERCENTS)
 def test_fill_percent_invalid_for_a_coach(planner, percent):
     before = state(planner)
     with pytest.raises(ValueError):
@@ -75,7 +75,10 @@ def test_fill_percent_is_used_by_reserve_and_move():
     p.add_coach("C", 10, fill_percent=20)
     with pytest.raises(NotEnoughSeats):
         p.move("jones", "C")
-    assert p.get_booking("jones") == ("B", [1, 2, 3])
+    assert p.get_booking("jones") == ("B", 3)
+    p.add_coach("D", 10, fill_percent=30)
+    p.move("jones", "D")
+    assert p.get_available("D") == 0
 
 
 def test_fill_percent_can_be_raised_later(planner):
@@ -84,7 +87,7 @@ def test_fill_percent_can_be_raised_later(planner):
     assert planner.get_fill_percent("A") == 90
     assert planner.get_available("A") == 2
     assert planner.reserve("jones", 2) == "A"
-    assert planner.get_booking("jones") == ("A", [8, 9])
+    assert planner.get_reserved("A") == 9
     assert planner.get_fill_percent("B") == 70
 
 

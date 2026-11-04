@@ -12,32 +12,25 @@ FIVE = {"xs": 100, "s": 150, "m": 250, "l": 400, "xl": 600}
 BAD_FEES = [-1, 2.5, "100"]
 
 
-def test_table_names_are_listed_smallest_first():
+def test_table_names_are_listed_in_table_order():
     assert LockerRoom(size_table=FIVE).get_sizes() == ["xs", "s", "m", "l", "xl"]
+    assert LockerRoom(size_table={"zeta": 10, "alpha": 20}).get_sizes() == ["zeta", "alpha"]
     assert LockerRoom(size_table={"only": 0}).get_sizes() == ["only"]
 
 
-def test_table_order_decides_what_fits():
+def test_table_items_go_into_lockers_of_their_size():
     r = LockerRoom(size_table=FIVE)
-    for locker_id, size in [("XL1", "xl"), ("M1", "m"), ("S1", "s"), ("L1", "l")]:
+    for locker_id, size in [("XL1", "xl"), ("M1", "m"), ("S1", "s"), ("L1", "l"), ("S2", "s")]:
         r.add_locker(locker_id, size)
-    assert r.store("pen", "xs") == "S1"
-    assert r.store("cup", "s") == "M1"
-    assert r.store("bag", "m") == "L1"
-    assert r.store("rug", "s") == "XL1"
-    assert r.get_takings() == 150 + 250 + 400 + 600
     with pytest.raises(NoLockerFree):
-        r.store("box", "xs")
-
-
-def test_table_order_need_not_be_alphabetical():
-    r = LockerRoom(size_table={"zeta": 10, "alpha": 20})
-    r.add_locker("A", "alpha")
-    r.add_locker("Z", "zeta")
-    assert r.store("one", "zeta") == "Z"
-    assert r.store("two", "zeta") == "A"
+        r.store("pen", "xs")
+    assert r.store("cup", "s") == "S1"
+    assert r.store("bag", "m") == "M1"
+    assert r.store("rug", "s") == "S2"
     with pytest.raises(NoLockerFree):
-        r.store("three", "alpha")
+        r.store("box", "s")
+    assert r.get_takings() == 150 + 250 + 150
+    assert r.get_free_lockers() == ["XL1", "L1"]
 
 
 def test_table_fees_need_not_grow_with_size():
@@ -45,7 +38,7 @@ def test_table_fees_need_not_grow_with_size():
     r.add_locker("L1", "large")
     r.add_locker("S1", "small")
     r.store("hat", "small")
-    r.store("box", "small")
+    r.store("box", "large")
     assert r.get_takings() == 500
     assert (r.get_fee("S1"), r.get_fee("L1")) == (500, 0)
 
@@ -86,7 +79,7 @@ def test_table_fee_of_one_locker_is_charged_instead_of_the_table():
     r.add_locker("M1", "medium", fee=1000)
     r.store("a", "small")
     r.store("b", "small")
-    r.store("c", "small")
+    r.store("c", "medium")
     assert r.get_takings() == 0 + 200 + 1000
     assert [r.get_fee(x) for x in ["S1", "S2", "M1"]] == [0, 200, 1000]
 

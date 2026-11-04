@@ -66,13 +66,12 @@ def test_search_contributions_are_in_writing_order(wiki):
     assert wiki.get_contributions("bob") == [("farm", 1)]
 
 
-def test_search_contributions_include_dropped_revisions():
+def test_search_contributions_include_revisions_older_than_the_history():
     w = Wiki()
     w.create_page("home", "ann", "r1")
     for n in range(2, 9):
         w.edit_page("home", "bob" if n % 2 else "cy", f"r{n}")
-    with pytest.raises(IndexError):
-        w.get_revision("home", 1)
+    assert w.get_history("home")[0] == (4, "r4")
     assert w.get_contributions("ann") == [("home", 1)]
     assert w.get_contributions("bob") == [("home", 3), ("home", 5), ("home", 7)]
     assert w.get_contributions("cy") == [("home", 2), ("home", 4), ("home", 6), ("home", 8)]

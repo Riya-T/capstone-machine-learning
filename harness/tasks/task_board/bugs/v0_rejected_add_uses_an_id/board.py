@@ -1,8 +1,8 @@
 """Task board: projects, their tasks, due days and which tasks are done.
 
-Planted bug (initial version): completing a task that is already done is
-accepted instead of raising BoardError. The public checks never complete a
-task twice.
+Planted bug (initial version): add_task takes the next id before it checks
+its arguments, so a rejected add uses up an id. The public checks never add
+a task after a rejected one.
 Never shown to the writer or the editor; validate-tasks checks that the
 tests catch it.
 
@@ -45,13 +45,13 @@ class Board:
         self._projects[name] = []
 
     def add_task(self, project, title, due_day):
+        task_id = self._next_id
+        self._next_id += 1
         open_ids = self._project(project)
         check_title(title)
         check_day(due_day)
         if len(open_ids) >= OPEN_LIMIT:
             raise BoardError(f"project {project!r} already has {OPEN_LIMIT} open tasks")
-        task_id = self._next_id
-        self._next_id += 1
         self._tasks[task_id] = {
             "project": project,
             "title": title,
@@ -63,9 +63,10 @@ class Board:
 
     def complete(self, task_id):
         task = self._task(task_id)
-        if task_id in self._projects[task["project"]]:
-            self._projects[task["project"]].remove(task_id)
+        if task["done"]:
+            raise BoardError(f"task {task_id} is already done")
         task["done"] = True
+        self._projects[task["project"]].remove(task_id)
 
     def move_task(self, task_id, project):
         task = self._task(task_id)
@@ -81,7 +82,7 @@ class Board:
 
     def get_task(self, task_id):
         task = self._task(task_id)
-        return (task["project"], task["title"], task["due_day"], task["done"])
+        return (task["title"], task["due_day"])
 
     def get_open_tasks(self, project):
         return list(self._project(project))

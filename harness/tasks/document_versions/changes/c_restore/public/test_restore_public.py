@@ -18,8 +18,7 @@ def test_restore_discards_later_revisions():
     assert w.get_revision_count("home") == 1
     assert w.get_authors("home") == ["ann"]
     assert w.get_version("home") == 3
-    with pytest.raises(IndexError):
-        w.get_revision("home", 2)
+    assert w.get_history("home") == [(1, "good")]
 
 
 def test_restore_then_edit_reuses_the_next_number():
@@ -29,4 +28,14 @@ def test_restore_then_edit_reuses_the_next_number():
     w.restore("home", 1)
     w.edit_page("home", "cy", "c")
     assert w.get_revision_count("home") == 2
-    assert w.get_revision("home", 2) == "c"
+    assert w.get_history("home") == [(1, "a"), (2, "c")]
+
+
+def test_restore_to_a_revision_older_than_the_history_raises_index_error():
+    w = Wiki(keep=2)
+    w.create_page("home", "ann", "r1")
+    for n in range(2, 5):
+        w.edit_page("home", "bob", f"r{n}")
+    with pytest.raises(IndexError):
+        w.restore("home", 2)
+    assert w.get_history("home") == [(3, "r3"), (4, "r4")]

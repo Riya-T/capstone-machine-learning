@@ -8,7 +8,7 @@ Usage:
     from elevators import Building
     building = Building(top_floor=9, capacity=6)
     building.add_car("freight", capacity=10)
-    building.call("ann", 3, 7)
+    building.call("ann", 3)
     building.move_car("freight", 3)
 """
 
@@ -34,7 +34,7 @@ class Building:
         # car id -> {"floor": int, "riders": [ids in boarding order], "capacity": int}
         self._cars = {}
         self._waiting = {floor: [] for floor in range(top_floor + 1)}  # ids in call order
-        self._destinations = {}  # passenger id -> destination, for every id ever called
+        self._called = set()  # ids with a call that was not cancelled
         self._delivered = []
         self._cancelled = []  # ids of cancelled calls, oldest first
 
@@ -48,31 +48,21 @@ class Building:
             raise ElevatorError(f"car {car_id!r} already exists")
         self._cars[car_id] = {"floor": 0, "riders": [], "capacity": capacity}
 
-    def call(self, passenger_id, floor, destination):
+    def call(self, passenger_id, floor):
         if not isinstance(passenger_id, str) or not passenger_id:
             raise ValueError("passenger_id must be a non-empty str")
         self._check_floor(floor)
-        self._check_floor(destination)
-        if floor == destination:
-            raise ValueError("floor and destination must differ")
-        if passenger_id in self._destinations:
-            raise ElevatorError(f"passenger id {passenger_id!r} was already used")
-        self._destinations[passenger_id] = destination
+        self._called.add(passenger_id)
         self._waiting[floor].append(passenger_id)
 
     def move_car(self, car_id, floor):
         car = self._car(car_id)
         self._check_floor(floor)
         car["floor"] = floor
-        staying = []
-        for passenger_id in car["riders"]:
-            if self._destinations[passenger_id] == floor:
-                self._delivered.append(passenger_id)
-            else:
-                staying.append(passenger_id)
-        room = car["capacity"] - len(staying)
+        self._delivered.extend(car["riders"])  # every rider gets out here
+        room = car["capacity"]
         queue = self._waiting[floor]
-        car["riders"] = staying + queue[:room]
+        car["riders"] = queue[:room]
         self._waiting[floor] = queue[room:]
 
     def get_car_floor(self, car_id):
@@ -88,11 +78,6 @@ class Building:
     def get_delivered(self):
         return list(self._delivered)
 
-    def get_destination(self, passenger_id):
-        if passenger_id not in self._destinations:
-            raise KeyError(f"no passenger {passenger_id!r}")
-        return self._destinations[passenger_id]
-
     def get_capacity(self, car_id):
         return self._car(car_id)["capacity"]
 
@@ -104,13 +89,13 @@ class Building:
         car["capacity"] = capacity
 
     def cancel_call(self, passenger_id):
-        if not isinstance(passenger_id, str) or passenger_id not in self._destinations:
+        if not isinstance(passenger_id, str) or passenger_id not in self._called:
             raise KeyError(passenger_id)
         floor = self._waiting_floor(passenger_id)
         if floor is None:
             raise ElevatorError(f"passenger {passenger_id!r} already got into a car")
         self._waiting[floor].remove(passenger_id)
-        del self._destinations[passenger_id]  # the id may be called again
+        self._called.discard(passenger_id)  # the id may be called again
         self._cancelled.append(passenger_id)
 
     def get_cancelled(self):

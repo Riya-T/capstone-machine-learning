@@ -13,12 +13,12 @@ booking is stopped instead of overwriting someone else's change.
   no check. Otherwise, if it is not equal to the booking's current version,
   `VersionConflict` is raised and nothing changes.
 - Add `SeatPlanner.add_seats(booking_id, count, expected_version=None)`,
-  which adds `count` passengers to a booking in the coach it is already in.
-  They get the lowest-numbered free seats of that coach, and the booking's
-  seats are still returned in increasing order by `get_booking`. If the
-  coach cannot take `count` more passengers within its limit,
-  `NotEnoughSeats` is raised. A count that is not an `int` of at least 1
-  raises `ValueError`. `expected_version` works as for `move`.
+  which adds `count` passengers to a booking in the coach it is already
+  in: a booking `("A", 2)` becomes `("A", 5)` after
+  `add_seats(booking_id, 3)`. If the coach cannot take `count` more
+  passengers within its limit, `NotEnoughSeats` is raised. A count below 1
+  raises `ValueError`, and an unknown booking id raises `KeyError`.
+  `expected_version` works as for `move`.
 
 Which error is raised when one `add_seats` call has several of these
 problems, or when a `move` with a wrong `expected_version` also has

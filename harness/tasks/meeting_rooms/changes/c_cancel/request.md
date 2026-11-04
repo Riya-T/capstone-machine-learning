@@ -1,5 +1,5 @@
 Meetings in `rooms.py` sometimes get called off. Let a booking be
-cancelled so its room is free again, while keeping a record of what was
+cancelled so its slot is free again, while keeping a record of what was
 cancelled.
 
 - Add `RoomPlanner.cancel(booking_id, expected_version=None)`. It removes
@@ -8,9 +8,9 @@ cancelled.
   raises `VersionConflict` and changes nothing.
 - A cancelled booking no longer exists: `get_booking`, `get_version`,
   `reschedule` and `cancel` raise `KeyError` for it, and it is not in
-  `get_room_bookings`. Its times are free again for `book`,
-  `reschedule` and `get_free_rooms`, with the room's usual gap applying
-  only to the bookings that remain.
+  `get_bookings`. Its slot is free again for `book`, `reschedule` and
+  `get_free_rooms`. In a room with a gap, so are the free slots that the
+  gap kept around it, unless another booking of the room still needs them.
 - A booking id stays used after its booking is cancelled: `book` with that
   id raises `BookingError`, in any room.
 - Add `RoomPlanner.get_cancelled(room) -> list[str]`: the ids of the

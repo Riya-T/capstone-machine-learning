@@ -97,9 +97,6 @@ def test_proration_quote_raises_like_change_plan():
         b.get_upgrade_charge("alice", "gold")
     with pytest.raises(BillingError):
         b.get_upgrade_charge("alice", "basic")
-    b.cancel("alice")
-    with pytest.raises(BillingError):
-        b.get_upgrade_charge("alice", "pro")
 
 
 @pytest.mark.parametrize("bad", BAD_PERCENTS)

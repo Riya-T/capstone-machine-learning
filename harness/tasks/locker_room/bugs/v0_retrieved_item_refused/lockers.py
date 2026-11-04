@@ -1,10 +1,9 @@
-"""Locker room: items go into the smallest free locker that fits them, a fee
+"""Locker room: items go into a free locker of their own size, a fee
 is taken per locker size, and items are handed back later.
 
-Planted bug (initial version): store charges the fee of the item's size
-instead of the chosen locker's size. The public checks never look at the
-takings after an item went into a larger locker, so only the hidden initial
-tests catch it.
+Planted bug (initial version): an item id that was stored once is refused
+for good, so a retrieved item cannot be stored again. The public checks
+never store an item again, so only the hidden initial tests catch it.
 Never shown to the writer or the editor;
 validate-tasks checks that the tests catch it.
 
@@ -16,7 +15,7 @@ Usage:
     room.retrieve("umbrella")
 """
 
-SIZES = ["small", "medium", "large"]  # smallest first
+SIZES = ["small", "medium", "large"]
 FEES = {"small": 200, "medium": 300, "large": 500}  # cents per stored item
 
 
@@ -44,6 +43,7 @@ class LockerRoom:
         self._contents = {}  # locker id -> item id, for lockers in use
         self._items = {}  # item id -> locker id
         self._takings = 0
+        self._seen = set()  # every item id ever stored
 
     def add_locker(self, locker_id, size):
         check_id(locker_id, "locker_id")
@@ -55,12 +55,13 @@ class LockerRoom:
     def store(self, item_id, size):
         check_id(item_id, "item_id")
         check_size(size)
-        if item_id in self._items:
+        if item_id in self._items or item_id in self._seen:
             raise LockerError(f"item {item_id!r} is already in a locker")
         locker_id = self._choose(size)
         self._contents[locker_id] = item_id
         self._items[item_id] = locker_id
-        self._takings += FEES[size]
+        self._seen.add(item_id)
+        self._takings += FEES[self._sizes[locker_id]]
         return locker_id
 
     def retrieve(self, item_id):
@@ -83,8 +84,8 @@ class LockerRoom:
 
     def _choose(self, size):
         free = self.get_free_lockers()
-        for locker_size in SIZES[SIZES.index(size):]:
+        for locker_size in [size]:
             for locker_id in free:
                 if self._sizes[locker_id] == locker_size:
                     return locker_id
-        raise NoLockerFree(f"no free locker fits a {size} item")
+        raise NoLockerFree(f"no free {size} locker")

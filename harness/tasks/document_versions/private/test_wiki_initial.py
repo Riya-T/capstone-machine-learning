@@ -17,16 +17,9 @@ def wiki():
     return w
 
 
-def readable(w, page):
-    """Every revision number of a page that get_revision can still read."""
-    found = []
-    for number in range(1, w.get_revision_count(page) + 1):
-        try:
-            w.get_revision(page, number)
-        except IndexError:
-            continue
-        found.append(number)
-    return found
+def numbers(w, page):
+    """The revision numbers in a page's history."""
+    return [number for number, _ in w.get_history(page)]
 
 
 def state(w):
@@ -36,7 +29,7 @@ def state(w):
         p: (
             w.get_text(p),
             w.get_revision_count(p),
-            [w.get_revision(p, n) for n in readable(w, p)],
+            list(w.get_history(p)),
             sorted(w.get_authors(p)),
         )
         for p in w.get_pages()
@@ -55,7 +48,7 @@ def test_pages_are_listed_in_creation_order():
 
 def test_a_page_may_start_empty(wiki):
     assert wiki.get_text("faq") == ""
-    assert wiki.get_revision("faq", 1) == ""
+    assert wiki.get_history("faq") == [(1, "")]
     assert wiki.get_authors("faq") == ["bob"]
 
 
@@ -65,6 +58,7 @@ def test_a_page_may_start_empty(wiki):
         ("", "ann", "x"),
         (None, "ann", "x"),
         ("p", "", "x"),
+        ("p", None, "x"),
         ("p", "ann", None),
         ("p", "ann", 3),
     ],
@@ -89,11 +83,11 @@ def test_creating_an_existing_page_is_rejected(wiki):
     [
         lambda w: w.edit_page("about", "ann", "x"),
         lambda w: w.get_text("about"),
-        lambda w: w.get_revision("about", 1),
+        lambda w: w.get_history("about"),
         lambda w: w.get_revision_count("about"),
         lambda w: w.get_authors("about"),
         lambda w: w.get_text(None),
-        lambda w: w.get_text(1),
+        lambda w: w.get_history(1),
     ],
 )
 def test_pages_that_do_not_exist_raise_key_error(wiki, call):
@@ -106,10 +100,10 @@ def test_pages_that_do_not_exist_raise_key_error(wiki, call):
 # --- revisions --------------------------------------------------------------
 
 
-def test_every_revision_can_be_read_back(wiki):
+def test_every_revision_is_in_the_history(wiki):
     wiki.edit_page("home", "bob", "v2")
     wiki.edit_page("home", "ann", "v3")
-    assert [wiki.get_revision("home", n) for n in (1, 2, 3)] == ["v1", "v2", "v3"]
+    assert wiki.get_history("home") == [(1, "v1"), (2, "v2"), (3, "v3")]
     assert wiki.get_text("home") == "v3"
     assert wiki.get_revision_count("home") == 3
 
@@ -119,7 +113,7 @@ def test_pages_keep_separate_revisions(wiki):
     wiki.edit_page("faq", "cy", "Q?")
     assert wiki.get_revision_count("home") == 2
     assert wiki.get_revision_count("faq") == 2
-    assert wiki.get_revision("faq", 2) == "Q?"
+    assert wiki.get_history("faq") == [(1, ""), (2, "Q?")]
     assert sorted(wiki.get_authors("faq")) == ["bob", "cy"]
 
 
@@ -128,6 +122,7 @@ def test_an_old_text_may_be_written_again(wiki):
     wiki.edit_page("home", "bob", "v1")
     assert wiki.get_revision_count("home") == 3
     assert wiki.get_text("home") == "v1"
+    assert wiki.get_history("home") == [(1, "v1"), (2, "v2"), (3, "v1")]
 
 
 def test_an_unchanged_edit_adds_nothing(wiki):
@@ -147,55 +142,66 @@ def test_invalid_edits_are_rejected(wiki, author, text):
     assert state(wiki) == before
 
 
-@pytest.mark.parametrize("number", [0, -1, 1.0, "1", None])
-def test_invalid_revision_numbers_raise_value_error(wiki, number):
-    with pytest.raises(ValueError):
-        wiki.get_revision("home", number)
-
-
-def test_revisions_past_the_latest_raise_index_error(wiki):
-    wiki.edit_page("home", "bob", "v2")
-    with pytest.raises(IndexError):
-        wiki.get_revision("home", 3)
-    with pytest.raises(IndexError):
-        wiki.get_revision("home", 100)
-
-
-# --- keeping only recent revisions ------------------------------------------
+# --- the history: the 5 latest revisions -------------------------------------
 
 
 def test_five_revisions_are_all_kept(wiki):
     for n in range(2, 6):
         wiki.edit_page("home", "bob", f"v{n}")
-    assert readable(wiki, "home") == [1, 2, 3, 4, 5]
-    assert wiki.get_revision("home", 1) == "v1"
+    assert numbers(wiki, "home") == [1, 2, 3, 4, 5]
+    assert wiki.get_history("home")[0] == (1, "v1")
 
 
-def test_only_the_five_most_recent_revisions_are_kept(wiki):
+def test_a_sixth_revision_leaves_out_the_first():
+    w = Wiki()
+    w.create_page("home", "ann", "a")
+    for text in "bcdef":
+        w.edit_page("home", "bob", text)
+    assert w.get_history("home") == [(2, "b"), (3, "c"), (4, "d"), (5, "e"), (6, "f")]
+
+
+def test_only_the_five_latest_revisions_are_kept(wiki):
     for n in range(2, 9):
         wiki.edit_page("home", "bob", f"v{n}")
     assert wiki.get_revision_count("home") == 8
-    assert readable(wiki, "home") == [4, 5, 6, 7, 8]
-    assert [wiki.get_revision("home", n) for n in (4, 8)] == ["v4", "v8"]
-    for old in (1, 2, 3):
-        with pytest.raises(IndexError):
-            wiki.get_revision("home", old)
+    assert wiki.get_history("home") == [(4, "v4"), (5, "v5"), (6, "v6"), (7, "v7"), (8, "v8")]
+    for n in range(9, 13):
+        wiki.edit_page("home", "bob", f"v{n}")
+    assert numbers(wiki, "home") == [8, 9, 10, 11, 12]
+    assert wiki.get_revision_count("home") == 12
 
 
-def test_dropping_old_revisions_is_per_page(wiki):
+def test_the_history_ends_with_the_current_text(wiki):
+    for n in range(2, 10):
+        wiki.edit_page("home", "bob", f"v{n}")
+        assert wiki.get_history("home")[-1] == (n, f"v{n}")
+        assert wiki.get_text("home") == f"v{n}"
+
+
+def test_the_history_is_per_page(wiki):
     for n in range(2, 8):
         wiki.edit_page("home", "bob", f"v{n}")
     wiki.edit_page("faq", "bob", "Q")
-    assert readable(wiki, "faq") == [1, 2]
-    assert wiki.get_revision("faq", 1) == ""
+    assert numbers(wiki, "home") == [3, 4, 5, 6, 7]
+    assert wiki.get_history("faq") == [(1, ""), (2, "Q")]
 
 
-def test_authors_of_dropped_revisions_still_count(wiki):
+def test_authors_of_older_revisions_still_count(wiki):
     wiki.edit_page("home", "cy", "v2")
     for n in range(3, 10):
         wiki.edit_page("home", "bob", f"v{n}")
-    assert readable(wiki, "home") == [5, 6, 7, 8, 9]
+    assert numbers(wiki, "home") == [5, 6, 7, 8, 9]
     assert sorted(wiki.get_authors("home")) == ["ann", "bob", "cy"]
+
+
+def test_an_unchanged_edit_is_checked_against_the_current_text_only(wiki):
+    for n in range(2, 8):
+        wiki.edit_page("home", "bob", f"v{n}")
+    wiki.edit_page("home", "bob", "v1")
+    assert wiki.get_history("home")[-1] == (8, "v1")
+    with pytest.raises(WikiError):
+        wiki.edit_page("home", "bob", "v1")
+    assert wiki.get_revision_count("home") == 8
 
 
 def test_each_author_is_listed_once(wiki):

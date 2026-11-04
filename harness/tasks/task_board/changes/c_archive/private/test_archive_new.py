@@ -39,7 +39,7 @@ def test_archive_nothing_is_archived_at_first(board):
 
 def test_archive_keeps_the_task_readable(board):
     board.archive(1)
-    assert board.get_task(1) == ("web", "home", 2, False)
+    assert board.get_task(1) == ("home", 2)
     assert board.get_open_tasks("web") == [2]
     assert board.get_archived("app") == []
 
@@ -58,7 +58,7 @@ def test_archive_and_restore_a_done_task(board):
     assert board.get_archived("web") == [2]
     assert board.get_open_tasks("web") == [1]
     board.restore(2)
-    assert board.get_task(2) == ("web", "about", 4, True)
+    assert board.get_task(2) == ("about", 4)
     assert board.get_open_tasks("web") == [1]
 
 
@@ -99,9 +99,10 @@ def test_archive_restore_uses_the_projects_own_limit():
     b.add_task("tiny", "second", 1)
     with pytest.raises(BoardError):
         b.restore(1)
-    b.complete(2)
+    b.archive(2)
     b.restore(1)
     assert b.get_open_tasks("tiny") == [1]
+    assert b.get_archived("tiny") == [2]
 
 
 @pytest.mark.parametrize(
@@ -153,6 +154,7 @@ def test_archive_a_restored_task_can_be_changed_again(board):
     board.archive(3)
     board.restore(3)
     board.move_task(3, "web")
+    assert board.get_open_tasks("web") == [1, 2, 3]
     board.complete(3)
-    assert board.get_task(3) == ("web", "login", 1, True)
+    assert board.get_task(3) == ("login", 1)
     assert board.get_version(3) == 5

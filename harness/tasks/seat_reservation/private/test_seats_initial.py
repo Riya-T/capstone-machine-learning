@@ -8,7 +8,7 @@ Usage (with seats.py importable, e.g. in the sandbox):
 import pytest
 from seats import NotEnoughSeats, ReservationError, SeatPlanner
 
-BAD_COUNTS = [0, -3, 2.5, "4", None]
+BAD_COUNTS = [0, -3]
 
 
 @pytest.fixture
@@ -23,7 +23,7 @@ def state(p, bookings=()):
     """Every coach and the given bookings, to check that a failed call changed
     nothing."""
     coaches = {c: (p.get_reserved(c), p.get_available(c)) for c in p.get_coaches()}
-    return coaches, {b: p.get_booking(b) for b in bookings}
+    return coaches, {b: tuple(p.get_booking(b)) for b in bookings}
 
 
 # --- coaches ----------------------------------------------------------------
@@ -47,6 +47,14 @@ def test_the_limit_is_seventy_percent_rounded_down(seats, limit):
     p = SeatPlanner()
     p.add_coach("X", seats)
     assert p.get_available("X") == limit
+
+
+def test_a_coach_with_a_limit_of_zero_takes_nobody():
+    p = SeatPlanner()
+    p.add_coach("X", 1)
+    with pytest.raises(NotEnoughSeats):
+        p.reserve("smith", 1)
+    assert p.get_reserved("X") == 0
 
 
 @pytest.mark.parametrize("seats", BAD_COUNTS)
@@ -73,11 +81,6 @@ def test_adding_a_coach_twice_is_rejected(planner):
     assert planner.get_coaches() == ["A", "B"]
 
 
-def test_a_bad_seat_count_is_reported_before_a_repeated_id(planner):
-    with pytest.raises(ValueError):
-        planner.add_coach("A", 0)
-
-
 @pytest.mark.parametrize(
     "call",
     [
@@ -102,26 +105,37 @@ def test_unknown_ids_raise_key_error_and_change_nothing(planner, call):
 # --- reserving --------------------------------------------------------------
 
 
+def test_each_booking_keeps_its_own_size(planner):
+    planner.reserve("smith", 3)
+    planner.reserve("jones", 4)
+    planner.reserve("brown", 2)
+    assert planner.get_booking("smith") == ("A", 3)
+    assert planner.get_booking("jones") == ("A", 4)
+    assert planner.get_booking("brown") == ("B", 2)
+
+
 def test_groups_fill_a_coach_up_to_its_limit(planner):
     assert planner.reserve("smith", 3) == "A"
     assert planner.reserve("jones", 4) == "A"
-    assert planner.get_booking("jones") == ("A", [4, 5, 6, 7])
     assert planner.get_reserved("A") == 7
     assert planner.get_available("A") == 0
+    assert planner.reserve("brown", 1) == "B"
 
 
 def test_a_group_that_does_not_fit_goes_to_the_next_coach(planner):
     planner.reserve("smith", 5)
     assert planner.reserve("jones", 3) == "B"
-    assert planner.get_booking("jones") == ("B", [1, 2, 3])
+    assert planner.get_booking("jones") == ("B", 3)
     # A still has room for two, so a pair goes back into A.
     assert planner.reserve("brown", 2) == "A"
-    assert planner.get_booking("brown") == ("A", [6, 7])
+    assert planner.get_reserved("A") == 7
+    assert planner.get_reserved("B") == 3
 
 
 def test_a_group_bigger_than_the_first_limit_skips_that_coach(planner):
     assert planner.reserve("school", 8) == "B"
     assert planner.get_reserved("A") == 0
+    assert planner.get_available("B") == 6
 
 
 def test_a_group_is_never_split_between_coaches(planner):
@@ -131,12 +145,18 @@ def test_a_group_is_never_split_between_coaches(planner):
     with pytest.raises(NotEnoughSeats):
         planner.reserve("brown", 3)
     assert state(planner, ["smith", "jones"]) == before
+    with pytest.raises(KeyError):
+        planner.get_booking("brown")
 
 
 def test_no_coaches_means_no_room():
     p = SeatPlanner()
     with pytest.raises(NotEnoughSeats):
         p.reserve("smith", 1)
+
+
+def test_not_enough_seats_is_a_reservation_error():
+    assert issubclass(NotEnoughSeats, ReservationError)
 
 
 @pytest.mark.parametrize("size", BAD_COUNTS)
@@ -163,38 +183,26 @@ def test_booking_an_id_twice_is_rejected(planner):
     assert state(planner, ["smith"]) == before
 
 
-def test_reserve_errors_come_in_order(planner):
-    assert issubclass(NotEnoughSeats, ReservationError)
-    planner.reserve("smith", 2)
-    with pytest.raises(ValueError):
-        planner.reserve("smith", 0)  # bad size before a repeated id
-    with pytest.raises(ReservationError) as info:
-        planner.reserve("smith", 50)  # repeated id before no room
-    assert not isinstance(info.value, NotEnoughSeats)
-
-
 # --- moving -----------------------------------------------------------------
 
 
-def test_moving_frees_the_old_seats(planner):
+def test_moving_frees_the_old_coach(planner):
     planner.reserve("smith", 3)
     planner.move("smith", "B")
-    assert planner.get_booking("smith") == ("B", [1, 2, 3])
+    assert planner.get_booking("smith") == ("B", 3)
     assert planner.get_reserved("A") == 0
     assert planner.get_available("A") == 7
     assert planner.get_reserved("B") == 3
 
 
-def test_a_move_takes_the_lowest_free_seats_of_the_new_coach(planner):
-    planner.reserve("smith", 2)  # A 1-2
-    planner.reserve("jones", 3)  # A 3-5
-    planner.reserve("brown", 10)  # B 1-10
-    planner.move("smith", "B")  # B 11-12, A 1-2 free
-    assert planner.get_booking("smith") == ("B", [11, 12])
-    planner.move("smith", "A")  # back into the gap at the front of A
-    assert planner.get_booking("smith") == ("A", [1, 2])
+def test_a_booking_can_move_back_and_forth(planner):
+    planner.reserve("smith", 2)
+    planner.reserve("jones", 3)
+    planner.move("smith", "B")
+    planner.move("smith", "A")
+    assert planner.get_booking("smith") == ("A", 2)
     assert planner.get_reserved("A") == 5
-    assert planner.get_reserved("B") == 10
+    assert planner.get_reserved("B") == 0
 
 
 def test_a_move_past_the_limit_raises_and_changes_nothing(planner):
@@ -210,8 +218,9 @@ def test_a_move_can_fill_a_coach_exactly_to_its_limit(planner):
     planner.reserve("smith", 5)  # A
     planner.reserve("jones", 9)  # B
     planner.move("smith", "B")
-    assert planner.get_booking("smith") == ("B", [10, 11, 12, 13, 14])
+    assert planner.get_booking("smith") == ("B", 5)
     assert planner.get_available("B") == 0
+    assert planner.get_available("A") == 7
 
 
 def test_moving_to_the_same_coach_is_rejected(planner):
@@ -222,28 +231,15 @@ def test_moving_to_the_same_coach_is_rejected(planner):
     assert state(planner, ["smith"]) == before
 
 
-def test_move_errors_come_in_order(planner):
-    planner.reserve("smith", 7)  # fills A
-    planner.reserve("jones", 14)  # fills B
-    with pytest.raises(KeyError):
-        planner.move("nobody", "Z")
-    with pytest.raises(KeyError):
-        planner.move("smith", "Z")
-    with pytest.raises(ValueError):
-        planner.move("smith", "A")  # same coach before no room
-    with pytest.raises(NotEnoughSeats):
-        planner.move("smith", "B")
-
-
-def test_later_bookings_fill_the_gaps_left_by_moves(planner):
-    planner.reserve("smith", 2)  # A 1-2
-    planner.reserve("jones", 2)  # A 3-4
-    planner.reserve("brown", 2)  # A 5-6
+def test_later_bookings_use_the_room_left_by_moves(planner):
+    planner.reserve("smith", 2)
+    planner.reserve("jones", 2)
+    planner.reserve("brown", 2)
     planner.move("jones", "B")
-    assert planner.reserve("green", 1) == "A"
-    assert planner.get_booking("green") == ("A", [3])
-    assert planner.reserve("white", 2) == "A"
-    assert planner.get_booking("white") == ("A", [4, 7])
+    assert planner.get_available("A") == 3
+    assert planner.reserve("green", 3) == "A"
+    assert planner.get_available("A") == 0
+    assert planner.get_reserved("B") == 2
 
 
 def test_planners_do_not_share_coaches():

@@ -21,7 +21,7 @@ def planner():
 
 def state(p, bookings=()):
     coaches = {c: (p.get_reserved(c), p.get_available(c), p.get_group(c)) for c in p.get_coaches()}
-    return coaches, {b: p.get_booking(b) for b in bookings}
+    return coaches, {b: tuple(p.get_booking(b)) for b in bookings}
 
 
 def test_groups_default_to_standard():
@@ -70,7 +70,7 @@ def test_groups_reserve_without_a_group_uses_any_coach(planner):
 def test_groups_reserve_uses_the_first_coach_of_the_group_that_fits(planner):
     assert planner.reserve("smith", 5, group="comfort") == "C1"
     assert planner.reserve("jones", 4, group="comfort") == "C2"
-    assert planner.get_booking("jones") == ("C2", [1, 2, 3, 4])
+    assert planner.get_booking("jones") == ("C2", 4)
     assert planner.reserve("brown", 2, group="comfort") == "C1"
     assert planner.reserve("green", 8, group="standard") == "B"
     assert planner.get_reserved("A") == 0
@@ -102,9 +102,19 @@ def test_groups_available_seats_are_summed(planner):
     assert planner.get_group_available("standard") == 18
 
 
+def test_groups_available_seats_follow_the_fill_percent():
+    p = SeatPlanner(fill_percent=50)
+    p.add_coach("C1", 10, group="comfort")
+    p.add_coach("C2", 10, group="comfort", fill_percent=100)
+    assert p.get_group_available("comfort") == 15
+    p.reserve("smith", 4, group="comfort")
+    p.cancel("smith", 1)
+    assert p.get_group_available("comfort") == 12
+
+
 def test_groups_moves_may_cross_groups(planner):
     planner.reserve("smith", 3)
     planner.move("smith", "C2")
-    assert planner.get_booking("smith") == ("C2", [1, 2, 3])
+    assert planner.get_booking("smith") == ("C2", 3)
     assert planner.get_group_available("comfort") == 18
     assert planner.get_group_available("standard") == 21

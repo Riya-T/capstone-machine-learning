@@ -36,8 +36,8 @@ list each sequence's changes in order.
     library_catalog 2. With at most 8 going to editing, that is 5.9 per
     task on average, and every dev task but library_catalog has at least 3.
   - The train and eval tasks were checked too; see "Writer check" below.
-    All 36 train tasks pass. 8 of the 16 eval tasks pass; the other 8
-    need a redesign, or a team decision to drop them.
+    All 36 train tasks and all 16 eval tasks pass (`meeting_rooms` and
+    `task_board` after a second fix to their redesign).
 - The dev calibration with the 14B editor (2026-10-31; results in "Changes
   from the proposal" in the top-level README) found two changes whose
   hidden tests disagreed with what the editor was told. Both are fixed:
@@ -120,19 +120,19 @@ Last updated 2026-11-04.
 | `rover_fleet` | eval | 0 → 6 | ✅ passed after fix |
 | `social_feed` | eval | 2 → 6 | ✅ passed after fix |
 | `spending_alerts` | eval | 0 → 0 → 0 → 8 | ✅ passed after third fix |
-| `elevator_dispatch` | eval | 1 → 0 | ❌ failed |
-| `document_versions` | eval | 0 → 0 | ❌ failed |
-| `locker_room` | eval | 0 → 0 | ❌ failed |
-| `meeting_rooms` | eval | 0 → 0 | ❌ failed |
-| `race_telemetry` | eval | 0 → 0 | ❌ failed |
-| `seat_reservation` | eval | 0 → 0 | ❌ failed |
-| `subscription_billing` | eval | 0 → 0 | ❌ failed |
-| `task_board` | eval | 0 → 0 | ❌ failed |
+| `elevator_dispatch` | eval | 1 → 0 → 9 | ✅ passed after redesign |
+| `document_versions` | eval | 0 → 0 → 16 | ✅ passed after redesign |
+| `locker_room` | eval | 0 → 0 → 8 | ✅ passed after redesign |
+| `meeting_rooms` | eval | 0 → 0 → 0 → 9 | ✅ passed after redesign and a second fix |
+| `race_telemetry` | eval | 0 → 0 → 5 | ✅ passed after redesign |
+| `seat_reservation` | eval | 0 → 0 → 3 | ✅ passed after redesign |
+| `subscription_billing` | eval | 0 → 0 → 13 | ✅ passed after redesign |
+| `task_board` | eval | 0 → 0 → 0 → 5 | ✅ passed after redesign and a second fix |
 
-So far 51 of the 60 tasks pass: 7 of 8 dev, all 36 train and 8 of 16
-eval. The 8 eval tasks that fail are described in "Eval tasks
-(2026-11-04)" below; whether to redesign or drop them is a team decision.
-Train tasks that fail
+So far 59 of the 60 tasks pass: 7 of 8 dev, all 36 train and all 16
+eval. The 8 eval tasks that failed the fixes were redesigned (team
+decision, 2026-11-04; see "Eval redesigns (2026-11-04)" below). Train
+tasks that fail
 are redesigned, not dropped (team decision, 2026-11-02; see "Redesigned on
 2026-11-02" below). `iou_tracker`, `pantry_inventory` and `ticket_desk`
 failed again after their redesign and were redesigned a second time.
@@ -649,8 +649,8 @@ predicted.
 
 Still open:
 
-- `document_versions` and `elevator_dispatch`: see "Eval tasks
-  (2026-11-04)" below.
+- `document_versions` and `elevator_dispatch`: redesigned and passed; see
+  "Eval redesigns (2026-11-04)" below.
 - `access_control` lost the planted bug `v0_allowed_in_allow_order`: a
   public check now covers that order, so the bug could no longer pass the
   public checks. `v0_access_before_message` still covers the initial spec.
@@ -749,6 +749,138 @@ that failed twice, they need a redesign, or a team decision to drop them.
   test, two change tests included, compares sorted lists. The stored
   programs of the last two runs then passed 13 and 10 of 16. Rerun
   (`20261104T190941Z-9b116e`): 8 of 16.
+
+### Eval redesigns (2026-11-04)
+
+The other 8 were redesigned (team decision, 2026-11-04), in the same way as
+the train tasks: each now fits what the writer does anyway, where that keeps
+the point of the changes. Change ids, kinds and sequences are unchanged, and
+each `configuration` change still makes a fixed v0 rule adjustable. Errors
+are bullets, and error order, `bool` values, non-string names and non-`int`
+numbers are unspecified throughout, change tests included. Most interfaces
+changed, so stored programs cannot pass unmodified; "old programs" counts
+are the weak signal (the old programs with only the edits the new spec
+forces). Writer check: run `20261104T225942Z-2f979e`.
+
+- `document_versions`: 14 of 16 kept a list of revisions and dropped the
+  oldest past 6, not 5, then read `get_revision(page, number)` as
+  `list[number - 1]`, which is wrong once one is dropped.
+  - `get_revision` is gone. `get_history(page)` returns the 5 latest
+    revisions as `(number, text)` pairs, with a table for 1, 3, 5, 6 and 8
+    revisions and a public check at the boundary. Whether older texts are
+    kept is unspecified, so keeping everything and slicing passes.
+  - `c_retention` sets how many revisions `get_history` lists. `c_restore`
+    takes a number from the history (`IndexError` otherwise).
+  - Planted bug `v0_keeps_six_revisions` (caught by the new public check)
+    became `v0_authors_only_from_history`.
+  - Old programs: 9 of 16. Rerun: 16 of 16 pass.
+- `elevator_dispatch`: 15 of 16 stored only the passenger id while waiting,
+  losing the destination, and all 16 read `get_destination` as the floor
+  the passenger waits on. Most duplicate-id checks were broken.
+  - No destinations: `call(passenger_id, floor)`. At each stop every rider
+    gets out, then up to 4 waiting passengers get in, with an example. A
+    repeated passenger id is unspecified.
+  - The changes keep their requests; tests lost the destination argument.
+    `c_cancel` says a new call with a cancelled id is an ordinary passenger.
+  - Planted bug `v0_arrived_id_reused` became `v0_delivered_only_last_stop`.
+  - Old programs, given a destination shim: 11 of 16. Rerun: 9 of 16 pass.
+- `locker_room`: programs take the first free locker in the order added
+  that "fits", but almost none got "the smallest size that fits" right
+  (7 took only an exact size, 4 checked no size).
+  - An item goes only into a free locker of its own size, the first in the
+    order added; `NoLockerFree` when there is none, even if other sizes are
+    free. `c_size_table` and `c_versions` follow (moving to another size
+    raises `LockerError`).
+  - Planted bug `v0_fee_by_item_size` (meaningless now) became
+    `v0_retrieved_item_refused`.
+  - Stored programs unmodified: 5 of 16; with only the fit check made exact:
+    13 of 16. Rerun: 8 of 16 pass.
+- `meeting_rooms`: no program got the minute intervals with a 10-minute gap
+  right in any variant tried (one-sided overlap checks, missed nested
+  bookings, `end + 10` stored and returned). `reschedule` failed in most.
+  - Bookings take one numbered slot: `book(booking_id, room, slot)`,
+    `get_booking` returns `(room, slot)`. Two bookings of a room clash when
+    they are 1 or fewer slots apart, with a table and public checks on both
+    sides. `get_room_bookings` is in any order.
+  - `reschedule` moved into `c_booking_versions`. `c_buffer` makes the gap
+    adjustable per planner and room; `c_usage` counts booked slots.
+  - Planted bugs `versions_room_bookings_unsorted` and
+    `versions_reschedule_default_gap` became `versions_refused_booking_uses_id`
+    and `versions_book_default_gap`.
+  - No old-program count: every signature changed. Rerun: 0 of 15 (see below).
+- `race_telemetry`: 13 of 16 crashed in `record_lap` (laps stored by race,
+  read by car), and almost all kept a points counter that never changed.
+  - One race per object: `RaceTelemetry(laps)`, and no race ids.
+    `get_results()` returns `(car_id, points)` pairs, fastest first, with
+    the points worked out from the place; `get_points` is gone. The table,
+    ties and late finishers keep their examples and public checks.
+  - `c_points_table` makes the fixed table adjustable (no per-race tables);
+    `c_car_classes` ranks within a class through `get_results(car_class=)`.
+  - Old programs, through a one-race adapter: 2 of 16. They still crash in
+    the two-level storage the new interface removes. Rerun: 5 of 16 pass.
+- `seat_reservation`: every failure came from seat numbers (`max()` of an
+  empty list, a move freeing only the first seat, shared seat lists).
+  - Seats are not numbered: `get_booking` returns `(coach_id, size)`.
+    The first-coach-that-fits rule, the 70 % limit and unsplit groups stay.
+    A public check covers a move freeing room in the old coach.
+  - Change tests compare sizes instead of seat lists.
+  - Old programs, seat lists turned into counts: 1 of 16. Rerun: 3 of 16 pass.
+- `subscription_billing`: before the 11-04 fix, 14 of 16 failed only the
+  cancelled state (half deleted the customer, the rest set the plan to
+  `None`). The 11-04 subscribed/cancelled section made it worse (programs
+  charging 0 on `subscribe`, repeated lines, 2 hangs).
+  - Back to the original layout. After `cancel`, the only rule is that
+    billing cycles no longer charge the customer; everything else about a
+    cancelled customer is unspecified, subscribing again included.
+  - The changes drop their rules about cancelled customers ("subscribing
+    again starts unpaused", "starts at version 1").
+  - Stored programs unmodified: 14 of 16 from run `1b49f7`, 3 of 16 from
+    `504573`. Rerun: 13 of 16 pass.
+- `task_board`: programs counted done tasks against the 5-task limit; 8 of
+  16 crashed in `get_task` on the project name; many skipped the checks in
+  `move_task`.
+  - `get_task` returns `(title, due_day, done)`. A project with 5 open
+    tasks is full; moving an open task out frees a place (example and public
+    check). Whether done tasks take a place, moving into a full project and
+    moving to the same project are unspecified.
+  - `c_open_limit` keeps the adjustable limit with an example; the other
+    changes follow.
+  - Planted bug `v0_done_move_checks_limit` became
+    `v0_rejected_add_uses_an_id`.
+  - Old programs, `get_task` without the project: 4 of 16 latest, 8 of 16
+    older. Rerun: 0 of 15 (see below).
+
+Second fix for the two that failed (2026-11-04):
+
+- `meeting_rooms`: all 15 programs returned every booking id from
+  `get_room_bookings(room)`, and the 2 closest failed only the 3 tests
+  that call it. It became `get_bookings()`, all ids in any order; tests
+  read a room's bookings through `get_booking`. With that, 2 of 15 pass.
+  The rest fail the gap: most check only the same slot in `book`, and
+  check neighbours, or one side, only in `get_free_rooms`, despite the
+  public check on both sides.
+  - v0 has no gap: two bookings of a room clash only in the same slot, and
+    back-to-back bookings are fine. `c_buffer` makes the gap adjustable,
+    `gap=0` by default, per planner and room; it applies to `book`,
+    `get_free_rooms` and, after `c_booking_versions`, `reschedule`.
+  - Planted bug `v0_free_rooms_ignore_gap` became
+    `v0_clash_checks_last_booking_only`.
+  - Stored programs with only their neighbour checks dropped: 5 of 15.
+    Rerun (`20261104T234233Z-1959aa`): 9 of 16 pass.
+- `task_board`: 10 of 15 create the project when `move_task` is given one
+  that does not exist (2 programs fail only that), and the next closest
+  raise `KeyError` for a done task in `complete` and `move_task`. Most
+  store tasks as tuples and rebuild them in `complete` as
+  `(id, _, _, True)`, so `get_task` gave `(3, 3, True)` for
+  `("landing page", 3, True)`.
+  - Unspecified now: moving a task to a project that does not exist, and
+    completing or moving a task that is already done.
+  - `get_task` returns `(title, due_day)`; whether a task is done shows
+    only in `get_open_tasks`.
+  - Planted bug `v0_complete_twice` became `v0_empty_project_name_accepted`.
+  - Stored programs unmodified: 2 of 15 (the tuple bug loses the title
+    whatever `get_task` returns). Rerun (`20261104T234233Z-1959aa`): 5 of
+    16 pass.
 
 ## Change tests
 
@@ -1018,15 +1150,15 @@ Four changes each, two sequences of three. Kata shape names the kata whose chang
 |---|---|---|---|---|---|
 | `aging_inventory` | `cooler.py` | Gilded Rose, fully re-skinned | cut-flower batches losing freshness each day | `c_loss_rates` configuration: loss rates per cooler and batch<br>`c_categories` grouping: categories with their own rates<br>`c_hold` state_flag: batches on hold<br>`c_undo_day` undo: undo the last day | s1: loss_rates → categories → hold<br>s2: undo_day → loss_rates → categories |
 | `auction_house` | `auction.py` | none (original) | lots, bids with a minimum raise of 10 | `c_increment` configuration: minimum raise per house and lot<br>`c_bid_version` concurrency_control: lot versions<br>`c_withdraw` undo: withdraw a bidder's bids<br>`c_closing` state_flag: close lots, winners | s1: increment → bid_version → withdraw<br>s2: closing → increment → bid_version |
-| `document_versions` | `wiki.py` | none (original) | wiki pages with numbered revisions, last 5 readable | `c_version_check` concurrency_control: page versions<br>`c_retention` configuration: revisions kept per wiki and page<br>`c_restore` undo: roll back to a revision<br>`c_search` query: find pages, contributions | s1: version_check → retention → restore<br>s2: search → version_check → retention |
-| `elevator_dispatch` | `elevators.py` | Lift | floors, cars, calls, riders getting in and out | `c_capacity` configuration: car capacity per building and car<br>`c_service` state_flag: cars out of service<br>`c_wait` derived_value: wait statistics<br>`c_cancel` undo: cancel a call | s1: capacity → service → wait<br>s2: cancel → capacity → service |
+| `document_versions` | `wiki.py` | none (original) | wiki pages with numbered revisions, a history of the latest 5 | `c_version_check` concurrency_control: page versions<br>`c_retention` configuration: history length per wiki and page<br>`c_restore` undo: roll back to a revision<br>`c_search` query: find pages, contributions | s1: version_check → retention → restore<br>s2: search → version_check → retention |
+| `elevator_dispatch` | `elevators.py` | Lift | floors, cars, calls; riders get out at the next stop | `c_capacity` configuration: car capacity per building and car<br>`c_service` state_flag: cars out of service<br>`c_wait` derived_value: wait statistics<br>`c_cancel` undo: cancel a call | s1: capacity → service → wait<br>s2: cancel → capacity → service |
 | `light_grid` | `lights.py` | Christmas Lights | on/off/toggle over rectangles of a light grid | `c_brightness` configuration: brightness levels, adjustable maximum<br>`c_locks` state_flag: locked regions<br>`c_undo` undo: undo commands<br>`c_count_query` query: counts over rectangles | s1: brightness → locks → undo<br>s2: count_query → brightness → locks |
-| `locker_room` | `lockers.py` | Configure Wardrobe | lockers of fixed sizes and fees, storing items | `c_size_table` configuration: size and fee table<br>`c_out_of_order` state_flag: lockers out of order<br>`c_undo` undo: undo the last store or retrieve<br>`c_versions` concurrency_control: locker versions, move items | s1: size_table → out_of_order → undo<br>s2: versions → size_table → out_of_order |
-| `meeting_rooms` | `rooms.py` | none (original) | rooms booked by the minute with a 10-minute gap | `c_buffer` configuration: gap per planner and room<br>`c_booking_versions` concurrency_control: booking versions<br>`c_cancel` undo: cancel a booking<br>`c_usage` derived_value: booked minutes, usage ranking | s1: buffer → booking_versions → cancel<br>s2: usage → buffer → booking_versions |
-| `race_telemetry` | `telemetry.py` | Race Car | cars, races, lap times, results, a points table | `c_points_table` configuration: points table per series and race<br>`c_penalties` derived_value: time penalties<br>`c_car_classes` grouping: car classes<br>`c_lap_corrections` concurrency_control: versioned lap corrections | s1: points_table → penalties → car_classes<br>s2: lap_corrections → points_table → penalties |
+| `locker_room` | `lockers.py` | Configure Wardrobe | lockers of fixed sizes and fees; an item takes a locker of its own size | `c_size_table` configuration: size and fee table<br>`c_out_of_order` state_flag: lockers out of order<br>`c_undo` undo: undo the last store or retrieve<br>`c_versions` concurrency_control: locker versions, move items | s1: size_table → out_of_order → undo<br>s2: versions → size_table → out_of_order |
+| `meeting_rooms` | `rooms.py` | none (original) | rooms booked by numbered slot, one meeting per slot | `c_buffer` configuration: gap per planner and room<br>`c_booking_versions` concurrency_control: booking versions, reschedule<br>`c_cancel` undo: cancel a booking<br>`c_usage` derived_value: booked slots, usage ranking | s1: buffer → booking_versions → cancel<br>s2: usage → buffer → booking_versions |
+| `race_telemetry` | `telemetry.py` | Race Car | one race: cars, lap times, results, a points table | `c_points_table` configuration: adjustable points table<br>`c_penalties` derived_value: time penalties<br>`c_car_classes` grouping: car classes<br>`c_lap_corrections` concurrency_control: versioned lap corrections | s1: points_table → penalties → car_classes<br>s2: lap_corrections → points_table → penalties |
 | `rover_fleet` | `rovers.py` | Mars Rover | rovers on a wrapping 10x10 plateau, F/B/L/R commands | `c_grid_size` configuration: plateau size, wrapping on/off<br>`c_obstacles` validation_rule: obstacles<br>`c_paths` query: paths, visitors, explored cells<br>`c_versioned_commands` concurrency_control: rover versions | s1: grid_size → obstacles → paths<br>s2: versioned_commands → grid_size → obstacles |
 | `scoreboard` | `scoreboard.py` | Score Keeper | one match, scoring events with fixed point values | `c_points` configuration: adjustable point values<br>`c_corrections` undo: undo scoring events<br>`c_periods` grouping: periods<br>`c_versions` concurrency_control: team versions | s1: points → corrections → periods<br>s2: versions → points → corrections |
-| `seat_reservation` | `seats.py` | Train Reservation | groups booked onto coaches under a 70% fill rule | `c_fill_percent` configuration: fill rule per planner and coach<br>`c_cancel` undo: full and partial cancellation<br>`c_coach_groups` grouping: coach groups<br>`c_versions` concurrency_control: booking versions, add seats | s1: fill_percent → cancel → coach_groups<br>s2: versions → fill_percent → cancel |
+| `seat_reservation` | `seats.py` | Train Reservation | groups booked onto coaches under a 70% fill rule, seats not numbered | `c_fill_percent` configuration: fill rule per planner and coach<br>`c_cancel` undo: full and partial cancellation<br>`c_coach_groups` grouping: coach groups<br>`c_versions` concurrency_control: booking versions, add seats | s1: fill_percent → cancel → coach_groups<br>s2: versions → fill_percent → cancel |
 | `social_feed` | `feed.py` | Social Network | users, posts up to 280 characters, follows, timelines | `c_post_limit` configuration: post length limit per feed and user<br>`c_block` state_flag: blocking<br>`c_mentions` query: @mentions<br>`c_edits` concurrency_control: edits with post versions | s1: post_limit → block → mentions<br>s2: edits → post_limit → block |
 | `spending_alerts` | `spending.py` | Unusual Spending | payments by account, month and category, alerts | `c_thresholds` configuration: alert thresholds per tracker and category<br>`c_refunds` undo: full and partial refunds<br>`c_groups` grouping: category groups<br>`c_month_compare` derived_value: month-on-month comparison | s1: thresholds → refunds → groups<br>s2: month_compare → thresholds → refunds |
 | `subscription_billing` | `billing.py` | none (original) | plans, subscribers, billing cycles, upgrades | `c_proration` configuration: upgrade charge percentage per system and plan<br>`c_pause` state_flag: paused subscriptions<br>`c_plan_version` concurrency_control: subscription versions<br>`c_revenue` derived_value: revenue per plan | s1: proration → pause → plan_version<br>s2: revenue → proration → pause |

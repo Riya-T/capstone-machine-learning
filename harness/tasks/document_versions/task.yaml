@@ -11,7 +11,7 @@ private_tests: [private/test_wiki_initial.py]
 reference: reference/v0
 planted_bugs:
   # Required: a bug only the hidden initial tests catch.
-  - {path: bugs/v0_keeps_six_revisions, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_authors_only_from_history, must_fail: [initial], must_pass: [public]}
   - {path: bugs/v0_duplicate_page_overwrites, must_fail: [initial], must_pass: [public]}
 
 changes:

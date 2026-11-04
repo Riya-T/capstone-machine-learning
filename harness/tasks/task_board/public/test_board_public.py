@@ -20,13 +20,13 @@ def test_task_ids_count_up_over_all_projects(board):
     assert board.add_task("website", "landing page", 3) == 1
     assert board.add_task("mobile", "login screen", 5) == 2
     assert board.add_task("website", "contact form", 4) == 3
-    assert board.get_task(2) == ("mobile", "login screen", 5, False)
+    assert board.get_task(2) == ("login screen", 5)
 
 
 def test_completing_a_task_marks_it_done(board):
     task_id = board.add_task("website", "landing page", 3)
     board.complete(task_id)
-    assert board.get_task(task_id) == ("website", "landing page", 3, True)
+    assert board.get_task(task_id) == ("landing page", 3)
     assert board.get_open_tasks("website") == []
 
 
@@ -38,12 +38,13 @@ def test_a_project_holds_at_most_five_open_tasks(board):
     assert board.get_open_tasks("website") == [1, 2, 3, 4, 5]
 
 
-def test_done_tasks_free_a_place(board):
+def test_moving_a_task_out_frees_a_place(board):
     for day in range(5):
         board.add_task("website", f"task {day}", day)
-    board.complete(2)
+    board.move_task(2, "mobile")
     assert board.add_task("website", "next one", 7) == 6
     assert board.get_open_tasks("website") == [1, 3, 4, 5, 6]
+    assert board.get_open_tasks("mobile") == [2]
 
 
 def test_a_moved_task_joins_the_end_of_its_new_project(board):
@@ -51,21 +52,8 @@ def test_a_moved_task_joins_the_end_of_its_new_project(board):
     board.add_task("website", "landing page", 3)
     board.move_task(2, "mobile")
     assert board.get_open_tasks("mobile") == [1, 2]
-    assert board.get_task(2)[0] == "mobile"
-
-
-def test_an_open_task_cannot_move_into_a_full_project(board):
-    for day in range(5):
-        board.add_task("website", f"task {day}", day)
-    board.add_task("mobile", "login screen", 5)
-    with pytest.raises(BoardError):
-        board.move_task(6, "website")
-    assert board.get_task(6)[0] == "mobile"
-    assert board.get_open_tasks("mobile") == [6]
-    board.complete(1)
-    board.move_task(6, "website")
-    assert board.get_open_tasks("website") == [2, 3, 4, 5, 6]
-    assert board.get_open_tasks("mobile") == []
+    assert board.get_open_tasks("website") == []
+    assert board.get_task(2) == ("landing page", 3)
 
 
 def test_unknown_project_raises_key_error(board):

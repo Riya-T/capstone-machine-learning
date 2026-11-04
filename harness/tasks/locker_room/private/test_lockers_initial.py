@@ -71,9 +71,6 @@ def test_adding_a_locker_twice_is_rejected(room):
     before = state(room)
     with pytest.raises(LockerError):
         room.add_locker("S1", "large")
-    with pytest.raises(ValueError):
-        # The bad size is reported before the id that was already added.
-        room.add_locker("S1", "huge")
     assert state(room) == before
 
 
@@ -83,13 +80,25 @@ def test_adding_a_locker_twice_is_rejected(room):
 def test_lockers_of_one_size_are_used_in_the_order_added(room):
     assert room.store("hat", "small") == "S1"
     assert room.store("gloves", "small") == "S2"
-    assert room.store("scarf", "small") == "M1"
-    assert room.store("cap", "small") == "L1"
+    with pytest.raises(NoLockerFree):
+        room.store("scarf", "small")
+    assert room.store("scarf", "medium") == "M1"
+    assert room.store("cap", "large") == "L1"
     with pytest.raises(NoLockerFree):
         room.store("sock", "small")
 
 
-def test_a_freed_locker_is_used_again_before_a_larger_one(room):
+def test_the_order_added_decides_not_the_id():
+    r = LockerRoom()
+    for locker_id, size in [("L9", "large"), ("S5", "small"), ("L2", "large"), ("S1", "small")]:
+        r.add_locker(locker_id, size)
+    assert r.store("skis", "large") == "L9"
+    assert r.store("hat", "small") == "S5"
+    assert r.store("bag", "large") == "L2"
+    assert r.get_free_lockers() == ["S1"]
+
+
+def test_a_freed_locker_is_used_again(room):
     room.store("hat", "small")
     room.store("gloves", "small")
     room.retrieve("hat")
@@ -104,22 +113,27 @@ def test_a_freed_locker_comes_back_in_its_place(room):
     assert room.get_free_lockers() == ["S1", "M1", "L1"]
 
 
-def test_an_item_never_goes_into_a_smaller_locker(room):
+def test_an_item_never_goes_into_a_locker_of_another_size(room):
     room.store("bag", "large")
     before = state(room)
     with pytest.raises(NoLockerFree):
         room.store("skis", "large")
-    with pytest.raises(NoLockerFree):
-        room.store("box", "large")
     assert state(room) == before
-    assert room.store("coat", "medium") == "M1"
+    room.store("hat", "small")
+    room.store("coat", "small")
+    before = state(room)
+    with pytest.raises(NoLockerFree):
+        room.store("box", "small")  # M1 is free, but medium
+    assert state(room) == before
+    assert room.get_free_lockers() == ["M1"]
+    assert room.store("box", "medium") == "M1"
 
 
-def test_the_fee_depends_on_the_locker_not_the_item(room):
+def test_each_size_has_its_fee(room):
     room.store("hat", "small")  # S1: 200
     room.store("gloves", "small")  # S2: 200
-    room.store("scarf", "small")  # M1: 300
-    room.store("cap", "small")  # L1: 500
+    room.store("scarf", "medium")  # M1: 300
+    room.store("cap", "large")  # L1: 500
     assert room.get_takings() == 1200
 
 
@@ -161,21 +175,6 @@ def test_storing_needs_an_item_id(room):
     with pytest.raises(ValueError):
         room.store("", "small")
     assert state(room) == before
-
-
-def test_store_errors_come_in_order():
-    r = LockerRoom()
-    r.add_locker("S1", "small")
-    r.store("hat", "small")
-    # No locker is free, so each call also has a NoLockerFree problem.
-    with pytest.raises(ValueError):
-        r.store("hat", "huge")
-    with pytest.raises(ValueError):
-        r.store("", "small")
-    with pytest.raises(LockerError) as caught:
-        r.store("hat", "small")
-    assert not isinstance(caught.value, NoLockerFree)
-    assert r.get_takings() == 200
 
 
 # --- retrieving -----------------------------------------------------------------

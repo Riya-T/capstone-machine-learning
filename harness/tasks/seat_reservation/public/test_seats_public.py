@@ -16,26 +16,32 @@ def planner():
     return p
 
 
-def test_a_group_gets_the_first_seats_of_the_first_coach(planner):
+def test_a_group_goes_into_the_first_coach(planner):
     assert planner.reserve("smith", 3) == "A"
-    assert planner.get_booking("smith") == ("A", [1, 2, 3])
+    assert planner.get_booking("smith") == ("A", 3)
     assert planner.get_reserved("A") == 3
     assert planner.get_available("A") == 4
 
 
-def test_each_booking_holds_its_own_seats(planner):
+def test_groups_fill_a_coach_up_to_its_limit(planner):
     assert planner.reserve("smith", 3) == "A"
     assert planner.reserve("jones", 4) == "A"
-    assert planner.get_booking("smith") == ("A", [1, 2, 3])
-    assert planner.get_booking("jones") == ("A", [4, 5, 6, 7])
+    assert planner.get_booking("jones") == ("A", 4)
     assert planner.get_reserved("A") == 7
+    assert planner.get_available("A") == 0
 
 
 def test_a_coach_is_never_filled_beyond_seventy_percent(planner):
     assert planner.reserve("smith", 7) == "A"
-    assert planner.get_available("A") == 0
     assert planner.reserve("jones", 1) == "B"
-    assert planner.get_booking("jones") == ("B", [1])
+    assert planner.get_booking("jones") == ("B", 1)
+
+
+def test_a_group_that_does_not_fit_goes_to_the_next_coach(planner):
+    planner.reserve("smith", 5)
+    assert planner.reserve("jones", 3) == "B"
+    assert planner.reserve("brown", 2) == "A"  # A still had room for 2
+    assert planner.get_available("A") == 0
 
 
 def test_a_group_too_big_for_any_coach_raises(planner):
@@ -45,13 +51,14 @@ def test_a_group_too_big_for_any_coach_raises(planner):
     assert planner.get_reserved("B") == 0
 
 
-def test_seats_freed_by_a_move_are_used_again(planner):
+def test_a_move_frees_room_in_the_old_coach(planner):
     planner.reserve("smith", 2)
     planner.reserve("jones", 3)
     planner.move("smith", "B")
-    assert planner.get_booking("smith") == ("B", [1, 2])
-    assert planner.reserve("brown", 3) == "A"
-    assert planner.get_booking("brown") == ("A", [1, 2, 6])
+    assert planner.get_booking("smith") == ("B", 2)
+    assert planner.get_reserved("A") == 3
+    assert planner.get_reserved("B") == 2
+    assert planner.reserve("brown", 4) == "A"
 
 
 def test_group_sizes_must_be_positive(planner):

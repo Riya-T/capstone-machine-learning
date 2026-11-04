@@ -11,7 +11,7 @@ from elevators import Building
 def test_wait_getting_in_at_the_next_stop_is_a_wait_of_one():
     b = Building(5)
     b.add_car("east")
-    b.call("ann", 2, 4)
+    b.call("ann", 2)
     b.move_car("east", 2)
     assert b.get_clock() == 1
     assert b.get_wait("ann") == 1
@@ -22,7 +22,7 @@ def test_wait_getting_in_at_the_next_stop_is_a_wait_of_one():
 def test_wait_grows_with_every_move_before_boarding():
     b = Building(5)
     b.add_car("east")
-    b.call("ann", 3, 0)
+    b.call("ann", 3)
     b.move_car("east", 1)
     b.move_car("east", 2)
     b.move_car("east", 3)

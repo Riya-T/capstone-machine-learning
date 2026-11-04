@@ -28,11 +28,12 @@ def test_versions_a_stale_move_is_refused(planner):
     planner.move("smith", "B")
     with pytest.raises(VersionConflict):
         planner.move("smith", "A", expected_version=1)
-    assert planner.get_booking("smith") == ("B", [1, 2])
+    assert planner.get_booking("smith") == ("B", 2)
     assert planner.get_version("smith") == 2
 
 
 def test_versions_add_seats_to_a_booking(planner):
     planner.add_seats("smith", 2)
-    assert planner.get_booking("smith") == ("A", [1, 2, 3, 4])
+    assert planner.get_booking("smith") == ("A", 4)
+    assert planner.get_reserved("A") == 4
     assert planner.get_version("smith") == 2

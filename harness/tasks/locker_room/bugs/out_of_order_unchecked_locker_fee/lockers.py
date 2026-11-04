@@ -15,7 +15,7 @@ Usage:
     room.store("umbrella", "small")  # "A2"
 """
 
-DEFAULT_SIZE_TABLE = {"small": 200, "medium": 300, "large": 500}  # smallest first
+DEFAULT_SIZE_TABLE = {"small": 200, "medium": 300, "large": 500}
 
 
 class LockerError(Exception):
@@ -49,8 +49,8 @@ class LockerRoom:
         if size_table is None:
             size_table = DEFAULT_SIZE_TABLE
         check_size_table(size_table)
-        self._table = dict(size_table)  # size name -> fee, smallest first
-        self._order = list(self._table)  # size names, smallest first
+        self._table = dict(size_table)  # size name -> fee, in table order
+        self._order = list(self._table)  # size names, in table order
         self._sizes = {}  # locker id -> size, in the order added
         self._fees = {}  # locker id -> fee that locker charges
         self._contents = {}  # locker id -> item id, for lockers in use
@@ -130,8 +130,8 @@ class LockerRoom:
 
     def _choose(self, size):
         free = self.get_free_lockers()
-        for locker_size in self._order[self._order.index(size):]:
+        for locker_size in [size]:
             for locker_id in free:
                 if self._sizes[locker_id] == locker_size:
                     return locker_id
-        raise NoLockerFree(f"no free locker fits a {size} item")
+        raise NoLockerFree(f"no free {size} locker")

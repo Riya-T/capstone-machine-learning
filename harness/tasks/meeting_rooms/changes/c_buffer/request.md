@@ -1,20 +1,23 @@
-The 10-minute gap between meetings in `rooms.py` does not suit every
-building: the big hall needs longer to set up, and the phone booths need
-no gap at all. Make the gap adjustable.
+Some rooms in `rooms.py` need tidying up between meetings: the big hall
+needs a while to set up, while the phone booths can be used back to back.
+Make the number of free slots between two meetings of a room adjustable.
+Today it is 0 everywhere.
 
-- `RoomPlanner` takes a new keyword argument `gap=10`: the number of
-  minutes needed between two bookings of the same room. It must be an
-  `int` of 0 or more; anything else raises `ValueError`.
+- `RoomPlanner` takes a new keyword argument `gap=0`: the number of free
+  slots needed between two bookings of the same room. A gap below 0 raises
+  `ValueError`.
 - `add_room` takes a new keyword argument `gap=None`. `None` means the room
-  uses the planner's gap. Otherwise it must be an `int` of 0 or more and
-  sets the gap for that room alone; anything else raises `ValueError` and
-  no room is added. Which error is raised when a call has both an invalid
-  gap and a room name that already exists is unspecified.
+  uses the planner's gap. Otherwise it sets the gap for that room alone; a
+  gap below 0 raises `ValueError`, and no room is added.
 - Add `RoomPlanner.get_gap(room) -> int`, which returns the gap that
   applies to the room. It raises `KeyError` for a room that does not exist.
-- Every rule that used the fixed 10 minutes now uses the room's own gap:
-  `book`, `reschedule` and `get_free_rooms` all apply it. With a gap of 0,
-  a booking may start at the very minute the previous one ends, but
-  bookings still may not overlap.
+- `book` and `get_free_rooms` use the room's own gap: two bookings of a
+  room clash when they are `gap` or fewer slots apart. With a gap of 1, a
+  booking in slot 5 keeps slots 4 and 6 of its room free, so the nearest
+  other bookings can be in slots 3 and 7. With a gap of 2, they can be in
+  slots 2 and 8. With the default gap of 0, only the same slot clashes, as
+  before.
 
-All existing behavior must keep working.
+Gaps that are not `int`s are unspecified, and so is which error is raised
+when `add_room` gets both an invalid gap and a room name that already
+exists. All existing behavior must keep working.

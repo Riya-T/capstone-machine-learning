@@ -13,8 +13,7 @@ class ElevatorError(Exception): ...
 class Building:
     def __init__(self, top_floor: int): ...
     def add_car(self, car_id: str) -> None: ...
-    def call(self, passenger_id: str, floor: int, destination: int) -> None: ...
-    def get_destination(self, passenger_id: str) -> int: ...
+    def call(self, passenger_id: str, floor: int) -> None: ...
     def move_car(self, car_id: str, floor: int) -> None: ...
     def get_car_floor(self, car_id: str) -> int: ...
     def get_riders(self, car_id: str) -> list[str]: ...
@@ -24,13 +23,14 @@ class Building:
 
 ## Floors and cars
 
-- The building has the floors `0` up to and including `top_floor`. A
-  `top_floor` below 1 raises `ValueError`.
-- A floor below 0 or above `top_floor` is invalid: any method given one
-  raises `ValueError`.
-- `add_car(car_id)` adds a car. It starts on floor 0 with nobody in it. An
-  empty id raises `ValueError`, and adding an id that is already a car
-  raises `ElevatorError`.
+- The building has the floors `0` up to and including `top_floor`.
+  `Building(top_floor)` raises `ValueError` for a `top_floor` below 1.
+- A floor below 0 or above `top_floor` is invalid: `call`, `move_car` and
+  `get_waiting` raise `ValueError` when given one.
+- `add_car(car_id)` adds a car. It starts on floor 0 with nobody in it. It
+  raises:
+  - `ValueError` for an empty id;
+  - `ElevatorError` for an id that is already a car.
 - Every other method that takes a `car_id` raises `KeyError` for an id that
   is not a car, including values that are not strings at all, such as
   `None` or `1`.
@@ -38,18 +38,9 @@ class Building:
 
 ## Passengers
 
-- `call(passenger_id, floor, destination)` adds a passenger who waits on
-  `floor` to be taken to `destination`. An empty passenger id raises
-  `ValueError`, and so does an invalid `floor` or `destination`, or a call
-  whose `floor` equals its `destination`.
-- `get_destination(passenger_id)` returns the `destination` given in that
-  passenger's `call`. It returns the same number from the call on, for
-  good (see the example below). An id that was never used in a call raises
-  `KeyError`.
-- A passenger id can be used by one call only, for good: another call with
-  an id that was already used raises `ElevatorError`, also after that
-  passenger got in or arrived. Every `ValueError` check comes before this
-  one.
+- `call(passenger_id, floor)` adds a passenger who waits on `floor` for a
+  car. It raises `ValueError` for an empty passenger id or an invalid
+  floor.
 - `get_waiting(floor)` returns the ids of the passengers waiting on that
   floor, in the order they called.
 - Calling does not put anyone in a car; passengers get in only when a car
@@ -57,42 +48,40 @@ class Building:
 
 ## Moving a car
 
-`move_car(car_id, floor)` sends the car to `floor` and opens its doors
-there. `KeyError` for the car is checked before `ValueError` for the floor.
-When the doors open, in this order:
+`move_car(car_id, floor)` takes the car, with its riders, to `floor` and
+opens its doors there. Then, in this order:
 
-1. Every rider whose destination is this floor gets out, however many
-   there are (several riders can get out at one stop). They have arrived.
-2. Passengers waiting on this floor get in, in the order they called,
-   while the car has fewer than **4** riders in total, counting the riders
-   already inside. A car with 3 riders takes 1 more; a car with 4 takes
-   nobody. Whoever does not fit keeps waiting, in the same order as before.
+1. Every rider gets out. They have all arrived.
+2. Passengers waiting on this floor get in, in the order they called, up
+   to **4** of them. Whoever does not fit keeps waiting, in the same order
+   as before.
 
-Only the car that was moved picks anybody up.
+Only the car that was moved picks anybody up. A car that brings 4 riders
+to a floor where 4 passengers wait leaves with those 4 passengers.
 
 For example:
 
 ```python
 b = Building(6)
 b.add_car("east")
-b.call("ann", 2, 5)
-b.call("ben", 2, 4)
-b.get_destination("ann")   # 5
-b.move_car("east", 2)
+b.call("ann", 2)
+b.call("ben", 2)
+b.move_car("east", 2)      # ann and ben get in
 b.get_riders("east")       # ["ann", "ben"]
 b.get_waiting(2)           # []
-b.get_destination("ann")   # 5
-b.move_car("east", 4)      # ben gets out
-b.get_riders("east")       # ["ann"]
-b.get_delivered()          # ["ben"]
-b.get_destination("ben")   # 4
+b.call("cy", 5)
+b.move_car("east", 5)      # ann and ben get out, then cy gets in
+b.get_riders("east")       # ["cy"]
+b.get_delivered()          # ["ann", "ben"]
+b.move_car("east", 0)      # cy gets out
+b.get_delivered()          # ["ann", "ben", "cy"]
 ```
 
 - `get_riders(car_id)` returns the ids of the passengers in the car, in the
   order they got in.
 - `get_delivered()` returns the ids of every passenger who has arrived,
-  oldest first. Passengers who leave a car at the same stop are listed in
-  the order they got in.
+  oldest first, from every car. Passengers who leave a car at the same stop
+  are listed in the order they got in.
 
 A failed call has no effect: if a method raises, every car, every waiting
 list and the list of arrived passengers are unchanged.
@@ -100,8 +89,10 @@ list and the list of arrived passengers are unchanged.
 ## Unspecified behavior
 
 Behavior not described here is unspecified, and no test depends on it. This
-includes moving a car to the floor it is already on, passenger and car ids
-that are not strings passed to `call` or `add_car`, floors or a
-`top_floor` that are not `int`s, such as `1.5`, `"2"` or `None`, `bool`
-floors, what happens if a returned list is changed, the text of error
-messages, saving the building to a file, and use from several threads.
+includes which error is raised when a call has several problems, moving a
+car to the floor it is already on, a `call` with a passenger id that was
+already used, passenger and car ids that are not strings passed to `call`
+or `add_car`, floors or a `top_floor` that are not `int`s, such as `1.5`,
+`"2"` or `None`, `bool` floors, what happens if a returned list is changed,
+the text of error messages, saving the building to a file, and use from
+several threads.

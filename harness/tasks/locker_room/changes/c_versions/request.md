@@ -31,12 +31,12 @@ Moving:
   - `VersionConflict` when `expected_version` is given and does not match;
   - `LockerError` when the target locker is not empty (this includes the
     locker the item is already in);
-  - `LockerError` when the target locker is too small for the item, going
+  - `LockerError` when the target locker is not of the item's size, going
     by the size the item was stored with.
 
 Which error `retrieve` or `move` raises when one call has several problems
-(for example an item that is not in a locker, or a target locker that is
-too small, together with an `expected_version` that does not match) is
+(for example an item that is not in a locker, or a target locker of
+another size, together with an `expected_version` that does not match) is
 unspecified.
 
 All existing behavior must keep working.

@@ -1,4 +1,4 @@
-"""Public checks for the c_points_table change (adjustable points tables).
+"""Public checks for the c_points_table change (an adjustable points table).
 Shown to the editor, never to the writer.
 
 Usage (with telemetry.py importable, e.g. in the sandbox):
@@ -9,26 +9,29 @@ from telemetry import RaceTelemetry
 
 
 def make(**kwargs):
-    t = RaceTelemetry(**kwargs)
+    t = RaceTelemetry(1, **kwargs)
     for car in ["red", "blue", "green"]:
         t.add_car(car)
     return t
 
 
-def test_table_for_the_whole_series():
+def results(t):
+    return [tuple(pair) for pair in t.get_results()]
+
+
+def test_table_chosen_for_the_race():
     t = make(points_table=(25, 18))
-    t.add_race("spa", 1)
     for car, lap in [("red", 90000), ("blue", 91000), ("green", 92000)]:
-        t.record_lap("spa", car, lap)
-    assert [t.get_points(c) for c in ["red", "blue", "green"]] == [25, 18, 0]
+        t.record_lap(car, lap)
+    assert results(t) == [("red", 25), ("blue", 18), ("green", 0)]
     assert t.get_points_table() == [25, 18]
 
 
-def test_table_for_one_race():
+def test_table_set_later_applies_to_cars_already_finished():
     t = make()
-    t.add_race("finale", 1, points_table=[20, 12])
-    t.record_lap("finale", "blue", 90000)
-    t.record_lap("finale", "red", 91000)
-    assert (t.get_points("blue"), t.get_points("red")) == (20, 12)
-    assert t.get_points_table("finale") == [20, 12]
     assert t.get_points_table() == [10, 6, 4, 3, 2, 1]
+    t.record_lap("blue", 90000)
+    t.record_lap("red", 91000)
+    t.set_points_table([20, 12])
+    assert results(t) == [("blue", 20), ("red", 12)]
+    assert t.get_points_table() == [20, 12]

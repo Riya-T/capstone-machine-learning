@@ -1,4 +1,4 @@
-"""Hidden tests for the c_points_table change (adjustable points tables).
+"""Hidden tests for the c_points_table change (an adjustable points table).
 Never shown to the writer or the editor.
 
 Usage (with telemetry.py importable, e.g. in the sandbox):
@@ -8,113 +8,96 @@ Usage (with telemetry.py importable, e.g. in the sandbox):
 import pytest
 from telemetry import RaceTelemetry, TelemetryError
 
-BAD_TABLES = [10, "10,6", {1: 10}, [10, -1], [10, 1.5], [10, "6"]]
+BAD_TABLES = [10, "10,6", {1: 10}, [10, -1], (-2,)]
 CARS = ["red", "blue", "green", "pink"]
 
 
-@pytest.fixture
-def tel():
-    t = RaceTelemetry()
+def make(**kwargs):
+    t = RaceTelemetry(1, **kwargs)
     for car in CARS:
         t.add_car(car)
-    t.add_race("spa", 1)
-    t.add_race("finale", 1, points_table=(20, 12, 8))
     return t
 
 
-def run(t, race, order):
-    """Finish a one-lap race with the cars in `order`, fastest first."""
+def results(t):
+    return [tuple(pair) for pair in t.get_results()]
+
+
+def run(t, order):
+    """Finish the one-lap race with the cars in `order`, fastest first."""
     for i, car in enumerate(order):
-        t.record_lap(race, car, 90000 + 100 * i)
-
-
-def points(t):
-    return [t.get_points(c) for c in CARS]
+        t.record_lap(car, 90000 + 100 * i)
 
 
 def test_table_default_is_the_old_table():
-    t = RaceTelemetry()
+    t = make()
     assert t.get_points_table() == [10, 6, 4, 3, 2, 1]
-    t.add_race("spa", 1)
-    assert t.get_points_table("spa") == [10, 6, 4, 3, 2, 1]
+    run(t, ["green", "red", "blue", "pink"])
+    assert results(t) == [("green", 10), ("red", 6), ("blue", 4), ("pink", 3)]
 
 
 def test_table_places_past_the_end_score_nothing():
-    t = RaceTelemetry(points_table=[7])
-    for car in CARS:
-        t.add_car(car)
-    t.add_race("spa", 1)
-    run(t, "spa", ["green", "red", "blue"])
-    assert points(t) == [0, 0, 7, 0]
+    t = make(points_table=[7])
+    run(t, ["green", "red", "blue"])
+    assert results(t) == [("green", 7), ("red", 0), ("blue", 0)]
 
 
 def test_table_can_be_longer_than_six_places():
     cars = [f"car{i}" for i in range(8)]
-    t = RaceTelemetry(points_table=list(range(16, 0, -2)))
+    t = RaceTelemetry(1, points_table=list(range(16, 0, -2)))
     for car in cars:
         t.add_car(car)
-    t.add_race("spa", 1)
-    run(t, "spa", cars)
-    assert [t.get_points(c) for c in cars] == [16, 14, 12, 10, 8, 6, 4, 2]
+    run(t, cars)
+    assert results(t) == list(zip(cars, [16, 14, 12, 10, 8, 6, 4, 2]))
 
 
-def test_table_can_be_empty(tel):
-    tel.add_race("friendly", 1, points_table=[])
-    run(tel, "friendly", ["red", "blue"])
-    assert points(tel) == [0, 0, 0, 0]
-    assert tel.get_points_table("friendly") == []
+def test_table_can_be_empty():
+    t = make(points_table=[])
+    run(t, ["red", "blue"])
+    assert results(t) == [("red", 0), ("blue", 0)]
+    assert t.get_points_table() == []
 
 
-def test_table_of_a_race_is_used_only_for_that_race(tel):
-    run(tel, "spa", ["red", "blue", "green"])
-    run(tel, "finale", ["blue", "green", "red", "pink"])
-    assert points(tel) == [10 + 8, 6 + 20, 4 + 12, 0]
+def test_table_set_later_applies_to_every_finished_car():
+    t = make()
+    run(t, ["red", "blue"])
+    t.set_points_table((3, 2, 1))
+    assert t.get_points_table() == [3, 2, 1]
+    assert results(t) == [("red", 3), ("blue", 2)]
+    t.record_lap("green", 80000)  # the fastest of all
+    assert results(t) == [("green", 3), ("red", 2), ("blue", 1)]
 
 
-def test_table_set_for_the_series_applies_to_earlier_races(tel):
-    run(tel, "spa", ["red", "blue"])
-    run(tel, "finale", ["red", "blue"])
-    tel.set_points_table((3, 2, 1))
-    assert tel.get_points_table() == [3, 2, 1]
-    assert tel.get_points_table("spa") == [3, 2, 1]
-    assert tel.get_points_table("finale") == [20, 12, 8]
-    assert points(tel) == [3 + 20, 2 + 12, 0, 0]
-    tel.add_race("monza", 1)
-    run(tel, "monza", ["green"])
-    assert tel.get_points("green") == 3
+def test_table_can_be_set_more_than_once():
+    t = make(points_table=[1])
+    t.set_points_table([5, 4])
+    t.set_points_table([9])
+    run(t, ["pink", "red"])
+    assert results(t) == [("pink", 9), ("red", 0)]
+    assert t.get_points_table() == [9]
 
 
 @pytest.mark.parametrize("table", BAD_TABLES)
 def test_table_invalid_in_the_constructor(table):
     with pytest.raises(ValueError):
-        RaceTelemetry(points_table=table)
+        RaceTelemetry(1, points_table=table)
 
 
 @pytest.mark.parametrize("table", BAD_TABLES)
-def test_table_invalid_when_adding_a_race(tel, table):
+def test_table_invalid_when_setting(table):
+    t = make(points_table=[8, 4])
+    run(t, ["red"])
     with pytest.raises(ValueError):
-        tel.add_race("monza", 1, points_table=table)
-    with pytest.raises(KeyError):
-        tel.get_points_table("monza")
+        t.set_points_table(table)
+    assert t.get_points_table() == [8, 4]
+    assert results(t) == [("red", 8)]
 
 
-@pytest.mark.parametrize("table", BAD_TABLES)
-def test_table_invalid_when_setting(tel, table):
-    run(tel, "spa", ["red"])
+def test_table_leaves_the_other_rules_alone():
     with pytest.raises(ValueError):
-        tel.set_points_table(table)
-    assert tel.get_points_table() == [10, 6, 4, 3, 2, 1]
-    assert tel.get_points("red") == 10
-
-
-def test_table_a_race_id_in_use_is_still_refused(tel):
+        RaceTelemetry(0, points_table=[5])
+    t = make(points_table=[5])
+    run(t, ["red"])
     with pytest.raises(TelemetryError):
-        tel.add_race("spa", 2, points_table=[1])
-    assert tel.get_points_table("spa") == [10, 6, 4, 3, 2, 1]
-
-
-def test_table_of_an_unknown_race_raises_key_error(tel):
-    with pytest.raises(KeyError):
-        tel.get_points_table("monza")
-    with pytest.raises(KeyError):
-        tel.get_points_table(1)
+        t.record_lap("red", 1000)
+    assert results(t) == [("red", 5)]

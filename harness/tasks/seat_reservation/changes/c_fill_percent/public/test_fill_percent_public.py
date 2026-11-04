@@ -6,7 +6,7 @@ Usage (with seats.py importable, e.g. in the sandbox):
 """
 
 import pytest
-from seats import SeatPlanner
+from seats import ReservationError, SeatPlanner
 
 
 def test_fill_percent_for_the_whole_planner():
@@ -33,3 +33,14 @@ def test_fill_percent_must_be_between_1_and_100():
     with pytest.raises(ValueError):
         p.add_coach("A", 10, fill_percent=101)
     assert p.get_coaches() == []
+
+
+def test_fill_percent_cannot_drop_below_the_reserved_seats():
+    p = SeatPlanner()
+    p.add_coach("A", 10)
+    p.reserve("smith", 5)
+    with pytest.raises(ReservationError):
+        p.set_fill_percent("A", 40)
+    assert p.get_fill_percent("A") == 70
+    p.set_fill_percent("A", 50)
+    assert p.get_available("A") == 0

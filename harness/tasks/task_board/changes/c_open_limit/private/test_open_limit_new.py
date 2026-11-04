@@ -8,7 +8,7 @@ Usage (with board.py importable, e.g. in the sandbox):
 import pytest
 from board import Board, BoardError
 
-BAD_LIMITS = [0, -2, 2.5, "3"]
+BAD_LIMITS = [0, -2]
 
 
 @pytest.fixture
@@ -61,23 +61,25 @@ def test_open_limit_adding_uses_each_projects_own_limit(board):
     assert state(board) == before
 
 
-def test_open_limit_moving_uses_the_target_projects_limit():
+def test_open_limit_moving_out_frees_a_place_under_any_limit():
     b = Board(open_limit=2)
     b.add_project("small")
     b.add_project("tiny", open_limit=1)
     b.add_project("big", open_limit=4)
     fill(b, "small", 2)
     b.add_task("tiny", "only", 1)
-    before = state(b)
     with pytest.raises(BoardError):
-        b.move_task(1, "tiny")
-    assert state(b) == before
+        b.add_task("tiny", "second", 1)
     b.move_task(3, "big")
     b.move_task(1, "big")
     assert b.get_open_tasks("big") == [3, 1]
+    assert b.add_task("tiny", "second", 1) == 4
+    assert b.add_task("small", "again", 1) == 5
+    with pytest.raises(BoardError):
+        b.add_task("small", "third", 1)
 
 
-@pytest.mark.parametrize("limit", BAD_LIMITS + [None])
+@pytest.mark.parametrize("limit", BAD_LIMITS)
 def test_open_limit_invalid_board_limits_are_rejected(limit):
     with pytest.raises(ValueError):
         Board(open_limit=limit)
@@ -125,15 +127,6 @@ def test_open_limit_below_the_open_tasks_is_rejected(board):
     assert state(board) == before
     board.set_open_limit("web", 3)  # exactly the open tasks
     assert board.get_open_limit("web") == 3
-
-
-def test_open_limit_ignores_done_tasks_when_lowered(board):
-    fill(board, "web", 3)
-    board.complete(1)
-    board.complete(2)
-    board.set_open_limit("web", 1)
-    with pytest.raises(BoardError):
-        board.add_task("web", "more", 1)
 
 
 def test_open_limit_raised_limit_makes_room(board):

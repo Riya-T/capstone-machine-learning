@@ -1,18 +1,12 @@
-"""Meeting rooms with booked-minute reports and an adjustable gap between
-bookings.
+"""Meeting rooms: bookings by the slot, one meeting per slot of a room,
+with an adjustable number of free slots between meetings.
 
-Correct solution for meeting_rooms after c_usage and c_buffer.
+Correct solution for meeting_rooms after c_buffer and c_usage.
 Never shown to the writer or the editor; validate-tasks checks that it
 passes every test it should.
-
-Usage:
-    from rooms import RoomPlanner
-    planner = RoomPlanner(gap=15)
-    planner.add_room("booth", gap=0)
-    planner.book("call", "booth", 540, 570)
-    planner.reschedule("call", 600, 630)
-    planner.get_usage_ranking(0, 1440)
 """
+
+DEFAULT_GAP = 0  # free slots between two bookings of a room, unless set otherwise
 
 
 class BookingError(Exception):
@@ -28,11 +22,9 @@ def check_id(value, what):
         raise ValueError(f"{what} must be a non-empty str, got {value!r}")
 
 
-def check_times(start, end):
-    if not isinstance(start, int) or start < 0:
-        raise ValueError(f"start must be an int >= 0, got {start!r}")
-    if not isinstance(end, int) or end <= start:
-        raise ValueError(f"end must be an int > start, got {end!r}")
+def check_slot(slot):
+    if not isinstance(slot, int) or slot < 0:
+        raise ValueError(f"slot must be an int >= 0, got {slot!r}")
 
 
 def check_gap(gap):
@@ -40,104 +32,84 @@ def check_gap(gap):
         raise ValueError(f"gap must be an int >= 0, got {gap!r}")
 
 
-def clash(start, end, other_start, other_end, gap):
-    """True when two bookings of one room are closer than `gap` minutes."""
-    return start < other_end + gap and other_start < end + gap
-
-
-class _Room:
-    def __init__(self, gap):
-        self.gap = gap
-        self.bookings = []  # booking ids, in booking order
-
-
-class _Booking:
-    def __init__(self, room, start, end):
-        self.room = room
-        self.start = start
-        self.end = end
+def check_window(first, last):
+    check_slot(first)
+    if not isinstance(last, int) or last <= first:
+        raise ValueError(f"last must be an int > first, got {last!r}")
 
 
 class RoomPlanner:
-    def __init__(self, gap=10):
+    def __init__(self, gap=DEFAULT_GAP):
         check_gap(gap)
         self._gap = gap
-        self._rooms = {}  # room name -> _Room, in the order added
-        self._bookings = {}  # booking id -> _Booking
+        self._gaps = {}  # room name -> its gap
+        self._rooms = {}  # room name -> list of booking ids, in booking order
+        self._bookings = {}  # booking id -> (room, slot)
 
     def add_room(self, room, gap=None):
         check_id(room, "room")
-        if gap is not None:
-            check_gap(gap)
+        if gap is None:
+            gap = self._gap
+        check_gap(gap)
         if room in self._rooms:
             raise BookingError(f"room {room!r} already exists")
-        self._rooms[room] = _Room(self._gap if gap is None else gap)
+        self._rooms[room] = []
+        self._gaps[room] = gap
 
-    def book(self, booking_id, room, start, end):
+    def book(self, booking_id, room, slot):
         self._require_room(room)
         check_id(booking_id, "booking id")
-        check_times(start, end)
+        check_slot(slot)
         if booking_id in self._bookings:
-            raise BookingError(f"booking id {booking_id!r} is already used")
-        self._require_free(room, start, end)
-        self._rooms[room].bookings.append(booking_id)
-        self._bookings[booking_id] = _Booking(room, start, end)
-
-    def reschedule(self, booking_id, start, end):
-        booking = self._require_booking(booking_id)
-        check_times(start, end)
-        self._require_free(booking.room, start, end, ignore=booking_id)
-        booking.start, booking.end = start, end
+            raise BookingError(f"booking {booking_id!r} already exists")
+        self._require_free(room, slot)
+        self._rooms[room].append(booking_id)
+        self._bookings[booking_id] = (room, slot)
 
     def get_booking(self, booking_id):
-        booking = self._require_booking(booking_id)
-        return (booking.room, booking.start, booking.end)
+        return self._require_booking(booking_id)
 
-    def get_room_bookings(self, room):
-        self._require_room(room)
-        return sorted(self._rooms[room].bookings, key=lambda b: self._bookings[b].start)
+    def get_bookings(self):
+        return list(self._bookings)
 
-    def get_free_rooms(self, start, end):
-        check_times(start, end)
-        return [room for room in self._rooms if self._is_free(room, start, end)]
+    def get_free_rooms(self, slot):
+        check_slot(slot)
+        return [room for room in self._rooms if self._is_free(room, slot)]
 
     def get_rooms(self):
         return list(self._rooms)
 
     def get_gap(self, room):
         self._require_room(room)
-        return self._rooms[room].gap
+        return self._gaps[room]
 
-    def get_booked_minutes(self, room, start, end):
+    def get_booked_slots(self, room, first, last):
         self._require_room(room)
-        check_times(start, end)
-        return self._minutes(room, start, end)
+        check_window(first, last)
+        return self._booked_slots(room, first, last)
 
-    def get_usage_ranking(self, start, end):
-        check_times(start, end)
-        usage = [(room, self._minutes(room, start, end)) for room in self._rooms]
-        return sorted(usage, key=lambda pair: -pair[1])  # stable: ties keep room order
+    def get_usage_ranking(self, first, last):
+        check_window(first, last)
+        usage = [(room, self._booked_slots(room, first, last)) for room in self._rooms]
+        # sorted() is stable, so rooms with equal counts keep the order they were added.
+        return sorted(usage, key=lambda pair: -pair[1])
 
-    def _minutes(self, room, start, end):
-        total = 0
-        for booking_id in self._rooms[room].bookings:
-            booking = self._bookings[booking_id]
-            total += max(0, min(end, booking.end) - max(start, booking.start))
-        return total
+    def _booked_slots(self, room, first, last):
+        return sum(1 for b in self._rooms[room] if first <= self._bookings[b][1] < last)
 
-    def _is_free(self, room, start, end, ignore=None):
-        record = self._rooms[room]
-        for other in record.bookings:
+    def _is_free(self, room, slot, ignore=None, gap=None):
+        if gap is None:
+            gap = self._gaps[room]
+        for other in self._rooms[room]:
             if other == ignore:
                 continue
-            booking = self._bookings[other]
-            if clash(start, end, booking.start, booking.end, record.gap):
+            if abs(self._bookings[other][1] - slot) <= gap:
                 return False
         return True
 
-    def _require_free(self, room, start, end, ignore=None):
-        if not self._is_free(room, start, end, ignore):
-            raise RoomBusy(f"room {room!r} is not free from {start} to {end}")
+    def _require_free(self, room, slot, ignore=None, gap=None):
+        if not self._is_free(room, slot, ignore, gap):
+            raise RoomBusy(f"room {room!r} is not free in slot {slot}")
 
     def _require_room(self, room):
         # Non-str names are never stored, so they count as missing too.

@@ -39,24 +39,21 @@ def test_moving_to_a_dearer_plan_charges_the_difference(billing):
     assert billing.get_charges("alice") == [600, 1500]
 
 
-def test_a_cancelled_customer_has_no_plan(billing):
-    billing.subscribe("alice", "basic")
-    billing.cancel("alice")
-    assert billing.get_plan("alice") is None
-    with pytest.raises(BillingError):
-        billing.cancel("alice")
-
-
-def test_a_cancelled_customer_keeps_the_charges_and_may_subscribe_again(billing):
-    billing.subscribe("alice", "basic")
-    billing.run_cycle()
-    billing.cancel("alice")
-    assert billing.get_charges("alice") == [900]
-    assert billing.run_cycle() == 0
+def test_moving_to_a_cheaper_plan_charges_nothing(billing):
     billing.subscribe("alice", "pro")
-    assert billing.get_plan("alice") == "pro"
+    billing.change_plan("alice", "basic")
+    assert billing.get_plan("alice") == "basic"
+    assert billing.get_charges("alice") == []
+    assert billing.run_cycle() == 900
+
+
+def test_a_cancelled_customer_is_not_charged_any_more(billing):
+    billing.subscribe("alice", "basic")
+    billing.subscribe("bob", "pro")
     billing.run_cycle()
-    assert billing.get_charges("alice") == [900, 1500]
+    billing.cancel("alice")
+    assert billing.run_cycle() == 1500
+    assert billing.get_charges("bob") == [1500, 1500]
 
 
 def test_subscribing_twice_raises(billing):

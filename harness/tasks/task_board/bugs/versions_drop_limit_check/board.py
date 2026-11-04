@@ -114,7 +114,7 @@ class Board:
 
     def get_task(self, task_id):
         task = self._task(task_id)
-        return (task["project"], task["title"], task["due_day"], task["done"])
+        return (task["title"], task["due_day"])
 
     def get_open_tasks(self, project):
         return list(self._project(project)["open"])

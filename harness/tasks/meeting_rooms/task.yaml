@@ -11,7 +11,7 @@ private_tests: [private/test_rooms_initial.py]
 reference: reference/v0
 planted_bugs:
   # Required: a bug only the hidden initial tests catch.
-  - {path: bugs/v0_free_rooms_ignore_gap, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_clash_checks_last_booking_only, must_fail: [initial], must_pass: [public]}
   - {path: bugs/v0_booking_id_unique_per_room, must_fail: [initial], must_pass: [public]}
 
 changes:
@@ -51,7 +51,7 @@ sequences:
       - change: c_buffer
       - change: c_booking_versions
         planted_bugs:
-          - path: bugs/versions_room_bookings_unsorted  # regression bug: breaks the initial spec
+          - path: bugs/versions_refused_booking_uses_id  # regression bug: breaks the initial spec
             must_fail: [existing]
             must_pass: [new_feature]
       - change: c_cancel
@@ -65,6 +65,6 @@ sequences:
       - change: c_buffer
       - change: c_booking_versions
         planted_bugs:
-          - path: bugs/versions_reschedule_default_gap  # required regression bug: breaks step 2
+          - path: bugs/versions_book_default_gap  # required regression bug: breaks step 2
             must_fail: [existing]
             must_pass: [new_feature]

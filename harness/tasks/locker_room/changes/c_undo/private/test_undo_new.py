@@ -55,7 +55,7 @@ def test_undo_takes_off_exactly_the_fee_that_was_taken():
     r.add_locker("S1", "s", fee=15)
     r.add_locker("M1", "m")
     r.store("hat", "s")
-    r.store("coat", "s")
+    r.store("coat", "m")
     assert r.get_takings() == 105
     r.undo()
     assert r.get_takings() == 15

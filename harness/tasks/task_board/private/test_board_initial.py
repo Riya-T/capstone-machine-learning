@@ -8,8 +8,6 @@ Usage (with board.py importable, e.g. in the sandbox):
 import pytest
 from board import Board, BoardError
 
-BAD_DAYS = [-1, 1.5, "3", None]
-
 
 @pytest.fixture
 def board():
@@ -21,13 +19,12 @@ def board():
 
 def state(b):
     """Every project's open tasks and every task, to check that a failed call changed nothing."""
-    tasks, task_id = [], 1
-    while True:
+    tasks = []
+    for task_id in range(1, 100):
         try:
             tasks.append(b.get_task(task_id))
         except KeyError:
             break
-        task_id += 1
     return b.get_projects(), {p: b.get_open_tasks(p) for p in b.get_projects()}, tasks
 
 
@@ -66,7 +63,6 @@ def test_adding_an_existing_project_is_rejected(board):
     [
         lambda b: b.add_task("ops", "deploy", 1),
         lambda b: b.get_open_tasks("ops"),
-        lambda b: b.move_task(1, "ops"),
         lambda b: b.get_open_tasks(None),
         lambda b: b.add_task(1, "deploy", 1),
     ],
@@ -85,7 +81,7 @@ def test_projects_that_do_not_exist_raise_key_error(board, call):
 def test_a_new_task_is_open(board):
     task_id = board.add_task("app", "sign in", 0)
     assert task_id == 1
-    assert board.get_task(task_id) == ("app", "sign in", 0, False)
+    assert board.get_task(task_id) == ("sign in", 0)
     assert board.get_open_tasks("app") == [1]
     assert board.get_open_tasks("web") == []
 
@@ -104,8 +100,8 @@ def test_an_empty_title_is_rejected(board):
     assert state(board) == before
 
 
-@pytest.mark.parametrize("day", BAD_DAYS)
-def test_invalid_due_days_are_rejected(board, day):
+@pytest.mark.parametrize("day", [-1, -7])
+def test_due_days_below_zero_are_rejected(board, day):
     before = state(board)
     with pytest.raises(ValueError):
         board.add_task("web", "home", day)
@@ -138,23 +134,16 @@ def test_tasks_that_do_not_exist_raise_key_error(board, call, task_id):
     assert state(board) == before
 
 
-def test_completing_a_done_task_is_rejected(board):
-    task_id = board.add_task("web", "home", 2)
-    board.complete(task_id)
-    before = state(board)
-    with pytest.raises(BoardError):
-        board.complete(task_id)
-    assert state(board) == before
-
-
 def test_open_tasks_keep_their_order_when_one_is_done(board):
     fill(board, "web", 4)
     board.complete(2)
     board.complete(4)
     assert board.get_open_tasks("web") == [1, 3]
+    assert board.get_task(2) == ("web 1", 1)
+    assert board.get_task(3) == ("web 2", 1)
 
 
-# --- the open-task limit ----------------------------------------------------
+# --- full projects ----------------------------------------------------------
 
 
 def test_the_sixth_open_task_is_rejected_and_changes_nothing(board):
@@ -166,29 +155,22 @@ def test_the_sixth_open_task_is_rejected_and_changes_nothing(board):
     assert board.add_task("app", "elsewhere", 1) == 6
 
 
-def test_the_limit_counts_only_open_tasks(board):
-    ids = fill(board, "web", 5)
-    for task_id in ids:
-        board.complete(task_id)
-    assert fill(board, "web", 5) == [6, 7, 8, 9, 10]
-
-
-def test_moving_into_a_full_project_is_rejected(board):
+def test_projects_fill_up_separately(board):
+    fill(board, "web", 4)
     fill(board, "app", 5)
-    task_id = board.add_task("web", "home", 2)
-    before = state(board)
+    assert board.add_task("web", "fifth", 1) == 10
     with pytest.raises(BoardError):
-        board.move_task(task_id, "app")
-    assert state(board) == before
+        board.add_task("web", "sixth", 1)
+    assert board.get_open_tasks("web") == [1, 2, 3, 4, 10]
 
 
-def test_a_done_task_can_move_into_a_full_project(board):
-    fill(board, "app", 5)
-    task_id = board.add_task("web", "home", 2)
-    board.complete(task_id)
-    board.move_task(task_id, "app")
-    assert board.get_task(task_id) == ("app", "home", 2, True)
-    assert board.get_open_tasks("app") == [1, 2, 3, 4, 5]
+def test_moving_frees_a_place_in_the_old_project(board):
+    fill(board, "web", 5)
+    board.move_task(3, "app")
+    assert board.add_task("web", "new", 1) == 6
+    assert board.get_open_tasks("web") == [1, 2, 4, 5, 6]
+    with pytest.raises(BoardError):
+        board.add_task("web", "one more", 1)
 
 
 # --- moving -----------------------------------------------------------------
@@ -200,7 +182,7 @@ def test_moving_takes_a_task_out_of_its_old_project(board):
     board.move_task(2, "app")
     assert board.get_open_tasks("web") == [1, 3]
     assert board.get_open_tasks("app") == [4, 2]
-    assert board.get_task(2) == ("app", "web 1", 1, False)
+    assert board.get_task(2) == ("web 1", 1)
 
 
 def test_a_task_can_move_back(board):
@@ -209,31 +191,6 @@ def test_a_task_can_move_back(board):
     board.move_task(1, "web")
     assert board.get_open_tasks("web") == [2, 3, 1]
     assert board.get_open_tasks("app") == []
-
-
-def test_moving_frees_a_place_in_the_old_project(board):
-    fill(board, "web", 5)
-    board.move_task(3, "app")
-    assert board.add_task("web", "new", 1) == 6
-    assert board.get_open_tasks("web") == [1, 2, 4, 5, 6]
-
-
-def test_moving_to_the_same_project_is_rejected(board):
-    fill(board, "web", 2)
-    before = state(board)
-    with pytest.raises(ValueError):
-        board.move_task(1, "web")
-    assert state(board) == before
-
-
-def test_a_moved_done_task_stays_done(board):
-    task_id = board.add_task("web", "home", 4)
-    board.complete(task_id)
-    board.move_task(task_id, "app")
-    assert board.get_open_tasks("app") == []
-    assert board.get_open_tasks("web") == []
-    with pytest.raises(BoardError):
-        board.complete(task_id)
 
 
 def test_boards_do_not_share_projects_or_ids():

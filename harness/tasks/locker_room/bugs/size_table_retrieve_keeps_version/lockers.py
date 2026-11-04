@@ -10,12 +10,12 @@ Usage:
     from lockers import LockerRoom
     room = LockerRoom(size_table={"s": 100, "l": 400})
     room.add_locker("A1", "s")
-    room.add_locker("B1", "l", fee=350)
+    room.add_locker("B1", "s", fee=350)
     room.store("umbrella", "s")  # "A1"; A1 is now at version 2
     room.move("umbrella", "B1", expected_version=1)
 """
 
-DEFAULT_SIZE_TABLE = {"small": 200, "medium": 300, "large": 500}  # smallest first
+DEFAULT_SIZE_TABLE = {"small": 200, "medium": 300, "large": 500}
 
 
 class LockerError(Exception):
@@ -53,8 +53,8 @@ class LockerRoom:
         if size_table is None:
             size_table = DEFAULT_SIZE_TABLE
         check_size_table(size_table)
-        self._table = dict(size_table)  # size name -> fee, smallest first
-        self._order = list(self._table)  # size names, smallest first
+        self._table = dict(size_table)  # size name -> fee, in table order
+        self._order = list(self._table)  # size names, in table order
         self._sizes = {}  # locker id -> size, in the order added
         self._fees = {}  # locker id -> fee that locker charges
         self._versions = {}  # locker id -> version number
@@ -99,7 +99,7 @@ class LockerRoom:
             raise LockerError(f"locker {locker_id!r} is not empty")
         size = self._items[item_id][1]
         if not self._fits(size, locker_id):
-            raise LockerError(f"locker {locker_id!r} is too small for a {size} item")
+            raise LockerError(f"locker {locker_id!r} does not take {size} items")
         self._take(item_id, old_locker)
         self._put(item_id, size, locker_id)
 
@@ -152,12 +152,12 @@ class LockerRoom:
             raise ValueError(f"unknown size {size!r}")
 
     def _fits(self, item_size, locker_id):
-        return self._order.index(self._sizes[locker_id]) >= self._order.index(item_size)
+        return self._sizes[locker_id] == item_size
 
     def _choose(self, size):
         free = self.get_free_lockers()
-        for locker_size in self._order[self._order.index(size):]:
+        for locker_size in [size]:
             for locker_id in free:
                 if self._sizes[locker_id] == locker_size:
                     return locker_id
-        raise NoLockerFree(f"no free locker fits a {size} item")
+        raise NoLockerFree(f"no free {size} locker")

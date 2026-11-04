@@ -9,7 +9,10 @@ when they decide to take the stairs.
   passenger who already got into a car, whether still riding or arrived. In
   each case nothing changes.
 - After a cancel the id is free again: a new `call` with it is accepted, on
-  any floor, and joins the end of that floor's waiting list.
+  any floor, and joins the end of that floor's waiting list. That passenger
+  is then like any other: they can be cancelled again, or get in and
+  arrive. A `call` with an id that is still waiting, riding or has arrived
+  stays unspecified, as before.
 - A cancelled call never appears in `get_delivered`.
 - Add `Building.get_cancelled() -> list[str]`: the ids of every cancelled
   call, oldest first. An id that was called, cancelled, called again and

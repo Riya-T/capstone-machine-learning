@@ -4,7 +4,7 @@ lockers that can be taken out of service.
 
 Planted bug (after c_versions, c_size_table and c_out_of_order): lockers
 can be taken out of service, but move no longer checks that the target
-locker is big enough for the item.
+locker is of the item's size.
 Never shown to the writer or the editor;
 validate-tasks checks that the tests catch it.
 
@@ -12,13 +12,13 @@ Usage:
     from lockers import LockerRoom
     room = LockerRoom()
     room.add_locker("A1", "small")
-    room.add_locker("B1", "large")
+    room.add_locker("B1", "small")
     room.store("umbrella", "small")  # "A1"; A1 is now at version 2
     room.set_out_of_order("A1")  # A1 is now at version 3
     room.move("umbrella", "B1", expected_version=1)
 """
 
-DEFAULT_SIZE_TABLE = {"small": 200, "medium": 300, "large": 500}  # smallest first
+DEFAULT_SIZE_TABLE = {"small": 200, "medium": 300, "large": 500}
 
 
 class LockerError(Exception):
@@ -56,8 +56,8 @@ class LockerRoom:
         if size_table is None:
             size_table = DEFAULT_SIZE_TABLE
         check_size_table(size_table)
-        self._table = dict(size_table)  # size name -> fee, smallest first
-        self._order = list(self._table)  # size names, smallest first
+        self._table = dict(size_table)  # size name -> fee, in table order
+        self._order = list(self._table)  # size names, in table order
         self._sizes = {}  # locker id -> size, in the order added
         self._fees = {}  # locker id -> fee that locker charges
         self._versions = {}  # locker id -> version number
@@ -174,12 +174,12 @@ class LockerRoom:
             raise ValueError(f"unknown size {size!r}")
 
     def _fits(self, item_size, locker_id):
-        return self._order.index(self._sizes[locker_id]) >= self._order.index(item_size)
+        return self._sizes[locker_id] == item_size
 
     def _choose(self, size):
         free = self.get_free_lockers()
-        for locker_size in self._order[self._order.index(size):]:
+        for locker_size in [size]:
             for locker_id in free:
                 if self._sizes[locker_id] == locker_size:
                     return locker_id
-        raise NoLockerFree(f"no free locker fits a {size} item")
+        raise NoLockerFree(f"no free {size} locker")

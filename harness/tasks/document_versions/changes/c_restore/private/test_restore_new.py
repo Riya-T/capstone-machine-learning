@@ -22,14 +22,8 @@ def wiki():
 
 
 def readable(w, page):
-    found = []
-    for number in range(1, w.get_revision_count(page) + 1):
-        try:
-            w.get_revision(page, number)
-        except IndexError:
-            continue
-        found.append(number)
-    return found
+    """The revision numbers in a page's history."""
+    return [number for number, _ in w.get_history(page)]
 
 
 def state(w):
@@ -37,7 +31,7 @@ def state(w):
         p: (
             w.get_text(p),
             w.get_revision_count(p),
-            [w.get_revision(p, n) for n in readable(w, p)],
+            list(w.get_history(p)),
             sorted(w.get_authors(p)),
             w.get_version(p),
         )
@@ -49,10 +43,7 @@ def test_restore_to_a_middle_revision(wiki):
     wiki.restore("home", 2)
     assert wiki.get_text("home") == "r2"
     assert wiki.get_revision_count("home") == 2
-    assert readable(wiki, "home") == [1, 2]
-    for gone in (3, 4):
-        with pytest.raises(IndexError):
-            wiki.get_revision("home", gone)
+    assert wiki.get_history("home") == [(1, "r1"), (2, "r2")]
 
 
 def test_restore_drops_authors_of_discarded_revisions_only(wiki):
@@ -66,7 +57,7 @@ def test_restore_new_edits_take_the_freed_numbers(wiki):
     wiki.restore("home", 2)
     wiki.edit_page("home", "eve", "n3")
     wiki.edit_page("home", "eve", "n4")
-    assert [wiki.get_revision("home", n) for n in (1, 2, 3, 4)] == ["r1", "r2", "n3", "n4"]
+    assert wiki.get_history("home") == [(1, "r1"), (2, "r2"), (3, "n3"), (4, "n4")]
     assert sorted(wiki.get_authors("home")) == ["ann", "bob", "eve"]
 
 
@@ -92,24 +83,25 @@ def test_restore_with_a_stale_version_changes_nothing(wiki):
     assert state(wiki) == before
 
 
-def test_restore_never_revives_revisions_that_were_dropped():
+def test_restore_keeps_the_history_limit():
+    # Whether the history lists revision 3 again right after the restore is
+    # unspecified.
     w = Wiki(keep=3)
     w.create_page("home", "ann", "r1")
     for n in range(2, 7):
         w.edit_page("home", "bob", f"r{n}")
     assert readable(w, "home") == [4, 5, 6]
     w.restore("home", 5)
-    assert readable(w, "home") == [4, 5]
-    with pytest.raises(IndexError):
-        w.get_revision("home", 3)
+    assert w.get_history("home")[-2:] == [(4, "r4"), (5, "r5")]
+    assert len(w.get_history("home")) <= 3
     w.edit_page("home", "cy", "n6")
-    assert readable(w, "home") == [4, 5, 6]
+    assert w.get_history("home") == [(4, "r4"), (5, "r5"), (6, "n6")]
     w.edit_page("home", "cy", "n7")
-    assert readable(w, "home") == [5, 6, 7]
+    assert w.get_history("home") == [(5, "r5"), (6, "n6"), (7, "n7")]
     assert sorted(w.get_authors("home")) == ["ann", "bob", "cy"]
 
 
-def test_restore_to_a_revision_no_longer_kept_raises_index_error():
+def test_restore_to_a_revision_older_than_the_history_raises_index_error():
     w = Wiki(keep=2)
     w.create_page("home", "ann", "r1")
     for n in range(2, 5):

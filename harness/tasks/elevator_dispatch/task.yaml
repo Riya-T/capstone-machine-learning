@@ -11,7 +11,7 @@ private_tests: [private/test_elevators_initial.py]
 reference: reference/v0
 planted_bugs:
   # Required: a bug only the hidden initial tests catch.
-  - {path: bugs/v0_arrived_id_reused, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_delivered_only_last_stop, must_fail: [initial], must_pass: [public]}
   - {path: bugs/v0_board_before_alight, must_fail: [initial], must_pass: [public]}
 
 changes:

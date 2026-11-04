@@ -14,14 +14,14 @@ def planner():
     p = SeatPlanner()
     p.add_coach("A", 10)  # limit 7
     p.add_coach("B", 20)  # limit 14
-    p.reserve("smith", 2)  # A 1-2
-    p.reserve("jones", 2)  # A 3-4
+    p.reserve("smith", 2)
+    p.reserve("jones", 2)
     return p
 
 
 def state(p, bookings=("smith", "jones")):
     coaches = {c: (p.get_reserved(c), p.get_available(c)) for c in p.get_coaches()}
-    return coaches, {b: (p.get_booking(b), p.get_version(b)) for b in bookings}
+    return coaches, {b: (tuple(p.get_booking(b)), p.get_version(b)) for b in bookings}
 
 
 def test_versions_conflict_is_a_reservation_error():
@@ -40,8 +40,9 @@ def test_versions_with_the_right_expected_version_succeed(planner):
     planner.move("smith", "B", expected_version=1)
     planner.add_seats("smith", 3, expected_version=2)
     planner.move("smith", "A", expected_version=3)
-    assert planner.get_booking("smith") == ("A", [1, 2, 5, 6, 7])
+    assert planner.get_booking("smith") == ("A", 5)
     assert planner.get_version("smith") == 4
+    assert planner.get_available("A") == 0
 
 
 def test_versions_none_means_no_check(planner):
@@ -50,11 +51,19 @@ def test_versions_none_means_no_check(planner):
     assert planner.get_version("smith") == 3
 
 
-@pytest.mark.parametrize("stale", [0, 2, 5, "1"])
+@pytest.mark.parametrize("stale", [0, 2, 5])
 def test_versions_a_stale_add_seats_is_refused(planner, stale):
     before = state(planner)
     with pytest.raises(VersionConflict):
         planner.add_seats("smith", 1, expected_version=stale)
+    assert state(planner) == before
+
+
+@pytest.mark.parametrize("stale", [0, 2])
+def test_versions_a_stale_move_changes_nothing(planner, stale):
+    before = state(planner)
+    with pytest.raises(VersionConflict):
+        planner.move("smith", "B", expected_version=stale)
     assert state(planner) == before
 
 
@@ -68,12 +77,13 @@ def test_versions_a_failed_move_keeps_the_version(planner):
     assert state(planner, ["smith", "jones", "brown"]) == before
 
 
-def test_versions_add_seats_takes_the_lowest_free_seats(planner):
-    planner.reserve("brown", 2)  # A 5-6
-    planner.move("jones", "B")  # frees A 3-4
-    planner.add_seats("smith", 3)  # A has room for 3: seats 3, 4 and 7
-    assert planner.get_booking("smith") == ("A", [1, 2, 3, 4, 7])
+def test_versions_add_seats_uses_the_room_of_the_coach(planner):
+    planner.reserve("brown", 2)  # A: 6 reserved
+    planner.move("jones", "B")  # A: 4 reserved
+    planner.add_seats("smith", 3)
+    assert planner.get_booking("smith") == ("A", 5)
     assert planner.get_available("A") == 0
+    assert planner.get_reserved("B") == 2
 
 
 def test_versions_add_seats_past_the_limit_raises(planner):
@@ -85,7 +95,7 @@ def test_versions_add_seats_past_the_limit_raises(planner):
     assert planner.get_available("A") == 0
 
 
-@pytest.mark.parametrize("count", [0, -1, 1.5, "2"])
+@pytest.mark.parametrize("count", [0, -1])
 def test_versions_add_seats_with_a_bad_count_is_rejected(planner, count):
     before = state(planner)
     with pytest.raises(ValueError):
@@ -100,4 +110,3 @@ def test_versions_unknown_bookings_raise_key_error(planner):
         planner.get_version(None)
     with pytest.raises(KeyError):
         planner.add_seats("nobody", 1)
-

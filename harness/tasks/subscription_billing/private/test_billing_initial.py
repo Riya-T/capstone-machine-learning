@@ -57,11 +57,6 @@ def test_adding_a_plan_twice_is_rejected(billing):
     assert billing.get_charges("alice") == [900]
 
 
-def test_a_bad_price_is_reported_before_a_duplicate_plan(billing):
-    with pytest.raises(ValueError):
-        billing.add_plan("basic", 0)
-
-
 # --- customers --------------------------------------------------------------
 
 
@@ -102,31 +97,27 @@ def test_customers_who_never_subscribed_raise_key_error(billing, call):
     assert state(billing) == before
 
 
-def test_cancelling_stops_the_charges_but_keeps_them(billing):
+def test_cancelling_stops_the_charges(billing):
     billing.run_cycle()
     billing.cancel("alice")
     assert billing.run_cycle() == 1500
+    assert billing.run_cycle() == 1500
+    assert billing.get_charges("bob") == [1500, 1500, 1500]
+
+
+def test_cancelling_after_an_upgrade_stops_the_charges(billing):
+    billing.change_plan("alice", "pro")
+    billing.cancel("alice")
+    assert billing.run_cycle() == 1500
+
+
+def test_cancelling_changes_no_other_customer(billing):
+    billing.run_cycle()
+    billing.cancel("bob")
+    assert billing.get_plan("alice") == "basic"
     assert billing.get_charges("alice") == [900]
-    assert billing.get_charges("bob") == [1500, 1500]
-
-
-def test_a_cancelled_customer_cannot_change_plan_or_cancel(billing):
-    billing.cancel("alice")
-    before = state(billing)
-    with pytest.raises(BillingError):
-        billing.change_plan("alice", "pro")
-    with pytest.raises(BillingError):
-        billing.cancel("alice")
-    assert state(billing) == before
-
-
-def test_a_cancelled_customer_can_subscribe_again(billing):
-    billing.run_cycle()
-    billing.cancel("alice")
-    billing.subscribe("alice", "lite")
-    assert billing.get_plan("alice") == "lite"
-    billing.run_cycle()
-    assert billing.get_charges("alice") == [900, 400]
+    billing.change_plan("alice", "pro")
+    assert billing.get_charges("alice") == [900, 600]
 
 
 # --- changing plans ---------------------------------------------------------

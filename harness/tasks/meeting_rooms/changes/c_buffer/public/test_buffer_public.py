@@ -1,4 +1,4 @@
-"""Public checks for the c_buffer change (adjustable gap between bookings).
+"""Public checks for the c_buffer change (adjustable gaps between bookings).
 Shown to the editor, never to the writer.
 
 Usage (with rooms.py importable, e.g. in the sandbox):
@@ -10,18 +10,28 @@ from rooms import RoomBusy, RoomPlanner
 
 
 def test_buffer_planner_wide_gap():
-    p = RoomPlanner(gap=30)
+    p = RoomPlanner(gap=1)
     p.add_room("oak")
-    assert p.get_gap("oak") == 30
-    p.book("a", "oak", 100, 160)
+    assert p.get_gap("oak") == 1
+    p.book("a", "oak", 10)
     with pytest.raises(RoomBusy):
-        p.book("b", "oak", 180, 200)
-    p.book("b", "oak", 190, 200)
+        p.book("b", "oak", 11)
+    with pytest.raises(RoomBusy):
+        p.book("b", "oak", 9)
+    p.book("b", "oak", 12)
+    p.book("c", "oak", 8)
 
 
-def test_buffer_room_without_a_gap():
+def test_buffer_gap_of_one_room():
     p = RoomPlanner()
-    p.add_room("booth", gap=0)
-    p.book("a", "booth", 0, 30)
-    p.book("b", "booth", 30, 45)
-    assert p.get_room_bookings("booth") == ["a", "b"]
+    p.add_room("hall", gap=2)
+    p.add_room("oak")
+    assert p.get_gap("oak") == 0
+    p.book("a", "hall", 5)
+    with pytest.raises(RoomBusy):
+        p.book("b", "hall", 7)
+    p.book("b", "hall", 8)
+    p.book("c", "oak", 5)
+    p.book("d", "oak", 6)
+    assert p.get_free_rooms(7) == ["oak"]
+    assert p.get_free_rooms(11) == ["hall", "oak"]

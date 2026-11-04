@@ -26,6 +26,8 @@ want to charge only a share of it, set for the whole system or per plan.
   returns what `change_plan(customer, plan_id)` would charge right now,
   without changing anything. It raises the same errors as `change_plan`.
   Which one is raised when one call has several problems (for example a
-  cancelled customer and a plan that was never added) is unspecified.
+  customer who has never subscribed and a plan that was never added) is
+  unspecified. What it does for a customer who has cancelled is
+  unspecified.
 
 All existing behavior must keep working.

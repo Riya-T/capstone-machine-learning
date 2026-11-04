@@ -22,7 +22,7 @@ def test_a_new_car_is_empty_on_floor_zero(building):
 
 
 def test_a_caller_waits_until_a_car_stops_on_their_floor(building):
-    building.call("ann", 3, 5)
+    building.call("ann", 3)
     assert building.get_waiting(3) == ["ann"]
     building.move_car("east", 3)
     assert building.get_car_floor("east") == 3
@@ -30,18 +30,19 @@ def test_a_caller_waits_until_a_car_stops_on_their_floor(building):
     assert building.get_waiting(3) == []
 
 
-def test_riders_get_out_at_their_destination(building):
-    building.call("ann", 2, 5)
-    building.call("ben", 2, 4)
+def test_riders_get_out_at_the_next_stop(building):
+    building.call("ann", 2)
+    building.call("ben", 2)
     building.move_car("east", 2)
-    building.move_car("east", 4)
-    assert building.get_riders("east") == ["ann"]
-    assert building.get_delivered() == ["ben"]
+    building.call("cy", 5)
+    building.move_car("east", 5)
+    assert building.get_riders("east") == ["cy"]
+    assert building.get_delivered() == ["ann", "ben"]
 
 
 def test_a_car_takes_at_most_four_riders(building):
     for name in ["p1", "p2", "p3", "p4", "p5"]:
-        building.call(name, 1, 6)
+        building.call(name, 1)
     building.move_car("east", 1)
     assert building.get_riders("east") == ["p1", "p2", "p3", "p4"]
     assert building.get_waiting(1) == ["p5"]
@@ -50,13 +51,3 @@ def test_a_car_takes_at_most_four_riders(building):
 def test_an_unknown_car_raises_key_error(building):
     with pytest.raises(KeyError):
         building.get_car_floor("north")
-
-
-def test_a_passenger_keeps_their_destination(building):
-    building.call("ann", 2, 5)
-    assert building.get_destination("ann") == 5
-    building.move_car("east", 2)
-    assert building.get_destination("ann") == 5
-    building.move_car("east", 5)
-    assert building.get_destination("ann") == 5
-    assert building.get_delivered() == ["ann"]

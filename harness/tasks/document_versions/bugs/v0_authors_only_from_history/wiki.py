@@ -1,8 +1,9 @@
 """Wiki: pages whose every write becomes a numbered revision.
 
-Planted bug (initial version): an off-by-one keeps the 6 most recent
-revisions instead of 5. The public checks never write that many, so only
-the hidden initial tests catch it.
+Planted bug (initial version): get_authors lists only the authors of the
+revisions in the history, so the authors of older revisions are lost.
+The public checks never look at authors once a page has more than 5
+revisions, so only the hidden initial tests catch it.
 Never shown to the writer or the editor; validate-tasks checks that the
 tests catch it.
 
@@ -39,7 +40,7 @@ class _Page:
         self.writers.append(author)
         number = len(self.writers)
         self.texts[number] = text
-        self.texts.pop(number - KEEP - 1, None)
+        self.texts.pop(number - KEEP, None)
 
     def latest(self):
         return self.texts[len(self.writers)]
@@ -70,19 +71,14 @@ class Wiki:
     def get_text(self, page):
         return self._require(page).latest()
 
-    def get_revision(self, page, number):
-        record = self._require(page)
-        if not isinstance(number, int) or number < 1:
-            raise ValueError(f"revision number must be an int >= 1, got {number!r}")
-        if number not in record.texts:
-            raise IndexError(f"revision {number} of {page!r} is not available")
-        return record.texts[number]
+    def get_history(self, page):
+        return sorted(self._require(page).texts.items())
 
     def get_revision_count(self, page):
         return len(self._require(page).writers)
 
     def get_authors(self, page):
-        return list(dict.fromkeys(self._require(page).writers))
+        return list(dict.fromkeys(self._require(page).writers[-KEEP:]))
 
     def get_pages(self):
         return list(self._pages)

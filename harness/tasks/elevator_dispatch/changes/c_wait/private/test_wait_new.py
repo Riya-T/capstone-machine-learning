@@ -41,7 +41,7 @@ def test_wait_failed_moves_do_not_advance_the_clock(building):
 
 
 def test_wait_counts_moves_of_every_car(building):
-    building.call("ann", 3, 6)
+    building.call("ann", 3)
     building.move_car("east", 5)
     building.move_car("west", 1)
     building.move_car("east", 3)
@@ -51,14 +51,14 @@ def test_wait_counts_moves_of_every_car(building):
 def test_wait_starts_when_the_passenger_calls(building):
     building.move_car("east", 1)
     building.move_car("east", 2)
-    building.call("ben", 4, 0)
+    building.call("ben", 4)
     building.move_car("west", 4)
     assert building.get_clock() == 3
     assert building.get_wait("ben") == 1
 
 
 def test_wait_is_kept_after_arrival(building):
-    building.call("ann", 2, 4)
+    building.call("ann", 2)
     building.move_car("east", 1)
     building.move_car("east", 2)
     building.move_car("east", 4)
@@ -69,7 +69,7 @@ def test_wait_is_kept_after_arrival(building):
 
 def test_wait_of_passengers_who_did_not_fit_keeps_growing(building):
     for name in ["p1", "p2", "p3", "p4", "p5"]:
-        building.call(name, 2, 6)
+        building.call(name, 2)
     building.move_car("east", 2)
     building.move_car("west", 3)
     building.move_car("west", 2)
@@ -78,7 +78,7 @@ def test_wait_of_passengers_who_did_not_fit_keeps_growing(building):
 
 
 def test_wait_unknown_and_waiting_passengers_are_rejected(building):
-    building.call("ann", 3, 5)
+    building.call("ann", 3)
     building.move_car("east", 1)
     with pytest.raises(KeyError):
         building.get_wait("nobody")
@@ -91,16 +91,16 @@ def test_wait_unknown_and_waiting_passengers_are_rejected(building):
 
 def test_wait_longest_is_zero_until_someone_boards(building):
     assert building.get_longest_wait() == 0
-    building.call("ann", 3, 5)
+    building.call("ann", 3)
     building.move_car("east", 1)
     building.move_car("east", 2)
     assert building.get_longest_wait() == 0
 
 
 def test_wait_longest_covers_riders_and_arrived_but_not_waiting(building):
-    building.call("ann", 1, 2)
-    building.call("ben", 4, 6)
-    building.call("cy", 5, 6)
+    building.call("ann", 1)
+    building.call("ben", 4)
+    building.call("cy", 5)
     building.move_car("east", 1)  # ann in at clock 1, wait 1
     building.move_car("east", 2)  # ann arrives
     building.move_car("west", 3)
@@ -113,9 +113,9 @@ def test_wait_longest_covers_riders_and_arrived_but_not_waiting(building):
 
 
 def test_wait_totals_are_kept_per_car(building):
-    building.call("ann", 1, 3)
-    building.call("ben", 1, 4)
-    building.call("cy", 2, 5)
+    building.call("ann", 1)
+    building.call("ben", 1)
+    building.call("cy", 2)
     building.move_car("east", 1)  # ann and ben, 1 each
     building.move_car("west", 1)  # nobody is left waiting there
     building.move_car("west", 2)  # cy, 3
