@@ -1,8 +1,8 @@
 """Task board: projects, their tasks, due days and which tasks are done.
 
-Planted bug (initial version): only add_task checks the open-task limit,
-so an open task can be moved into a project that already has 5 open tasks.
-The public checks never move a task into a full project.
+Planted bug (initial version): move_task checks the open-task limit for
+done tasks too, so a done task cannot move into a project that already has
+5 open tasks. The public checks only move open tasks into a full project.
 Never shown to the writer or the editor; validate-tasks checks that the
 tests catch it.
 
@@ -73,6 +73,8 @@ class Board:
         target = self._project(project)
         if task["project"] == project:
             raise ValueError(f"task {task_id} is already in {project!r}")
+        if len(target) >= OPEN_LIMIT:
+            raise BoardError(f"project {project!r} already has {OPEN_LIMIT} open tasks")
         if not task["done"]:
             self._projects[task["project"]].remove(task_id)
             target.append(task_id)

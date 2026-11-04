@@ -236,32 +236,6 @@ def test_a_moved_done_task_stays_done(board):
         board.complete(task_id)
 
 
-# --- error order ------------------------------------------------------------
-
-
-def test_a_missing_project_is_reported_before_a_bad_title_or_day(board):
-    with pytest.raises(KeyError):
-        board.add_task("ops", "", -1)
-
-
-def test_a_missing_task_or_project_is_reported_before_a_same_project_move(board):
-    board.add_task("web", "home", 1)
-    with pytest.raises(KeyError):
-        board.move_task(99, "web")
-    with pytest.raises(KeyError):
-        board.move_task(1, "ops")
-
-
-def test_value_errors_come_before_the_limit(board):
-    fill(board, "web", 5)
-    with pytest.raises(ValueError):
-        board.add_task("web", "", 1)
-    with pytest.raises(ValueError):
-        board.add_task("web", "late", -1)
-    with pytest.raises(ValueError):
-        board.move_task(1, "web")
-
-
 def test_boards_do_not_share_projects_or_ids():
     first, second = Board(), Board()
     first.add_project("web")

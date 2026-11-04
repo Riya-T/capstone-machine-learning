@@ -8,8 +8,8 @@ Usage (with rovers.py importable, e.g. in the sandbox):
 import pytest
 from rovers import RoverError, RoverFleet
 
-BAD_COORDINATES = [-1, 10, 1.0, "3", None]
-BAD_COMMANDS = ["FFx", "f", "F F", "FB1", None, 3, ["F"]]
+BAD_COORDINATES = [-1, 10, 12, -5]
+BAD_COMMANDS = ["FFx", "f", "F F", "FB1", "X"]
 
 
 @pytest.fixture
@@ -186,19 +186,22 @@ def test_the_plateau_wraps_at_every_edge(start, commands, end):
 def test_a_long_drive_wraps_more_than_once():
     f = RoverFleet()
     f.land("scout", 3, 3, "north")
-    assert f.drive("scout", "F" * 25) == 25
+    f.drive("scout", "F" * 25)
     assert f.get_location("scout") == (3, 8, "north")
+    assert f.get_odometer("scout") == 25
 
 
-def test_drive_returns_the_number_of_commands(fleet):
-    assert fleet.drive("scout", "FRFLB") == 5
-    assert fleet.drive("scout", "") == 0
+def test_a_drive_of_moves_and_turns_and_an_empty_drive(fleet):
+    fleet.drive("scout", "FRFLB")
     assert fleet.get_location("scout") == (3, 2, "north")
+    fleet.drive("scout", "")
+    assert fleet.get_location("scout") == (3, 2, "north")
+    assert fleet.get_odometer("scout") == 3
 
 
 def test_a_blocked_move_stops_the_rest_of_the_string(fleet):
     fleet.land("mole", 2, 4, "north")
-    assert fleet.drive("scout", "FFRF") == 1
+    fleet.drive("scout", "FFRF")
     assert fleet.get_location("scout") == (2, 3, "north")
     assert fleet.get_odometer("scout") == 1
     assert fleet.get_location("mole") == (2, 4, "north")
@@ -206,23 +209,25 @@ def test_a_blocked_move_stops_the_rest_of_the_string(fleet):
 
 def test_a_blocked_backward_move(fleet):
     fleet.land("mole", 2, 1, "north")
-    assert fleet.drive("scout", "BL") == 0
+    fleet.drive("scout", "BL")
     assert fleet.get_location("scout") == (2, 2, "north")
+    assert fleet.get_odometer("scout") == 0
 
 
 def test_a_move_across_the_edge_can_be_blocked():
     f = RoverFleet()
     f.land("scout", 9, 6, "east")
     f.land("mole", 0, 6, "west")
-    assert f.drive("scout", "F") == 0
-    assert f.drive("mole", "F") == 0
+    f.drive("scout", "F")
+    f.drive("mole", "F")
     assert f.get_location("scout") == (9, 6, "east")
+    assert f.get_location("mole") == (0, 6, "west")
 
 
 def test_rovers_may_go_where_another_rover_was(fleet):
     fleet.drive("digger", "F")  # leaves (7, 5)
     fleet.land("mole", 6, 5, "east")
-    assert fleet.drive("mole", "F") == 1
+    fleet.drive("mole", "F")
     assert fleet.get_rover_at(7, 5) == "mole"
     assert fleet.get_rover_at(6, 5) is None
     assert fleet.get_rover_at(8, 5) == "digger"
@@ -236,11 +241,9 @@ def test_the_odometer_counts_moves_but_not_turns(fleet):
 
 
 @pytest.mark.parametrize("commands", BAD_COMMANDS)
-def test_invalid_command_strings_change_nothing(fleet, commands):
-    before = state(fleet)
+def test_invalid_command_strings_raise_value_error(fleet, commands):
     with pytest.raises(ValueError):
         fleet.drive("scout", commands)
-    assert state(fleet) == before
 
 
 def test_fleets_do_not_share_rovers():

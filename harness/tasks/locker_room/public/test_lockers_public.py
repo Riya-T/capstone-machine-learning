@@ -30,11 +30,28 @@ def test_the_smallest_locker_that_fits_is_used(room):
     assert room.get_free_lockers() == ["S1"]
 
 
+def test_a_small_item_goes_up_a_size_when_the_small_lockers_are_taken(room):
+    assert room.store("scarf", "small") == "S1"
+    assert room.store("hat", "small") == "M1"
+    assert room.store("cap", "small") == "L1"
+    assert room.get_locker("hat") == "M1"
+    assert room.get_free_lockers() == []
+
+
 def test_retrieving_frees_the_locker(room):
     room.store("bag", "large")
     assert room.retrieve("bag") == "L1"
     assert room.get_free_lockers() == ["S1", "M1", "L1"]
     assert room.get_takings() == 500
+
+
+def test_a_freed_locker_is_listed_in_its_place(room):
+    room.store("scarf", "small")
+    room.store("coat", "medium")
+    room.retrieve("coat")
+    assert room.get_free_lockers() == ["M1", "L1"]
+    room.retrieve("scarf")
+    assert room.get_free_lockers() == ["S1", "M1", "L1"]
 
 
 def test_an_item_that_fits_nowhere_raises(room):
@@ -52,3 +69,6 @@ def test_an_unknown_size_is_rejected(room):
 def test_retrieving_an_item_that_is_not_stored_raises(room):
     with pytest.raises(KeyError):
         room.retrieve("scarf")
+    room.store("scarf", "small")
+    with pytest.raises(KeyError):
+        room.get_locker("S1")  # a locker id, not an item id

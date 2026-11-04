@@ -14,8 +14,7 @@ Versions:
   locker id that was not added, including values that are not strings.
 - `retrieve` takes a new keyword argument `expected_version=None`. When it
   is not `None` and is not equal to the current version of the locker the
-  item is in, `retrieve` raises `VersionConflict` and changes nothing. The
-  `KeyError` for an item that is not in a locker comes first.
+  item is in, `retrieve` raises `VersionConflict` and changes nothing.
 - `store` picks its locker itself and takes no `expected_version`.
 
 Moving:
@@ -26,13 +25,18 @@ Moving:
   afterwards. Both lockers' versions go up by 1.
 - `expected_version` is compared with the version of the locker the item
   is moved **into**.
-- `move` raises, in this order, and changes nothing:
-  1. `KeyError` for an item that is not in a locker;
-  2. `KeyError` for a locker id that was not added;
-  3. `VersionConflict` when `expected_version` is given and does not match;
-  4. `LockerError` when the target locker is not empty (this includes the
-     locker the item is already in);
-  5. `LockerError` when the target locker is too small for the item, going
-     by the size the item was stored with.
+- `move` raises one of these, and then changes nothing:
+  - `KeyError` for an item that is not in a locker;
+  - `KeyError` for a locker id that was not added;
+  - `VersionConflict` when `expected_version` is given and does not match;
+  - `LockerError` when the target locker is not empty (this includes the
+    locker the item is already in);
+  - `LockerError` when the target locker is too small for the item, going
+    by the size the item was stored with.
+
+Which error `retrieve` or `move` raises when one call has several problems
+(for example an item that is not in a locker, or a target locker that is
+too small, together with an `expected_version` that does not match) is
+unspecified.
 
 All existing behavior must keep working.

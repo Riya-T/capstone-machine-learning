@@ -3,13 +3,12 @@ off, with the number of levels set per grid and the size of each step set
 per command.
 
 - `LightGrid` takes a new keyword argument `max_brightness=1`. It must be
-  an `int` that is 1 or more (not a `bool`); anything else raises
-  `ValueError`.
+  an `int` that is 1 or more; anything else raises `ValueError`.
 - Every light has a brightness from 0 to `max_brightness`. Every light
   starts at 0. A light is on when its brightness is more than 0, and off
   at 0.
 - `turn_on` and `turn_off` take a new keyword argument `step=1`, which must
-  be an `int` that is 1 or more (not a `bool`), or `ValueError` is raised.
+  be an `int` that is 1 or more, or `ValueError` is raised.
   `turn_on` raises the brightness of every light in the rectangle by
   `step`, but never above `max_brightness`. `turn_off` lowers it by `step`,
   but never below 0.

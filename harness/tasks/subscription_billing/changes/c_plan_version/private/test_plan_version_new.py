@@ -69,12 +69,13 @@ def test_versioned_failed_calls_leave_it_alone(billing):
     [
         lambda b: b.change_plan("alice", "pro", expected_version=2),
         lambda b: b.pause("alice", expected_version=0),
-        lambda b: b.resume("alice", expected_version=5),
+        lambda b: b.resume("bob", expected_version=1),  # bob is paused, at version 2
         lambda b: b.cancel("alice", expected_version=2),
     ],
     ids=["change_plan", "pause", "resume", "cancel"],
 )
 def test_versioned_stale_calls_change_nothing(billing, call):
+    billing.pause("bob")
     before = state(billing)
     with pytest.raises(VersionConflict):
         call(billing)
@@ -94,39 +95,6 @@ def test_versioned_resubscribing_starts_again_at_one(billing):
         billing.get_version("alice")
     billing.subscribe("alice", "lite")
     assert billing.get_version("alice") == 1
-
-
-def test_versioned_conflict_comes_after_key_errors_and_cancelled(billing):
-    with pytest.raises(KeyError):
-        billing.change_plan("carol", "pro", expected_version=9)
-    with pytest.raises(KeyError):
-        billing.change_plan("alice", "gold", expected_version=9)
-    with pytest.raises(KeyError):
-        billing.pause("carol", expected_version=9)
-    billing.cancel("alice")
-    for call in (
-        lambda: billing.change_plan("alice", "pro", expected_version=9),
-        lambda: billing.cancel("alice", expected_version=9),
-        lambda: billing.pause("alice", expected_version=9),
-    ):
-        with pytest.raises(BillingError) as info:
-            call()
-        assert not isinstance(info.value, VersionConflict)
-
-
-def test_versioned_conflict_comes_before_other_errors(billing):
-    # moving to the current plan with a stale version
-    with pytest.raises(VersionConflict):
-        billing.change_plan("alice", "basic", expected_version=2)
-    # resuming a subscription that is not paused, with a stale version
-    with pytest.raises(VersionConflict):
-        billing.resume("alice", expected_version=2)
-    billing.pause("alice")
-    # paused, with a stale version
-    with pytest.raises(VersionConflict):
-        billing.change_plan("alice", "pro", expected_version=1)
-    with pytest.raises(VersionConflict):
-        billing.pause("alice", expected_version=1)
 
 
 def test_versioned_matching_version_still_applies_the_rules(billing):

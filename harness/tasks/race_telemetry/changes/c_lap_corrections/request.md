@@ -22,10 +22,11 @@ a race is stopped instead of silently overwriting someone else's work.
   the race's current version, `VersionConflict` is raised and nothing
   changes. With `None` no version check is done.
 
-When `correct_lap` has several problems, the first of these is raised:
-`KeyError` for an unknown race or car, then `ValueError` (for either
-argument), then `VersionConflict`. For `record_lap` the order is
-`KeyError`, `ValueError`, `VersionConflict`, and last the
-`TelemetryError` for a finished car.
+`correct_lap` raises `KeyError` for an unknown race or car, `ValueError`
+for an invalid `lap_number` or `lap_time`, and `VersionConflict` as
+above. Which error `correct_lap` or `record_lap` raises when one call has
+several problems (for example an invalid lap time, or a car that has
+finished, together with an `expected_version` that does not match) is
+unspecified.
 
 All existing behavior must keep working.

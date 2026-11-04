@@ -6,11 +6,10 @@ highest bid by at least 10; that stays the default.
   minimum raise for every lot that does not set its own.
 - `add_lot` takes a new keyword argument `min_increment=None`. `None` means
   the lot uses the house's minimum raise; an `int` sets the lot's own.
-- A minimum raise (in either place) must be an `int` that is 1 or more (not
-  a `bool`); anything else raises `ValueError`. For `add_lot`, that check
-  comes after the checks on the id and the opening price, and before the
-  `AuctionError` for an id that was already added. In every case no lot is
-  added.
+- A minimum raise (in either place) must be an `int` that is 1 or more;
+  anything else raises `ValueError`. Which error `add_lot` raises when the
+  minimum raise is invalid and the id was already added is unspecified. In
+  every case no lot is added.
 - Every bid after the first on a lot must be at least the highest bid plus
   that lot's minimum raise, or `BidTooLow` is raised. The first bid still
   only needs to reach the opening price.

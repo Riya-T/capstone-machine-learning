@@ -93,7 +93,7 @@ def test_hold_keeps_held_batches_in_the_lists(cooler):
     for _ in range(3):
         cooler.end_day()  # roses and ivy reach 0
     cooler.hold("roses")
-    assert cooler.get_wilted() == ["roses", "ivy"]
+    assert sorted(cooler.get_wilted()) == ["ivy", "roses"]
     assert "roses" in cooler.get_batches()
 
 

@@ -42,35 +42,48 @@ Days are whole numbers, as `int`: day 0 is the day the board started.
 - Every method that takes a `task_id` raises `KeyError` for an id that
   `add_task` has not returned, including values that are not `int`s at all,
   such as `None` or `"1"`.
-- `get_task(task_id)` returns `(project, title, due_day, done)`, where
-  `done` is `True` once the task is completed.
+- `get_task(task_id)` returns a tuple of four values: the name of the
+  project the task is in now, its title, its due day, and `True` if it is
+  done or `False` if it is open. For example, after
+  `add_task("mobile", "login screen", 5)` returns 2, `get_task(2)` returns
+  `("mobile", "login screen", 5, False)`.
 - `complete(task_id)` marks the task as done. Completing a task that is
   already done raises `BoardError`.
 - `get_open_tasks(project)` returns the ids of the project's open tasks, in
   the order they joined the project (by being added to it or moved into it).
+  Done tasks are not listed.
 
 ## The open-task limit
 
-A project can have at most **5** open tasks at a time. Done tasks do not
-count. Adding a task to a project that already has 5 open tasks, or moving
-an open task into one, raises `BoardError`.
+A project is **full** when `get_open_tasks(project)` returns 5 ids. Done
+tasks are not in that list, so they do not count, and completing a task
+frees a place.
+
+- `add_task` on a full project raises `BoardError`.
+- Moving an open task into a full project raises `BoardError`, and the task
+  stays where it was.
+- A done task can move into any project, full or not.
+
+For example, if tasks 1 to 5 are open in `"web"` and task 6 is open in
+`"app"`:
+
+- `add_task("web", "extra", 1)` and `move_task(6, "web")` raise
+  `BoardError`;
+- after `complete(2)`, `get_open_tasks("web")` returns `[1, 3, 4, 5]`, and
+  `move_task(6, "web")` works: `get_open_tasks("web")` then returns
+  `[1, 3, 4, 5, 6]`, and `"web"` is full again;
+- the done task 2 can still move to `"app"`, and then back to the full
+  `"web"`.
 
 ## Moving tasks
 
-`move_task(task_id, project)` moves the task to another project, where it
-joins at the end. Moving a task to the project it is already in raises
-`ValueError`. Done tasks can be moved too, and do not count toward the
-limit of the project they move into.
+`move_task(task_id, project)` moves the task to another project. An open
+task leaves the open tasks of its old project and is listed last in
+`get_open_tasks` of the new one. Moving a task to the project it is already
+in raises `ValueError`. Done tasks can be moved too: they stay done, and
+`get_task` shows their new project.
 
 ## Errors
-
-When a call has several problems, the first of these is raised:
-
-1. `KeyError` for a task that does not exist, then for a project that does
-   not exist;
-2. `ValueError` for an invalid title or due day, or a move to the same
-   project;
-3. `BoardError`.
 
 A failed call has no effect: if a method raises, every project and every
 task is unchanged, and no task id is used up.
@@ -78,6 +91,8 @@ task is unchanged, and no task id is used up.
 ## Unspecified behavior
 
 Behavior not described here is unspecified, and no test depends on it. This
-includes project names and titles that are not strings, `bool` days or ids,
-what happens if a returned list is changed, the text of error messages,
-saving the board to a file, and use from several threads.
+includes which error is raised when a call has several problems (for
+example a project that does not exist and an empty title, or a full project
+and an invalid due day), project names and titles that are not strings,
+`bool` days or ids, what happens if a returned list is changed, the text of
+error messages, saving the board to a file, and use from several threads.

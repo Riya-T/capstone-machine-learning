@@ -8,7 +8,7 @@ Usage (with lights.py importable, e.g. in the sandbox):
 import pytest
 from lights import LightGrid
 
-BAD_LEVELS = [0, -1, 1.5, "2", True, None]
+BAD_LEVELS = [0, -1, 1.5, "2", None]
 
 
 def levels(g, width=4, height=3):

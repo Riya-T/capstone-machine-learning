@@ -107,11 +107,9 @@ def test_approval_removal_needs_the_position_of_a_finished_shift(clock, index):
     assert state(clock) == before
 
 
-def test_approval_removal_errors_come_in_order(clock):
+def test_approval_removal_errors(clock):
     clock.approve_shifts("ana")
     before = state(clock)
-    with pytest.raises(KeyError):
-        clock.remove_shift("carl", 99)
     with pytest.raises(IndexError):
         clock.remove_shift("ana", 3)
     with pytest.raises(IndexError):

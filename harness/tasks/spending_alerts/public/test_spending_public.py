@@ -41,7 +41,7 @@ def test_alert_months_lists_each_month_over_the_limit(tracker):
     tracker.record_payment("alice", 1, "travel", 60000)
     tracker.record_payment("alice", 2, "travel", 100)
     tracker.record_payment("alice", 3, "travel", 75000)
-    assert tracker.get_alert_months("alice", "travel") == [1, 3]
+    assert sorted(tracker.get_alert_months("alice", "travel")) == [1, 3]
 
 
 def test_amounts_must_be_positive(tracker):
@@ -54,3 +54,15 @@ def test_amounts_must_be_positive(tracker):
 def test_unknown_account_raises_key_error(tracker):
     with pytest.raises(KeyError):
         tracker.get_total("carol", 1)
+
+
+def test_queries_check_the_month_and_category(tracker):
+    assert tracker.get_total("alice", 7) == 0
+    with pytest.raises(ValueError):
+        tracker.get_total("alice", 0)
+    with pytest.raises(ValueError):
+        tracker.get_category_total("alice", 7, "")
+    with pytest.raises(ValueError):
+        tracker.get_alerts("alice", 0)
+    with pytest.raises(ValueError):
+        tracker.get_alert_months("alice", "")

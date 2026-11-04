@@ -8,7 +8,7 @@ Usage (with scoreboard.py importable, e.g. in the sandbox):
 import pytest
 from scoreboard import Scoreboard
 
-BAD_PERIODS = [0, -1, 3, True, 1.0, "1"]
+BAD_PERIODS = [0, -1, 3, 1.0, "1"]
 
 
 @pytest.fixture
@@ -72,9 +72,9 @@ def test_periods_bad_periods_are_rejected(board, period):
     assert state(board) == before
 
 
-def test_periods_an_unknown_team_is_reported_before_a_bad_period(board):
+def test_periods_unknown_teams_raise_key_error(board):
     with pytest.raises(KeyError):
-        board.get_events("bears", period=0)
+        board.get_events("bears", period=1)
     with pytest.raises(KeyError):
         board.get_period_scores("bears")
 

@@ -1,9 +1,10 @@
 """Spending alerts: payments by account, month and category, with an alert
 for every category that costs more than a fixed limit in a month.
 
-Planted bug (initial version): get_alert_months lists months in the order
-they were first paid, not smallest first. The public checks record months
-in order, so only the hidden initial tests catch it.
+Planted bug (initial version): record_payment takes the next payment id
+before it checks its arguments, so a rejected payment still uses one up.
+The public checks never record a payment after a rejected one, so only
+the hidden initial tests catch it.
 Never shown to the writer or the editor; validate-tasks checks that the
 tests catch it.
 
@@ -52,13 +53,13 @@ class SpendingTracker:
         return list(self._payments)
 
     def record_payment(self, account_id, month, category, amount):
+        payment_id = self._next_id
+        self._next_id += 1
         self._require(account_id)
         check_month(month)
         check_name(category, "category")
         check_amount(amount)
         self._payments[account_id].append((month, category, amount))
-        payment_id = self._next_id
-        self._next_id += 1
         return payment_id
 
     def get_total(self, account_id, month):
@@ -84,10 +85,7 @@ class SpendingTracker:
     def get_alert_months(self, account_id, category):
         self._require(account_id)
         check_name(category, "category")
-        months = []
-        for m, c, _ in self._payments[account_id]:
-            if c == category and m not in months:
-                months.append(m)
+        months = sorted({m for m, c, _ in self._payments[account_id] if c == category})
         return [m for m in months if self._is_over(account_id, m, category)]
 
     def _require(self, account_id):

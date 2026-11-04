@@ -55,14 +55,15 @@ def test_unknown_batches_raise_key_error(cooler):
         cooler.remove_batch("daisies")
 
 
-def test_wilted_batches_are_listed_in_the_order_added():
+def test_batches_with_days_left_can_wilt_too():
     c = FlowerCooler()
     c.add_batch("asters", 6, 5)
     c.add_batch("daisies", 2, 5)
-    c.add_batch("irises", 0, 5)
-    assert c.get_wilted() == ["irises"]
+    c.add_batch("irises", 1, 5)
+    assert c.get_wilted() == []
     c.end_day()
-    assert c.get_wilted() == ["daisies", "irises"]
+    assert sorted(c.get_wilted()) == ["daisies", "irises"]  # in any order
+    assert c.get_days_left("daisies") == 4
     c.end_day()
     c.end_day()
-    assert c.get_wilted() == ["asters", "daisies", "irises"]
+    assert sorted(c.get_wilted()) == ["asters", "daisies", "irises"]

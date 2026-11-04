@@ -9,8 +9,8 @@ Usage (with billing.py importable, e.g. in the sandbox):
 import pytest
 from billing import BillingError, BillingSystem
 
-BAD_PRICES = [0, -5, 1.5, "900", None]
-BAD_NAMES = ["", None, 7]
+BAD_PRICES = [0, -5]
+BAD_NAMES = ["", None]
 CUSTOMERS = ["alice", "bob", "carol"]
 
 
@@ -72,16 +72,15 @@ def test_invalid_customers_are_rejected(billing, customer):
     assert billing.run_cycle() == 2400
 
 
-def test_subscribe_error_order(billing):
-    with pytest.raises(ValueError):
-        billing.subscribe("", "gold")
-    # alice is subscribed and the plan is unknown: the plan comes first
-    with pytest.raises(KeyError):
-        billing.subscribe("alice", "gold")
+def test_subscribe_errors(billing):
     before = state(billing)
+    with pytest.raises(KeyError):
+        billing.subscribe("carol", "gold")
     with pytest.raises(BillingError):
         billing.subscribe("alice", "lite")
     assert state(billing) == before
+    with pytest.raises(KeyError):
+        billing.get_plan("carol")
 
 
 @pytest.mark.parametrize(
@@ -167,13 +166,11 @@ def test_moving_to_the_current_plan_is_rejected(billing):
     assert state(billing) == before
 
 
-def test_change_plan_error_order(billing):
-    with pytest.raises(KeyError):
-        billing.change_plan("carol", "gold")
-    billing.cancel("alice")
-    # cancelled and an unknown plan: the plan comes first
+def test_moving_to_a_plan_that_was_never_added_is_rejected(billing):
+    before = state(billing)
     with pytest.raises(KeyError):
         billing.change_plan("alice", "gold")
+    assert state(billing) == before
 
 
 # --- billing cycles ---------------------------------------------------------

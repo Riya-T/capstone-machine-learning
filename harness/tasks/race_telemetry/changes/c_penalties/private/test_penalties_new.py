@@ -102,8 +102,7 @@ def test_penalty_amount_must_be_positive(tel, penalty):
     [
         lambda t: t.add_penalty("imola", "red", 1000),
         lambda t: t.add_penalty("spa", "pink", 1000),
-        lambda t: t.add_penalty("spa", "pink", -1),
-        lambda t: t.add_penalty(None, "red", 0),
+        lambda t: t.add_penalty(None, "red", 1000),
         lambda t: t.get_penalty("imola", "red"),
         lambda t: t.get_penalty("spa", None),
         lambda t: t.get_total_time("imola", "red"),

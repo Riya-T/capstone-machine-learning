@@ -12,7 +12,7 @@ reference: reference/v0
 planted_bugs:
   # Required: a bug only the hidden initial tests catch.
   - {path: bugs/v0_zero_lap_time, must_fail: [initial], must_pass: [public]}
-  - {path: bugs/v0_ties_by_first_lap, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_points_for_podium_only, must_fail: [initial], must_pass: [public]}
 
 changes:
   - id: c_points_table

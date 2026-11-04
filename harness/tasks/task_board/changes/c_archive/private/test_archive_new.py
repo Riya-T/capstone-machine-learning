@@ -122,27 +122,6 @@ def test_archive_blocks_changes_to_the_task(board, call):
     assert state(board) == before
 
 
-def test_archive_check_comes_after_key_and_version_errors(board):
-    board.archive(1)
-    with pytest.raises(KeyError):
-        board.move_task(1, "ops")
-    with pytest.raises(VersionConflict):
-        board.complete(1, expected_version=1)
-    with pytest.raises(VersionConflict):
-        board.archive(1, expected_version=1)
-
-
-def test_archive_check_comes_before_value_errors(board):
-    board.archive(1)
-    for call in (
-        lambda: board.rename_task(1, ""),
-        lambda: board.set_due_day(1, -1),
-        lambda: board.move_task(1, "web"),
-    ):
-        with pytest.raises(BoardError):
-            call()
-
-
 def test_archive_and_restore_count_as_changes(board):
     board.archive(1, expected_version=1)
     board.restore(1, expected_version=2)
@@ -165,7 +144,6 @@ def test_archive_unknown_tasks_and_projects_raise_key_error(board):
         lambda: board.is_archived(99),
         lambda: board.archive(None),
         lambda: board.get_archived("ops"),
-        lambda: board.restore(99, expected_version=1),
     ):
         with pytest.raises(KeyError):
             call()

@@ -83,14 +83,10 @@ def test_service_moving_a_car_out_of_service_changes_nothing(building):
     assert building.get_waiting(3) == ["ann"]
 
 
-def test_service_unknown_car_and_bad_floor_come_first(building):
+def test_service_moving_an_unknown_car_still_raises_key_error(building):
     building.take_out_of_service("east")
     with pytest.raises(KeyError):
         building.move_car("north", 2)
-    with pytest.raises(ValueError):
-        building.move_car("east", 99)
-    with pytest.raises(ValueError):
-        building.move_car("east", -1)
 
 
 def test_service_car_out_of_service_is_an_elevator_error():

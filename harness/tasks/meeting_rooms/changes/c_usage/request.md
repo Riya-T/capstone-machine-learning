@@ -11,7 +11,8 @@ used over a stretch of time, to decide which rooms to keep.
   most minutes first. Rooms with the same number of minutes, including 0,
   stay in the order they were added.
 - The window's `start` and `end` are checked like the times in `book`, and
-  raise `ValueError` the same way. For `get_booked_minutes`, `KeyError` for
-  a room that does not exist comes before `ValueError`.
+  raise `ValueError` the same way. `get_booked_minutes` raises `KeyError`
+  for a room that does not exist; which error it raises when the room does
+  not exist and the window is invalid is unspecified.
 
 All existing behavior must keep working.

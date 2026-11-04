@@ -8,7 +8,7 @@ Usage (with board.py importable, e.g. in the sandbox):
 import pytest
 from board import Board, BoardError
 
-BAD_LIMITS = [0, -2, 2.5, "3", True]
+BAD_LIMITS = [0, -2, 2.5, "3"]
 
 
 @pytest.fixture
@@ -91,19 +91,11 @@ def test_open_limit_invalid_project_limits_add_no_project(board, limit):
     assert state(board) == before
 
 
-def test_open_limit_a_bad_limit_is_reported_before_an_existing_project(board):
-    with pytest.raises(ValueError):
-        board.add_project("web", open_limit=0)
-    assert board.get_open_limit("web") == 5
-
-
 def test_open_limit_unknown_projects_raise_key_error(board):
     with pytest.raises(KeyError):
         board.get_open_limit("ops")
     with pytest.raises(KeyError):
         board.set_open_limit("ops", 3)
-    with pytest.raises(KeyError):
-        board.set_open_limit("ops", 0)
     with pytest.raises(KeyError):
         board.get_open_limit(None)
 
@@ -142,12 +134,6 @@ def test_open_limit_ignores_done_tasks_when_lowered(board):
     board.set_open_limit("web", 1)
     with pytest.raises(BoardError):
         board.add_task("web", "more", 1)
-
-
-def test_open_limit_a_bad_value_is_reported_before_the_open_count(board):
-    fill(board, "web", 3)
-    with pytest.raises(ValueError):
-        board.set_open_limit("web", 0)
 
 
 def test_open_limit_raised_limit_makes_room(board):

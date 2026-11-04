@@ -55,12 +55,13 @@ For example, a batch added with freshness 12 and 1 day left has
 freshness 10 and 0 days left after one day, then 5 and -1, then 0 and -2,
 then 0 and -3.
 
-`get_wilted()` returns the same ids as `get_batches()`, in the same order,
-but keeps only the batches whose freshness is 0 right now. The order in
-which batches wilted does not matter. So a batch added with freshness 0 is
-wilted right away, each wilted batch is listed once, and a removed batch is
-no longer listed. Wilted batches stay in the cooler until removed: they are
-still in `get_batches()` and still change each day.
+A batch whose freshness has dropped to 0 is wilted. `get_wilted()` returns
+the ids of the wilted batches in the cooler, each id once, in any order. A
+batch can wilt while it still has days left: one added with freshness 2 and
+5 days left has freshness 0 and 4 days left after one day, and is wilted.
+Wilted batches stay in the cooler until removed: they are still in
+`get_batches()`, they stay wilted, and their `days_left` keeps going down.
+A removed batch is no longer listed, and an id added again is a new batch.
 
 A failed call has no effect: if a method raises, every batch is unchanged.
 
@@ -68,6 +69,7 @@ A failed call has no effect: if a method raises, every batch is unchanged.
 
 Behavior not described here is unspecified, and no test depends on it. This
 includes ids that are not strings passed to `add_batch`, `bool` values for
-freshness or days left, what happens if a returned list is changed, the
-text of error messages, saving the cooler to a file, and use from several
-threads.
+freshness or days left, the order of the ids from `get_wilted`, whether
+`get_wilted` lists a batch that was added with freshness 0, what happens if
+a returned list is changed, the text of error messages, saving the cooler
+to a file, and use from several threads.

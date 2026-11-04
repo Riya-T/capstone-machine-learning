@@ -3,8 +3,8 @@ for single categories. Rent, for example, is often over 500.00 without
 anything being wrong.
 
 - `SpendingTracker` takes a new keyword argument `alert_threshold=50000`:
-  the default limit in cents. It must be an `int` that is 0 or more (not a
-  `bool`); anything else raises `ValueError`.
+  the default limit in cents. It must be an `int` that is 0 or more;
+  anything else raises `ValueError`.
 - Add `SpendingTracker.set_category_threshold(category, threshold)`, which
   gives one category its own limit, replacing the default for that
   category on every account. The threshold follows the same rules as

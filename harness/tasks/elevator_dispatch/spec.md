@@ -14,20 +14,20 @@ class Building:
     def __init__(self, top_floor: int): ...
     def add_car(self, car_id: str) -> None: ...
     def call(self, passenger_id: str, floor: int, destination: int) -> None: ...
+    def get_destination(self, passenger_id: str) -> int: ...
     def move_car(self, car_id: str, floor: int) -> None: ...
     def get_car_floor(self, car_id: str) -> int: ...
     def get_riders(self, car_id: str) -> list[str]: ...
     def get_waiting(self, floor: int) -> list[str]: ...
     def get_delivered(self) -> list[str]: ...
-    def get_destination(self, passenger_id: str) -> int: ...
 ```
 
 ## Floors and cars
 
-- The building has the floors `0` up to and including `top_floor`.
-  `top_floor` must be an `int` of at least 1, or `ValueError` is raised.
-- A floor is valid when it is an `int` from `0` to `top_floor`. Any method
-  given an invalid floor raises `ValueError`.
+- The building has the floors `0` up to and including `top_floor`. A
+  `top_floor` below 1 raises `ValueError`.
+- A floor below 0 or above `top_floor` is invalid: any method given one
+  raises `ValueError`.
 - `add_car(car_id)` adds a car. It starts on floor 0 with nobody in it. An
   empty id raises `ValueError`, and adding an id that is already a car
   raises `ElevatorError`.
@@ -42,17 +42,14 @@ class Building:
   `floor` to be taken to `destination`. An empty passenger id raises
   `ValueError`, and so does an invalid `floor` or `destination`, or a call
   whose `floor` equals its `destination`.
-- `call` records the passenger's id and destination. That record is kept
-  for good: it is never removed, not when the passenger gets in and not
-  when they arrive.
-- `get_destination(passenger_id)` returns the `destination` the passenger
-  gave to `call` (not the floor they are on now), whether they are still
-  waiting, riding or have arrived. An id that was never used in a call
-  raises `KeyError`.
-- A passenger id can be used by one call only. Calling with an id that was
-  already used, whether that passenger is still waiting, riding or has
-  arrived, raises `ElevatorError`. Every `ValueError` check comes before
-  this one.
+- `get_destination(passenger_id)` returns the `destination` given in that
+  passenger's `call`. It returns the same number from the call on, for
+  good (see the example below). An id that was never used in a call raises
+  `KeyError`.
+- A passenger id can be used by one call only, for good: another call with
+  an id that was already used raises `ElevatorError`, also after that
+  passenger got in or arrived. Every `ValueError` check comes before this
+  one.
 - `get_waiting(floor)` returns the ids of the passengers waiting on that
   floor, in the order they called.
 - Calling does not put anyone in a car; passengers get in only when a car
@@ -73,10 +70,23 @@ When the doors open, in this order:
 
 Only the car that was moved picks anybody up.
 
-For example, with `Building(6)` and a car `"east"`: `call("ann", 2, 5)`
-and `call("ben", 2, 4)`, then `move_car("east", 2)` gives riders
-`["ann", "ben"]`. Then `move_car("east", 4)` lets ben out: the riders are
-`["ann"]` and `get_delivered()` is `["ben"]`.
+For example:
+
+```python
+b = Building(6)
+b.add_car("east")
+b.call("ann", 2, 5)
+b.call("ben", 2, 4)
+b.get_destination("ann")   # 5
+b.move_car("east", 2)
+b.get_riders("east")       # ["ann", "ben"]
+b.get_waiting(2)           # []
+b.get_destination("ann")   # 5
+b.move_car("east", 4)      # ben gets out
+b.get_riders("east")       # ["ann"]
+b.get_delivered()          # ["ben"]
+b.get_destination("ben")   # 4
+```
 
 - `get_riders(car_id)` returns the ids of the passengers in the car, in the
   order they got in.
@@ -91,6 +101,7 @@ list and the list of arrived passengers are unchanged.
 
 Behavior not described here is unspecified, and no test depends on it. This
 includes moving a car to the floor it is already on, passenger and car ids
-that are not strings passed to `call` or `add_car`, `bool` floors, what
-happens if a returned list is changed, the text of error messages, saving
-the building to a file, and use from several threads.
+that are not strings passed to `call` or `add_car`, floors or a
+`top_floor` that are not `int`s, such as `1.5`, `"2"` or `None`, `bool`
+floors, what happens if a returned list is changed, the text of error
+messages, saving the building to a file, and use from several threads.

@@ -19,7 +19,8 @@ Let categories in `spending.py` be gathered into groups, such as "food" and
   Category totals and alerts do not depend on groups.
 - Category and group names must be non-empty strings (other than `None`
   where allowed above), or `ValueError` is raised and nothing changes.
-- When a call has several problems, `KeyError` for an unknown account
-  comes first, then `ValueError`.
+- When a call to one of these methods has several problems (for example
+  an unknown account and an empty group name), which error is raised is
+  unspecified.
 
 All existing behavior must keep working.

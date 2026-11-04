@@ -49,6 +49,13 @@ def test_free_rooms_skip_rooms_with_an_overlapping_booking(planner):
     assert planner.get_free_rooms(400, 460) == ["oak", "elm"]
 
 
+def test_free_rooms_check_the_times_like_book(planner):
+    with pytest.raises(ValueError):
+        planner.get_free_rooms(30, 30)
+    with pytest.raises(ValueError):
+        planner.get_free_rooms(-5, 30)
+
+
 def test_unknown_room_raises_key_error(planner):
     with pytest.raises(KeyError):
         planner.book("a", "pine", 0, 30)

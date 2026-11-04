@@ -8,7 +8,7 @@ their own.
   listed from the smallest size to the largest, for example
   `{"xs": 100, "s": 150, "m": 250, "l": 400, "xl": 600}`.
 - The table is valid when it is a non-empty `dict` whose names are
-  non-empty strings and whose fees are `int`s of 0 or more (not `bool`s).
+  non-empty strings and whose fees are `int`s of 0 or more.
   Anything else raises `ValueError`. Fees do not have to grow with the size.
 - The sizes accepted by `add_locker` and `store` are exactly the names in
   the room's table; any other size raises `ValueError` as before. An item
@@ -17,10 +17,9 @@ their own.
   as before.
 - `add_locker` takes a new keyword argument `fee=None`. `None` means the
   locker charges the fee of its size from the table; anything else must be
-  an `int` of 0 or more (not a `bool`), or `ValueError` is raised and no
-  locker is added. The `ValueError` checks of `add_locker` come before the
-  `LockerError` for an id that was already added; if several values are
-  invalid, any of their `ValueError`s may come first.
+  an `int` of 0 or more, or `ValueError` is raised and no locker is added.
+  Which error `add_locker` raises when one call has several problems (for
+  example an invalid fee and an id that was already added) is unspecified.
 - `store` adds the fee of the chosen locker to the takings, which is that
   locker's own fee if it was given one.
 - Add `LockerRoom.get_sizes() -> list[str]`: the size names, smallest first.

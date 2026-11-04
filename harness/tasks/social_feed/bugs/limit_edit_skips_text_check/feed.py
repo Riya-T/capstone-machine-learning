@@ -1,8 +1,8 @@
 """Social feed with versioned edits and an adjustable post length limit.
 
-Planted bug (after c_edits and c_post_limit): limits work, but edit checks
-the version before the text, so a bad text with a stale version raises
-VersionConflict instead of ValueError.
+Planted bug (after c_edits and c_post_limit): limits work for new posts,
+but the text check now runs only in post, so edit accepts any new text,
+even an empty one or one longer than the author's limit.
 Never shown to the writer or the editor; validate-tasks checks that the
 tests catch it.
 
@@ -61,7 +61,6 @@ class SocialFeed:
             raise VersionConflict(
                 f"post {post_id} is at version {len(revisions)}, not {expected_version}"
             )
-        self._check_text(self._posts[post_id][0], text)
         revisions.append(text)
 
     def get_text(self, post_id):

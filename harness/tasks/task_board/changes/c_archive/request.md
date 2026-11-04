@@ -16,13 +16,16 @@ deleted, and brought back later if needed.
   archived tasks, in the order they were archived. Both raise `KeyError`
   for a task or project that does not exist.
 - While a task is archived, `complete`, `move_task`, `rename_task` and
-  `set_due_day` on it raise `BoardError` and change nothing. This check
-  comes after `KeyError` and `VersionConflict` and before every other error.
-  `get_task` and `get_version` still work on an archived task.
+  `set_due_day` on it raise `BoardError` and change nothing. When such a
+  call also has another problem (for example a project that does not
+  exist, a wrong `expected_version`, or an invalid title or due day),
+  which error is raised is unspecified. `get_task` and `get_version` still
+  work on an archived task.
 - Archiving and restoring each count as a change to the task: they add 1 to
   its version, and both take the keyword argument `expected_version=None`
   with the same meaning as for the other changes.
-- Error order for `archive` and `restore`: `KeyError`, then
-  `VersionConflict`, then `BoardError`.
+- Which error `archive` or `restore` raises when one call has several
+  problems (for example a wrong `expected_version` for a task that is
+  already archived) is unspecified.
 
 All existing behavior must keep working.

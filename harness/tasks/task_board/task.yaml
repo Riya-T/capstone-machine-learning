@@ -11,7 +11,7 @@ private_tests: [private/test_board_initial.py]
 reference: reference/v0
 planted_bugs:
   # Required: a bug only the hidden initial tests catch.
-  - {path: bugs/v0_move_ignores_limit, must_fail: [initial], must_pass: [public]}
+  - {path: bugs/v0_done_move_checks_limit, must_fail: [initial], must_pass: [public]}
   - {path: bugs/v0_complete_twice, must_fail: [initial], must_pass: [public]}
 
 changes:

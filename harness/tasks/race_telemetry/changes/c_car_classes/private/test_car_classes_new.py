@@ -81,16 +81,14 @@ def test_class_ties_keep_the_order_cars_were_added(tel):
     assert [tel.get_class_points(c) for c in ["red", "green", "gold"]] == [10, 6, 4]
 
 
-@pytest.mark.parametrize("car_class", ["", None, 3])
+@pytest.mark.parametrize("car_class", ["", None])
 def test_class_must_be_a_non_empty_string(tel, car_class):
     with pytest.raises(ValueError):
         tel.add_car("white", car_class=car_class)
     assert "white" not in tel.get_cars()
 
 
-def test_class_errors_come_before_a_car_id_in_use(tel):
-    with pytest.raises(ValueError):
-        tel.add_car("red", car_class="")
+def test_class_a_car_id_in_use_is_still_refused(tel):
     with pytest.raises(TelemetryError):
         tel.add_car("red", car_class="amateur")
     assert tel.get_car_class("red") == "pro"

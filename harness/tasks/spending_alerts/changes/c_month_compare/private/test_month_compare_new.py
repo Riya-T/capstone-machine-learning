@@ -97,11 +97,11 @@ def test_compare_rejects_bad_months(tracker, month):
         tracker.get_unusual_categories("alice", month)
 
 
-def test_compare_errors_come_in_order(tracker):
+def test_compare_rejects_unknown_accounts_and_bad_categories(tracker):
     with pytest.raises(KeyError):
-        tracker.get_month_change("carol", 0, "")
+        tracker.get_month_change("carol", 1, "food")
     with pytest.raises(KeyError):
-        tracker.get_unusual_categories("carol", 0)
+        tracker.get_unusual_categories("carol", 1)
     with pytest.raises(ValueError):
         tracker.get_month_change("alice", 1, "")
     with pytest.raises(ValueError):

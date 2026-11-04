@@ -7,8 +7,8 @@ Report how long passengers in `elevators.py` waited for a car.
   when they called. For example, a passenger who calls at clock 0 and gets
   in at the very next stop waited 1.
 - Add `Building.get_wait(passenger_id) -> int`, which returns that
-  passenger's wait. It raises `KeyError` for an id that was never called,
-  then `ElevatorError` for a passenger who is still waiting. Passengers who
+  passenger's wait. It raises `KeyError` for an id that was never called
+  and `ElevatorError` for a passenger who is still waiting. Passengers who
   have arrived keep their wait.
 - Add `Building.get_longest_wait() -> int`: the largest wait of every
   passenger who has got into a car so far, riding or arrived, or 0 when

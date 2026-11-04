@@ -10,7 +10,7 @@ from elevators import Building, ElevatorError
 
 TOP = 6
 CARS = ["east", "freight"]
-BAD_CAPACITIES = [0, -2, 2.5, "3", True]
+BAD_CAPACITIES = [0, -2, 2.5, "3"]
 
 
 @pytest.fixture
@@ -82,9 +82,9 @@ def test_capacity_invalid_car_capacities_add_no_car(building, capacity):
     assert state(building) == before
 
 
-def test_capacity_a_bad_capacity_is_reported_before_an_existing_car(building):
-    with pytest.raises(ValueError):
-        building.add_car("east", capacity=0)
+def test_capacity_adding_an_existing_car_again_keeps_its_capacity(building):
+    with pytest.raises(ElevatorError):
+        building.add_car("east", capacity=2)
     assert building.get_capacity("east") == 4
 
 
@@ -93,8 +93,6 @@ def test_capacity_unknown_cars_raise_key_error(building):
         building.get_capacity("north")
     with pytest.raises(KeyError):
         building.set_capacity("north", 2)
-    with pytest.raises(KeyError):
-        building.set_capacity("north", 0)
     with pytest.raises(KeyError):
         building.get_capacity(None)
 
@@ -123,12 +121,6 @@ def test_capacity_below_the_current_riders_is_rejected(building):
     assert state(building) == before
     building.set_capacity("east", 3)  # exactly the riders aboard
     assert building.get_capacity("east") == 3
-
-
-def test_capacity_a_bad_value_is_reported_before_the_rider_check(building):
-    board(building, "east", ["ann", "ben"])
-    with pytest.raises(ValueError):
-        building.set_capacity("east", 0)
 
 
 def test_capacity_raised_capacity_is_used_at_the_next_stop(building):

@@ -1,8 +1,9 @@
 """Scoreboard with team version numbers and an adjustable points table.
 
 Planted bug (after c_versions and c_points): the points table works, but
-score checks the version before the kind, so a bad kind with a stale
-version raises VersionConflict instead of ValueError.
+score now raises the team's version before it looks the kind up in the
+table, so a kind that cannot be scored raises ValueError and still
+changes the version.
 Never shown to the writer or the editor; validate-tasks checks that the
 tests catch it.
 
@@ -59,9 +60,9 @@ class Scoreboard:
     def score(self, team, kind, expected_version=None):
         self._require(team)
         self._check_version(team, expected_version)
+        self._versions[team] += 1
         points = self.get_points(kind)
         self._events[team].append((kind, points))
-        self._versions[team] += 1
 
     def get_score(self, team):
         self._require(team)

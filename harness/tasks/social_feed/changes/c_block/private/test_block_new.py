@@ -103,14 +103,12 @@ def test_block_unknown_users_raise_key_error(feed, method):
         getattr(feed, method)("dee", "ana")
     with pytest.raises(KeyError):
         getattr(feed, method)("ana", "dee")
-    with pytest.raises(KeyError):
-        getattr(feed, method)("dee", "dee")
     assert state(feed) == before
     with pytest.raises(KeyError):
         feed.get_blocked("dee")
 
 
-def test_block_bad_follows_are_reported_before_blocked(feed):
+def test_block_other_follow_errors_still_raise(feed):
     feed.block("ana", "ben")
     with pytest.raises(KeyError):
         feed.follow("ben", "dee")

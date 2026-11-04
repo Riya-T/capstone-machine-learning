@@ -15,12 +15,15 @@ after bidding by mistake.
   the lot's version by 1. `expected_version` works as it does for
   `place_bid`: when it is given and is not equal to the lot's current
   version, `VersionConflict` is raised.
-- When a call has several problems, the first of these is raised:
-  1. `KeyError` for an unknown lot;
-  2. `ValueError` if `bidder` is not a non-empty string;
-  3. `VersionConflict`;
-  4. `AuctionError` if `bidder` has no bids on the lot (including a bidder
-     whose bids were already withdrawn).
+- `withdraw_bid` raises:
+  - `KeyError` for an unknown lot;
+  - `ValueError` if `bidder` is not a non-empty string;
+  - `VersionConflict` as described above;
+  - `AuctionError` if `bidder` is valid but has no bids on the lot
+    (including a bidder whose bids were already withdrawn).
+
+  Which of these is raised when a call has several problems is
+  unspecified.
 - A failed withdrawal changes nothing, including the version.
 
 All existing behavior must keep working.

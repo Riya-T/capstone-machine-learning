@@ -47,6 +47,18 @@ def test_a_cancelled_customer_has_no_plan(billing):
         billing.cancel("alice")
 
 
+def test_a_cancelled_customer_keeps_the_charges_and_may_subscribe_again(billing):
+    billing.subscribe("alice", "basic")
+    billing.run_cycle()
+    billing.cancel("alice")
+    assert billing.get_charges("alice") == [900]
+    assert billing.run_cycle() == 0
+    billing.subscribe("alice", "pro")
+    assert billing.get_plan("alice") == "pro"
+    billing.run_cycle()
+    assert billing.get_charges("alice") == [900, 1500]
+
+
 def test_subscribing_twice_raises(billing):
     billing.subscribe("alice", "basic")
     with pytest.raises(BillingError):

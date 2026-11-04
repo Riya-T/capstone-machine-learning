@@ -39,6 +39,19 @@ def test_unfollow_removes_posts_from_the_timeline(feed):
     assert feed.get_timeline("ana") == []
 
 
+def test_following_keeps_the_order_followed():
+    f = SocialFeed()
+    for name in ["ana", "dee", "cy", "ben"]:
+        f.add_user(name)
+    f.follow("ana", "dee")
+    f.follow("ana", "cy")
+    f.follow("ana", "ben")
+    assert f.get_following("ana") == ["dee", "cy", "ben"]
+    f.unfollow("ana", "dee")
+    f.follow("ana", "dee")
+    assert f.get_following("ana") == ["cy", "ben", "dee"]
+
+
 def test_texts_must_have_1_to_280_characters(feed):
     feed.post("ana", "x" * 280)
     with pytest.raises(ValueError):

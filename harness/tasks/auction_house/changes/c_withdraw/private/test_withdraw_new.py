@@ -105,7 +105,7 @@ def test_withdraw_by_someone_without_bids_raises(house):
     assert state(house) == before
 
 
-@pytest.mark.parametrize("bidder", ["", None, 3])
+@pytest.mark.parametrize("bidder", ["", None])
 def test_withdraw_invalid_bidders_raise_value_error(house, bidder):
     before = state(house)
     with pytest.raises(ValueError):
@@ -113,13 +113,10 @@ def test_withdraw_invalid_bidders_raise_value_error(house, bidder):
     assert state(house) == before
 
 
-def test_withdraw_error_order(house):
+def test_withdraw_unknown_lots_and_bad_bidders(house):
     with pytest.raises(KeyError):
-        house.withdraw_bid("lamp", "", expected_version=0)
+        house.withdraw_bid("lamp", "alice")
     with pytest.raises(KeyError):
         house.withdraw_bid(None, "alice")
     with pytest.raises(ValueError):
-        house.withdraw_bid("vase", "", expected_version=0)
-    # no bids on the clock and a stale version: the version comes first
-    with pytest.raises(VersionConflict):
-        house.withdraw_bid("clock", "alice", expected_version=3)
+        house.withdraw_bid("vase", "", expected_version=5)

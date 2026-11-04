@@ -9,10 +9,11 @@ passengers drop out.
     `count` highest-numbered seats become free and it keeps the others. A
     count equal to the booking's size cancels the whole booking, exactly as
     `count=None` does.
-  - A count that is not an `int` from 1 to the booking's size (not a
-    `bool`) raises `ValueError`.
-  - `cancel` raises `KeyError` for a booking id that is not booked, before
-    any `ValueError`. A failed call changes nothing.
+  - A count that is not an `int` from 1 to the booking's size raises
+    `ValueError`.
+  - `cancel` raises `KeyError` for a booking id that is not booked. Which
+    error is raised for a booking id that is not booked together with a
+    bad count is unspecified. A failed call changes nothing.
 - Seats freed by `cancel` are free like any other: later calls to
   `reserve` and `move` use them, lowest-numbered first.
 - Add `SeatPlanner.get_cancelled() -> list[str]`: the ids of every booking

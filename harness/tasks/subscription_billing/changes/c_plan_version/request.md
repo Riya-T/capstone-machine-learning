@@ -16,8 +16,10 @@ on.
   `expected_version=None`. When it is `None` they work as before. Otherwise,
   if it is not equal to the subscription's current version,
   `VersionConflict` is raised and nothing changes.
-- `VersionConflict` is checked after every `KeyError` check and after the
-  check for a cancelled customer, and before every other error.
+- When a call with a wrong `expected_version` also has another problem
+  (for example a plan that was never added, a cancelled customer, a
+  paused customer or a move to the current plan), which error is raised
+  is unspecified.
 - Each customer has their own version: changing one subscription does not
   change the version of any other.
 

@@ -24,9 +24,9 @@ class Wiki:
 ## Pages
 
 - `create_page(page, author, text)` adds a page whose first revision is
-  `text`, written by `author`. The page name and the author must be
-  non-empty strings, and the text must be a string, which may be empty;
-  anything else raises `ValueError`. A page name that already exists raises
+  `text`, written by `author`. An empty string or `None` as the page name
+  or the author raises `ValueError`, and so does a text that is not a
+  string (the text may be empty). A page name that already exists raises
   `WikiError`, and the existing page is left as it was.
 - `get_pages()` returns the names of all pages, in the order they were
   created.
@@ -52,10 +52,9 @@ class Wiki:
   raised. A number higher than the page's latest revision raises
   `IndexError`.
 - `get_authors(page)` returns everyone who ever wrote a revision of the
-  page, including revisions no longer kept, each name once, in the order
-  of the first revision they wrote (not sorted). For example, if zoe
-  writes revision 1, bob revision 2 and zoe revision 3, `get_authors`
-  returns `["zoe", "bob"]`.
+  page, including revisions no longer kept, each name once, in any order.
+  For example, if zoe writes revision 1, bob revision 2 and zoe revision 3,
+  `get_authors` returns `"zoe"` and `"bob"`.
 
 ## Keeping only 5 revisions
 
@@ -72,17 +71,15 @@ For example, after `create_page` and 7 edits a page has had 8 revisions:
 `get_revision_count` returns 8, revisions 4 to 8 can be read by their
 numbers, and `get_revision(page, 1)`, `2` and `3` raise `IndexError`.
 
-When a call has several problems, `ValueError` for an invalid page name,
-author, text or revision number is raised before `WikiError` or
-`IndexError`.
-
 A failed call has no effect: if a method raises, every page, text and
 revision is unchanged.
 
 ## Unspecified behavior
 
 Behavior not described here is unspecified, and no test depends on it. This
-includes which of `KeyError` and `ValueError` is raised when a call has
-both problems, `bool` revision numbers, what happens if a returned list is
-changed, the text of error messages, saving the wiki to a file, and use from
-several threads.
+includes which error is raised when a call has several problems, the
+order of the names from `get_authors`, other values that are not strings,
+such as `7`, passed as an author or as the page name to `create_page`,
+`bool` revision numbers, what happens if a returned list is changed, the
+text of error messages, saving the wiki to a file, and use from several
+threads.

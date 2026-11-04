@@ -89,11 +89,9 @@ def test_version_needs_a_known_locker(room):
             room.get_version(locker_id)
 
 
-def test_version_check_comes_after_the_missing_item(room):
+def test_version_move_of_an_item_not_stored_raises_key_error(room):
     with pytest.raises(KeyError):
-        room.retrieve("bag", expected_version=99)
-    with pytest.raises(KeyError):
-        room.move("bag", "L1", expected_version=99)
+        room.move("bag", "L1", expected_version=1)  # L1 is empty, large and at version 1
 
 
 def test_move_frees_the_old_locker_and_charges_nothing(room):
@@ -125,15 +123,16 @@ def test_move_keeps_the_size_the_item_was_stored_with(room):
         room.move("coat", "S2")
 
 
-def test_move_errors_come_in_order(room):
+def test_move_errors_change_nothing(room):
     room.store("bag", "large")  # L1, version 2
     before = state(room)
     for call, error in (
-        (lambda: room.move("box", "Q9", expected_version=7), KeyError),
-        (lambda: room.move("hat", "Q9", expected_version=7), KeyError),
+        (lambda: room.move("box", "Q9"), KeyError),
+        (lambda: room.move("hat", "Q9"), KeyError),
         (lambda: room.move("hat", None), KeyError),
-        (lambda: room.move("coat", "L1", expected_version=1), VersionConflict),
-        (lambda: room.move("coat", "S2", expected_version=2), VersionConflict),
+        # S2 is empty, fits hat and is at version 1.
+        (lambda: room.move("hat", "S2", expected_version=0), VersionConflict),
+        (lambda: room.move("hat", "S2", expected_version=2), VersionConflict),
         (lambda: room.move("coat", "L1", expected_version=2), LockerError),
         (lambda: room.move("coat", "M1"), LockerError),
         (lambda: room.move("coat", "S2", expected_version=1), LockerError),

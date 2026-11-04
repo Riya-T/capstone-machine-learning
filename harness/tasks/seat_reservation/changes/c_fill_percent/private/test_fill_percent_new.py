@@ -8,7 +8,7 @@ Usage (with seats.py importable, e.g. in the sandbox):
 import pytest
 from seats import NotEnoughSeats, ReservationError, SeatPlanner
 
-BAD_PERCENTS = [0, 101, -5, 50.0, "70", True, None]
+BAD_PERCENTS = [0, 101, -5, 50.0, "70", None]
 
 
 @pytest.fixture
@@ -64,11 +64,6 @@ def test_fill_percent_invalid_for_a_coach(planner, percent):
     assert planner.get_coaches() == ["A", "B"]
 
 
-def test_fill_percent_bad_value_is_reported_before_a_repeated_coach(planner):
-    with pytest.raises(ValueError):
-        planner.add_coach("A", 10, fill_percent=0)
-
-
 def test_fill_percent_is_used_by_reserve_and_move():
     p = SeatPlanner()
     p.add_coach("A", 10, fill_percent=100)
@@ -112,12 +107,9 @@ def test_fill_percent_invalid_when_setting(planner, percent):
     assert state(planner) == before
 
 
-def test_fill_percent_errors_come_in_order(planner):
-    planner.reserve("smith", 7)
+def test_fill_percent_unknown_coaches_raise_key_error(planner):
     with pytest.raises(KeyError):
-        planner.set_fill_percent("Z", 0)
-    with pytest.raises(ValueError):
-        planner.set_fill_percent("A", 0)  # bad value before the reserved-seat check
+        planner.set_fill_percent("Z", 50)
     with pytest.raises(KeyError):
         planner.get_fill_percent("Z")
     with pytest.raises(KeyError):

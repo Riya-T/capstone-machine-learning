@@ -33,7 +33,7 @@ def test_authors_are_listed_once_each(wiki):
     wiki.edit_page("home", "zoe", "Hi")
     wiki.edit_page("home", "bob", "Hello")
     wiki.edit_page("home", "ann", "Hello again")
-    assert wiki.get_authors("home") == ["ann", "zoe", "bob"]  # order of first revision
+    assert sorted(wiki.get_authors("home")) == ["ann", "bob", "zoe"]  # in any order
 
 
 def test_an_edit_that_changes_nothing_is_refused(wiki):

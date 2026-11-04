@@ -6,9 +6,9 @@ Usage (with rovers.py importable, e.g. in the sandbox):
 """
 
 import pytest
-from rovers import RoverError, RoverFleet
+from rovers import RoverFleet
 
-BAD_SIZES = [0, -3, 2.0, "10", None, True]
+BAD_SIZES = [0, -3, 2.0, "10", None]
 BAD_WRAPS = ["yes", "no", [], 2.5]
 
 
@@ -49,12 +49,15 @@ def test_plateau_wraps_at_every_edge_of_its_size():
 def test_plateau_cliffs_block_at_every_edge():
     f = RoverFleet(width=3, height=3, wrap=False)
     f.land("scout", 0, 0, "south")
-    assert f.drive("scout", "F") == 0
-    assert f.drive("scout", "RF") == 1  # turned west, then blocked
-    assert f.drive("scout", "B") == 1
-    assert f.drive("scout", "BB") == 1  # x = 2 is the last column
+    f.drive("scout", "F")
+    assert f.get_location("scout") == (0, 0, "south")
+    f.drive("scout", "RF")  # turned west, then blocked
+    assert f.get_location("scout") == (0, 0, "west")
+    f.drive("scout", "B")
+    assert f.get_location("scout") == (1, 0, "west")
+    f.drive("scout", "BB")  # x = 2 is the last column
     assert f.get_location("scout") == (2, 0, "west")
-    assert f.drive("scout", "RFFF") == 3
+    f.drive("scout", "RFFF")
     assert f.get_location("scout") == (2, 2, "north")
     assert f.get_odometer("scout") == 4
 
@@ -62,8 +65,9 @@ def test_plateau_cliffs_block_at_every_edge():
 def test_plateau_cliff_stops_the_rest_of_the_string():
     f = RoverFleet(wrap=False)
     f.land("scout", 0, 8, "north")
-    assert f.drive("scout", "FFRF") == 1
+    f.drive("scout", "FFRF")
     assert f.get_location("scout") == (0, 9, "north")
+    assert f.get_odometer("scout") == 1
 
 
 def test_plateau_wrap_can_be_set_per_rover():
@@ -71,21 +75,26 @@ def test_plateau_wrap_can_be_set_per_rover():
     f.land("glider", 3, 1, "east", wrap=True)
     f.land("crawler", 3, 2, "east")
     f.land("tank", 3, 3, "east", wrap=False)
-    assert [f.drive(r, "F") for r in ["glider", "crawler", "tank"]] == [1, 0, 0]
-    assert f.get_location("glider") == (0, 1, "east")
+    for r in ["glider", "crawler", "tank"]:
+        f.drive(r, "F")
+    assert [f.get_location(r)[:2] for r in ["glider", "crawler", "tank"]] == [(0, 1), (3, 2), (3, 3)]
 
     g = RoverFleet(width=4, height=4)
     g.land("crawler", 3, 1, "east", wrap=False)
     g.land("glider", 3, 2, "east")
-    assert [g.drive(r, "F") for r in ["crawler", "glider"]] == [0, 1]
+    for r in ["crawler", "glider"]:
+        g.drive(r, "F")
+    assert [g.get_location(r)[:2] for r in ["crawler", "glider"]] == [(3, 1), (0, 2)]
 
 
 def test_plateau_wrapping_onto_a_rover_is_still_blocked():
     f = RoverFleet(width=4, height=2)
     f.land("scout", 3, 1, "east")
     f.land("mole", 0, 1, "west")
-    assert f.drive("scout", "F") == 0
-    assert f.drive("mole", "F") == 0
+    f.drive("scout", "F")
+    f.drive("mole", "F")
+    assert f.get_location("scout") == (3, 1, "east")
+    assert f.get_location("mole") == (0, 1, "west")
 
 
 @pytest.mark.parametrize("size", BAD_SIZES)
@@ -105,12 +114,3 @@ def test_plateau_wrap_must_be_a_bool(wrap):
         f.land("scout", 0, 0, "north", wrap=wrap)
     assert f.get_rovers() == []
 
-
-def test_plateau_wrap_error_comes_in_the_order():
-    f = RoverFleet()
-    f.land("scout", 0, 0, "north")
-    with pytest.raises(RoverError):
-        f.land("scout", 1, 1, "north", wrap="yes")
-    with pytest.raises(ValueError):
-        f.land("mole", 0, 0, "north", wrap="yes")
-    assert f.get_rovers() == ["scout"]

@@ -11,8 +11,8 @@ events for the same team, each based on what it last saw.
 - `score` takes a new keyword argument `expected_version=None`. When it is
   given and is not the team's current version, `score` raises
   `VersionConflict` and records nothing. `None` means no check is made.
-- When a call to `score` has several problems, they are reported in this
-  order: `KeyError` for the team, then `ValueError` for the kind, then
-  `VersionConflict`.
+- When a `score` call whose `expected_version` is not the team's current
+  version also has another problem (a team that was not added, or a kind
+  that cannot be scored), which error is raised is unspecified.
 
 All existing behavior must keep working.

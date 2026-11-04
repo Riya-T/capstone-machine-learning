@@ -77,7 +77,7 @@ def test_path_visitors_include_rovers_that_left(fleet):
     assert fleet.get_visitors(1, 3) == ["mole"]
 
 
-@pytest.mark.parametrize("cell", [(6, 0), (0, 5), (-1, 0), (0, 1.0), ("1", 1)])
+@pytest.mark.parametrize("cell", [(6, 0), (0, 5), (-1, 0), (0, -1)])
 def test_path_visitors_reject_cells_off_the_plateau(fleet, cell):
     with pytest.raises(ValueError):
         fleet.get_visitors(*cell)

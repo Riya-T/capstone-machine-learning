@@ -1,9 +1,9 @@
 """Race telemetry: cars, races, lap times, results and championship points.
 
-Planted bug (initial version): cars with equal total times are listed in
-the order they recorded their first lap in the race, not the order they
-were added. The public checks have no ties, so only the hidden initial
-tests catch it.
+Planted bug (initial version): only the first three places score points;
+4th, 5th and 6th place get 0 instead of 3, 2 and 1. The public checks never
+have more than three finished cars, so only the hidden initial tests catch
+it.
 Never shown to the writer or the editor; validate-tasks checks that the
 tests catch it.
 
@@ -15,7 +15,7 @@ Usage:
     tel.record_lap("monza", "red", 81250)
 """
 
-POINTS = (10, 6, 4, 3, 2, 1)  # points for 1st, 2nd, ... place
+POINTS = (10, 6, 4)  # points for 1st, 2nd, ... place
 
 
 class TelemetryError(Exception):
@@ -66,9 +66,7 @@ class RaceTelemetry:
 
     def get_results(self, race_id):
         self._require_race(race_id)
-        finished = [
-            c for (r, c) in self._laps if r == race_id and self._finished(race_id, c)
-        ]
+        finished = [c for c in self._cars if self._finished(race_id, c)]
         # sorted() is stable, so equal times keep the order cars were added.
         return sorted(finished, key=lambda c: sum(self._laps[(race_id, c)]))
 

@@ -111,24 +111,9 @@ def test_version_conflict_is_a_clock_error():
     assert issubclass(VersionConflict, ClockError)
 
 
-def test_version_conflict_comes_right_after_an_unknown_employee(clock):
-    with pytest.raises(KeyError):
-        clock.clock_in("carl", 10, expected_version=99)
+def test_version_of_an_unknown_employee_raises_key_error(clock):
     with pytest.raises(KeyError):
         clock.get_version("carl")
-    clock.clock_in("ana", 400)  # version 6
-    before = state(clock)
-    for call in (
-        lambda: clock.clock_in("ana", -1, expected_version=1),
-        lambda: clock.clock_in("ana", 500, expected_version=1),
-        lambda: clock.clock_out("ben", 10, expected_version=7),
-        lambda: clock.set_overtime_after("ana", None, expected_version=1),
-        lambda: clock.correct_shift("ana", 9, 0, 1, expected_version=1),
-        lambda: clock.correct_shift("ana", 0, 50, 10, expected_version=1),
-    ):
-        with pytest.raises(VersionConflict):
-            call()
-    assert state(clock) == before
 
 
 # --- corrections ------------------------------------------------------------------
@@ -191,7 +176,7 @@ def test_correction_needs_the_position_of_a_finished_shift(clock, index):
 
 
 def test_correction_of_an_employee_without_shifts_has_no_valid_position(clock):
-    clock.clock_in("ben", 0)
+    clock.clock_in("ben", 500)
     with pytest.raises(IndexError):
         clock.correct_shift("ben", 0, 0, 10)
 
@@ -206,8 +191,6 @@ def test_correction_needs_valid_times(clock, start, end):
     assert state(clock) == before
 
 
-def test_correction_reports_a_bad_position_before_bad_times(clock):
-    with pytest.raises(IndexError):
-        clock.correct_shift("ana", 7, -1, -2)
+def test_correction_of_an_unknown_employee_raises_key_error(clock):
     with pytest.raises(KeyError):
-        clock.correct_shift("carl", 7, -1, -2)
+        clock.correct_shift("carl", 0, 0, 50)

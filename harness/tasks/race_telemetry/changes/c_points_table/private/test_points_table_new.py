@@ -8,7 +8,7 @@ Usage (with telemetry.py importable, e.g. in the sandbox):
 import pytest
 from telemetry import RaceTelemetry, TelemetryError
 
-BAD_TABLES = [10, "10,6", {1: 10}, [10, -1], [10, 1.5], [10, "6"], (True, 1)]
+BAD_TABLES = [10, "10,6", {1: 10}, [10, -1], [10, 1.5], [10, "6"]]
 CARS = ["red", "blue", "green", "pink"]
 
 
@@ -107,10 +107,7 @@ def test_table_invalid_when_setting(tel, table):
     assert tel.get_points("red") == 10
 
 
-def test_table_errors_come_before_a_race_id_in_use(tel):
-    with pytest.raises(ValueError):
-        tel.add_race("spa", 1, points_table=[-1])
-    assert tel.get_points_table("spa") == [10, 6, 4, 3, 2, 1]
+def test_table_a_race_id_in_use_is_still_refused(tel):
     with pytest.raises(TelemetryError):
         tel.add_race("spa", 2, points_table=[1])
     assert tel.get_points_table("spa") == [10, 6, 4, 3, 2, 1]

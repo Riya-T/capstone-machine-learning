@@ -102,7 +102,7 @@ def test_group_does_not_change_category_totals_or_alerts(tracker):
     assert tracker.get_alerts("alice", 1) == ["drinks", "rent"]
 
 
-@pytest.mark.parametrize("bad", ["", 5])
+@pytest.mark.parametrize("bad", [""])
 def test_group_rejects_bad_names_and_changes_nothing(tracker, bad):
     tracker.set_group("food", "eating")
     with pytest.raises(ValueError):
@@ -125,11 +125,11 @@ def test_group_rejects_a_missing_category(tracker):
     assert tracker.get_group_totals("alice", 1) == []
 
 
-def test_group_errors_come_in_order(tracker):
+def test_group_queries_check_the_account_and_month(tracker):
     with pytest.raises(KeyError):
-        tracker.get_group_total("carol", 0, "")
+        tracker.get_group_total("carol", 1, "eating")
     with pytest.raises(KeyError):
-        tracker.get_group_totals("carol", 0)
+        tracker.get_group_totals("carol", 1)
     with pytest.raises(ValueError):
         tracker.get_group_total("alice", 0, "eating")
     with pytest.raises(ValueError):

@@ -79,23 +79,11 @@ def test_version_reads_do_not_change_it(house):
     assert house.get_version("vase") == 2
 
 
-def test_version_conflict_comes_after_key_and_value_errors(house):
-    with pytest.raises(KeyError):
-        house.place_bid("lamp", "alice", 500, expected_version=7)
+def test_version_bad_bids_still_raise_value_error(house):
     with pytest.raises(ValueError):
-        house.place_bid("vase", "", 500, expected_version=7)
+        house.place_bid("vase", "", 500, expected_version=1)
     with pytest.raises(ValueError):
-        house.place_bid("vase", "alice", 0, expected_version=7)
-
-
-def test_version_conflict_comes_before_bid_rules(house):
-    house.place_bid("vase", "alice", 500)
-    # too low and stale: the stale version wins
-    with pytest.raises(VersionConflict):
-        house.place_bid("vase", "bob", 501, expected_version=1)
-    # the leader bidding again with a stale version
-    with pytest.raises(VersionConflict):
-        house.place_bid("vase", "alice", 900, expected_version=1)
+        house.place_bid("vase", "alice", 0, expected_version=1)
 
 
 def test_version_matching_still_applies_bid_rules(house):

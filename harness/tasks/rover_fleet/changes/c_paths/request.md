@@ -8,8 +8,8 @@ to `rovers.py`.
   Turns and blocked moves add nothing.
 - Add `RoverFleet.get_visitors(x, y) -> list[str]`: the ids of every rover
   that has ever stood on the cell, by landing or by moving, each listed
-  once, in the order the rovers landed. An `x` or `y` that is not an `int`
-  on the plateau raises `ValueError`. A cell no rover has visited gives an
+  once, in the order the rovers landed. An `x` or `y` off the plateau
+  raises `ValueError`. A cell no rover has visited gives an
   empty list.
 - Add `RoverFleet.get_explored(rover_id) -> int`: how many different cells
   the rover has stood on, its landing cell included.

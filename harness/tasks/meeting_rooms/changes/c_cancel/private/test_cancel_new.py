@@ -44,7 +44,6 @@ def test_cancel_removes_only_that_booking(planner):
         lambda p: p.get_version("a"),
         lambda p: p.reschedule("a", 500, 560),
         lambda p: p.cancel("a"),
-        lambda p: p.cancel("a", expected_version=1),
     ],
 )
 def test_cancel_a_cancelled_booking_no_longer_exists(planner, call):
@@ -94,9 +93,9 @@ def test_cancel_with_a_stale_version_changes_nothing(planner):
     assert state(planner) == before
 
 
-def test_cancel_missing_booking_is_reported_before_a_conflict(planner):
+def test_cancel_missing_booking_raises_key_error(planner):
     with pytest.raises(KeyError):
-        planner.cancel("zz", expected_version=5)
+        planner.cancel("zz")
     with pytest.raises(KeyError):
         planner.cancel(None)
 

@@ -14,8 +14,8 @@ version checks to driving in `rovers.py`.
   `VersionConflict` and nothing happens: the rover does not move or turn,
   and its odometer and version stay the same. With `None` no version check
   is done.
-- When `drive` has several problems, the first of these is raised:
-  `KeyError` for an unknown rover, then `ValueError` for invalid commands,
-  then `VersionConflict`.
+- When a `drive` call with an outdated `expected_version` also has another
+  problem (an unknown rover or invalid commands), which error is raised is
+  unspecified.
 
 All existing behavior must keep working.

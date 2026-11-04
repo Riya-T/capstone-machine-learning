@@ -17,7 +17,8 @@ Let race stewards hand out time penalties in `telemetry.py`.
   finish or unfinish a race, and penalties do not appear in
   `get_lap_times`.
 - `add_penalty`, `get_penalty` and `get_total_time` raise `KeyError` for an
-  unknown race or car. For `add_penalty`, `KeyError` comes before
-  `ValueError`. A failed `add_penalty` changes nothing.
+  unknown race or car. Which error `add_penalty` raises when it also gets
+  an invalid penalty is unspecified. A failed `add_penalty` changes
+  nothing.
 
 All existing behavior must keep working.

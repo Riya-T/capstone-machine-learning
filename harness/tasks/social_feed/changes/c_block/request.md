@@ -12,8 +12,7 @@ Let users in `feed.py` block each other.
 - Add `class Blocked(FeedError)` to `feed.py`.
 - Blocking ends every follow between the two users, in both directions.
 - As long as either of two users has blocked the other, `follow` between
-  them, in either direction, raises `Blocked` and changes nothing. This
-  check comes after the `KeyError` and `ValueError` checks of `follow`.
+  them, in either direction, raises `Blocked` and changes nothing.
 - Unblocking does not bring back follows that the block ended. Blocking
   does not delete or hide any post, and blocked users can still post.
 

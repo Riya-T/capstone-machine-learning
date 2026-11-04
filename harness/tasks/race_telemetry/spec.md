@@ -41,14 +41,16 @@ All lap times are whole milliseconds, as `int`.
 
 ## Laps
 
-- `record_lap(race_id, car_id, lap_time)` records that the car completed
-  one more lap of that race in `lap_time` milliseconds. `lap_time` must be
-  an `int` greater than 0, or `ValueError` is raised.
-- A car has finished a race once it has completed as many laps as the race
-  is long. Recording another lap for a car that has finished raises
-  `TelemetryError`.
-- `get_lap_times(race_id, car_id)` returns the car's lap times in that race,
-  in the order they were recorded; an empty list if it has none yet.
+- `record_lap(race_id, car_id, lap_time)` records one more lap of race
+  `race_id` driven by car `car_id`, which took `lap_time` milliseconds.
+  `lap_time` must be an `int` greater than 0, or `ValueError` is raised.
+- Car `car_id` has finished race `race_id` once it has as many laps
+  recorded in that race as the race is long. Recording another lap of that
+  race for that car then raises `TelemetryError`. Its laps in other races
+  are not affected.
+- `get_lap_times(race_id, car_id)` returns the lap times recorded in race
+  `race_id` for car `car_id`, in the order they were recorded; an empty
+  list if there are none yet.
 
 When `record_lap` has several problems, the first of these is raised:
 
@@ -60,18 +62,55 @@ When `record_lap` has several problems, the first of these is raised:
 
 - A car's total time in a race is the sum of its lap times there.
 - `get_results(race_id)` returns the ids of the cars that have finished the
-  race, fastest first: lowest total time first. Cars with the same total
-  time are listed in the order they were added with `add_car`. Cars that
-  have not finished are left out, so the list may be empty.
-- Places in a race score championship points: 1st place 10 points, 2nd 6,
-  3rd 4, 4th 3, 5th 2, 6th 1, and every later place 0.
-- `get_points(car_id)` returns the car's points summed over all races,
-  according to the results as they stand now. A faster car finishing later
-  can push others down a place, and their points change with it. A car
-  that has finished no race has 0 points.
+  race, lowest total time first. Cars with the same total time are in the
+  same order as in `get_cars()`, whatever order they drove their laps in.
+  Cars that have not finished are left out, so the list may be empty.
+- A car's place in a race is its place in `get_results(race_id)`, and each
+  place scores championship points:
+
+  | place | 1st | 2nd | 3rd | 4th | 5th | 6th | 7th and later |
+  |---|---|---|---|---|---|---|---|
+  | points | 10 | 6 | 4 | 3 | 2 | 1 | 0 |
+
+- `get_points(car_id)` returns the sum, over all races, of the points for
+  the car's place in that race. A race the car has not finished adds
+  nothing, so a car that has finished no race has 0 points. Points always
+  follow the results as they are now: when a faster car finishes later,
+  the cars behind it move down a place and get the points of their new
+  place.
 
 A failed call has no effect: if a method raises, every car, race, lap time
 and result is unchanged.
+
+## Example
+
+```python
+tel = RaceTelemetry()
+for car in ["red", "blue", "green"]:
+    tel.add_car(car)
+tel.add_race("monza", 2)
+tel.add_race("spa", 1)
+tel.record_lap("monza", "red", 81000)
+tel.get_results("monza")                # []: red has 1 of 2 laps
+tel.record_lap("monza", "red", 80000)   # red has finished monza, total 161000
+tel.get_results("monza")                # ["red"]
+tel.get_points("red")                   # 10
+tel.record_lap("monza", "red", 79000)   # TelemetryError: red has finished monza
+tel.record_lap("monza", "green", 80000)
+tel.record_lap("monza", "green", 80000) # green: total 160000
+tel.get_results("monza")                # ["green", "red"]
+tel.get_points("red")                   # 6: red is 2nd now
+tel.record_lap("monza", "blue", 79000)
+tel.record_lap("monza", "blue", 81000)  # blue: total 160000, the same as green
+tel.get_results("monza")                # ["blue", "green", "red"]: blue was added before green
+tel.get_points("green")                 # 6
+tel.get_points("red")                   # 4
+tel.record_lap("spa", "red", 90000)
+tel.get_results("spa")                  # ["red"]
+tel.get_points("red")                   # 14: 4 for monza and 10 for spa
+tel.get_lap_times("monza", "red")       # [81000, 80000]
+tel.get_lap_times("spa", "blue")        # []
+```
 
 ## Unspecified behavior
 

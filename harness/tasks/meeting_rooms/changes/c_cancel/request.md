@@ -18,7 +18,8 @@ cancelled.
   `KeyError` for a room that does not exist. A room with no cancelled
   bookings gives `[]`.
 
-When `cancel` has several problems, `KeyError` for a booking that does not
-exist (or was already cancelled) is raised before `VersionConflict`.
+`cancel` raises `KeyError` for a booking that does not exist (or was
+already cancelled). Which error is raised when such a call also has an
+`expected_version` is unspecified.
 
 All existing behavior must keep working.

@@ -22,5 +22,5 @@ def test_plateau_of_another_size_wraps_at_its_own_edge():
 def test_plateau_without_wrapping_stops_at_the_edge():
     f = RoverFleet(wrap=False)
     f.land("scout", 8, 0, "east")
-    assert f.drive("scout", "FFL") == 1
+    f.drive("scout", "FFL")
     assert f.get_location("scout") == (9, 0, "east")

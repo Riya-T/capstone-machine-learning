@@ -1,0 +1,16 @@
+# The 16 eval tasks with the base writer, with the settings frozen after the
+# dev calibration. Same machine, models and store as rtx5070_pc.yaml; only
+# the task list differs, so results already in the store are reused.
+#
+# Usage (from harness/, inside WSL):
+#     uv run python -m harness collect --config configs/rtx5070_eval.yaml --until initial
+#     uv run python -m harness collect --config configs/rtx5070_eval.yaml      # also edit
+extends: rtx5070_pc.yaml
+name: rtx5070-eval
+tasks:
+  include: [
+    aging_inventory, auction_house, document_versions, elevator_dispatch, light_grid,
+    locker_room, meeting_rooms, race_telemetry, rover_fleet, scoreboard,
+    seat_reservation, social_feed, spending_alerts, subscription_billing, task_board,
+    time_clock,
+  ]

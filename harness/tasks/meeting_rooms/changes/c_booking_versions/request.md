@@ -15,11 +15,14 @@ number so a caller can say which state of the booking they are changing.
 - Add `class VersionConflict(BookingError)` to `rooms.py`. It is not a
   `RoomBusy`.
 
-When `reschedule` has several problems, the first of these is raised:
+`reschedule` raises:
 
-1. `KeyError` for a booking that does not exist;
-2. `ValueError` for invalid times;
-3. `VersionConflict`;
-4. `RoomBusy`.
+- `KeyError` for a booking that does not exist;
+- `ValueError` for invalid times;
+- `VersionConflict`;
+- `RoomBusy`.
+
+Which of these is raised when one call has several problems is
+unspecified.
 
 All existing behavior must keep working.

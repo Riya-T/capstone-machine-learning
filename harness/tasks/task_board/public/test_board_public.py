@@ -54,6 +54,20 @@ def test_a_moved_task_joins_the_end_of_its_new_project(board):
     assert board.get_task(2)[0] == "mobile"
 
 
+def test_an_open_task_cannot_move_into_a_full_project(board):
+    for day in range(5):
+        board.add_task("website", f"task {day}", day)
+    board.add_task("mobile", "login screen", 5)
+    with pytest.raises(BoardError):
+        board.move_task(6, "website")
+    assert board.get_task(6)[0] == "mobile"
+    assert board.get_open_tasks("mobile") == [6]
+    board.complete(1)
+    board.move_task(6, "website")
+    assert board.get_open_tasks("website") == [2, 3, 4, 5, 6]
+    assert board.get_open_tasks("mobile") == []
+
+
 def test_unknown_project_raises_key_error(board):
     with pytest.raises(KeyError):
         board.add_task("backend", "api", 1)

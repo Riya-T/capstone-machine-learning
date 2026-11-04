@@ -13,11 +13,8 @@ say which version their edit was based on.
   nothing.
 - Add `class VersionConflict(WikiError)` to `wiki.py`.
 
-When `edit_page` has several problems, the first of these is raised:
-
-1. `KeyError` if there is no such page;
-2. `ValueError` for an invalid author or text;
-3. `VersionConflict`;
-4. `WikiError` for an edit that does not change the text.
+When an edit whose `expected_version` does not match also has another
+problem (no such page, an invalid author or text, or a text that does not
+change), which error is raised is unspecified.
 
 All existing behavior must keep working.

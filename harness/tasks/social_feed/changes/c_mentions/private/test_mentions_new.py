@@ -103,7 +103,7 @@ def test_mentions_unknown_names_and_ids_raise_key_error(feed):
         lambda: feed.get_mentions("ben", author="dee"),
         lambda: feed.get_mentioned(2),
         lambda: feed.get_mentioned(0),
-        lambda: feed.get_mentioned("1"),
+        lambda: feed.get_mentioned(-1),
     ):
         with pytest.raises(KeyError):
             call()

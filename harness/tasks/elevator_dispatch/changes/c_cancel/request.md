@@ -7,7 +7,7 @@ when they decide to take the stairs.
 - It raises `KeyError` for an id that has no call: one that was never used,
   or whose call was already cancelled. It raises `ElevatorError` for a
   passenger who already got into a car, whether still riding or arrived. In
-  each case nothing changes. `KeyError` is checked first.
+  each case nothing changes.
 - After a cancel the id is free again: a new `call` with it is accepted, on
   any floor, and joins the end of that floor's waiting list.
 - A cancelled call never appears in `get_delivered`.

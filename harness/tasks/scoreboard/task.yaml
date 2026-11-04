@@ -64,7 +64,7 @@ sequences:
       - change: c_versions
       - change: c_points
         planted_bugs:
-          - path: bugs/points_version_before_kind  # breaks step 1
+          - path: bugs/points_bad_kind_raises_version  # breaks step 1
             must_fail: [existing]
             must_pass: [new_feature]
       - change: c_corrections

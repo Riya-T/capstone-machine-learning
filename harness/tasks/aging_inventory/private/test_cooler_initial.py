@@ -172,23 +172,28 @@ def test_a_batch_added_later_starts_from_its_own_values(cooler):
     assert cooler.get_freshness("lilies") == 20
 
 
-def test_a_batch_that_starts_wilted_is_listed(cooler):
+def test_a_batch_added_with_freshness_0_still_ages(cooler):
+    # Whether get_wilted lists it is unspecified.
     cooler.add_batch("asters", 0, 5)
-    assert cooler.get_wilted() == ["asters"]
     cooler.end_day()
     assert cooler.get_days_left("asters") == 4
     assert cooler.get_freshness("asters") == 0
+    assert cooler.get_batches() == ["tulips", "roses", "lilies", "asters"]
 
 
-def test_wilted_batches_are_listed_in_the_order_added(cooler):
+def test_wilted_batches_are_the_ones_at_zero(cooler):
+    # The order of get_wilted is unspecified.
     cooler.add_batch("asters", 4, 0)
+    cooler.add_batch("irises", 2, 5)
     assert cooler.get_wilted() == []
     days(cooler, 1)
-    assert cooler.get_wilted() == ["asters"]
+    assert sorted(cooler.get_wilted()) == ["asters", "irises"]
     days(cooler, 2)
-    assert cooler.get_wilted() == ["roses", "asters"]
+    assert sorted(cooler.get_wilted()) == ["asters", "irises", "roses"]  # each once
     cooler.remove_batch("roses")
-    assert cooler.get_wilted() == ["asters"]
+    assert sorted(cooler.get_wilted()) == ["asters", "irises"]
+    cooler.add_batch("roses", 10, 2)  # a new batch, not wilted
+    assert sorted(cooler.get_wilted()) == ["asters", "irises"]
 
 
 def test_coolers_do_not_share_batches():

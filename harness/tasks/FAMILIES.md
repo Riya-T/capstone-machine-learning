@@ -35,8 +35,9 @@ list each sequence's changes in order.
     8 distinct), football_season 6, shopping_cart 5, parking_garage 4,
     library_catalog 2. With at most 8 going to editing, that is 5.9 per
     task on average, and every dev task but library_catalog has at least 3.
-  - The train and eval tasks are being checked in batches of 10; see
-    "Writer check" below.
+  - The train and eval tasks were checked too; see "Writer check" below.
+    All 36 train tasks pass. 8 of the 16 eval tasks pass; the other 8
+    need a redesign, or a team decision to drop them.
 - The dev calibration with the 14B editor (2026-10-31; results in "Changes
   from the proposal" in the top-level README) found two changes whose
   hidden tests disagreed with what the editor was told. Both are fixed:
@@ -58,6 +59,11 @@ The eval tasks were run with `configs/noahs_laptop.yaml` in batches of 10
 through `configs/writer_check_batch.yaml` (2026-10-28). All 36 train tasks
 were run again on 2026-11-01 with `configs/rtx5070_train.yaml`, after the
 fixes below; "0 → 7" means the task was fixed after that run and rerun.
+All 16 eval tasks were run again on 2026-11-04 with
+`configs/rtx5070_eval.yaml` (run `20261104T161750Z-1b49f7`), and the 12
+that were fixed were run once more (`20261104T180011Z-504573`); see "Eval
+tasks (2026-11-04)" below. On 10-28 `aging_inventory` had 7,
+`auction_house` 5, and `document_versions` and `elevator_dispatch` 0.
 Last updated 2026-11-04.
 
 | Task | Split | Passing of 16 | Writer check |
@@ -106,25 +112,27 @@ Last updated 2026-11-04.
 | `ticket_desk` | train | 0 → 0 → 0 → 16 | ✅ passed after second redesign |
 | `iou_tracker` | train | 0 → 1 → 1 → 0 → 4 → 16 (13 distinct) | ✅ passed after third redesign and a test fix |
 | `pantry_inventory` | train | 0 → 0 → 0 → 1 → 4 → 5 | ✅ passed after third redesign and a test fix |
-| `aging_inventory` | eval | 7 | ✅ passed |
-| `auction_house` | eval | 5 | ✅ passed |
-| `document_versions` | eval | 0 | ❌ failed |
-| `elevator_dispatch` | eval | 0 | ❌ failed; redesigned, not rerun |
-| `light_grid` | eval | – | not run yet |
-| `locker_room` | eval | – | not run yet |
-| `meeting_rooms` | eval | – | not run yet |
-| `race_telemetry` | eval | – | not run yet |
-| `rover_fleet` | eval | – | not run yet |
-| `scoreboard` | eval | – | not run yet |
-| `seat_reservation` | eval | – | not run yet |
-| `social_feed` | eval | – | not run yet |
-| `spending_alerts` | eval | – | not run yet |
-| `subscription_billing` | eval | – | not run yet |
-| `task_board` | eval | – | not run yet |
-| `time_clock` | eval | – | not run yet |
+| `scoreboard` | eval | 15 | ✅ passed |
+| `time_clock` | eval | 15 | ✅ passed |
+| `light_grid` | eval | 13 | ✅ passed |
+| `auction_house` | eval | 6 | ✅ passed |
+| `aging_inventory` | eval | 1 → 7 (14 distinct) | ✅ passed after fix |
+| `rover_fleet` | eval | 0 → 6 | ✅ passed after fix |
+| `social_feed` | eval | 2 → 6 | ✅ passed after fix |
+| `spending_alerts` | eval | 0 → 0 → 0 → 8 | ✅ passed after third fix |
+| `elevator_dispatch` | eval | 1 → 0 | ❌ failed |
+| `document_versions` | eval | 0 → 0 | ❌ failed |
+| `locker_room` | eval | 0 → 0 | ❌ failed |
+| `meeting_rooms` | eval | 0 → 0 | ❌ failed |
+| `race_telemetry` | eval | 0 → 0 | ❌ failed |
+| `seat_reservation` | eval | 0 → 0 | ❌ failed |
+| `subscription_billing` | eval | 0 → 0 | ❌ failed |
+| `task_board` | eval | 0 → 0 | ❌ failed |
 
-So far 45 of the 48 tasks run pass: 7 of 8 dev, all 36 train and 2 of 4
-eval. The other 12 eval tasks have not been run yet. Train tasks that fail
+So far 51 of the 60 tasks pass: 7 of 8 dev, all 36 train and 8 of 16
+eval. The 8 eval tasks that fail are described in "Eval tasks
+(2026-11-04)" below; whether to redesign or drop them is a team decision.
+Train tasks that fail
 are redesigned, not dropped (team decision, 2026-11-02; see "Redesigned on
 2026-11-02" below). `iou_tracker`, `pantry_inventory` and `ticket_desk`
 failed again after their redesign and were redesigned a second time.
@@ -641,22 +649,106 @@ predicted.
 
 Still open:
 
-- `document_versions`: every near-miss fails only the 5-revision cap (drop
-  the oldest kept revision, keep the numbering and the count). Moving the
-  cap from the initial spec into `c_retention` would fix it, but
-  `c_search`, `c_restore` and `c_version_check` all define behavior for
-  revisions no longer kept, and `c_search` runs before `c_retention` in
-  s2, so that is a rewrite of the task's changes. Needs a team decision.
-- `elevator_dispatch`: programs skipped the stop when a car was moved to
-  the floor it was already on. That case is now unspecified: its public
-  check is gone, and the 9 tests that relied on it (2 initial, plus some in
-  `c_capacity`, `c_service`, `c_wait` and `c_cancel`) were rewritten, most
-  of them to load cars on floor 1 instead of floor 0. A new
-  `get_destination` method makes the writer keep each passenger's
-  destination. Needs a rerun.
+- `document_versions` and `elevator_dispatch`: see "Eval tasks
+  (2026-11-04)" below.
 - `access_control` lost the planted bug `v0_allowed_in_allow_order`: a
   public check now covers that order, so the bug could no longer pass the
   public checks. `v0_access_before_message` still covers the initial spec.
+
+### Eval tasks (2026-11-04)
+
+On this machine, the first run passed 4 of the 16 eval tasks unchanged
+(`scoreboard`, `time_clock`, `light_grid`, `auction_house`). The other 12
+got the same kinds of fixes as the train tasks. Only the initial spec, the
+public checks, the v0 hidden tests and the v0 planted bugs changed, plus
+change tests that relied on v0 behavior that became unspecified (for
+example about 25 `drive() == N` asserts in `rover_fleet`).
+
+- **Input checks made unspecified:**
+  - error order: `document_versions`, `meeting_rooms` (all but "the room
+    is busy" last), `subscription_billing`, `task_board`;
+  - numbers that are not `int`s: floors in `elevator_dispatch`,
+    coordinates in `rover_fleet`, prices in `subscription_billing`;
+  - non-string values: page arguments in `document_versions`, commands in
+    `rover_fleet`, post ids in `social_feed`, customer `7` in
+    `subscription_billing`;
+  - list orders the writer got wrong and the changes do not need: the
+    order of `get_wilted` (`aging_inventory`), and the authors of
+    `document_versions`.
+- **Behavior stated plainly, with a worked example**, and a public check
+  where a stated rule had none:
+  - `aging_inventory`: a batch can wilt while it still has days left;
+  - `locker_room`: the fee goes with the locker, items and lockers have
+    separate ids;
+  - `meeting_rooms`: a booking keeps the room busy from its start to 10
+    minutes after its end, with a table of 6 cases;
+  - `race_telemetry`: the points table, and ties in the order of
+    `get_cars()`;
+  - `rover_fleet`: blocked moves and the odometer; `drive` returns
+    nothing;
+  - `seat_reservation`: which seats a booking and a move take;
+  - `social_feed`: the timeline;
+  - `subscription_billing`: a customer is subscribed or cancelled, and
+    stays known;
+  - `spending_alerts`: the queries check their month and category;
+  - `task_board`: a project is full with 5 open tasks.
+- **Planted bugs replaced** where a new public check caught them:
+  - `race_telemetry`: `v0_ties_by_first_lap` became
+    `v0_points_for_podium_only`;
+  - `task_board`: `v0_move_ignores_limit` became `v0_done_move_checks_limit`.
+
+After the fix: `aging_inventory` 1 → 7, `rover_fleet` 0 → 6,
+`social_feed` 2 → 6. The other 9 still failed. Running the hidden tests
+again on the new programs shows what blocks the ones that fail the fewest
+tests:
+
+- `document_versions`: 10 of 16 fail only the 5-revision cap (3 tests).
+  Moving the cap into `c_retention` would fix it. But `c_search`,
+  `c_restore` and `c_version_check` all define behavior for revisions no
+  longer kept, and `c_search` runs before `c_retention` in s2. So that
+  means rewriting the task's changes.
+- `subscription_billing`: the cancelled state. The closest programs:
+  - treat a cancelled customer as unknown (`KeyError`, not
+    `BillingError`), which a public check already covers;
+  - drop the old charges when the customer subscribes again;
+  - never take the customer off the plan.
+- `task_board`: the open-task limit. The closest programs count done tasks
+  against it. The spec says three times that done tasks do not count, and
+  a public check covers it.
+- `locker_room`: which locker an item gets (the smallest size that fits;
+  lockers of one size in the order added), and where a freed locker comes
+  back in the list.
+- `race_telemetry`: 10 of 16 crash in `record_lap` with the same bug: they
+  keep the laps by race and look them up by car. The rest get the points
+  wrong.
+- `seat_reservation`: seat numbers after a move (the lowest free seats of
+  the new coach; reusing freed seats). 7 of 16 crash.
+- `elevator_dispatch` and `meeting_rooms`: the core rules (riders getting
+  in and out; the 10-minute gap and `reschedule`). Every program fails 8
+  or more tests.
+
+Better wording will not fix these: the closest programs miss rules that the
+spec states plainly, most of them with a public check. Like the train tasks
+that failed twice, they need a redesign, or a team decision to drop them.
+
+`spending_alerts` was the exception, and passes after two more fixes:
+
+- After the first fix, 5 of 16 failed only the order of
+  `get_alert_months` (smallest month first), which the spec states with an
+  example but no public check covered. Most of the rest crashed on months
+  or amounts such as `"1"` or `None` (`TypeError`, not `ValueError`).
+- Second fix: months and amounts that are not `int`s became unspecified
+  (0 and negatives are still tested). A public check now covered the
+  order. It caught the planted bug `v0_alert_months_unsorted`, which was
+  replaced by `v0_failed_payment_uses_an_id` (a rejected payment still
+  uses up an id). Rerun: 0 of 16. No program crashed any more, but all 16
+  listed the months in the order first paid, ignoring the public check
+  too; 10 failed nothing else.
+- Third fix: the order of `get_alert_months` is unspecified, as with
+  `get_wilted` in `aging_inventory`. No change depends on it, and every
+  test, two change tests included, compares sorted lists. The stored
+  programs of the last two runs then passed 13 and 10 of 16. Rerun
+  (`20261104T190941Z-9b116e`): 8 of 16.
 
 ## Change tests
 
@@ -746,10 +838,79 @@ Fixed on 2026-11-02 and collected on 2026-11-03 (8 pairs):
 
 The pairs from these 25 tasks were replaced by a re-collection (2026-11-02
 to 11-03, on the 25 tasks plus the 3 redesigned a second time; all 28
-passed the Docker check; results at the top). Not done
-yet: the dev tasks show the same problem (`bank_ledger` `c_overdraft` `True`, 26 of
-28; `team_roster` `c_trades` error order, 29 of 41), and the eval tasks'
-change tests have not been checked.
+passed the Docker check; results at the top).
+
+### Dev and eval change tests (2026-11-04)
+
+The same rules were applied to every change of the 8 dev and 16 eval
+tasks. Only change files, planted bugs and `task.yaml` changed, so the
+writer samples are kept.
+
+Dev: the stored edits of the dev calibration (run
+`20261101T001711Z-7809f4`) were run again against the change tests, as
+above.
+
+- `True` as a number: `bank_ledger` `c_overdraft` failed it in 17 of 18
+  failed edits; without it, 15 of the 17 pass every hidden test. Also
+  `bank_ledger` `c_fees` and `team_roster` `c_position_limits`.
+- Error order: `team_roster` `c_trades` (25 of 28 failed edits) and
+  `course_enrollment` `c_prerequisites` (11 of 14; 2 failed edits are
+  left), plus the stated orders in `bank_ledger` `c_freeze` and
+  `c_overdraft`, `course_enrollment` `c_freeze`, all three
+  `library_catalog` changes, `lru_cache` `c_pin` and `parking_garage`
+  `c_sizes` and `c_reserve`.
+- Non-string names: division `5` (`football_season`), borrower `5`
+  (`library_catalog`) and plate `7` (`parking_garage`).
+- Rules the request states but no public check covered, which the failed
+  edits of every program got wrong. Each now has a public check, which
+  every one of those stored edits fails:
+  - `lru_cache` `c_stats`: replacing a value keeps its hit count (24 of
+    28 failed edits).
+  - `team_roster` `c_trades`: a player traded away may come straight back
+    (16 of 28); the request now has an example.
+  - `football_season` `c_divisions`: two teams without a division play no
+    division game (9 of 14).
+  - `lru_cache` `c_remove`: the public check used the keys in the order
+    they were added, so `clear_prefix` in that order passed by luck (8 of
+    18).
+  - `shopping_cart` `c_discounts`: applying `SAVE10` again changes
+    nothing (11 of 24, made against the request before the 10-31 fix).
+- Kept as real difficulty: `football_season` `c_streak` (streaks past 9).
+  Two programs fail it in most trials and three never do.
+- `course_enrollment`'s two regression bugs relied on the error order and
+  were replaced: `prerequisites_only_checked_when_waiting` (s1) and
+  `freeze_only_checked_with_prerequisites` (s2).
+
+Eval: there are no editor runs yet, so every change was checked by
+reading it.
+
+- `True` was removed from the bad values of most `configuration` changes
+  (rates, raises, capacities, fees, gaps, points tables, percentages,
+  limits, thresholds), and "(not a `bool`)" from their requests.
+- Non-string names that had to raise `ValueError` were removed, for
+  example category `5` (`aging_inventory`), bidder `3`
+  (`auction_house`), car class `3` (`race_telemetry`), size name `1`
+  (`locker_room`) and group `5` (`seat_reservation`,
+  `spending_alerts`).
+- Every stated error order, including where a `VersionConflict` or
+  `LotClosed` comes, is now unspecified. Order tests were removed or cut
+  down to one problem per call. Where the v0 spec fixes an order, the new
+  sentence only covers the change's own error, so it does not contradict
+  the spec.
+- Tests whose calls had a second problem were given valid values. For
+  example, `subscription_billing` `c_plan_version` resumed a customer who
+  was not paused, `time_clock` `c_versions` corrected the shifts of a
+  clocked-in employee, and `locker_room` `c_versions` moved items into an
+  occupied or too small locker.
+- Two regression bugs relied on the error order and were replaced:
+  `scoreboard` `points_bad_kind_raises_version` and `social_feed`
+  `limit_edit_skips_text_check`.
+- Left as they are:
+  - The v0 hidden tests of several eval tasks still test an error order,
+    and they run as existing tests after every change.
+  - `expected_version="2"` must raise `VersionConflict` (`locker_room`,
+    `seat_reservation`).
+  - `7` is a bad post text (`social_feed`, as in its v0 tests).
 
 ## How the families were chosen
 

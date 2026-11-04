@@ -2,8 +2,9 @@
 is taken per locker size, and items are handed back later.
 
 Planted bug (initial version): store charges the fee of the item's size
-instead of the chosen locker's size. The public checks only put items into
-lockers of their own size, so only the hidden initial tests catch it.
+instead of the chosen locker's size. The public checks never look at the
+takings after an item went into a larger locker, so only the hidden initial
+tests catch it.
 Never shown to the writer or the editor;
 validate-tasks checks that the tests catch it.
 

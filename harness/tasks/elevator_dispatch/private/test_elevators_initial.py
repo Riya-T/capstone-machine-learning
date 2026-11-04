@@ -10,7 +10,7 @@ from elevators import Building, ElevatorError
 
 TOP = 6
 CARS = ["east", "west"]
-BAD_FLOORS = [-1, TOP + 1, 1.5, "2", None]
+BAD_FLOORS = [-1, TOP + 1]  # floors that are not ints are unspecified
 
 
 @pytest.fixture
@@ -33,8 +33,8 @@ def state(b, cars=CARS, top=TOP):
 # --- floors and cars --------------------------------------------------------
 
 
-@pytest.mark.parametrize("top", [0, -3, 2.5, "6", None])
-def test_top_floor_must_be_an_int_of_at_least_one(top):
+@pytest.mark.parametrize("top", [0, -3])
+def test_top_floor_must_be_at_least_one(top):
     with pytest.raises(ValueError):
         Building(top)
 
@@ -168,6 +168,20 @@ def test_a_passenger_id_is_used_up_once_called(building):
         with pytest.raises(ElevatorError):
             building.call(name, 6, 0)
     assert state(building) == before
+
+
+def test_a_destination_is_kept_for_good(building):
+    building.call("ann", 2, 5)
+    building.call("ben", 2, 4)
+    building.call("cy", 3, 0)
+    assert [building.get_destination(p) for p in ("ann", "ben", "cy")] == [5, 4, 0]
+    building.move_car("east", 2)
+    assert building.get_destination("ann") == 5
+    building.move_car("east", 4)
+    assert building.get_delivered() == ["ben"]
+    assert [building.get_destination(p) for p in ("ann", "ben", "cy")] == [5, 4, 0]
+    with pytest.raises(KeyError):
+        building.get_destination("dee")
 
 
 def test_value_errors_come_before_a_used_id(building):

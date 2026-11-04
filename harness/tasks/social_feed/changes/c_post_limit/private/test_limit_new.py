@@ -8,7 +8,7 @@ Usage (with feed.py importable, e.g. in the sandbox):
 import pytest
 from feed import FeedError, SocialFeed
 
-BAD_LIMITS = [0, -1, True, 1.5, "280"]
+BAD_LIMITS = [0, -1, 1.5, "280"]
 
 
 @pytest.fixture
@@ -56,9 +56,7 @@ def test_limit_invalid_user_limits_add_no_user(feed, limit):
     assert feed.get_max_length("cy") == 20
 
 
-def test_limit_a_bad_limit_is_reported_before_a_taken_name(feed):
-    with pytest.raises(ValueError):
-        feed.add_user("ana", max_length=0)
+def test_limit_a_taken_name_is_still_refused(feed):
     with pytest.raises(FeedError):
         feed.add_user("ana", max_length=50)
     assert feed.get_max_length("ana") == 20
@@ -84,11 +82,11 @@ def test_limit_set_max_length_rejects_bad_limits(feed, limit):
     assert feed.get_max_length("ben") == 5
 
 
-def test_limit_unknown_users_raise_key_error_first(feed):
+def test_limit_unknown_users_raise_key_error(feed):
     with pytest.raises(KeyError):
         feed.get_max_length("cy")
     with pytest.raises(KeyError):
-        feed.set_max_length("cy", 0)
+        feed.set_max_length("cy", 10)
     with pytest.raises(KeyError):
         feed.set_max_length(None, 10)
 

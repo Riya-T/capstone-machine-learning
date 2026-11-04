@@ -18,15 +18,10 @@ booking is stopped instead of overwriting someone else's change.
   seats are still returned in increasing order by `get_booking`. If the
   coach cannot take `count` more passengers within its limit,
   `NotEnoughSeats` is raised. A count that is not an `int` of at least 1
-  (not a `bool`) raises `ValueError`. `expected_version` works as for
-  `move`.
+  raises `ValueError`. `expected_version` works as for `move`.
 
-Where several of these apply to one call, the first one listed wins:
-
-1. for `move`: `KeyError` for the booking, then `KeyError` for the coach,
-   then `ValueError` for the same coach, then `VersionConflict`, then
-   `NotEnoughSeats`;
-2. for `add_seats`: `KeyError`, then `ValueError`, then `VersionConflict`,
-   then `NotEnoughSeats`.
+Which error is raised when one `add_seats` call has several of these
+problems, or when a `move` with a wrong `expected_version` also has
+another problem (for example a coach without room), is unspecified.
 
 All existing behavior must keep working.

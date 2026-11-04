@@ -83,15 +83,6 @@ def test_pause_blocks_plan_changes_and_quotes(billing):
     assert billing.get_charges("alice") == [600]
 
 
-def test_pause_change_plan_error_order(billing):
-    billing.pause("alice")
-    with pytest.raises(KeyError):
-        billing.change_plan("alice", "gold")
-    # paused and already on the plan: paused comes first
-    with pytest.raises(SubscriptionPaused):
-        billing.change_plan("alice", "basic")
-
-
 def test_pause_a_paused_customer_may_cancel(billing):
     billing.pause("alice")
     billing.cancel("alice")

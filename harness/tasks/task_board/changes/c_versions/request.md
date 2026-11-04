@@ -16,8 +16,10 @@ number so a stale edit can be detected.
   the task's current version, the call raises `VersionConflict` and changes
   nothing. With `None`, no version check is made.
 - Add `class VersionConflict(BoardError)` to `board.py`.
-- `VersionConflict` is checked after every `KeyError` and before every other
-  error.
+- When a call with a wrong `expected_version` also has another problem
+  (for example a project that does not exist, an invalid title or due
+  day, a move to the same project, or a full project), which error is
+  raised is unspecified.
 - Adding a task to a project does not change the versions of the other
   tasks; moving a task changes only the version of the task that moved.
 

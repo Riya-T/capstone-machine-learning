@@ -87,17 +87,10 @@ def test_versioned_missing_booking_raises_key_error(planner):
     with pytest.raises(KeyError):
         planner.get_version(None)
     with pytest.raises(KeyError):
-        planner.reschedule("zz", 0, 30, expected_version=1)
+        planner.reschedule("zz", 0, 30)
 
 
-def test_versioned_bad_times_are_reported_before_a_conflict(planner):
-    with pytest.raises(ValueError):
-        planner.reschedule("a", -1, 30, expected_version=7)
-
-
-def test_versioned_conflict_is_reported_before_a_busy_room(planner):
-    with pytest.raises(VersionConflict):
-        planner.reschedule("a", 300, 360, expected_version=7)
+def test_versioned_a_busy_room_is_still_reported(planner):
     with pytest.raises(RoomBusy):
         planner.reschedule("a", 300, 360, expected_version=1)
 

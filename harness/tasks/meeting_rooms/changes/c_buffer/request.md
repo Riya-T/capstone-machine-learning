@@ -4,13 +4,12 @@ no gap at all. Make the gap adjustable.
 
 - `RoomPlanner` takes a new keyword argument `gap=10`: the number of
   minutes needed between two bookings of the same room. It must be an
-  `int` of 0 or more (not a `bool`); anything else raises `ValueError`.
+  `int` of 0 or more; anything else raises `ValueError`.
 - `add_room` takes a new keyword argument `gap=None`. `None` means the room
-  uses the planner's gap. Otherwise it must be an `int` of 0 or more (not a
-  `bool`) and sets the gap for that room alone; anything else raises
-  `ValueError` and no room is added. An invalid gap counts as an invalid
-  argument, so it is reported before `BookingError` for a room name that
-  already exists.
+  uses the planner's gap. Otherwise it must be an `int` of 0 or more and
+  sets the gap for that room alone; anything else raises `ValueError` and
+  no room is added. Which error is raised when a call has both an invalid
+  gap and a room name that already exists is unspecified.
 - Add `RoomPlanner.get_gap(room) -> int`, which returns the gap that
   applies to the room. It raises `KeyError` for a room that does not exist.
 - Every rule that used the fixed 10 minutes now uses the room's own gap:

@@ -36,7 +36,7 @@ def test_obstacle_cell_has_no_rover(fleet):
 
 
 @pytest.mark.parametrize(
-    "cell", [(8, 0), (0, 6), (-1, 2), (2, -1), (1.0, 2), (2, "2"), (None, 0)]
+    "cell", [(8, 0), (0, 6), (-1, 2), (2, -1), (9, 9)]
 )
 def test_obstacle_off_the_plateau_is_rejected(fleet, cell):
     before = state(fleet)
@@ -54,7 +54,7 @@ def test_obstacle_twice_or_under_a_rover_is_rejected(fleet):
     assert state(fleet) == before
 
 
-def test_obstacle_cell_errors_come_before_rover_errors(fleet):
+def test_obstacle_far_off_the_plateau_or_where_a_rover_was(fleet):
     with pytest.raises(ValueError):
         fleet.add_obstacle(2, 40)
     fleet.drive("scout", "F")  # now at (2, 3)
@@ -62,47 +62,50 @@ def test_obstacle_cell_errors_come_before_rover_errors(fleet):
     assert fleet.get_obstacles() == [(2, 4), (0, 0), (2, 2)]
 
 
-def test_obstacle_landing_is_rejected_after_value_errors(fleet):
+def test_obstacle_landing_is_rejected_and_changes_nothing(fleet):
     before = state(fleet)
     with pytest.raises(RoverError):
         fleet.land("mole", 0, 0, "south")
-    with pytest.raises(ValueError):
-        fleet.land("mole", 0, 0, "down")
-    with pytest.raises(RoverError):
-        fleet.land("scout", 0, 0, "down")
     assert state(fleet) == before
 
 
 def test_obstacle_stops_the_rest_of_the_string(fleet):
-    assert fleet.drive("scout", "FFRF") == 1
+    fleet.drive("scout", "FFRF")
     assert fleet.get_location("scout") == (2, 3, "north")
     assert fleet.get_odometer("scout") == 1
 
 
 def test_obstacle_blocks_backward_moves_and_not_turns(fleet):
     fleet.add_obstacle(2, 1)
-    assert fleet.drive("scout", "LLRR") == 4
-    assert fleet.drive("scout", "B") == 0
+    fleet.drive("scout", "LL")
+    assert fleet.get_location("scout") == (2, 2, "south")
+    fleet.drive("scout", "RR")
+    fleet.drive("scout", "B")
     assert fleet.get_location("scout") == (2, 2, "north")
+    assert fleet.get_odometer("scout") == 0
 
 
 def test_obstacle_across_a_wrapped_edge_blocks(fleet):
     fleet.land("mole", 7, 0, "east")
-    assert fleet.drive("mole", "F") == 0
-    assert fleet.drive("mole", "LB") == 2  # backward across the south edge
+    fleet.drive("mole", "F")
+    assert fleet.get_location("mole") == (7, 0, "east")
+    fleet.drive("mole", "LB")  # backward across the south edge
     assert fleet.get_location("mole") == (7, 5, "north")
     fleet.land("digger", 0, 5, "north")
-    assert fleet.drive("digger", "F") == 0
+    fleet.drive("digger", "F")
+    assert fleet.get_location("digger") == (0, 5, "north")
 
 
 def test_obstacle_free_cells_still_open(fleet):
-    assert fleet.drive("scout", "RFLFF") == 5
+    fleet.drive("scout", "RFLFF")
     assert fleet.get_location("scout") == (3, 4, "north")
+    assert fleet.get_odometer("scout") == 3
 
 
 def test_obstacle_works_with_cliffs():
     f = RoverFleet(width=3, height=3, wrap=False)
     f.land("scout", 0, 1, "east")
     f.add_obstacle(2, 1)
-    assert f.drive("scout", "FFLFF") == 1
+    f.drive("scout", "FFLFF")
     assert f.get_location("scout") == (1, 1, "east")
+    assert f.get_odometer("scout") == 1

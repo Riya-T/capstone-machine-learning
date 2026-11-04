@@ -81,13 +81,6 @@ def test_versions_teams_that_were_not_added_raise_key_error(board, team):
         board.get_version(team)
 
 
-def test_versions_error_order(board):
-    with pytest.raises(KeyError):
-        board.score("bears", "touchdown", expected_version=99)
-    with pytest.raises(ValueError):
-        board.score("lions", "touchdown", expected_version=99)
-
-
 def test_versions_conflict_is_a_scoreboard_error():
     assert issubclass(VersionConflict, ScoreboardError)
 

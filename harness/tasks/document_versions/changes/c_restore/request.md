@@ -17,14 +17,15 @@ was at an earlier revision and throw away everything written since.
 - A successful restore is a change to the page: its version goes up by 1.
   Versions never go down. `expected_version` works as in `edit_page`.
 
-When `restore` has several problems, the first of these is raised, and
-nothing changes:
+`restore` raises one of these, and then changes nothing:
 
-1. `KeyError` if there is no such page;
-2. `ValueError` for a revision number that is not an `int` of 1 or more;
-3. `VersionConflict`;
-4. `IndexError` for a revision that is higher than the latest one or is no
-   longer kept;
-5. `WikiError` when `number` is already the latest revision.
+- `KeyError` if there is no such page;
+- `ValueError` for a revision number that is not an `int` of 1 or more;
+- `VersionConflict` when `expected_version` does not match;
+- `IndexError` for a revision that is higher than the latest one or is no
+  longer kept;
+- `WikiError` when `number` is already the latest revision.
+
+Which one is raised when several apply is unspecified.
 
 All existing behavior must keep working.

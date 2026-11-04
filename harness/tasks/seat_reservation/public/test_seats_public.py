@@ -23,6 +23,14 @@ def test_a_group_gets_the_first_seats_of_the_first_coach(planner):
     assert planner.get_available("A") == 4
 
 
+def test_each_booking_holds_its_own_seats(planner):
+    assert planner.reserve("smith", 3) == "A"
+    assert planner.reserve("jones", 4) == "A"
+    assert planner.get_booking("smith") == ("A", [1, 2, 3])
+    assert planner.get_booking("jones") == ("A", [4, 5, 6, 7])
+    assert planner.get_reserved("A") == 7
+
+
 def test_a_coach_is_never_filled_beyond_seventy_percent(planner):
     assert planner.reserve("smith", 7) == "A"
     assert planner.get_available("A") == 0

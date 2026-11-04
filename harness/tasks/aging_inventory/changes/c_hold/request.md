@@ -10,7 +10,7 @@ sit in the deep-chill drawer, where they do not age at all.
   was put on hold.
 - A held batch cannot be removed: `remove_batch` raises
   `class BatchHeld(CoolerError)` (add it to `cooler.py`) and changes
-  nothing. `KeyError` for an unknown batch comes first.
+  nothing. A batch that is not in the cooler still raises `KeyError`.
 - Held batches are still listed by `get_batches` and, when their
   freshness is 0, by `get_wilted`.
 - Add `FlowerCooler.get_held() -> list[str]`: the ids of the held batches,

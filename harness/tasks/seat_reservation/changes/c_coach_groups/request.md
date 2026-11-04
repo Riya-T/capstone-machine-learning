@@ -22,6 +22,6 @@ Sort the coaches in `seats.py` into groups, such as `"standard"` and
   `KeyError`.
 - `move` is unchanged: a booking may be moved to a coach of any group.
 
-For `reserve`, the `KeyError` for an unknown group comes after every
-`ValueError` and before the `ReservationError` for a booking id that is
-already booked. All existing behavior must keep working.
+Which error `reserve` raises when a group with no coaches comes with
+another problem (an invalid booking id or size, or a booking id that is
+already booked) is unspecified. All existing behavior must keep working.

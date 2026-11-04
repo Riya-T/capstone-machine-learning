@@ -18,9 +18,9 @@ innings and so on), and report the score per period.
   ordered by the points it scored in that period, highest first; teams with
   equal points stay in the order they were added.
 - A period passed to `get_events` or `get_period_standings` must be an
-  `int` from 1 up to the current period (not `bool`), or `ValueError` is
-  raised. In `get_events`, a team that was not added (`KeyError`) is
-  reported before a bad period.
+  `int` from 1 up to the current period, or `ValueError` is raised. Which
+  error `get_events` raises for a team that was not added and a bad period
+  together is unspecified.
 - `undo_last` takes the event back from the period it was scored in, even
   when a later period has started since.
 

@@ -10,8 +10,10 @@ bid can say which state of the lot it was based on.
 - `place_bid` takes a new keyword argument `expected_version=None`. When it
   is `None` the bid works as before. Otherwise, if it is not equal to the
   lot's current version, `VersionConflict` is raised and nothing changes.
-- `VersionConflict` is checked after the `KeyError` and every `ValueError`
-  check, and before every other error `place_bid` can raise.
+- When a bid whose `expected_version` does not match also has another
+  problem (an unknown lot, an invalid bidder or amount, a bidder who
+  already holds the highest bid, or a bid below the minimum), which error
+  is raised is unspecified.
 - Each lot has its own version: a bid on one lot does not change the
   version of any other.
 

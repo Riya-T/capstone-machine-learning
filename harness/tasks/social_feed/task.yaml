@@ -64,7 +64,7 @@ sequences:
       - change: c_edits
       - change: c_post_limit
         planted_bugs:
-          - path: bugs/limit_version_before_text  # breaks step 1
+          - path: bugs/limit_edit_skips_text_check  # breaks step 1
             must_fail: [existing]
             must_pass: [new_feature]
       - change: c_block

@@ -33,6 +33,14 @@ def test_results_list_finished_cars_fastest_first(tel):
     assert tel.get_results("monza") == ["blue", "red"]
 
 
+def test_equal_totals_are_listed_in_the_order_cars_were_added(tel):
+    tel.record_lap("monza", "green", 80000)
+    tel.record_lap("monza", "green", 80000)  # total 160000
+    tel.record_lap("monza", "blue", 79000)
+    tel.record_lap("monza", "blue", 81000)  # total 160000
+    assert tel.get_results("monza") == ["blue", "green"]
+
+
 def test_points_follow_the_places(tel):
     for car, lap in [("red", 81000), ("blue", 80000), ("green", 82000)]:
         tel.record_lap("monza", car, lap)

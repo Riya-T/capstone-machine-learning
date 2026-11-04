@@ -78,11 +78,9 @@ def test_usage_invalid_windows_raise_value_error(planner, start, end):
         planner.get_usage_ranking(start, end)
 
 
-def test_usage_missing_room_raises_key_error_first(planner):
+def test_usage_missing_room_raises_key_error(planner):
     with pytest.raises(KeyError):
         planner.get_booked_minutes("pine", 0, 10)
-    with pytest.raises(KeyError):
-        planner.get_booked_minutes("pine", -5, -10)
     with pytest.raises(KeyError):
         planner.get_booked_minutes(None, 0, 10)
 

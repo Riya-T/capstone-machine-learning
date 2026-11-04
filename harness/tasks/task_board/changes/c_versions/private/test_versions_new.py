@@ -111,37 +111,12 @@ def test_versions_failed_calls_keep_the_version(board):
     assert board.get_version(2) == 2
 
 
-@pytest.mark.parametrize("day", [-1, 1.5, "3", None, True])
+@pytest.mark.parametrize("day", [-1, 1.5, "3", None])
 def test_versions_invalid_due_days_are_rejected(board, day):
     before = state(board)
     with pytest.raises(ValueError):
         board.set_due_day(1, day)
     assert state(board) == before
-
-
-def test_versions_key_errors_come_before_a_conflict(board):
-    with pytest.raises(KeyError):
-        board.complete(99, expected_version=5)
-    with pytest.raises(KeyError):
-        board.move_task(1, "ops", expected_version=5)
-    with pytest.raises(KeyError):
-        board.rename_task(99, "x", expected_version=5)
-
-
-def test_versions_a_conflict_comes_before_other_errors(board):
-    for _ in range(4):
-        board.add_task("app", "filler", 1)
-    board.add_task("app", "last", 1)  # app is now full
-    board.complete(2)
-    for call in (
-        lambda: board.complete(2, expected_version=1),
-        lambda: board.move_task(1, "web", expected_version=7),
-        lambda: board.move_task(1, "app", expected_version=7),
-        lambda: board.rename_task(1, "", expected_version=7),
-        lambda: board.set_due_day(1, -1, expected_version=7),
-    ):
-        with pytest.raises(VersionConflict):
-            call()
 
 
 def test_versions_other_tasks_are_not_touched(board):

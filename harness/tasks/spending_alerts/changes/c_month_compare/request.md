@@ -12,8 +12,8 @@ spot categories that suddenly cost a lot more.
   category's first payment in `month`. In month 1 nothing is unusual.
 - Being unusual does not depend on the alert limit: small amounts can be
   unusual, and the alerts stay as they are.
-- Both methods raise `KeyError` for an unknown account, then `ValueError`
-  for an invalid month or (for `get_month_change`) category. They change
-  nothing.
+- Both methods raise `KeyError` for an unknown account and `ValueError`
+  for an invalid month or (for `get_month_change`) category. Which is
+  raised when both are wrong is unspecified. They change nothing.
 
 All existing behavior must keep working.

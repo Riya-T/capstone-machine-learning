@@ -13,8 +13,9 @@ from an out-of-date copy of the post.
 - Add `SocialFeed.get_revisions(post_id) -> list[str]`: every text the post
   has had, oldest first, ending with the current one.
 - `edit`, `get_version` and `get_revisions` raise `KeyError` for an unknown
-  post id. When an edit has several problems, they are reported in this
-  order: `KeyError`, then `ValueError` for the text, then `VersionConflict`.
+  post id. Which error `edit` raises when one call has several problems
+  (for example an invalid text and a wrong `expected_version`) is
+  unspecified.
 - A failed edit changes nothing: not the text, not the version, and not the
   revisions.
 
