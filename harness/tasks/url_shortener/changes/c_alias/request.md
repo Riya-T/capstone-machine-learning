@@ -16,8 +16,10 @@ Tighten the rules for codes in `shortener.py`.
 - Add `class ReservedCode(ShortenerError)` to `shortener.py`.
 - `Shortener` takes a new keyword argument `reserved=()`: codes that may
   never be added, such as `("admin", "login")`. Each entry must be a valid
-  code by the rules above, or `Shortener(...)` raises `ValueError`. Adding a
-  reserved code, in any mix of upper and lower case, raises `ReservedCode`.
+  code by the rules above, or `Shortener(...)` raises `ValueError`; that
+  includes an empty string and `None`, so `Shortener(reserved=("admin",
+  None))` raises `ValueError`, not `TypeError`. Adding a reserved code, in
+  any mix of upper and lower case, raises `ReservedCode`.
   Reserved codes do not appear in `get_codes`.
 
 Which error `add_link` raises when one call has several of these problems

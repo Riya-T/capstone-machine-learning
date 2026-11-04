@@ -27,3 +27,25 @@ def test_an_item_can_be_moved_to_another_category():
     assert pan.get_category("rice") == "grains"
     assert pan.get_items_in("other") == []
     assert pan.get_categories() == ["grains"]
+
+
+def test_adding_to_an_existing_item_keeps_or_replaces_its_category():
+    pan = Pantry()
+    pan.add_item("milk", 2, 3, category="dairy")
+    pan.add_item("milk", 4, 8)
+    assert pan.get_category("milk") == "dairy"
+    assert pan.get_quantity("milk") == 6
+    pan.add_item("milk", 1, 9, category="drinks")
+    assert pan.get_category("milk") == "drinks"
+    assert pan.get_items_in("dairy") == []
+    assert pan.get_category_quantity("drinks") == 7
+
+
+def test_categories_follow_the_first_item_in_each():
+    pan = Pantry()
+    pan.add_item("milk", 2, 3, category="dairy")
+    pan.add_item("rice", 10, 30)
+    pan.add_item("cheese", 1, 9, category="dairy")
+    pan.set_category("rice", "grains")
+    pan.set_category("milk", "drinks")
+    assert pan.get_categories() == ["drinks", "grains", "dairy"]

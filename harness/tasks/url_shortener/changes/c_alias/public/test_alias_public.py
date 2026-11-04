@@ -48,3 +48,10 @@ def test_reserved_codes_cannot_be_added():
         sh.add_link("Admin", "https://example.com/admin")
     sh.add_link("help", "https://example.com/help")
     assert sh.get_codes() == ["help"]
+
+
+def test_reserved_entries_must_be_valid_codes():
+    with pytest.raises(ValueError):
+        Shortener(reserved=("admin", "spring sale"))
+    with pytest.raises(ValueError):
+        Shortener(reserved=("admin", None))

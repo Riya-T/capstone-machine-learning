@@ -5,6 +5,7 @@ Usage (with pantry.py importable, e.g. in the sandbox):
     python -m pytest changes/c_shopping_list/public/test_shopping_list_public.py
 """
 
+import pytest
 from pantry import Pantry
 
 
@@ -25,3 +26,12 @@ def test_a_day_leaves_out_batches_past_their_use_by_day():
     pan.set_minimum("milk", 5)
     assert pan.get_shopping_list() == []
     assert pan.get_shopping_list(day=5) == [("milk", 1)]
+
+
+def test_a_day_that_is_not_an_int_of_0_or_more_is_rejected():
+    pan = Pantry()
+    pan.add_item("milk", 2, 3)
+    with pytest.raises(ValueError):
+        pan.get_shopping_list(day=-1)
+    with pytest.raises(ValueError):
+        pan.get_shopping_list(day="3")

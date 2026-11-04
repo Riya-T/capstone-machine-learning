@@ -58,7 +58,7 @@ The eval tasks were run with `configs/noahs_laptop.yaml` in batches of 10
 through `configs/writer_check_batch.yaml` (2026-10-28). All 36 train tasks
 were run again on 2026-11-01 with `configs/rtx5070_train.yaml`, after the
 fixes below; "0 → 7" means the task was fixed after that run and rerun.
-Last updated 2026-11-02.
+Last updated 2026-11-04.
 
 | Task | Split | Passing of 16 | Writer check |
 |---|---|---|---|
@@ -99,13 +99,13 @@ Last updated 2026-11-02.
 | `movie_bookings` | train | 0 → 6 | ✅ passed after fix |
 | `school_roster` | train | 1 → 6 | ✅ passed after fix |
 | `recipe_box` | train | 1 → 0 → 5 | ✅ passed after second fix |
-| `ring_buffer` | train | 0 → 3 | ✅ passed after fix (borderline) |
+| `ring_buffer` | train | 0 → 3 → 9 (7 distinct) | ✅ passed after second fix |
 | `login_sessions` | train | 0 → 0 → 3 | ✅ passed after second fix (borderline) |
 | `robot_fleet` | train | 0 → 0 → 14 | ✅ passed after redesign |
 | `hangman_games` | train | 2 → 0 → 8 | ✅ passed after redesign |
 | `ticket_desk` | train | 0 → 0 → 0 → 16 | ✅ passed after second redesign |
-| `iou_tracker` | train | 0 → 1 → 1 → 0 → 4 | ✅ passed after third redesign |
-| `pantry_inventory` | train | 0 → 0 → 0 → 1 → 4 | ✅ passed after third redesign |
+| `iou_tracker` | train | 0 → 1 → 1 → 0 → 4 → 16 (13 distinct) | ✅ passed after third redesign and a test fix |
+| `pantry_inventory` | train | 0 → 0 → 0 → 1 → 4 → 5 | ✅ passed after third redesign and a test fix |
 | `aging_inventory` | eval | 7 | ✅ passed |
 | `auction_house` | eval | 5 | ✅ passed |
 | `document_versions` | eval | 0 | ❌ failed |
@@ -130,9 +130,8 @@ are redesigned, not dropped (team decision, 2026-11-02; see "Redesigned on
 failed again after their redesign and were redesigned a second time.
 `ticket_desk` then passed, and the other two passed after a third redesign.
 
-Data collection on the train tasks, in the order the tasks passed (210
-preference pairs from 32 of the 36 tasks so far, counting each task's
-latest run):
+Data collection on the train tasks, in the order the tasks passed (252
+preference pairs, from all 36 tasks, counting each task's latest run):
 
 - The first 24 (2026-11-01 to 11-02): 130 pairs from 18 tasks.
   `feature_flags`, `job_board`, `staff_directory`, `thermostat_zones`,
@@ -175,6 +174,12 @@ latest run):
   - `order_workflow` and `playlist_manager`: too easy now (above).
   - `ring_buffer` (0 pairs): only 3 programs pass the writer check, and
     their scores differ by less than 2 changes.
+- Those 6 after the fixes (2026-11-04, run `20261104T054315Z-e90f1f`):
+  46 pairs, 8 each except `pantry_inventory` (6). Writer check:
+  `iou_tracker` 16 of 16 (13 distinct), `pantry_inventory` 5, `ring_buffer`
+  9 (7 distinct) with the new wording. Some of these pairs come from the
+  editor's luck rather than from the programs; see "Checked on 2026-11-04"
+  below.
 
 ### Fixed on 2026-11-03
 
@@ -245,6 +250,63 @@ kept.
   passing program has the same design, so their pairs, if any, will mostly
   come from the editor's luck. More varied programs would need v0
   redesigns that let the writer choose between designs. Team decision.
+  The 11-04 check below bears this out for `order_workflow` and
+  `ring_buffer`.
+
+### Checked on 2026-11-04
+
+For each pair from the 11-04 run, the totals of each of the 3 repeats show
+whether the winner beats the loser in most repeats or only on the sum. The
+hidden tests and public checks were also run again on every failed step,
+to see what the editor's programs failed.
+
+- Pairs that come from the programs:
+  - `url_shortener`: `c_stats` ran out of turns 10 times, every time on the
+    same public check (hits for the current target restart after
+    `set_target`), most on two programs (3 of 3 and 2 of 3 trials).
+  - `pantry_inventory`: `c_expired` now passes in 11 of 26 trials (it was
+    0), from 0 of 6 trials for one program to 4 of 6 for another.
+  - `playlist_manager`: the failures are the hidden tests added on 11-03
+    for this (a song added again starts from 0; an artist listed again
+    takes the place of their new song). The margins are small, at most 1
+    change per repeat.
+  - `iou_tracker`, in part: 4 of its 8 pairs lose to one program that
+    failed `c_settle` in 3 of 6 trials. 3 more rest on a single repeat in
+    which another program ran out of turns in both sequences.
+- Pairs that are mostly luck:
+  - `order_workflow`: all 9 `c_history` failures were in s1, where the
+    program has no `rollback` yet. The editor added one anyway (the request
+    said not to), and the hidden tests then expected the errors that
+    `c_rollback` defines. Per program it happened 0, 1 or 2 times in 3, as
+    chance would give. `c_guards` and `c_rollback` never failed.
+  - `ring_buffer`: every failure was the editor running out of turns
+    (`c_counts` 8, `c_peek` 4) on slips such as `clear` adding to the
+    discarded total after setting the size to 0, spread over the programs.
+    All 7 programs have the same design, and the winner of a pair wins only
+    13 of its 24 repeats.
+  - Until these two are redesigned, the team may want to leave their 16
+    pairs out of DPO training.
+- Fixed, and collected again (only change files changed, so the writer
+  samples are kept):
+  - `url_shortener` `c_alias`: 9 of 11 failures were one hidden test,
+    `Shortener(reserved=("admin", None))`, which raised `TypeError` instead
+    of `ValueError`: the new check of reserved entries calls `len(code)`
+    without the empty check that `add_link` has. The request now says so
+    in words, and a public check covers it.
+  - `order_workflow` `c_history`: the rollback rule now starts with "Do not
+    add a `rollback` method", and a public check for a `rollback` that
+    raised runs when there is one. Once the luck is gone, the task will
+    probably tie again (0 pairs).
+  - `pantry_inventory` `c_categories` never passed (0 of 8 trials). All 8
+    outputs get adding to an existing item wrong: 1 raises, 3 reset the
+    category to `"other"` when none is given, and 4 ignore a new category.
+    3 also get the order of `get_categories` wrong after moves. Public
+    checks now cover both. `c_shopping_list`: 3 of 4 failures accepted a
+    day of `-1`, `1.5` or `"3"`; a public check now covers it.
+  - On the stored outputs, every failed step these fixes target fails the
+    new public checks, so the editor would see the problem (url_shortener
+    9 of 11, order_workflow 9 of 9, pantry 8 of 8 and 3 of 4), and every
+    step that passed still passes.
 
 What the writer kept getting wrong, and the fixes that worked:
 

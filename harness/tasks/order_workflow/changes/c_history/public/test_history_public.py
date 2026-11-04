@@ -5,7 +5,8 @@ Usage (with workflow.py importable, e.g. in the sandbox):
     python -m pytest changes/c_history/public/test_history_public.py
 """
 
-from workflow import OrderWorkflow
+import pytest
+from workflow import OrderWorkflow, WorkflowError
 
 
 def test_history_lists_every_state_oldest_first():
@@ -29,3 +30,19 @@ def test_orders_that_passed_a_state_include_ones_that_left_it():
     assert wf.get_orders_that_passed("paid") == ["o1", "o2"]
     assert wf.get_orders_that_passed("cancelled") == ["o2"]
     assert wf.get_orders_that_passed("new") == ["o1", "o2"]
+
+
+def test_a_rollback_that_raised_changes_no_history():
+    wf = OrderWorkflow()
+    if not callable(getattr(wf, "rollback", None)):
+        return  # this change does not add `rollback`
+    wf.create_order("o1", 500)
+    wf.create_order("o2", 700)
+    wf.move("o1", "paid")
+    with pytest.raises(WorkflowError):
+        wf.rollback("o2")  # no move left to undo
+    with pytest.raises(KeyError):
+        wf.rollback("o9")
+    assert wf.get_history("o1") == ["new", "paid"]
+    assert wf.get_history("o2") == ["new"]
+    assert wf.get_move_count("o1") == 1
