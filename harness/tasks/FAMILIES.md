@@ -130,7 +130,7 @@ are redesigned, not dropped (team decision, 2026-11-02; see "Redesigned on
 failed again after their redesign and were redesigned a second time.
 `ticket_desk` then passed, and the other two passed after a third redesign.
 
-Data collection on the train tasks, in the order the tasks passed (244
+Data collection on the train tasks, in the order the tasks passed (246
 preference pairs from 35 of the 36 tasks, counting each task's latest run;
 `order_workflow` gives none):
 
@@ -285,8 +285,9 @@ to see what the editor's programs failed.
     discarded total after setting the size to 0, spread over the programs.
     All 7 programs have the same design, and the winner of a pair wins only
     13 of its 24 repeats.
-  - Until these two are redesigned, the team may want to leave their 16
-    pairs out of DPO training.
+  - Until these two are redesigned, the team may want to leave
+    `ring_buffer`'s 8 pairs out of DPO training (`order_workflow` now
+    gives none; see below).
 - Fixed, and collected again (only change files changed, so the writer
   samples are kept):
   - `url_shortener` `c_alias`: 9 of 11 failures were one hidden test,
@@ -331,7 +332,13 @@ to see what the editor's programs failed.
     are in alphabetical order. The reference, the planted bug, the hidden
     tests and the public checks were changed to match; every hidden test
     the stored outputs fail now has a public check of the same rule.
-    Collected again.
+- `pantry_inventory` collected again (2026-11-04, run
+  `20261104T134438Z-b2858f`): `c_categories` passed in all 8 trials that
+  reached it, so s1 now scores 0 or 2. 8 pairs (the cap), most against the
+  program that fails `c_expired` in 6 of 6 trials (4 pairs) and one that
+  fails it in 3 of 5 (3 pairs); the winner wins 16 of the 24 repeats.
+  Only the `c_categories` steps were new: the editor's replies for the
+  other steps came from the call cache, so they match the run before.
 
 What the writer kept getting wrong, and the fixes that worked:
 
