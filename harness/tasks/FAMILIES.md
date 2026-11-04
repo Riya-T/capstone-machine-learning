@@ -130,8 +130,9 @@ are redesigned, not dropped (team decision, 2026-11-02; see "Redesigned on
 failed again after their redesign and were redesigned a second time.
 `ticket_desk` then passed, and the other two passed after a third redesign.
 
-Data collection on the train tasks, in the order the tasks passed (252
-preference pairs, from all 36 tasks, counting each task's latest run):
+Data collection on the train tasks, in the order the tasks passed (244
+preference pairs from 35 of the 36 tasks, counting each task's latest run;
+`order_workflow` gives none):
 
 - The first 24 (2026-11-01 to 11-02): 130 pairs from 18 tasks.
   `feature_flags`, `job_board`, `staff_directory`, `thermostat_zones`,
@@ -307,6 +308,30 @@ to see what the editor's programs failed.
     new public checks, so the editor would see the problem (url_shortener
     9 of 11, order_workflow 9 of 9, pantry 8 of 8 and 3 of 4), and every
     step that passed still passes.
+- Collected again (2026-11-04, run `20261104T112213Z-444579`): 14 pairs.
+  - `order_workflow`: 0 pairs, as expected. 45 of 48 trials finished both
+    changes, and the 3 that did not ran out of turns on different
+    programs.
+  - `url_shortener`: 8 pairs. `c_alias` now fails in 7 of 24 trials (it
+    was 16 of 24), on different tests each time. 4 pairs lose to the two
+    programs that fail `c_stats` in all 3 trials, by 1 change per repeat;
+    4 lose to one program that failed 3 of 6 trials on two different
+    changes.
+  - `pantry_inventory`: 6 pairs, and `c_shopping_list` now fails once in
+    15. `c_categories` passed once in 8: with the new public check in
+    front of it, the editor still could not make adding to an existing
+    item keep its category (7 of 8 ran out of turns on that check), and 4
+    also failed the order of `get_categories`. That difficulty has nothing
+    to do with the program's design, since categories are new in this
+    change, and it hides the step that does: `c_expired` (one program fails
+    it in 6 of 6 trials in both runs, each of the others 2 or 3 times).
+  - So `c_categories` was made simpler. `category` only applies when
+    `add_item` creates an item; for an existing item it is ignored, and
+    only `set_category` moves an item. `get_categories` and `get_items_in`
+    are in alphabetical order. The reference, the planted bug, the hidden
+    tests and the public checks were changed to match; every hidden test
+    the stored outputs fail now has a public check of the same rule.
+    Collected again.
 
 What the writer kept getting wrong, and the fixes that worked:
 

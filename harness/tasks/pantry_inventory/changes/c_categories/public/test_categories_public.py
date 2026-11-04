@@ -15,7 +15,7 @@ def test_items_are_grouped_by_category():
     pan.add_item("cheese", 1, 9, category="dairy")
     assert pan.get_category("milk") == "dairy"
     assert pan.get_category("rice") == "other"
-    assert pan.get_items_in("dairy") == ["milk", "cheese"]
+    assert pan.get_items_in("dairy") == ["cheese", "milk"]
     assert pan.get_categories() == ["dairy", "other"]
     assert pan.get_category_quantity("dairy") == 3
 
@@ -29,23 +29,25 @@ def test_an_item_can_be_moved_to_another_category():
     assert pan.get_categories() == ["grains"]
 
 
-def test_adding_to_an_existing_item_keeps_or_replaces_its_category():
+def test_adding_to_an_existing_item_keeps_its_category():
     pan = Pantry()
     pan.add_item("milk", 2, 3, category="dairy")
     pan.add_item("milk", 4, 8)
     assert pan.get_category("milk") == "dairy"
-    assert pan.get_quantity("milk") == 6
     pan.add_item("milk", 1, 9, category="drinks")
-    assert pan.get_category("milk") == "drinks"
-    assert pan.get_items_in("dairy") == []
-    assert pan.get_category_quantity("drinks") == 7
+    assert pan.get_category("milk") == "dairy"
+    assert pan.get_items_in("drinks") == []
+    assert pan.get_categories() == ["dairy"]
+    assert pan.get_category_quantity("dairy") == 7
 
 
-def test_categories_follow_the_first_item_in_each():
+def test_categories_and_items_are_listed_in_alphabetical_order():
     pan = Pantry()
     pan.add_item("milk", 2, 3, category="dairy")
-    pan.add_item("rice", 10, 30)
+    pan.add_item("rice", 10, 30, category="grains")
     pan.add_item("cheese", 1, 9, category="dairy")
-    pan.set_category("rice", "grains")
-    pan.set_category("milk", "drinks")
-    assert pan.get_categories() == ["drinks", "grains", "dairy"]
+    pan.add_item("apples", 6, 10, category="fruit")
+    assert pan.get_categories() == ["dairy", "fruit", "grains"]
+    pan.set_category("rice", "dairy")
+    assert pan.get_items_in("dairy") == ["cheese", "milk", "rice"]
+    assert pan.get_categories() == ["dairy", "fruit"]

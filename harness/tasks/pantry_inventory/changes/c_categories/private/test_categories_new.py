@@ -40,11 +40,12 @@ def test_adding_without_a_category_keeps_the_current_one(pantry):
     assert pantry.get_category_quantity("dairy") == 7
 
 
-def test_adding_with_a_category_moves_the_item(pantry):
+def test_adding_with_a_category_keeps_an_existing_items_category(pantry):
     pantry.add_item("cheese", 2, 12, category="deli")
-    assert pantry.get_category("cheese") == "deli"
-    assert pantry.get_items_in("dairy") == ["milk"]
-    assert pantry.get_items_in("deli") == ["cheese"]
+    assert pantry.get_category("cheese") == "dairy"
+    assert pantry.get_items_in("dairy") == ["cheese", "milk"]
+    assert pantry.get_items_in("deli") == []
+    assert pantry.get_categories() == ["dairy", "other"]
     assert pantry.get_quantity("cheese") == 3
 
 
@@ -54,14 +55,15 @@ def test_set_category_moves_the_item_and_updates_the_lists(pantry):
     assert pantry.get_items_in("dairy") == ["cheese"]
     assert pantry.get_items_in("grains") == ["rice"]
     assert pantry.get_items_in("other") == []
-    assert pantry.get_categories() == ["drinks", "grains", "dairy"]
+    assert pantry.get_categories() == ["dairy", "drinks", "grains"]
 
 
-def test_categories_follow_the_order_of_their_first_item(pantry):
+def test_categories_are_listed_in_alphabetical_order(pantry):
     pantry.add_item("beans", 4, 20, category="tins")
+    pantry.add_item("apples", 6, 10, category="fruit")
     pantry.add_item("oats", 1, 40, category="grains")
     pantry.set_category("rice", "grains")
-    assert pantry.get_categories() == ["dairy", "grains", "tins"]
+    assert pantry.get_categories() == ["dairy", "fruit", "grains", "tins"]
 
 
 def test_a_category_with_no_items_left_disappears(pantry):
@@ -72,9 +74,10 @@ def test_a_category_with_no_items_left_disappears(pantry):
     assert pantry.get_category_quantity("dairy") == 0
 
 
-def test_items_in_a_category_keep_the_order_first_added(pantry):
+def test_items_in_a_category_are_listed_in_alphabetical_order(pantry):
     pantry.set_category("rice", "dairy")
-    assert pantry.get_items_in("dairy") == ["milk", "rice", "cheese"]
+    pantry.add_item("butter", 1, 6, category="dairy")
+    assert pantry.get_items_in("dairy") == ["butter", "cheese", "milk", "rice"]
 
 
 def test_category_quantity_follows_the_items(pantry):
@@ -87,7 +90,7 @@ def test_category_quantity_follows_the_items(pantry):
 
 def test_an_item_with_nothing_left_stays_in_its_category(pantry):
     pantry.use_item("cheese", 1)
-    assert pantry.get_items_in("dairy") == ["milk", "cheese"]
+    assert pantry.get_items_in("dairy") == ["cheese", "milk"]
     assert pantry.get_category_quantity("dairy") == 2
 
 

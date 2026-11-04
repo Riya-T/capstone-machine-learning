@@ -48,10 +48,8 @@ class Pantry:
         if category is not None:
             check_category(category)
         self._batches.setdefault(name, []).append([use_by, quantity])
-        if category is not None:
-            self._categories[name] = category
-        else:
-            self._categories.setdefault(name, DEFAULT_CATEGORY)
+        # Only a new item takes the category; an existing one keeps its own.
+        self._categories.setdefault(name, DEFAULT_CATEGORY if category is None else category)
 
     def use_item(self, name, quantity):
         self._require(name)
@@ -117,14 +115,10 @@ class Pantry:
         return self._categories[name]
 
     def get_categories(self):
-        categories = []
-        for name in self._batches:
-            if self._categories[name] not in categories:
-                categories.append(self._categories[name])
-        return categories
+        return sorted(set(self._categories.values()))
 
     def get_items_in(self, category):
-        return [name for name in self._batches if self._categories[name] == category]
+        return sorted(name for name, cat in self._categories.items() if cat == category)
 
     def get_category_quantity(self, category):
         return sum(self.get_quantity(name) for name in self.get_items_in(category))
