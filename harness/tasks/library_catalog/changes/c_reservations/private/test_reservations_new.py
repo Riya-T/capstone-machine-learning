@@ -103,12 +103,9 @@ def test_reserving_a_book_twice_is_refused(library):
 
 
 def test_a_borrower_cannot_reserve_a_book_they_have(library):
-    library.check_out("978-2", "ben")  # the other copy of 978-2 stays on the shelf
     before = state(library)
     with pytest.raises(AlreadyBorrowed):
         library.reserve("978-1", "ana")
-    with pytest.raises(AlreadyBorrowed):  # reported before the copy on the shelf
-        library.reserve("978-2", "ben")
     assert state(library) == before
 
 
@@ -117,14 +114,12 @@ def test_invalid_borrowers_cannot_reserve(library, borrower):
     before = state(library)
     with pytest.raises(ValueError):
         library.reserve("978-1", borrower)
-    with pytest.raises(ValueError):
-        library.reserve("978-2", borrower)  # a copy is on the shelf too
     assert state(library) == before
 
 
-def test_isbns_not_in_the_catalog_are_reported_first(library):
+def test_isbns_not_in_the_catalog_raise_key_error(library):
     with pytest.raises(KeyError):
-        library.reserve("978-9", "")
+        library.reserve("978-9", "ben")
     with pytest.raises(KeyError):
         library.reserve(None, "ben")
     with pytest.raises(KeyError):

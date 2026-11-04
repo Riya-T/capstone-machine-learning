@@ -1,11 +1,11 @@
 Let a spot in `garage.py` be reserved for a vehicle before it arrives.
 
 - Add `Garage.reserve(level_id, plate)`, which holds one free spot on the
-  level for that plate. Errors, in this order: `KeyError` for a level that
-  was not added; `ValueError` for a plate that is not a non-empty `str`;
-  `GarageError` if the plate is parked or already has a reservation on any
-  level; `GarageFull` if the level has no free spot. On error nothing
-  changes.
+  level for that plate. Errors: `KeyError` for a level that was not added;
+  `ValueError` for a plate that is not a non-empty `str`; `GarageError` if
+  the plate is parked or already has a reservation on any level;
+  `GarageFull` if the level has no free spot. Which is raised when several
+  apply is unspecified. On error nothing changes.
 - A reserved spot is not free: `get_free_spots` no longer counts it, and no
   other vehicle can take it. A level whose free spots are all reserved is
   full for every other vehicle, which goes on to the next level or gets

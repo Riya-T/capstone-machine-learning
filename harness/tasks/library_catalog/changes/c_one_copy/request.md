@@ -9,8 +9,8 @@ once.
 - Other borrowers can still check out copies of that book, the borrower can
   still check out other books, and once the borrower has returned their
   copy they may check the book out again.
-- `AlreadyBorrowed` is checked after every `KeyError` and `ValueError` check
-  and before `NoCopyAvailable`: a borrower who holds the only copy and asks
-  for another one gets `AlreadyBorrowed`.
+- When such a call also has another problem (an ISBN not in the catalog,
+  an invalid borrower, or no copy left on the shelf), which error is raised
+  is unspecified.
 
 All existing behavior must keep working.

@@ -28,6 +28,7 @@ def test_clear_prefix_removes_every_matching_key():
     cache.put("item:1", 2)
     cache.put("user:2", 3)
     cache.put("item:2", 4)
-    assert cache.clear_prefix("user:") == ["user:2", "user:1"]
+    cache.get("user:1")  # now the most recently used
+    assert cache.clear_prefix("user:") == ["user:1", "user:2"]
     assert cache.get_keys() == ["item:2", "item:1"]
     assert cache.clear_prefix("other:") == []

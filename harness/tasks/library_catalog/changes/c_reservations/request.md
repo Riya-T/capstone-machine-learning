@@ -7,13 +7,14 @@ longest.
   which returns the borrowers waiting for the book, first in line first. A
   book nobody is waiting for has an empty queue. `get_reservations` raises
   `KeyError` for an ISBN that is not in the catalog.
-- `reserve` raises the first of these that applies, and then changes
-  nothing:
-  1. `KeyError` when the ISBN is not in the catalog;
-  2. `ValueError` when the borrower is not a valid id;
-  3. `AlreadyBorrowed` if the borrower has a copy of the book checked out;
-  4. `LibraryError` if the borrower is already waiting for the book, or if
-     a copy of it is on the shelf (they should check it out instead).
+- `reserve` raises one of these, and then changes nothing:
+  - `KeyError` when the ISBN is not in the catalog;
+  - `ValueError` when the borrower is not a valid id;
+  - `AlreadyBorrowed` if the borrower has a copy of the book checked out;
+  - `LibraryError` if the borrower is already waiting for the book, or if
+    a copy of it is on the shelf (they should check it out instead).
+
+  Which one is raised when several apply is unspecified.
 - When `return_book` takes back a copy while borrowers are waiting, the
   copy is lent to the first of them in the same call and never reaches the
   shelf. As one step: the returner's loan ends, the waiting borrower gets

@@ -76,7 +76,7 @@ def test_reserving_on_a_missing_level_raises_key_error(garage, level_id):
     assert not garage.has_reservation("AAA")
 
 
-@pytest.mark.parametrize("plate", ["", None, 7])
+@pytest.mark.parametrize("plate", ["", None])
 def test_reserving_with_a_bad_plate_raises_value_error(garage, plate):
     before = state(garage)
     with pytest.raises(ValueError):

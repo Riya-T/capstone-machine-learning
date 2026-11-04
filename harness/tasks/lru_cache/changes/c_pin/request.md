@@ -15,5 +15,6 @@ Let entries in `cache.py` be pinned, so they are never dropped.
 - Pinned entries still appear in `get_keys` in their usual position, and
   `get` and `put` on them work as before.
 
-Error order for `put`: `ValueError` for a bad key or value, then
-`CacheFull`. All existing behavior must keep working.
+When every entry is pinned and `put` of a new key also has a bad key or
+value, which error is raised is unspecified. All existing behavior must
+keep working.

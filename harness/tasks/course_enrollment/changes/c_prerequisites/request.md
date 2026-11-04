@@ -3,8 +3,9 @@ before a student may enroll in it.
 
 - `add_course` takes a new keyword argument `prerequisites=()`: a list or
   tuple of course ids. Each one must be a course that was already added;
-  otherwise `KeyError` is raised and the course is not added. This check
-  comes after every existing check of `add_course`.
+  otherwise `KeyError` is raised and the course is not added. When the
+  call also has another problem (an invalid id or capacity, or an id
+  already added), which error is raised is unspecified.
 - Add `Registrar.record_completion(student_id, course_id)`, which records
   that the student has passed the course, for example in an earlier term.
   The student does not have to be enrolled in it, and recording a
@@ -16,8 +17,10 @@ before a student may enroll in it.
   raises `KeyError` for a student that has not been added.
 - Add `class MissingPrerequisite(EnrollmentError)` to `enrollment.py`.
 - `enroll` raises `MissingPrerequisite` and changes nothing unless the
-  student has completed every prerequisite of the course. This is checked
-  after the check for a student already enrolled and before `CourseFull`.
+  student has completed every prerequisite of the course. When the call
+  also has another problem (an id that has not been added, a student
+  already enrolled, or a full course), which error is raised is
+  unspecified.
 - A course added without prerequisites can be joined by any student, as
   before.
 

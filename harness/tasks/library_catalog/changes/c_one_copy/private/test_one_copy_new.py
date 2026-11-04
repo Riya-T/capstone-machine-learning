@@ -34,12 +34,8 @@ def test_a_second_copy_of_a_held_book_is_refused(library):
     assert library.get_available("978-1") == 2
 
 
-def test_holding_the_only_copy_is_reported_before_no_copy(library):
+def test_others_still_find_no_copy_when_none_is_left(library):
     library.check_out("978-2", "ben")
-    before = state(library)
-    with pytest.raises(AlreadyBorrowed):
-        library.check_out("978-2", "ben")
-    assert state(library) == before
     with pytest.raises(NoCopyAvailable):
         library.check_out("978-2", "ana")
 
@@ -55,7 +51,7 @@ def test_the_rule_is_per_book(library):
     library.check_out("978-2", "ana")
     assert library.get_loans("ana") == ["978-1", "978-2"]
     with pytest.raises(AlreadyBorrowed):
-        library.check_out("978-2", "ana")
+        library.check_out("978-1", "ana")  # 2 copies are still on the shelf
 
 
 def test_the_book_may_be_borrowed_again_once_returned(library):
@@ -92,7 +88,7 @@ def test_repeated_refusals_change_nothing(library):
     assert state(library) == before
 
 
-def test_bad_input_still_comes_first(library):
+def test_bad_input_still_raises(library):
     with pytest.raises(KeyError):
         library.check_out("978-9", "ana")
     with pytest.raises(ValueError):

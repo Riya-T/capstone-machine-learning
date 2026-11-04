@@ -23,6 +23,16 @@ def test_division_standings_list_only_that_division():
     assert s.get_standings() == ["Lions", "Cowboys", "Bears"]
 
 
+def test_teams_without_a_division_have_no_division_games():
+    s = make_season()
+    s.add_team("Jets")
+    s.add_team("Giants")
+    s.record_game("Jets", "Giants", 20, 3)
+    record = s.get_record("Jets")
+    assert record["wins"] == 1
+    assert (record["division_wins"], record["division_losses"], record["division_ties"]) == (0, 0, 0)
+
+
 def test_division_games_are_counted_separately():
     s = make_season()
     s.record_game("Lions", "Bears", 20, 10)

@@ -88,18 +88,6 @@ def test_a_trade_over_the_cap_changes_nothing(roster):
     assert state(roster) == before
 
 
-def test_problems_are_reported_in_order(roster):
-    with pytest.raises(KeyError):
-        roster.trade(["Zed", "Zed"], [("", "QB", 0)])
-    with pytest.raises(ValueError):
-        roster.trade(["Ada", "Ada"], [("Bo", "C", 1000)])
-    with pytest.raises(ValueError):
-        roster.trade([], [("Bo", "QB", 1000)])
-    with pytest.raises(RosterError) as raised:
-        roster.trade([], [("Bo", "C", 1000)])
-    assert not isinstance(raised.value, CapExceeded)
-
-
 def test_existing_players_keep_their_details(roster):
     roster.trade(["Bo"], [("Dee", "C", 10)])
     assert roster.get_player("Ada") == {"name": "Ada", "position": "PG", "salary": 40}

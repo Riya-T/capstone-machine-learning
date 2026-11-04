@@ -67,24 +67,6 @@ def test_transfers_from_a_frozen_account_are_refused(ledger):
     assert state(ledger) == before
 
 
-def test_frozen_is_reported_before_missing_funds(ledger):
-    ledger.freeze("bob")
-    with pytest.raises(AccountFrozen):
-        ledger.withdraw("bob", 100)
-    with pytest.raises(AccountFrozen):
-        ledger.transfer("bob", "alice", 100)
-
-
-def test_bad_input_is_reported_before_frozen(ledger):
-    ledger.freeze("alice")
-    with pytest.raises(ValueError):
-        ledger.withdraw("alice", -1)
-    with pytest.raises(ValueError):
-        ledger.transfer("alice", "alice", 5)
-    with pytest.raises(KeyError):
-        ledger.transfer("alice", "carol", 5)
-
-
 def test_account_frozen_is_a_ledger_error_but_not_insufficient_funds():
     assert issubclass(AccountFrozen, LedgerError)
     assert not issubclass(AccountFrozen, InsufficientFunds)

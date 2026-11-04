@@ -44,7 +44,7 @@ sequences:
       - change: c_prerequisites
       - change: c_waitlist
         planted_bugs:
-          - path: bugs/waitlist_full_before_prerequisites  # required regression bug: breaks step 1
+          - path: bugs/prerequisites_only_checked_when_waiting  # required regression bug: breaks step 1
             must_fail: [existing]
             must_pass: [new_feature]
   - id: s2
@@ -52,6 +52,6 @@ sequences:
       - change: c_freeze
       - change: c_prerequisites
         planted_bugs:
-          - path: bugs/prerequisites_freeze_checked_late  # required regression bug: breaks step 1
+          - path: bugs/freeze_only_checked_with_prerequisites  # required regression bug: breaks step 1
             must_fail: [existing]
             must_pass: [new_feature]

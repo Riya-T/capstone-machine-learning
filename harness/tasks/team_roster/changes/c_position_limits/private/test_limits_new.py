@@ -6,7 +6,7 @@ Usage (with roster.py importable, e.g. in the sandbox):
 """
 
 import pytest
-from roster import CapExceeded, Roster, RosterError
+from roster import Roster, RosterError
 
 BIG_CAP = 10**6  # leaves the cap out of these tests unless a test says otherwise
 
@@ -54,24 +54,14 @@ def test_a_limit_of_zero_closes_a_position():
 
 @pytest.mark.parametrize(
     "limits",
-    [{"QB": 1}, {"C": -1}, {"C": 1.5}, {"C": True}, {"C": "1"}, [("C", 1)], "C"],
+    [{"QB": 1}, {"C": -1}, {"C": 1.5}, {"C": "1"}, [("C", 1)], "C"],
 )
 def test_invalid_limits_are_rejected(limits):
     with pytest.raises(ValueError):
         Roster(BIG_CAP, position_limits=limits)
 
 
-def test_a_full_position_is_reported_before_the_cap():
-    r = Roster(100, position_limits={"C": 1})
-    r.add_player("Bo", "C", 90)
-    with pytest.raises(RosterError) as raised:
-        r.add_player("Dee", "C", 50)
-    assert not isinstance(raised.value, CapExceeded)
-
-
-def test_earlier_checks_still_come_first(roster):
-    with pytest.raises(ValueError):
-        roster.add_player("Eve", "PG", -1)  # bad salary before a full position
+def test_a_repeated_name_is_still_a_roster_error(roster):
     with pytest.raises(RosterError):
         roster.add_player("Ada", "PG", 10)  # duplicate name, whether or not PG is full
 
@@ -89,10 +79,3 @@ def test_a_trade_that_overfills_a_position_changes_nothing(roster):
         roster.trade(["Ada"], [("Dee", "C", 10), ("Eve", "C", 10)])
     assert state(roster) == before
 
-
-def test_a_trade_overfilling_a_position_is_reported_before_the_cap():
-    r = Roster(100, position_limits={"C": 1})
-    r.add_player("Bo", "C", 50)
-    with pytest.raises(RosterError) as raised:
-        r.trade([], [("Dee", "C", 60)])
-    assert not isinstance(raised.value, CapExceeded)

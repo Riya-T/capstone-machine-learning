@@ -70,28 +70,6 @@ def test_freezing_one_course_leaves_the_others_open(registrar):
     assert registrar.is_frozen("ART150") is False
 
 
-def test_frozen_is_reported_before_already_enrolled(registrar):
-    registrar.enroll("ana", "CS101")
-    registrar.freeze_course("CS101")
-    with pytest.raises(CourseFrozen):
-        registrar.enroll("ana", "CS101")
-
-
-def test_frozen_is_reported_before_a_full_course(registrar):
-    registrar.enroll("ana", "MATH200")
-    registrar.freeze_course("MATH200")
-    with pytest.raises(CourseFrozen):
-        registrar.enroll("ben", "MATH200")
-
-
-def test_unknown_ids_are_reported_before_frozen(registrar):
-    registrar.freeze_course("CS101")
-    with pytest.raises(KeyError):
-        registrar.enroll("zoe", "CS101")
-    with pytest.raises(KeyError):
-        registrar.enroll(None, "CS101")
-
-
 def test_course_frozen_is_an_enrollment_error_but_not_course_full():
     assert issubclass(CourseFrozen, EnrollmentError)
     assert not issubclass(CourseFrozen, CourseFull)

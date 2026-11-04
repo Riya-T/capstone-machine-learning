@@ -12,8 +12,8 @@ search by borrower and by book.
   entries stay oldest first. A borrower who has never checked anything out
   gets `[]`.
 - `None` means "no filter". `get_log` raises `KeyError` for an `isbn` that is
-  not in the catalog, then `ValueError` for a `borrower` that is not a
-  non-empty string.
+  not in the catalog and `ValueError` for the borrower `""`. Which is
+  raised when both are wrong is unspecified.
 - Adding copies adds nothing to the log, and neither does a call that
   raises.
 

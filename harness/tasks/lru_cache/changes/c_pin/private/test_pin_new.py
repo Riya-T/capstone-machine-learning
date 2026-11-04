@@ -108,14 +108,5 @@ def test_a_dropped_key_put_again_is_not_pinned(cache):
     assert cache.is_pinned("c")
 
 
-def test_bad_input_is_reported_before_cache_full(cache):
-    for key in ["a", "b", "c"]:
-        cache.pin(key)
-    with pytest.raises(ValueError):
-        cache.put("", 1)
-    with pytest.raises(ValueError):
-        cache.put("d", "4")
-
-
 def test_cache_full_is_not_a_key_or_value_error():
     assert not issubclass(CacheFull, (KeyError, ValueError))

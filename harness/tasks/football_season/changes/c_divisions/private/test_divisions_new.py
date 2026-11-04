@@ -52,7 +52,7 @@ def test_a_division_no_team_belongs_to_raises_key_error(season):
         season.get_standings("West")
 
 
-@pytest.mark.parametrize("division", ["", 5])
+@pytest.mark.parametrize("division", [""])
 def test_invalid_divisions_are_rejected(division):
     s = Season()
     with pytest.raises(ValueError):

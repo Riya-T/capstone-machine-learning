@@ -108,17 +108,12 @@ def test_an_isbn_filter_not_in_the_catalog_raises_key_error(busy, isbn):
         busy.get_log(isbn=isbn)
 
 
-@pytest.mark.parametrize("borrower", ["", 5])
+@pytest.mark.parametrize("borrower", [""])
 def test_an_invalid_borrower_filter_raises_value_error(busy, borrower):
     with pytest.raises(ValueError):
         busy.get_log(borrower=borrower)
     with pytest.raises(ValueError):
         busy.get_log(borrower=borrower, isbn="978-1")
-
-
-def test_an_isbn_filter_not_in_the_catalog_is_reported_before_a_bad_borrower(busy):
-    with pytest.raises(KeyError):
-        busy.get_log(borrower="", isbn="978-9")
 
 
 def test_reading_the_log_changes_nothing(busy):

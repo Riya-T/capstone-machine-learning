@@ -6,7 +6,7 @@ Usage (with garage.py importable, e.g. in the sandbox):
 """
 
 import pytest
-from garage import Garage, GarageError, GarageFull
+from garage import Garage, GarageFull
 
 BAD_SIZES = ["tiny", "LARGE", "", None, 1]
 
@@ -95,22 +95,3 @@ def test_get_size_reports_a_parked_vehicle_until_it_leaves(garage):
         with pytest.raises(KeyError):
             garage.get_size(plate)
 
-
-def test_a_bad_size_is_reported_before_already_parked(garage):
-    garage.enter("AAA", 1)
-    with pytest.raises(ValueError):
-        garage.enter("AAA", 2, size="tiny")
-
-
-def test_already_parked_is_reported_before_no_fitting_level(garage):
-    garage.enter("L1", 1, size="large")
-    garage.enter("L2", 2, size="large")
-    with pytest.raises(GarageError) as info:
-        garage.enter("L1", 3, size="large")
-    assert not isinstance(info.value, GarageFull)
-
-
-def test_a_bad_level_size_is_reported_before_a_duplicate_id(garage):
-    with pytest.raises(ValueError):
-        garage.add_level("P1", 3, max_size="huge")
-    assert garage.get_max_size("P1") == "small"

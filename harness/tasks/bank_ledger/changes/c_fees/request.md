@@ -1,7 +1,7 @@
 Charge a fee on every withdrawal and every outgoing transfer in `ledger.py`.
 
 - `Ledger` takes a new keyword argument `fee=0`: the fee in cents. It must
-  be an `int` that is 0 or more (not a `bool`); anything else raises
+  be an `int` that is 0 or more; anything else raises
   `ValueError`.
 - Each successful `withdraw` and `transfer` also takes the fee from the
   account the money leaves. Deposits and incoming transfers are free.

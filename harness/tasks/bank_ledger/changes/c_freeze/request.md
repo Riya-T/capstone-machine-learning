@@ -9,8 +9,9 @@ payment is being checked.
 - While an account is frozen, withdrawing from it, transferring from it and
   transferring to it raise `AccountFrozen` and change nothing. Deposits into
   a frozen account still work.
-- `AccountFrozen` is checked after every `KeyError` and `ValueError` check
-  and before `InsufficientFunds`.
+- When such a call also has another problem (an account that is not open,
+  an invalid amount, a transfer to the same account, or too little money),
+  which error is raised is unspecified.
 - Freezing and unfreezing add nothing to the history.
 
 All existing behavior must keep working.

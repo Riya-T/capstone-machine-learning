@@ -8,7 +8,7 @@ Usage (with ledger.py importable, e.g. in the sandbox):
 import pytest
 from ledger import InsufficientFunds, Ledger, LedgerError
 
-BAD_LIMITS = [-1, 1.5, "100", True, None]
+BAD_LIMITS = [-1, 1.5, "100", None]
 
 
 @pytest.fixture
@@ -95,13 +95,3 @@ def test_invalid_limits_are_rejected_when_setting(ledger, limit):
         ledger.set_overdraft_limit("alice", limit)
     assert ledger.get_overdraft_limit("alice") == 500
 
-
-def test_an_account_that_is_not_open_is_reported_before_a_bad_limit(ledger):
-    with pytest.raises(KeyError):
-        ledger.set_overdraft_limit("carol", -1)
-
-
-def test_a_bad_limit_is_reported_before_the_debt_check(ledger):
-    ledger.withdraw("alice", 300)
-    with pytest.raises(ValueError):
-        ledger.set_overdraft_limit("alice", -1)

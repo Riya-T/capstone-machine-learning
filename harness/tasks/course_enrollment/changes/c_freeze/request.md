@@ -12,7 +12,8 @@ example while the course is being moved to another room.
   course's roster and open seats can still be read.
 - Only enrolling in the frozen course is blocked: other courses, and every
   other method, work as before.
-- In `enroll`, `CourseFrozen` is checked after both `KeyError` checks and
-  before every other check.
+- When an `enroll` call for a frozen course also has another problem (an
+  id that has not been added, a student already enrolled, or a full
+  course), which error is raised is unspecified.
 
 All existing behavior must keep working.

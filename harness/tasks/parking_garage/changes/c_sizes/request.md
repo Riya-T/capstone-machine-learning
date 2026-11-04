@@ -21,8 +21,6 @@ a level it fits on.
   vehicle. It raises `KeyError` for a plate that is not parked, including
   non-str values.
 
-Error order for `enter`: `ValueError` for a bad plate, minute or size (in
-any order among those three), then `GarageError` for a plate that is already
-parked, then `GarageFull`. For `add_level`: `ValueError` for any bad
-argument, then `GarageError` for an id that was already added. All existing
-behavior must keep working.
+Which error `enter` or `add_level` raises when one call has several
+problems (for example a bad size and a plate that is already parked) is
+unspecified. All existing behavior must keep working.

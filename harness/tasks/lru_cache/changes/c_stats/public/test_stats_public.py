@@ -20,6 +20,15 @@ def test_hits_and_misses_are_counted():
     assert cache.get_hit_count("a") == 2
 
 
+def test_replacing_a_value_keeps_the_hit_count():
+    cache = Cache(2)
+    cache.put("a", 1)
+    cache.get("a")
+    cache.put("a", 2)
+    assert cache.get_hit_count("a") == 1
+    assert cache.get_stats() == (1, 0, 0)
+
+
 def test_evictions_are_counted_and_listed():
     cache = Cache(1)
     cache.put("a", 1)
