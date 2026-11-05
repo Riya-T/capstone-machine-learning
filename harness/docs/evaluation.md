@@ -84,7 +84,7 @@ From `harness/`, using the existing Python environment:
 ```bash
 uv run python -m harness evaluation-report \
   --input fixtures/evaluation/fixture_original.json fixtures/evaluation/fixture_candidate.json \
-  --reference fixture_original --out runs/evaluation-demo
+  --reference fixture_original --out runs/evaluation-demo-audited
 ```
 
 On PowerShell, put that command on one line instead of using Bash backslashes.
@@ -97,11 +97,17 @@ Outputs:
 - `report.md`: readable method comparison, paired difference, interval, costs and limits.
 - `comparison.json`: all metrics, family values, provenance, and input records.
 - `summary.csv`: one method/metric row, including coverage and interval bounds.
+- `comparisons.csv`: paired differences and intervals for every metric, in absolute rate units.
+- `families.csv`: each family/metric value and unresolved flag, for inspection.
+- `manifest.json`: SHA-256 checksums, published last to mark a complete report bundle.
 - `trajectories.csv`: each scheduled sequence/repetition, including initial failures
   and unresolved outcomes. Steps after a failure are not fabricated.
 
 Identical output can be replayed; differing existing reports are never overwritten.
-Choose a new output directory when changing the inputs or analysis options.
+Choose a new output directory when changing the inputs, report version, or analysis options.
+Individual files are flushed and published atomically without overwriting. If writing is
+interrupted, the absent manifest marks the bundle incomplete; replay safely finishes it.
+A complete bundle is one whose files match every checksum in its manifest.
 
 ## Preview and run a matched comparison
 
@@ -130,6 +136,10 @@ settings and editor, and uses each declared generation seed in its own store.
 Training checkpoint seeds should be separate named methods; generation seeds are
 not a replacement for training seeds.
 
+The preview includes the frozen execution schedule. Method order rotates between
+generation seeds; with one seed there is no order counterbalance. Jobs remain
+sequential; this does not counterbalance individual editing attempts within a job.
+
 The preview lists tasks, namespaces, and logical upper bounds on writer calls,
 editing checkpoints, editor generations and output tokens. Calls often stop earlier
 after initial/step failures. The bounds exclude operational HTTP retries in the
@@ -152,6 +162,15 @@ stores/<method>/<seed>/    new normal collector stores and original raw artifact
 exports/                  content-addressed evaluation snapshots
 reports/                  content-addressed report directories
 ```
+
+The controller rechecks source, resolved configs, task versions, and writer/editor
+input-file hashes before each job and around collection. Changed inputs stop the
+run without publishing a completion marker for the affected job. Keep inputs
+unchanged for the entire run; this guard does not make live-edited files immutable.
+Writer configuration identities must also agree across generation seeds of each
+named method. Legacy JSON without that identity has only its recorded model tag
+(or no identity evidence in the synthetic fixtures); do not treat it as a resolved
+weight digest. New exports verify edited source blobs as well as initial blobs.
 
 The controller is exclusive across processes. It locks the sandbox image before
 inference and checks it across methods. Completed jobs have a verified dataset hash
@@ -214,7 +233,7 @@ with mock/reference code; it is software validation, not model evidence.
 
 No real model comparison has been run for this software change. The first version
 still needs Linux/Docker execution validation where that runtime is available.
-Graphical plots, comment-density/stripping and size matching, inference serving of
+Graphical plots, comment stripping and size matching, inference serving of
 trained adapters, baseline training, and hierarchical pooling across trained seeds
 are follow-up work, not silently supplied by these fixtures.
 
@@ -239,3 +258,21 @@ are follow-up work, not silently supplied by these fixtures.
 This receipt describes software validation, not evidence that training improves
 modification outcomes. Cross-training-seed pooling, plots and proposal ablations
 remain explicit follow-up work.
+
+## Audit improvements (2026-11-05)
+
+The self-audit reproduced six first-version defects before fixing them. See
+[evaluation-audit.md](evaluation-audit.md) for findings, regression coverage and
+remaining limitations. Reports now include direct paired/family CSV exports and a
+completion manifest; use a fresh demo output directory rather than replacing the
+first-version report.
+
+New saved-store exports include descriptive initial/edited source measurements:
+physical source lines, Python lines, comment lines (including inline comments),
+actual module/class/function docstring lines, and their union divided by Python
+lines. Documentation cannot exceed one by double-counting overlapping lines.
+Invalid syntax/encoding makes documentation measurements unknown; parsing is
+never a claim of behavioral correctness. No candidate code runs during analysis.
+The report shows known family-weighted means for initially passing programs and
+missing sample counts. These are not causal maintainability measures or size-matched
+comparisons. Old exported JSON remains usable with those fields unavailable.

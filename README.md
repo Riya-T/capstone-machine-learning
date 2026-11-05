@@ -301,12 +301,14 @@ stores and compares all initial attempts, without selecting a passing alternativ
 Its default is a safe preview; model execution requires an explicit `--run`.
 Saved-only reporting needs no model server or Docker. It writes JSON, CSV and a
 readable report with initial test success, consecutive changes, full sequences,
-regressions, recorded costs, and paired task-family bootstrap intervals.
+regressions, recorded costs, and paired task-family bootstrap intervals. It also
+exports per-family and paired CSV tables, descriptive source/documentation metrics,
+and a checksum manifest for safe interrupted-report recovery.
 
 ```bash
 cd harness
 uv run python -m harness evaluate --plan configs/evaluation.example.yaml
-uv run python -m harness evaluation-report --input fixtures/evaluation/fixture_original.json fixtures/evaluation/fixture_candidate.json --reference fixture_original --out runs/evaluation-demo
+uv run python -m harness evaluation-report --input fixtures/evaluation/fixture_original.json fixtures/evaluation/fixture_candidate.json --reference fixture_original --out runs/evaluation-demo-audited
 ```
 
 The second command uses **synthetic validation fixtures, not model results**.

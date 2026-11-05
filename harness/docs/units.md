@@ -99,4 +99,7 @@ subpackages next to `collection/`.
 | `analysis.py`, `report.py` | Family-weighted outcomes, paired exploratory bootstrap intervals, coverage and costs; safe JSON/CSV/Markdown output. | `tests/evaluation/test_analysis.py` |
 | `plan.py`, `cli.py` | Matched plans, dry-run, explicit isolated collection, locks, snapshots and offline/completed resume. | `tests/evaluation/test_plan.py`, optional `test_docker.py` |
 
+| `storage.py` | Atomic non-overwriting evidence publication and safe interrupted writes. | `tests/evaluation/test_audit.py` |
+| `source.py` | Non-executing descriptive source/comment/docstring measurements, with explicit unknowns. | `tests/evaluation/test_source.py` |
+
 Instructions, proposal mapping and first-version limitations: [evaluation.md](evaluation.md).
