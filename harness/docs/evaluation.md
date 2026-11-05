@@ -1,5 +1,8 @@
 # Writer evaluation and comparison
 
+The [additional analysis guide](evaluation-analysis.md) covers preflight, size matching,
+training-checkpoint summaries, human review and publication figures.
+
 For the offline dashboard, checkpoint inspection and verification workflow, see
 [inspection and verification features](evaluation-features.md).
 For the proposal checklist, all-five-method configuration and the later successful
@@ -74,8 +77,9 @@ and unused allowance is not a target to consume.
 
 The tool will compare any separately served writer checkpoints. It does not
 train the proposed baselines, merge/quantize adapters, or claim that an adapter
-exists. Each trained seed can be registered as a separate method until a
-separately specified cross-training-seed analysis is available. Comment
+exists. Each trained seed is registered as a separate method. The optional seed-summary
+workflow reports group averages conditional on those observed checkpoints, with
+uncertainty over task families and all individual seeds retained. Comment
 stripping, size matching, and a second editor are separate proposal deliverables;
 they must not silently change the collection editor or its cached results here.
 

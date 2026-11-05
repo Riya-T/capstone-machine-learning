@@ -82,7 +82,8 @@ This is a  rough list of tasks we need to complete and is definitely subject to 
   template records three training checkpoints per trained method separately.
   Real container smoke/isolation and Linux/Python 3.11 tests passed. See
   `harness/docs/evaluation-coverage.md` for the proposal checklist and limits.
-  Actual trained-model evaluation and cross-training-seed pooling remain separate work.
+  Actual trained-model evaluation remains separate work. Optional checkpoint summaries
+  retain individual seeds and condition uncertainty on the observed checkpoint set.
 - [ ] **Run all five methods** — Original model, maintainability prompt,
   correctness-only, static ranking and ours, on the held-out tasks with the
   same editor and budget.
@@ -97,8 +98,8 @@ This is a  rough list of tasks we need to complete and is definitely subject to 
   docstrings removed before the editor sees the code.
 - [ ] **Comment density** — Reporting code supports all generated and initially
   correct programs; collect and interpret the actual methods' results.
-- [ ] **Size-matched check** — Check whether gains come only from shorter
-  code.
+- [ ] **Size-matched check** — A saved-only sensitivity tool now records matching
+  rules and family exclusions; freeze and apply the rule to the actual method results.
 - [ ] **Shorter or fewer editing runs** — Train with pairs from 1 change
   instead of 2, and from 1 repetition instead of 3, to see if the cheaper
   signal works as well.
@@ -111,7 +112,8 @@ This is a  rough list of tasks we need to complete and is definitely subject to 
   types, and on new task families.
 - [ ] **Error analysis** — Sort failed changes by cause: task too hard, bug in
   the first program, editor mistake, unclear test, or infrastructure.
-- [ ] **Plots** — Charts of the main results and costs.
+- [ ] **Plots** — PNG/SVG export is implemented; produce and interpret figures from
+  the actual held-out results.
 - [ ] **Reproduction instructions** — README commands to rerun every result.
 - [x] **CI** — Run the CPU tests automatically on GitHub
   (`.github/workflows/tests.yml`).

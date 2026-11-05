@@ -477,3 +477,19 @@ The harness needs Linux and Docker; on Windows, use WSL2.
 - If git inside WSL reports "dubious ownership", run
   `git config --global --add safe.directory '<repo path>'` inside WSL.
 
+
+### Additional evaluation analysis
+
+The evaluation tool also provides read-only preflight checks, size-matched
+sensitivity comparisons, fixed-checkpoint training-seed summaries, immutable human
+failure-review packs and PNG/SVG figures. These operate on saved reports and keep
+primary scores unchanged. See [the analysis workflow guide](harness/docs/evaluation-analysis.md).
+
+```bash
+cd harness
+uv sync --locked --extra plots
+uv run python examples/evaluation_workflow.py --out runs/evaluation-analysis-demo-v2 --plots
+```
+
+This walkthrough uses explicitly synthetic outcomes, sizes and checkpoint labels.
+It demonstrates software behavior, not a trained-model improvement.

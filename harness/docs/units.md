@@ -111,3 +111,15 @@ Additional evaluation units:
 | `diagnostics.py` | Planned-checkpoint ledger and first-stop accounting; never invents later outcomes. | `tests/evaluation/test_diagnostics.py` |
 | `integrity.py` | Read-only manifest verification and score recomputation from saved records. | `tests/evaluation/test_integrity.py` |
 | `dashboard.py` | Self-contained, escaped HTML dashboard with display-only filters. | `tests/evaluation/test_dashboard.py` |
+
+| Analysis unit | Purpose | Tests |
+|---|---|---|
+| `preflight.py` | Read-only readiness, local model advertisements and Docker/image inspection. | `test_preflight.py` |
+| `matching.py` | Outcome-blind whole-family size matching and separate sensitivity reports. | `test_matching.py` |
+| `seeds.py` | Observed checkpoint variation with task-family uncertainty. | `test_seeds.py` |
+| `review.py` | Immutable cases, verified source previews and separate human annotations. | `test_review.py` |
+| `figures.py` | Reproducible, labeled PNG/SVG export with optional Matplotlib. | `test_figures.py` |
+| `artifacts.py` | Non-overwriting derived bundles, safe CSV text and source-report binding. | Workflow and integrity tests |
+
+`test_extension_cli.py` checks that the public saved-only commands interoperate
+without contacting model or container backends.

@@ -1,6 +1,8 @@
 # Evaluation coverage against the proposal
 
-The main metrics in `Task_list.md` section 6 are implemented. The wider proposal
+The main metrics in `Task_list.md` section 6 are implemented. The later
+[analysis extensions](evaluation-analysis.md) add preflight, figures, human review,
+size matching and summaries over the fixed observed training checkpoints. The wider proposal
 also requires experimental controls, ablation runs and human analysis; software
 support is not evidence that those experiments have been completed.
 
@@ -65,7 +67,9 @@ weight/adapter digests and server quantization separately; tags are not resolved
 weight digests.
 
 Each trained checkpoint retains its own results and family-bootstrap intervals.
-No automatic pooling or hierarchical inference over training seeds is claimed.
+The optional `evaluation-seeds` workflow additionally summarizes the fixed observed
+checkpoint set while bootstrapping task families. No hierarchical inference over
+future training seeds is claimed.
 Report every seed, including adverse seeds, and predeclare any across-seed summary
 before inspecting the held-out results. The new prompt-only baseline is a draft
 control template; review/freeze it with the team using dev tasks before a real run.
@@ -77,12 +81,12 @@ control template; review/freeze it with the team using dev tasks before a real r
 | Matched held-out task families, editor and budgets | Enforced in plan preparation and comparison; family split checks reuse the registry. New eval task sequences retain their third change. |
 | Familiar versus eval-only change kinds | New exports record the actual change-kind mapping and checkpoint ledger column. Older exports honestly lack it. Kind-specific success must be interpreted among reached checkpoints, not as an independent causal test; a predeclared aggregate analysis remains work. |
 | Repeated editing and random seeds | Supported and fully recorded. Training checkpoint seeds and generation seeds are explicitly distinct. |
-| Failure analysis | First-stop and checkpoint tables distinguish code/new-feature/preserved-behavior failures, budget, infrastructure, missing and not-reached work. Establishing initial bugs, editor mistakes, unclear tests or structural difficulty still requires human review and executable reproductions. The tool does not invent causal labels. |
+| Failure analysis | Immutable review packs, source previews and separate human annotations complement the first-stop/checkpoint tables. These distinguish code/new-feature/preserved-behavior failures, budget, infrastructure, missing and not-reached work. Establishing initial bugs, editor mistakes, unclear tests or structural difficulty still requires human review and executable reproductions. The tool does not invent causal labels. |
 | Comments/docstrings removed | Not implemented in the fixed editor. Requires a separately frozen transform protocol, reference validation and new ablation runs; removing docstrings can change observable `__doc__` behavior. The original editor and cached results remain unchanged. |
-| Size-matched check | Source sizes are available. Selecting and freezing a matching rule and reporting excluded families/parents remains a separate analysis; no post-outcome matching rule was silently chosen. |
+| Size-matched check | Source sizes are available. The size-matching workflow now records a required tolerance, whole-family membership and all exclusions. Freeze its rule before outcomes; it is a separate sensitivity result, not a replacement primary score. |
 | One versus two changes / one versus three repetitions for training pairs | Existing team scorer already exposes `max_changes` and `reps` for saved-result preference construction. Training and evaluating those derived writers is separate work. |
 | Second editor | Supported as a separate matched plan in which every method shares that editor. Different editors cannot be mixed in one primary comparison. Actual independent-editor inference is a stretch experiment, not completed here. |
-| Plots and final scientific report | Offline dashboard, tables and CSV/JSON exports exist. Publication figures, interpretations and the final write-up require real experimental data. |
+| Plots and final scientific report | Offline dashboard, CSV/JSON tables and PNG/SVG publication-figure export exist. Actual scientific findings, interpretations and the final write-up still require real experimental data. |
 | Train all controls and run the held-out comparison | Not done by this tool-building task. No training, real-model generation or measured model improvement is claimed. |
 
 ## Runtime validation
