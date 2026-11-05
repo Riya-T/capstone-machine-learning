@@ -103,3 +103,11 @@ subpackages next to `collection/`.
 | `source.py` | Non-executing descriptive source/comment/docstring measurements, with explicit unknowns. | `tests/evaluation/test_source.py` |
 
 Instructions, proposal mapping and first-version limitations: [evaluation.md](evaluation.md).
+
+Additional evaluation units:
+
+| Unit | Purpose | Tests |
+|---|---|---|
+| `diagnostics.py` | Planned-checkpoint ledger and first-stop accounting; never invents later outcomes. | `tests/evaluation/test_diagnostics.py` |
+| `integrity.py` | Read-only manifest verification and score recomputation from saved records. | `tests/evaluation/test_integrity.py` |
+| `dashboard.py` | Self-contained, escaped HTML dashboard with display-only filters. | `tests/evaluation/test_dashboard.py` |

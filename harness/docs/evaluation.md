@@ -1,5 +1,8 @@
 # Writer evaluation and comparison
 
+For the offline dashboard, checkpoint inspection and verification workflow, see
+[inspection and verification features](evaluation-features.md).
+
 ## Purpose and first-version plan
 
 The project proposal, pages 2–4, requires matched held-out comparisons of
@@ -84,7 +87,7 @@ From `harness/`, using the existing Python environment:
 ```bash
 uv run python -m harness evaluation-report \
   --input fixtures/evaluation/fixture_original.json fixtures/evaluation/fixture_candidate.json \
-  --reference fixture_original --out runs/evaluation-demo-audited
+  --reference fixture_original --out runs/evaluation-features-demo
 ```
 
 On PowerShell, put that command on one line instead of using Bash backslashes.
@@ -119,7 +122,7 @@ A complete bundle is one whose files match every checksum in its manifest.
 Verify a report before sharing it, without a model server or Docker:
 
 ```bash
-uv run python -m harness evaluation-verify --report runs/evaluation-demo-audited
+uv run python -m harness evaluation-verify --report runs/evaluation-features-demo
 ```
 
 This checks the manifest and recomputes the saved analysis from its embedded

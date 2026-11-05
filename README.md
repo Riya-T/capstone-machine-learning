@@ -303,15 +303,24 @@ Saved-only reporting needs no model server or Docker. It writes JSON, CSV and a
 readable report with initial test success, consecutive changes, full sequences,
 regressions, recorded costs, and paired task-family bootstrap intervals. It also
 exports per-family and paired CSV tables, descriptive source/documentation metrics,
-and a checksum manifest for safe interrupted-report recovery.
+and a checksum manifest for safe interrupted-report recovery. The offline HTML
+dashboard filters individual outcomes; checkpoint and first-stop CSV exports
+make failures inspectable. A verification command checks saved bundles and
+recomputes their analysis without rerunning models.
 
 ```bash
 cd harness
 uv run python -m harness evaluate --plan configs/evaluation.example.yaml
-uv run python -m harness evaluation-report --input fixtures/evaluation/fixture_original.json fixtures/evaluation/fixture_candidate.json --reference fixture_original --out runs/evaluation-demo-audited
+uv run python -m harness evaluation-report --input fixtures/evaluation/fixture_original.json fixtures/evaluation/fixture_candidate.json --reference fixture_original --out runs/evaluation-features-demo
 ```
 
 The second command uses **synthetic validation fixtures, not model results**.
+Open `harness/runs/evaluation-features-demo/report.html` to view the dashboard.
+From `harness/`, verify it with:
+
+```bash
+uv run python -m harness evaluation-verify --report runs/evaluation-features-demo
+```
 See [the evaluation guide](harness/docs/evaluation.md) for matched plans, adding
 trained/baseline checkpoints, explicit execution, read-only export, resume, metric
 denominators, limitations and tests. Existing tasks, collection settings and saved
