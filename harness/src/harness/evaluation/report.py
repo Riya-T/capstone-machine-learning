@@ -25,6 +25,8 @@ OUTPUT_NAMES = (
     "trajectories.csv",
     "checkpoints.csv",
     "failures.csv",
+    "resources.csv",
+    "source_descriptives.csv",
     "report.md",
     "report.html",
     "manifest.json",
@@ -115,24 +117,38 @@ def render_markdown(result):
         )
     lines += [
         "",
+        "Writing and editing costs are separated in `resources.csv`, for all generated "
+        "programs and the initially correct subset. Totals cover recorded attempts only; "
+        "unstarted work is not measured cost.",
+        "",
+    ]
+    lines += [
+        "",
         "## Initial source descriptions",
         "",
-        "Initially passing programs only. Known family-weighted means; missing samples "
+        "Both all generated programs and the initially passing subset. "
+        "Known family-weighted means; "
+        "missing samples "
         "remain disclosed. These measurements do not establish maintainability.",
         "",
-        "| Method | Source lines | Python documentation-line density | "
+        "| Method / population | Source lines | Python documentation-line density | "
         "Missing samples (lines / density) |",
         "|---|---:|---:|---:|",
     ]
     for name, method in result["methods"].items():
-        fields = method["initial_source_descriptives"]["fields"]
-        size, density = fields["source_lines"], fields["python_documentation_density"]
-        size_text = size["family_weighted_known_mean"]
-        lines.append(
-            f"| {name} | {'unavailable' if size_text is None else f'{size_text:.1f}'} | "
-            f"{_percent(density['family_weighted_known_mean'])} | "
-            f"{size['missing_samples']} / {density['missing_samples']} |"
-        )
+        for population, key in (
+            ("all generated", "all_generated_source_descriptives"),
+            ("initially correct", "initial_source_descriptives"),
+        ):
+            fields = method[key]["fields"]
+            size, density = fields["source_lines"], fields["python_documentation_density"]
+            size_text = size["family_weighted_known_mean"]
+            lines.append(
+                f"| {name} / {population} | "
+                f"{'unavailable' if size_text is None else f'{size_text:.1f}'} | "
+                f"{_percent(density['family_weighted_known_mean'])} | "
+                f"{size['missing_samples']} / {density['missing_samples']} |"
+            )
     lines += ["", "## Interpretation and limits", ""]
     lines += [f"- {note}" for note in result["notes"]]
     lines += [
@@ -206,6 +222,54 @@ def write_report(result: dict, directory: Path) -> dict[str, Path]:
     checkpoints, failures = diagnostic_rows(result)
     outputs["checkpoints.csv"] = _csv(checkpoints, CHECKPOINT_FIELDS)
     outputs["failures.csv"] = _csv(failures, FAILURE_FIELDS)
+    resources = [
+        dict(
+            method=method,
+            population=population,
+            phase=phase,
+            measurement=key,
+            **values,
+            recorded_attempts=details["recorded_attempts"],
+            unresolved_trajectories=group["unresolved_trajectories"],
+        )
+        for method, row in result["methods"].items()
+        for population, group in row["resource_breakdown"].items()
+        for phase, details in group["phases"].items()
+        for key, values in details["costs"].items()
+    ]
+    outputs["resources.csv"] = _csv(
+        resources,
+        [
+            "method",
+            "population",
+            "phase",
+            "measurement",
+            "known_total",
+            "missing_records",
+            "recorded_attempts",
+            "unresolved_trajectories",
+        ],
+    )
+    sources = [
+        dict(method=method, population=population, measurement=key, **values)
+        for method, row in result["methods"].items()
+        for population, name in (
+            ("all_generated", "all_generated_source_descriptives"),
+            ("initially_correct", "initial_source_descriptives"),
+        )
+        for key, values in row[name]["fields"].items()
+    ]
+    outputs["source_descriptives.csv"] = _csv(
+        sources,
+        [
+            "method",
+            "population",
+            "measurement",
+            "family_weighted_known_mean",
+            "contributing_families",
+            "missing_samples",
+        ],
+    )
     # Published last: absent manifest means a bundle is incomplete and safe to resume.
     outputs["manifest.json"] = json_text(
         dict(

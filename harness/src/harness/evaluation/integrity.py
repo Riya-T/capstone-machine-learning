@@ -93,5 +93,8 @@ def _analysis_matches(saved):
                     continue  # Added after the first report version.
                 if saved["methods"][method][key] != values[key]:
                     raise EvaluationError(f"Recomputed analysis differs: {method}/{key}")
+            for key in ("all_generated_source_descriptives", "resource_breakdown"):
+                if key in saved["methods"][method] and saved["methods"][method][key] != values[key]:
+                    raise EvaluationError(f"Recomputed analysis differs: {method}/{key}")
     except (KeyError, TypeError, AttributeError) as exc:
         raise EvaluationError(f"Malformed saved analysis: {exc}") from exc

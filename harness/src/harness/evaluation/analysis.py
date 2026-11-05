@@ -171,10 +171,15 @@ def _counts(cells):
     return dict(counts), costs
 
 
-def _source_descriptives(cells):
-    passing = [c for c in cells if c["sample"]["initial_status"] == "pass"]
+def _source_descriptives(cells, *, initial_only=True):
+    passing = [c for c in cells if not initial_only or c["sample"]["initial_status"] == "pass"]
     names = ("source_lines", "python_documentation_density")
-    result = dict(initially_passing_samples=len(passing), fields={})
+    if not initial_only:
+        names += ("python_comment_lines", "python_docstring_lines")
+    result = {
+        "initially_passing_samples" if initial_only else "generated_samples": len(passing),
+        "fields": {},
+    }
     for name in names:
         families = defaultdict(list)
         missing = 0
@@ -188,6 +193,39 @@ def _source_descriptives(cells):
             family_weighted_known_mean=_mean([_mean(v) for v in families.values()]),
             contributing_families=len(families),
             missing_samples=missing,
+        )
+    return result
+
+
+def _resource_breakdown(cells):
+    """Known recorded cost by phase/population; no efficiency or causal score."""
+    result = {}
+    for population in ("all_generated", "initially_correct"):
+        selected = [
+            c
+            for c in cells
+            if population == "all_generated" or c["sample"]["initial_status"] == "pass"
+        ]
+        phases = {
+            "writing": [c["sample"]["writer_cost"] for c in selected],
+            "editing": [s for c in selected for t in c["trials"] for s in t["steps"]],
+        }
+        result[population] = dict(
+            initial_programs=len(selected),
+            unresolved_trajectories=sum(t["score"] is None for c in selected for t in c["trials"]),
+            phases={
+                phase: dict(
+                    recorded_attempts=len(records),
+                    costs={
+                        key: dict(
+                            known_total=sum(r[key] for r in records if r[key] is not None),
+                            missing_records=sum(r[key] is None for r in records),
+                        )
+                        for key in ("tokens_in", "tokens_out", "wall_s")
+                    },
+                )
+                for phase, records in phases.items()
+            },
         )
     return result
 
@@ -261,7 +299,7 @@ def compare(
             "Recorded costs can include estimated tokens and historical wall/latency effects.",
             "Training seeds/checkpoints remain separate method rows; no hierarchical pooling.",
             "Initial correctness means test passage, not proof of every written requirement.",
-            "Source/documentation measures describe initially passing saved programs only; "
+            "Source/documentation measures separate all generated and initially passing programs; "
             "known means disclose missing samples and are not maintainability scores.",
         ],
     )
@@ -301,6 +339,8 @@ def compare(
             counts=counts,
             costs=costs,
             initial_source_descriptives=_source_descriptives(cells),
+            all_generated_source_descriptives=_source_descriptives(cells, initial_only=False),
+            resource_breakdown=_resource_breakdown(cells),
         )
     for method in sorted(methods):
         if method == reference:

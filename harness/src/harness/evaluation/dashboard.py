@@ -278,6 +278,8 @@ def render_dashboard(result):
         "trajectories.csv",
         "checkpoints.csv",
         "failures.csv",
+        "resources.csv",
+        "source_descriptives.csv",
         "comparison.json",
         "manifest.json",
     ):
