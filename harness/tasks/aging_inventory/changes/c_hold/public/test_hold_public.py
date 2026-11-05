@@ -39,3 +39,11 @@ def test_hold_list_and_flag(cooler):
     cooler.hold("roses")
     assert cooler.is_held("roses") is True
     assert cooler.get_held() == ["roses"]
+
+
+def test_hold_list_is_in_the_order_batches_were_added(cooler):
+    cooler.add_batch("lilies", 15, 4)
+    cooler.hold("lilies")
+    cooler.hold("roses")
+    cooler.hold("tulips")
+    assert cooler.get_held() == ["tulips", "roses", "lilies"]

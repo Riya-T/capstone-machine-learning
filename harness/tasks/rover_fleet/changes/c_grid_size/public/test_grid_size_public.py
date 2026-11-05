@@ -19,6 +19,15 @@ def test_plateau_of_another_size_wraps_at_its_own_edge():
         f.land("mole", 5, 0, "north")
 
 
+def test_plateau_cells_past_its_size_are_refused_by_get_rover_at():
+    f = RoverFleet(width=4, height=6)
+    assert f.get_rover_at(3, 5) is None
+    with pytest.raises(ValueError):
+        f.get_rover_at(4, 0)
+    with pytest.raises(ValueError):
+        f.get_rover_at(0, 6)
+
+
 def test_plateau_without_wrapping_stops_at_the_edge():
     f = RoverFleet(wrap=False)
     f.land("scout", 8, 0, "east")

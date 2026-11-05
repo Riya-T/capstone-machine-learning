@@ -7,6 +7,11 @@ innings and so on), and report the score per period.
   period.
 - Each scoring event belongs to the period that was current when it was
   scored. `get_score` still counts every period together.
+- Events keep their `(kind, points)` form everywhere: `get_events` (with or
+  without a period), `undo_last` and `get_undone` never include the period
+  in the tuples. For example, after `score("lions", "try")` in period 1,
+  `get_events("lions", period=1)` is `[("try", 5)]`, and `undo_last("lions")`
+  returns `("try", 5)` even in a later period.
 - Add `Scoreboard.get_period_scores(team) -> list[int]`: the team's points
   in each period from period 1 up to the current period, in period order,
   with 0 for a period in which it scored nothing. It raises `KeyError` for

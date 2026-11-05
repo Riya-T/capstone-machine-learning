@@ -5,6 +5,7 @@ Usage (with elevators.py importable, e.g. in the sandbox):
     python -m pytest changes/c_capacity/public/test_capacity_public.py
 """
 
+import pytest
 from elevators import Building
 
 
@@ -28,3 +29,8 @@ def test_capacity_of_a_single_car_overrides_the_building():
     b.move_car("freight", 1)
     assert b.get_riders("freight") == ["p1", "p2", "p3", "p4", "p5", "p6"]
     assert b.get_capacity("east") == 4
+
+
+def test_capacity_of_the_building_must_be_at_least_one():
+    with pytest.raises(ValueError):
+        Building(5, capacity=0)

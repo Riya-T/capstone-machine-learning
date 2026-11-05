@@ -26,3 +26,13 @@ def test_mentions_can_be_filtered_by_author():
     f.post("ben", "hey @ana")
     f.post("cy", "@ana hello")
     assert f.get_mentions("ana", author="cy") == [2]
+
+
+def test_mentions_leave_out_posts_by_users_you_blocked():
+    f = SocialFeed()
+    for name in ["ana", "ben", "cy"]:
+        f.add_user(name)
+    f.post("cy", "hi @ana")
+    f.post("ben", "hey @ana")
+    f.block("ana", "ben")
+    assert f.get_mentions("ana") == [1]

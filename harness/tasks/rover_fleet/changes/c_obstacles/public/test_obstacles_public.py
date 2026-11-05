@@ -18,6 +18,13 @@ def test_obstacle_blocks_a_move():
     assert f.get_obstacles() == [(3, 1)]
 
 
+def test_obstacle_list_is_in_the_order_added():
+    f = RoverFleet()
+    for cell in [(6, 2), (1, 7), (4, 4)]:
+        f.add_obstacle(*cell)
+    assert f.get_obstacles() == [(6, 2), (1, 7), (4, 4)]
+
+
 def test_obstacle_cannot_be_landed_on():
     f = RoverFleet()
     f.add_obstacle(4, 4)

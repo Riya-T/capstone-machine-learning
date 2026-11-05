@@ -762,7 +762,11 @@ the train tasks: each now fits what the writer does anyway, where that keeps
 the point of the changes. Change ids, kinds and sequences are unchanged, and
 each `configuration` change still makes a fixed v0 rule adjustable. Errors
 are bullets, and error order, `bool` values, non-string names and non-`int`
-numbers are unspecified throughout, change tests included. Most interfaces
+numbers are unspecified in the specs. Change tests follow their requests:
+where a request says a value must be an `int` (`document_versions`
+`c_retention`, `elevator_dispatch` `c_capacity`, `locker_room`
+`c_size_table`, `subscription_billing` `c_proration`), values such as
+`2.5` and `"3"` are tested; elsewhere they are unspecified. Most interfaces
 changed, so stored programs cannot pass unmodified; "old programs" counts
 are the weak signal (the old programs with only the edits the new spec
 forces). Writer check: run `20261104T225942Z-2f979e`.
@@ -1048,6 +1052,95 @@ reading it.
   - `expected_version="2"` must raise `VersionConflict` (`locker_room`,
     `seat_reservation`).
   - `7` is a bad post text (`social_feed`, as in its v0 tests).
+
+### Eval change tests after the base run (2026-11-05)
+
+The base writer's eval run (`harness/results/base_writer_eval.md`) was
+checked like the dev calibration: the checks were run again on the final
+program of every failed editing step, to see which tests failed. A change
+was looked at when one test or rule failed in at least 80% of its failed
+steps, and in at least 5 of them: 27 changes in 15 tasks. Each was then
+sorted into one of four cases:
+
+- the hidden test checks something the request doesn't say, or says
+  unclearly: the request now says it;
+- the request says it clearly, but no public check covers it and almost
+  every failed edit misses it: one small public check was added for that
+  rule;
+- a public check already covers it, or the change is just hard: left as
+  is;
+- a task bug: fixed.
+
+The writer-visible files (`spec.md`, `public/`) were not touched, so the
+writer's programs stay valid. The 13 changed tasks get new editor trials
+(the task version changed); `document_versions`, `light_grid` and
+`time_clock` are unchanged. Every added public check was run on the stored
+failed edits: it fails those that miss its rule. The new public checks also
+pass every stored edit that succeeded before (531 steps), so none asks for
+more than the hidden tests did. All 13 pass `validate-tasks` in Docker.
+
+Public check added for a stated rule:
+
+- `aging_inventory` `c_undo_day`: batches added or removed since the day
+  stay as they are, even with a reused id (21 of 21 failed edits restored a
+  snapshot of the whole cooler). `c_hold`: `get_held` is in the order the
+  batches were added (7 of 7).
+- `auction_house` `c_increment`: the house's minimum raise is checked too
+  (21 of 21 checked only the lot's).
+- `elevator_dispatch` `c_cancel`: a passenger who got in can't cancel,
+  riding or arrived (20 of 22). `c_capacity`: the building's capacity is
+  checked too (5 of 14; 7 more check the type after comparing, a real
+  mistake left as is).
+- `locker_room` `c_undo`: a refused undo of a retrieve stays the next one
+  to undo (5 of 5).
+- `meeting_rooms` `c_buffer`: the planner's gap is checked too (29 of 31).
+- `race_telemetry` `c_lap_corrections`: a correction moves a finished car
+  in the results (7 of 7 cached the totals).
+- `rover_fleet` `c_grid_size`: `get_rover_at` still refuses cells off the
+  plateau (10 of 11 removed the check to make the cliffs work).
+  `c_obstacles`: `get_obstacles` is in the order added (7 of 7 used a
+  set).
+- `seat_reservation` `c_versions`: `add_seats` needs room left in the
+  coach (7 of 7 compared with the coach's limit).
+- `social_feed` `c_mentions`: posts by users you blocked are left out (6 of
+  6); the request now also says `get_mentioned` lists each user once.
+- `spending_alerts` `c_refunds`: refunding a payment with nothing left
+  raises `SpendingError` (17 of 17 raised `ValueError` for
+  `amount=None`); the request now names the non-`int` ids, `1.0` included.
+- `subscription_billing` `c_proration`: the system's percentage is checked
+  too, and the quote raises like `change_plan` for the plan the customer is
+  on (40 of 43 each).
+- `task_board` `c_archive`: an unknown task id raises `KeyError` (11 of
+  12; the request now gives this rule its own bullet and says `restore`
+  raises `KeyError` too). `c_overdue`: an unknown project raises `KeyError`
+  (12 of 12).
+
+Request or hidden test fixed:
+
+- `rover_fleet` `c_versioned_commands`: the hidden test drove `"FFz"`, but
+  the second `F` is blocked, so programs that stop at the block never
+  reached the `z`; it is now `"Fz"`. The request now says a turn counts as
+  carrying out a command, with a public check (15 of 18 counted only
+  moves).
+- `scoreboard` `c_periods`: the request now says events keep their `(kind,
+  points)` form everywhere (17 of 19 added the period to the tuples).
+- `spending_alerts` `c_month_compare`: non-`int` months were still tested,
+  though the spec leaves them unspecified (24 of 24); they are now
+  unspecified here too. The request now says a month or category with no
+  payments counts as 0, not as an error (16 of 24).
+
+Left as they are: `document_versions` `c_restore` (0 of 19 succeed: the
+programs keep no record of who wrote each revision, and a public check
+shows the failure) and `c_search`, `elevator_dispatch` `c_wait`,
+`meeting_rooms` `c_booking_versions`, `race_telemetry` `c_points_table`,
+`scoreboard` `c_points`, `social_feed` `c_block`, `subscription_billing`
+`c_revenue` and `time_clock` `c_breaks`.
+
+Three required regression bugs are now also caught by a new public check
+(`aging_inventory` `categories_undo_hits_reused_id`, `auction_house`
+`version_accepts_bad_house_increment`, `elevator_dispatch`
+`service_cancels_riders`). They still fail the hidden existing tests as
+declared.
 
 ## How the families were chosen
 

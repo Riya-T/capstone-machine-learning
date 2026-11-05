@@ -95,5 +95,5 @@ def test_version_of_an_unknown_rover_raises_key_error(fleet):
 
 def test_version_stays_after_invalid_commands(fleet):
     with pytest.raises(ValueError):
-        fleet.drive("scout", "FFz")
+        fleet.drive("scout", "Fz")  # not blocked: mole is two cells ahead
     assert fleet.get_version("scout") == 1

@@ -6,7 +6,7 @@ Usage (with seats.py importable, e.g. in the sandbox):
 """
 
 import pytest
-from seats import SeatPlanner, VersionConflict
+from seats import NotEnoughSeats, SeatPlanner, VersionConflict
 
 
 @pytest.fixture
@@ -37,3 +37,13 @@ def test_versions_add_seats_to_a_booking(planner):
     assert planner.get_booking("smith") == ("A", 4)
     assert planner.get_reserved("A") == 4
     assert planner.get_version("smith") == 2
+
+
+def test_versions_add_seats_needs_room_left_in_the_coach(planner):
+    planner.reserve("jones", 4)  # A: 6 of 7 reserved, room for 1 more
+    with pytest.raises(NotEnoughSeats):
+        planner.add_seats("smith", 2)
+    assert planner.get_booking("smith") == ("A", 2)
+    planner.add_seats("smith", 1)
+    assert planner.get_booking("smith") == ("A", 3)
+    assert planner.get_available("A") == 0

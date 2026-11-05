@@ -36,3 +36,15 @@ def test_undo_day_brings_back_a_wilted_batch(cooler):
 def test_undo_day_needs_a_day_to_take_back(cooler):
     with pytest.raises(CoolerError):
         cooler.undo_day()
+
+
+def test_undo_day_leaves_batches_added_since_that_day(cooler):
+    cooler.end_day()
+    cooler.add_batch("lilies", 15, 4)
+    cooler.remove_batch("roses")
+    cooler.add_batch("roses", 9, 2)  # a new batch that reuses the id
+    cooler.undo_day()
+    assert cooler.get_batches() == ["tulips", "lilies", "roses"]
+    assert (cooler.get_freshness("lilies"), cooler.get_days_left("lilies")) == (15, 4)
+    assert (cooler.get_freshness("roses"), cooler.get_days_left("roses")) == (9, 2)
+    assert (cooler.get_freshness("tulips"), cooler.get_days_left("tulips")) == (20, 3)

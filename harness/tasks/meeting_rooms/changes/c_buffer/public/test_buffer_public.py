@@ -22,6 +22,11 @@ def test_buffer_planner_wide_gap():
     p.book("c", "oak", 8)
 
 
+def test_buffer_planner_gap_below_zero_is_refused():
+    with pytest.raises(ValueError):
+        RoomPlanner(gap=-2)
+
+
 def test_buffer_gap_of_one_room():
     p = RoomPlanner()
     p.add_room("hall", gap=2)

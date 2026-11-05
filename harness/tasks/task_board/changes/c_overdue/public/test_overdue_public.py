@@ -5,6 +5,7 @@ Usage (with board.py importable, e.g. in the sandbox):
     python -m pytest changes/c_overdue/public/test_overdue_public.py
 """
 
+import pytest
 from board import Board
 
 
@@ -28,3 +29,13 @@ def test_overdue_due_on_one_day():
     b.add_task("web", "about", 4)
     assert b.get_due_on(3) == [1, 2]
     assert b.get_due_on(3, project="web") == [2]
+
+
+def test_overdue_unknown_project_raises_key_error():
+    b = Board()
+    b.add_project("web")
+    b.add_task("web", "home", 1)
+    with pytest.raises(KeyError):
+        b.get_overdue(3, project="app")
+    with pytest.raises(KeyError):
+        b.get_due_on(1, project="app")

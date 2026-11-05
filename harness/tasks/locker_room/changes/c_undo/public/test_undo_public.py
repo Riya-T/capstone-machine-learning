@@ -34,6 +34,17 @@ def test_undoing_a_retrieve_puts_the_item_back(room):
     assert room.get_takings() == 200
 
 
+def test_undoing_a_retrieve_waits_while_the_locker_is_out_of_order(room):
+    room.store("hat", "small")
+    room.retrieve("hat")
+    room.set_out_of_order("S1")
+    with pytest.raises(LockerError):
+        room.undo()
+    room.set_in_service("S1")
+    assert room.undo() == "hat"
+    assert room.get_locker("hat") == "S1"
+
+
 def test_undoing_with_nothing_to_undo_raises(room):
     with pytest.raises(LockerError):
         room.undo()

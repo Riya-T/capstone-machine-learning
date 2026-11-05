@@ -4,7 +4,8 @@ version checks to driving in `rovers.py`.
 
 - Add `class VersionConflict(RoverError)` to `rovers.py`.
 - Every rover has a version number. It is 1 when the rover lands and goes
-  up by 1 with every `drive` call that carries out at least one command.
+  up by 1 with every `drive` call that carries out at least one command,
+  a turn as well as a move.
   A `drive` that carries out nothing (an empty string, or a string whose
   first command is a blocked move) leaves the version as it is, and so
   does a call that raises. Add `RoverFleet.get_version(rover_id) -> int`,

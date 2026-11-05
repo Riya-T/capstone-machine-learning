@@ -19,6 +19,14 @@ def test_version_goes_up_once_per_drive():
     assert f.get_version("scout") == 3
 
 
+def test_version_goes_up_for_turns_too():
+    f = RoverFleet()
+    f.land("scout", 5, 5, "east")
+    f.drive("scout", "L")
+    assert f.get_location("scout") == (5, 5, "north")
+    assert f.get_version("scout") == 2
+
+
 def test_version_outdated_drive_is_refused():
     f = RoverFleet()
     f.land("scout", 0, 0, "north")

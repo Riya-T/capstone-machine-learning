@@ -16,7 +16,7 @@ Let users in `feed.py` find the posts that mention them.
   only posts written by that user are listed; it raises `KeyError` for an
   author that was not added.
 - Add `SocialFeed.get_mentioned(post_id) -> list[str]`: the users the post
-  mentions, in the order they are first mentioned in its text. It raises
-  `KeyError` for an unknown post id.
+  mentions, each once, in the order they are first mentioned in its text.
+  It raises `KeyError` for an unknown post id.
 
 All existing behavior must keep working.

@@ -12,14 +12,16 @@ Allow payments in `spending.py` to be refunded, in full or in part.
 - Add `SpendingTracker.get_refunded(payment_id) -> int`: how much of the
   payment has been refunded so far (0 if none).
 - Errors:
-  - `KeyError` for a payment id that `record_payment` never returned
-    (including values that are not `int`s);
+  - `KeyError` for a payment id that `record_payment` never returned,
+    including values that are not `int`s, such as `"1"`, `None` or `1.0`
+    (`1.0` is not the payment id `1`, even though `1.0 == 1` in Python);
   - `ValueError` for an invalid amount;
   - `SpendingError` when the amount is more than what is left of the
     payment, or when nothing is left of it (with `amount=None` too).
 
   Which one is raised when several apply is unspecified.
-- `get_refunded` raises `KeyError` for an unknown payment id.
+- `get_refunded` raises `KeyError` for an unknown payment id, as `refund`
+  does.
 - A failed refund changes nothing. Refunds do not use up payment ids: the
   next payment gets the next id as before.
 

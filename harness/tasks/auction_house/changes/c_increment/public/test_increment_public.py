@@ -28,3 +28,8 @@ def test_a_lot_can_set_its_own_minimum_raise():
     assert house.get_min_increment("vase") == 1
     assert house.get_min_increment("clock") == 10
     assert house.get_min_bid("clock") == 200
+
+
+def test_the_house_minimum_raise_must_be_at_least_one():
+    with pytest.raises(ValueError):
+        AuctionHouse(min_increment=0)

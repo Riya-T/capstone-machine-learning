@@ -15,8 +15,11 @@ deleted, and brought back later if needed.
   project is unspecified too.
 - Add `Board.is_archived(task_id) -> bool` and
   `Board.get_archived(project) -> list[int]`: the ids of the project's
-  archived tasks, in the order they were archived. Both raise `KeyError`
-  for a task or project that does not exist.
+  archived tasks, in the order they were archived.
+- Like every method that takes a task id, `archive`, `restore` and
+  `is_archived` raise `KeyError` for an id that `add_task` has not
+  returned (`restore` too, not `BoardError`). `get_archived` raises
+  `KeyError` for a name that is not a project.
 - While a task is archived, `complete`, `move_task`, `rename_task` and
   `set_due_day` on it raise `BoardError` and change nothing. When such a
   call also has another problem (for example a project that does not

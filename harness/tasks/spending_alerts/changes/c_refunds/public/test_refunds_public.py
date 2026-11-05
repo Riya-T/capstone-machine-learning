@@ -35,3 +35,12 @@ def test_refund_of_more_than_is_left_raises(tracker):
     with pytest.raises(SpendingError):
         tracker.refund(pid, 3001)
     assert tracker.get_total("alice", 1) == 3000
+
+
+def test_refund_when_nothing_is_left_raises(tracker):
+    pid = tracker.record_payment("alice", 1, "food", 2000)
+    tracker.refund(pid, 500)
+    tracker.refund(pid, 1500)
+    with pytest.raises(SpendingError):
+        tracker.refund(pid)
+    assert tracker.get_refunded(pid) == 2000
