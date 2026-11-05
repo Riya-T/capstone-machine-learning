@@ -19,6 +19,13 @@ def _mean(values):
 
 
 def summarize_seeds(result):
+    coverage = None
+    if "analysis_contract" in result:
+        from .contract import check_contract
+
+        coverage = check_contract(result["analysis_contract"], result["source_datasets"])
+        if not coverage["matches"]:
+            raise EvaluationError("Seed summary does not match its frozen checkpoint roster")
     grouped = defaultdict(list)
     for name, row in result["methods"].items():
         grouped[row.get("method_group") or name].append(name)
@@ -141,6 +148,14 @@ def summarize_seeds(result):
         groups=groups,
         seeds=seeds,
         comparisons=pairs,
+        roster_verified=coverage is not None,
+        coverage_receipt=coverage,
+        roster_note=(
+            "All planned checkpoint/seed datasets match the frozen contract."
+            if coverage
+            else "Only supplied checkpoints are summarized; no pre-inference "
+            "roster was provided, so omitted checkpoints cannot be detected."
+        ),
         note="Task-family uncertainty with the observed checkpoint set fixed; not uncertainty "
         "over future training seeds. Conditional metrics use common applicable families. "
         "Checkpoint identities are declared provenance, not authenticated weight digests.",
@@ -171,6 +186,7 @@ def run_seed_summary(directory, output):
         "Observed training-checkpoint summary",
         "",
         summary["note"],
+        summary["roster_note"],
         "",
         "| Group | Checkpoints | Completion | Per-checkpoint range |",
         "|---|---:|---:|---|",

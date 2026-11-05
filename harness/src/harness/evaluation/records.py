@@ -129,6 +129,8 @@ def _validate(data: dict) -> dict:
             raise EvaluationError(f"{key}: expected an array")
     if "writer_identity" in data and not HASH.fullmatch(data["writer_identity"]):
         raise EvaluationError("Invalid writer identity hash")
+    if "editor_identity" in data and not HASH.fullmatch(data["editor_identity"]):
+        raise EvaluationError("Invalid editor identity hash")
     tasks = {}
     for task in data["tasks"]:
         identifier(task["id"], "task id")

@@ -17,6 +17,7 @@ from pathlib import Path
 from ..config import ExperimentConfig
 from ..registry import build_writer_prompt, load_tasks, load_template, prompt_version
 from ..store import SCHEMA_VERSION, editor_cfg_hash, sandbox_cfg_hash, writer_cfg_hash
+from .contract import UNRESOLVED_IMAGE
 from .records import HASH, VERSION, EvaluationError, identifier, read_json, validate_dataset
 from .source import describe_change, describe_source
 
@@ -114,6 +115,7 @@ def export_dataset(
         editor_reps=cfg.editor.reps,
         writer_model=cfg.writer.backend.model,
         writer_identity=writer_hash,
+        editor_identity=editor_cfg_hash(cfg, UNRESOLVED_IMAGE),
         method_group=method_group or method,
         training_seed=training_seed,
         contract=comparison_contract(cfg, image_id),

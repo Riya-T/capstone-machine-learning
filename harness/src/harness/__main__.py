@@ -44,6 +44,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "evaluation-seeds",
         "evaluation-review",
         "evaluation-plots",
+        "evaluation-contract",
     ):
         from .evaluation.cli import main as evaluation_main
 
@@ -75,6 +76,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     commands.add_parser("evaluation-seeds", help="summarize observed training checkpoints")
     commands.add_parser("evaluation-review", help="prepare/compile separate human failure reviews")
     commands.add_parser("evaluation-plots", help="export publication figures from saved results")
+    commands.add_parser("evaluation-contract", help="freeze/check the planned result roster")
     commands.add_parser(
         "evaluation-size-match", help="saved-only size-matched sensitivity analysis"
     )

@@ -45,6 +45,15 @@ def main(argv=None):
     report.add_argument("--bootstrap-samples", type=int, default=2000)
     report.add_argument("--bootstrap-seed", type=int, default=20261105)
     report.add_argument("--confidence", type=float, default=0.95)
+    report.add_argument("--contract", type=Path, help="Require the pre-inference roster contract")
+    contract = sub.add_parser("evaluation-contract", help="Freeze/check a planned result roster")
+    contract_actions = contract.add_subparsers(dest="action", required=True)
+    contract_freeze = contract_actions.add_parser("freeze")
+    contract_freeze.add_argument("--plan", type=Path, required=True)
+    contract_freeze.add_argument("--out", type=Path, required=True)
+    contract_check = contract_actions.add_parser("check")
+    contract_check.add_argument("--contract", type=Path, required=True)
+    contract_check.add_argument("--input", type=Path, nargs="+", required=True)
     verify = sub.add_parser("evaluation-verify", help="Verify a saved report without inference")
     verify.add_argument("--report", type=Path, required=True)
     verify.add_argument(
@@ -87,6 +96,22 @@ def main(argv=None):
     plots.add_argument("--out", required=True, type=Path)
     args = parser.parse_args(argv)
     try:
+        if args.command == "evaluation-contract":
+            from .artifacts import encoded
+            from .contract import check_contract, freeze_contract
+            from .storage import publish_new
+
+            if args.action == "freeze":
+                frozen = freeze_contract(prepare(args.plan))
+                publish_new(args.out, encoded(frozen))
+                print(json.dumps(dict(contract_id=frozen["contract_id"], path=str(args.out))))
+                return 0
+            receipt = check_contract(
+                read_json(args.contract.read_bytes()),
+                [read_json(p.read_bytes()) for p in args.input],
+            )
+            print(json.dumps(receipt, indent=2))
+            return 0 if receipt["matches"] else 3
         if args.command == "evaluation-plots":
             from .figures import export_figures
 
@@ -155,6 +180,12 @@ def main(argv=None):
             bootstrap_seed=args.bootstrap_seed,
             confidence=args.confidence,
         )
+        if args.contract:
+            from .contract import attach_contract
+
+            if args.contract.resolve() in {p.resolve() for p in targets}:
+                raise ConfigError("Report output would overwrite its frozen contract")
+            attach_contract(result, read_json(args.contract.read_bytes()))
         print(json.dumps({k: str(v) for k, v in write_report(result, args.out).items()}, indent=2))
         return 0
     except (ConfigError, OSError, ValueError, SandboxError, StoreError) as exc:

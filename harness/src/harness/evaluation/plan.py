@@ -31,6 +31,7 @@ from ..registry import load_tasks
 from ..sandbox.runner import make_runner
 from ..store import writer_cfg_hash
 from .analysis import compare
+from .contract import attach_contract, freeze_contract
 from .export import comparison_contract, export_dataset
 from .records import EvaluationError, identifier, integer, read_json, trajectory
 from .report import json_text, write_report
@@ -410,6 +411,8 @@ def execute(prepared: Prepared, *, export_only: bool = False) -> dict:
                 raise EvaluationError("Methods resolved different sandbox images")
             lock = dict(signature=prepared.signature, image_id=image_ids[0])
             _write_new(lock_path, lock)
+        analysis_contract = freeze_contract(prepared)
+        _write_new(root / "analysis.contract.json", analysis_contract)
         datasets = []
         for job in prepared.signature["schedule"]:
             i, seed = job["method_index"], job["generation_seed"]
@@ -453,6 +456,7 @@ def execute(prepared: Prepared, *, export_only: bool = False) -> dict:
             confidence=p.confidence,
         )
         report_root = root / "reports" / _hash(datasets)[:16]
+        attach_contract(result, analysis_contract)
         paths = write_report(result, report_root)
         return dict(
             complete=all(_complete(d) for d in datasets),

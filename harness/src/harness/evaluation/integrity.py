@@ -89,6 +89,14 @@ def _analysis_matches(saved):
             bootstrap_seed=options["seed"],
             confidence=options["confidence"],
         )
+        if "analysis_contract" in saved:
+            from .contract import attach_contract
+
+            attach_contract(expected, saved["analysis_contract"])
+            if saved.get("coverage_receipt") != expected["coverage_receipt"]:
+                raise EvaluationError("Recomputed coverage receipt differs")
+        elif "coverage_receipt" in saved:
+            raise EvaluationError("Coverage receipt has no frozen analysis contract")
         for key in (
             "schema_version",
             "purpose",
