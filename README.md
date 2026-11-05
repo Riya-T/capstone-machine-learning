@@ -286,6 +286,9 @@ These are in the proposal but not in the harness yet:
 
 - Training baselines
   (correctness-only fine-tuning, DPO on Radon maintainability rankings).
+  `scripts/static_ranking.py` builds the Radon-ranked preference file from
+  collected, initially passing train programs; training and evaluation of
+  that baseline are still pending.
   The maintainability-focused prompt is written
   (`prompts/writer_maintainable_v1.md`, run with
   `configs/rtx5070_eval_maintain.yaml`);
@@ -316,6 +319,26 @@ for generation. Adjust batch size/gradient accumulation and sequence lengths
 for available VRAM. `chosen_scores` and `rejected_scores` remain in each JSONL
 row for analysis; vanilla DPO uses their preference ordering, not their
 numeric magnitude.
+
+### Static-ranking baseline
+
+Build a separate DPO dataset by ranking initially passing writer samples
+within each train task by Radon's Maintainability Index (higher is better):
+
+```bash
+uv run python scripts/static_ranking.py --config configs/rtx5070_train.yaml
+uv run python -m harness.train_dpo \
+  runs/rtx5070_pc/static_ranking/preferences.jsonl \
+  --output-dir ../models/writer-static-ranking
+```
+
+The first command reads the existing collection store and initial-check
+results only; it makes no model calls and runs no sandboxes. It writes the
+preference JSONL plus a pair-count report under `runs/rtx5070_pc/`. Scores
+are LOC-weighted across a program's files; only unequal-score pairs are
+kept, with the largest score gaps retained up to the configured per-task
+pair cap. The second command is actual QLoRA training and requires a
+supported CUDA GPU.
 
 ## Changes from the proposal
 
@@ -437,4 +460,3 @@ The harness needs Linux and Docker; on Windows, use WSL2.
   prompt differs from other machines' and some tests fail.
 - If git inside WSL reports "dubious ownership", run
   `git config --global --add safe.directory '<repo path>'` inside WSL.
-
