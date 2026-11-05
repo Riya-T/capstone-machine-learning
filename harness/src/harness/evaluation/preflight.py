@@ -14,7 +14,7 @@ import subprocess
 import urllib.error
 import urllib.request
 
-from .plan import _local_only, preview
+from .plan import _local_only, _metadata, preview
 from .records import EvaluationError, read_json
 
 
@@ -67,8 +67,8 @@ def check_preflight(prepared, *, probe=False):
         ancestor = ancestor.parent
     record(
         "output_parent",
-        "pass" if os.access(ancestor, os.W_OK) else "fail",
-        "Nearest existing output parent is writable; no directory was created.",
+        "pass" if ancestor.is_dir() and os.access(ancestor, os.W_OK | os.X_OK) else "fail",
+        "Nearest existing output parent must be a writable directory; nothing was created.",
     )
     seen_servers, seen_images = {}, set()
     for method, cfg in zip(prepared.plan.methods, prepared.configs, strict=True):
@@ -108,6 +108,8 @@ def check_preflight(prepared, *, probe=False):
     if probe and shutil.which("docker"):
         try:
             details = json.loads(_docker("info", "--format", "{{json .}}"))
+            if not isinstance(details, dict):
+                raise EvaluationError("Malformed Docker engine response")
             record(
                 "docker_engine",
                 "pass" if details.get("OSType") == "linux" else "fail",
@@ -128,9 +130,12 @@ def check_preflight(prepared, *, probe=False):
                     )
             lock = prepared.root / "evaluation.lock.json"
             if lock.exists():
-                from .records import read_json
-
-                frozen = read_json(lock.read_bytes())
+                frozen = _metadata(lock, {"signature", "image_id"})
+                record(
+                    "locked_plan",
+                    "pass" if frozen["signature"] == prepared.signature else "fail",
+                    "Compare this plan's signature with its saved lock; never repair it.",
+                )
                 record(
                     "locked_image",
                     "pass" if image_ids == {frozen.get("image_id")} else "fail",

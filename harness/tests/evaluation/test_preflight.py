@@ -155,3 +155,40 @@ def test_known_cloud_routes_are_not_allowed_through_a_loopback_server(tmp_path, 
     )
     with pytest.raises(EvaluationError, match="Cloud-routed"):
         _local_only(cfg)
+
+
+@pytest.mark.parametrize("lock", [[], {"signature": {}, "image_id": "sha256:fixture"}])
+def test_damaged_saved_lock_fails_without_traceback_or_repair(tmp_path, monkeypatch, lock):
+    prepared = prepare(write_plan(tmp_path))
+    prepared.root.mkdir(parents=True)
+    path = prepared.root / "evaluation.lock.json"
+    raw = json.dumps(lock).encode()
+    path.write_bytes(raw)
+    monkeypatch.setattr("harness.evaluation.preflight.shutil.which", lambda _: "docker")
+    monkeypatch.setattr(
+        "harness.evaluation.preflight._docker",
+        lambda *args: '{"OSType":"linux"}' if args[0] == "info" else "sha256:fixture",
+    )
+    result = check_preflight(prepared, probe=True)
+    assert not result["ready"]
+    assert any(c["status"] == "fail" for c in result["checks"])
+    assert path.read_bytes() == raw
+
+
+def test_invalid_docker_json_shape_is_a_readiness_failure(tmp_path, monkeypatch):
+    prepared = prepare(write_plan(tmp_path))
+    monkeypatch.setattr("harness.evaluation.preflight.shutil.which", lambda _: "docker")
+    monkeypatch.setattr("harness.evaluation.preflight._docker", lambda *args: "[]")
+    result = check_preflight(prepared, probe=True)
+    assert any(c["check"] == "docker_engine" and c["status"] == "fail" for c in result["checks"])
+
+
+def test_output_parent_cannot_be_a_regular_file(tmp_path):
+    from dataclasses import replace
+
+    prepared = prepare(write_plan(tmp_path))
+    parent = tmp_path / "not-a-directory"
+    parent.write_text("preserve me", encoding="utf8")
+    result = check_preflight(replace(prepared, root=parent / "child"))
+    assert next(c for c in result["checks"] if c["check"] == "output_parent")["status"] == "fail"
+    assert parent.read_text(encoding="utf8") == "preserve me"
