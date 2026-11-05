@@ -9,6 +9,7 @@ import csv
 from harness.evaluation.analysis import compare
 from harness.evaluation.report import write_report
 
+from .helpers import saved
 from .test_analysis import example
 
 
@@ -75,3 +76,14 @@ def test_population_and_phase_exports_match_analysis(tmp_path):
         assert len(list(csv.DictReader(stream))) == 6
     report = paths["report.md"].read_text(encoding="utf8")
     assert "original / all generated" in report and "original / initially correct" in report
+
+
+def test_edit_size_is_exported_from_verified_blobs_without_affecting_scores(tmp_path):
+    _, data = saved(tmp_path)
+    assert data["samples"][0]["trials"][0]["steps"][0]["change_size"]["files_changed"] == 0
+    result = compare([data], bootstrap_samples=20)
+    paths = write_report(result, tmp_path / "report")
+    with paths["checkpoints.csv"].open(newline="") as stream:
+        rows = list(csv.DictReader(stream))
+    assert all(row["files_changed"] == row["python_lines_added"] == "0" for row in rows)
+    assert result["methods"]["original"]["metrics"]["change_completion"]["estimate"] == 1

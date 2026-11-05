@@ -7,6 +7,7 @@ Usage:
 from __future__ import annotations
 
 import ast
+import difflib
 import io
 import tokenize
 
@@ -69,3 +70,39 @@ def describe_source(files: dict[str, bytes]) -> dict:
         ),
     )
     return result
+
+
+def describe_change(before: dict[str, bytes] | None, after: dict[str, bytes] | None):
+    """Descriptive file/line changes only; missing source never becomes a zero diff."""
+    if before is None or after is None:
+        return None
+    changed = sorted(
+        name for name in before.keys() | after.keys() if before.get(name) != after.get(name)
+    )
+    added = removed = 0
+    text_known = True
+    for name in changed:
+        if not name.endswith(".py"):
+            continue
+        try:
+            texts = []
+            for files in (before, after):
+                data = files.get(name, b"")
+                encoding, _ = tokenize.detect_encoding(io.BytesIO(data).readline)
+                texts.append(data.decode(encoding).splitlines())
+            matcher = difflib.SequenceMatcher(None, *texts)
+            for kind, a, b, c, d in matcher.get_opcodes():
+                if kind != "equal":
+                    removed += b - a
+                    added += d - c
+        except (SyntaxError, UnicodeError, LookupError):
+            text_known = False
+    return dict(
+        files_changed=len(changed),
+        files_added=sum(name not in before for name in changed),
+        files_removed=sum(name not in after for name in changed),
+        bytes_before=sum(len(data) for data in before.values()),
+        bytes_after=sum(len(data) for data in after.values()),
+        python_lines_added=added if text_known else None,
+        python_lines_removed=removed if text_known else None,
+    )

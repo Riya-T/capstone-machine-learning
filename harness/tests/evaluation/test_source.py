@@ -5,7 +5,7 @@ Usage:
 """
 
 from harness.evaluation.analysis import compare
-from harness.evaluation.source import describe_source
+from harness.evaluation.source import describe_change, describe_source
 
 from .test_analysis import example
 
@@ -65,3 +65,30 @@ def test_source_summary_is_family_weighted_with_explicit_missingness():
     assert fields["source_lines"]["missing_samples"] == 1
     assert fields["python_documentation_density"]["family_weighted_known_mean"] == 0.2
     assert result["metrics"]["change_completion"]["estimate"] == 0.75
+
+
+def test_edit_size_tracks_added_removed_and_modified_files_without_execution():
+    before = {"main.py": b"a=1\nb=2\n", "remove.py": b"gone=1\n", "data.bin": b"x"}
+    after = {"main.py": b"a=1\nb=3\nc=4\n", "new.py": b"new=1\n", "data.bin": b"xx"}
+    change = describe_change(before, after)
+    assert change["files_changed"] == 4
+    assert change["files_added"] == change["files_removed"] == 1
+    assert change["python_lines_added"] == 3
+    assert change["python_lines_removed"] == 2
+    assert change["bytes_before"] == sum(map(len, before.values()))
+
+
+def test_unknown_or_undecodable_source_does_not_become_a_zero_diff():
+    assert describe_change(None, {"main.py": b"x=1"}) is None
+    change = describe_change({"main.py": b"x=1"}, {"main.py": b"\xff"})
+    assert change["files_changed"] == 1
+    assert change["python_lines_added"] is None
+    assert change["python_lines_removed"] is None
+
+
+def test_unchanged_files_and_line_ending_only_changes_are_described_separately():
+    source = {"main.py": b"x=1\n"}
+    assert describe_change(source, source)["files_changed"] == 0
+    changed = describe_change(source, {"main.py": b"x=1\r\n"})
+    assert changed["files_changed"] == 1
+    assert changed["python_lines_added"] == changed["python_lines_removed"] == 0

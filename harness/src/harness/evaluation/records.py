@@ -201,6 +201,20 @@ def _validate(data: dict) -> dict:
                     cost(step["n_calls"], "n_calls", integral=True)
                 _test_counts(step)
                 _source_metrics(step.get("source_metrics"))
+                edit_size = step.get("change_size")
+                if edit_size is not None:
+                    if not isinstance(edit_size, dict):
+                        raise EvaluationError("change_size: expected an object or null")
+                    for key in (
+                        "files_changed",
+                        "files_added",
+                        "files_removed",
+                        "bytes_before",
+                        "bytes_after",
+                        "python_lines_added",
+                        "python_lines_removed",
+                    ):
+                        cost(edit_size.get(key), key, integral=True)
                 for name in ("tokens_in", "tokens_out", "wall_s"):
                     cost(step[name], name, integral=name != "wall_s")
             trajectory(sample, trial, len(changes))

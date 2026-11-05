@@ -33,6 +33,9 @@ CHECKPOINT_FIELDS = (
     "wall_s",
     "end_reason",
     "infra_cause",
+    "files_changed",
+    "python_lines_added",
+    "python_lines_removed",
 )
 FAILURE_FIELDS = (
     "method",
@@ -133,6 +136,16 @@ def diagnostic_rows(result):
                         },
                     )
                     checkpoints.append(row)
+                    row.update(
+                        {
+                            key: (saved.get("change_size") or {}).get(key) if saved else None
+                            for key in (
+                                "files_changed",
+                                "python_lines_added",
+                                "python_lines_removed",
+                            )
+                        }
+                    )
                     if not stopped and status != "success":
                         failures.append(
                             dict(

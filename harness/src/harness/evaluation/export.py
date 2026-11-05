@@ -18,7 +18,7 @@ from ..config import ExperimentConfig
 from ..registry import build_writer_prompt, load_tasks, load_template, prompt_version
 from ..store import SCHEMA_VERSION, editor_cfg_hash, sandbox_cfg_hash, writer_cfg_hash
 from .records import HASH, VERSION, EvaluationError, identifier, read_json, validate_dataset
-from .source import describe_source
+from .source import describe_change, describe_source
 
 COST_NOTE = (
     "Recorded editor token counts may include the collector's fallback estimates; "
@@ -146,6 +146,7 @@ def export_dataset(
                     (task.id, prompt_version(prompt), writer_hash),
                 ).fetchone()
             )
+            initial_files = None
             sample = dict(
                 task=task.id,
                 candidate_id=None,
@@ -167,6 +168,7 @@ def export_dataset(
                     sample["initial_status"] = "parse_failure"
                 else:
                     files = _blob(cfg.runs_dir, cid)
+                    initial_files = files
                     sample["source_lines"] = sum(len(s.splitlines()) for s in files.values())
                     sample["source_metrics"] = describe_source(files)
                     check = db.execute(
@@ -199,13 +201,14 @@ def export_dataset(
                         ).fetchall()
                     )
                     steps = []
+                    previous_files = initial_files
                     for row in rows:
                         run_ids.add(row["run_id"])
                         source_metrics = None
+                        edited_files = None
                         if row["output_blob"] is not None:
-                            source_metrics = describe_source(
-                                _blob(cfg.runs_dir, row["output_blob"])
-                            )
+                            edited_files = _blob(cfg.runs_dir, row["output_blob"])
+                            source_metrics = describe_source(edited_files)
                         steps.append(
                             {
                                 k: row[k]
@@ -228,6 +231,8 @@ def export_dataset(
                             }
                         )
                         steps[-1]["source_metrics"] = source_metrics
+                        steps[-1]["change_size"] = describe_change(previous_files, edited_files)
+                        previous_files = edited_files
                     sample["trials"].append(dict(sequence=seq.id, rep=rep, steps=steps))
             data["samples"].append(sample)
         if db is not None:
