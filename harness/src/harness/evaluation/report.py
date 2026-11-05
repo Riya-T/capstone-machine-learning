@@ -13,6 +13,7 @@ import json
 from pathlib import Path
 
 from .analysis import METRICS
+from .dashboard import render_dashboard
 from .diagnostics import CHECKPOINT_FIELDS, FAILURE_FIELDS, diagnostic_rows
 from .storage import check_existing, publish_new
 
@@ -25,6 +26,7 @@ OUTPUT_NAMES = (
     "checkpoints.csv",
     "failures.csv",
     "report.md",
+    "report.html",
     "manifest.json",
 )
 
@@ -166,6 +168,7 @@ def write_report(result: dict, directory: Path) -> dict[str, Path]:
         "summary.csv": _csv(metric_rows, list(metric_rows[0])),
         "trajectories.csv": _csv(result["trajectories"], list(result["trajectories"][0])),
         "report.md": render_markdown(result),
+        "report.html": render_dashboard(result),
     }
     pair_fields = [
         "method",

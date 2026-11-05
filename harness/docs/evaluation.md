@@ -94,6 +94,8 @@ SYNTHETIC FIXTURE. The point is to demonstrate the complete reporting workflow.
 
 Outputs:
 
+- `report.html`: self-contained offline dashboard with method/outcome/search filters.
+  Open this file in your browser; no server, external assets or account is needed.
 - `report.md`: readable method comparison, paired difference, interval, costs and limits.
 - `comparison.json`: all metrics, family values, provenance, and input records.
 - `summary.csv`: one method/metric row, including coverage and interval bounds.
@@ -127,6 +129,12 @@ underlying experimental outcomes. For an intentionally different historical
 analysis version, `--checksums-only` skips recomputation and says so explicitly.
 Older manifest-bearing reports may omit newly introduced report files. Reports
 without a manifest cannot be certified complete by this command.
+
+Dashboard filters change only the displayed checkpoint and first-stop rows. They
+never recompute summary scores or confidence intervals. With JavaScript disabled,
+the unfiltered tables still display. The page omits full configuration paths and
+raw source; `comparison.json` retains the fuller provenance and should be checked
+for local metadata before sharing. Synthetic data is prominently labeled.
 
 ## Preview and run a matched comparison
 
