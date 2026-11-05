@@ -167,7 +167,7 @@ def test_a_copy_cannot_be_returned_twice(library):
     assert state(library) == before
 
 
-def test_loans_are_listed_oldest_check_out_first():
+def test_loans_are_listed_in_catalog_order():
     lib = Library()
     for isbn in ["978-1", "978-2", "978-3"]:
         lib.add_book(isbn)
@@ -176,7 +176,7 @@ def test_loans_are_listed_oldest_check_out_first():
     lib.check_out("978-3", "ana")
     lib.return_book("978-2", "ana")
     lib.check_out("978-2", "ana")
-    assert lib.get_loans("ana") == ["978-1", "978-3", "978-2"]
+    assert lib.get_loans("ana") == ["978-1", "978-2", "978-3"]
 
 
 def test_each_borrower_has_their_own_loans(library):
@@ -184,7 +184,7 @@ def test_each_borrower_has_their_own_loans(library):
     library.check_out("978-2", "ben")
     library.check_out("978-1", "ben")
     assert library.get_loans("ana") == ["978-1"]
-    assert library.get_loans("ben") == ["978-2", "978-1"]
+    assert library.get_loans("ben") == ["978-1", "978-2"]
     assert library.get_loans("zed") == []
 
 

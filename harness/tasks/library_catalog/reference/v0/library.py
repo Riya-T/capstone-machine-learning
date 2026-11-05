@@ -29,7 +29,7 @@ class Library:
     def __init__(self):
         self._available = {}  # isbn -> copies on the shelf, in the order first added
         self._history = {}  # isbn -> list of (action, borrower), oldest first
-        self._loans = {}  # borrower -> isbns checked out, oldest first
+        self._loans = {}  # borrower -> isbns checked out
 
     def add_book(self, isbn, copies=1):
         if not isinstance(isbn, str) or not isbn:
@@ -65,7 +65,8 @@ class Library:
 
     def get_loans(self, borrower):
         check_borrower(borrower)
-        return list(self._loans.get(borrower, []))
+        loans = self._loans.get(borrower, [])
+        return [isbn for isbn in self.get_books() if isbn in loans]
 
     def get_history(self, isbn):
         self._require(isbn)

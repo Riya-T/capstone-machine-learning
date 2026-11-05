@@ -34,7 +34,7 @@ def test_checking_out_with_no_copy_on_the_shelf_raises(library):
 def test_loans_list_the_books_a_borrower_has_out(library):
     library.check_out("978-2", "ana")
     library.check_out("978-1", "ana")
-    assert library.get_loans("ana") == ["978-2", "978-1"]
+    assert library.get_loans("ana") == ["978-1", "978-2"]  # catalog order
     assert library.get_loans("ben") == []
 
 

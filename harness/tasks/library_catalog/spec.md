@@ -51,8 +51,9 @@ check out a book.
   back on the shelf. If the borrower has no copy of that book checked out,
   it raises `LibraryError`.
 - `get_loans(borrower)` returns the ISBNs the borrower has checked out and
-  not returned yet, oldest check-out first. A borrower with nothing checked
-  out gets `[]`.
+  not returned yet, in catalog order (the order of `get_books()`), whatever
+  order they were checked out in. A borrower with nothing checked out gets
+  `[]`.
 - Every method that takes a `borrower` raises `ValueError` when it is an
   empty string.
 

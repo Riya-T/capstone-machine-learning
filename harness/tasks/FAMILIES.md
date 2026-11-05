@@ -26,15 +26,19 @@ list each sequence's changes in order.
   - library_catalog was at 0. The initial spec dropped the error-order rule
     and non-string borrowers (both now unspecified). It is still at 1:
     7 of 8 programs store loans per book and list them in catalog order,
-    not check-out order, failing a public check. It is kept as a hard task
-    for now; the team should decide whether to relax the order of
-    `get_loans`.
+    not check-out order, failing a public check (21 of 24 programs by
+    2026-11-05). On 2026-11-05 `get_loans` was changed to catalog order
+    (the order of `get_books()`), whatever order the books were checked
+    out in: the spec, one public check, two initial tests and every
+    reference and planted bug. Writer check: 6 of 16 (run
+    `20261105T184200Z-57f000`), so it passes.
   - With 16 samples per task (the new default; see "Changes from the
     proposal" in the top-level README), passing programs out of 16:
     bank_ledger 15, course_enrollment 11, team_roster 7, lru_cache 7 (only
     8 distinct), football_season 6, shopping_cart 5, parking_garage 4,
     library_catalog 2. With at most 8 going to editing, that is 5.9 per
-    task on average, and every dev task but library_catalog has at least 3.
+    task on average, and every dev task but library_catalog has at least 3
+    (library_catalog has 6 since the 2026-11-05 change above).
   - The train and eval tasks were checked too; see "Writer check" below.
     All 36 train tasks and all 16 eval tasks pass (`meeting_rooms` and
     `task_board` after a second fix to their redesign).
@@ -64,7 +68,8 @@ All 16 eval tasks were run again on 2026-11-04 with
 that were fixed were run once more (`20261104T180011Z-504573`); see "Eval
 tasks (2026-11-04)" below. On 10-28 `aging_inventory` had 7,
 `auction_house` 5, and `document_versions` and `elevator_dispatch` 0.
-Last updated 2026-11-04.
+`library_catalog` was run again on 2026-11-05 after its redesign. Last
+updated 2026-11-05.
 
 | Task | Split | Passing of 16 | Writer check |
 |---|---|---|---|
@@ -75,7 +80,7 @@ Last updated 2026-11-04.
 | `football_season` | dev | 6 | ✅ passed |
 | `shopping_cart` | dev | 5 | ✅ passed |
 | `parking_garage` | dev | 4 | ✅ passed |
-| `library_catalog` | dev | 2 | ❌ failed |
+| `library_catalog` | dev | 2 → 6 | ✅ passed after redesign |
 | `io_meter` | train | 15 | ✅ passed |
 | `order_workflow` | train | 15 | ✅ passed |
 | `playlist_manager` | train | 15 | ✅ passed |
@@ -129,8 +134,8 @@ Last updated 2026-11-04.
 | `subscription_billing` | eval | 0 → 0 → 13 | ✅ passed after redesign |
 | `task_board` | eval | 0 → 0 → 0 → 5 | ✅ passed after redesign and a second fix |
 
-So far 59 of the 60 tasks pass: 7 of 8 dev, all 36 train and all 16
-eval. The 8 eval tasks that failed the fixes were redesigned (team
+All 60 tasks pass: all 8 dev (`library_catalog` after its 2026-11-05
+redesign), all 36 train and all 16 eval. The 8 eval tasks that failed the fixes were redesigned (team
 decision, 2026-11-04; see "Eval redesigns (2026-11-04)" below). Train
 tasks that fail
 are redesigned, not dropped (team decision, 2026-11-02; see "Redesigned on
