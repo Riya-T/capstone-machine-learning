@@ -90,3 +90,13 @@ subpackages next to `collection/`.
 | `tests/helpers.py` | Builds valid config files for tests. |
 | `tests/data/` | Test inputs: the example task, and a real model answer for the parser test. pytest doesn't collect them (see `conftest.py`). |
 | `tests/test_headers.py` | Enforces the course rule that every source and test file has a header with a Usage section. |
+
+## Writer evaluation (`src/harness/evaluation/`)
+
+| Unit | Purpose | Tests |
+|---|---|---|
+| `records.py`, `export.py` | Validate evaluation records and read consistent SQLite snapshots without source-store writes. Preserve initial failures, unresolved work and source provenance. | `tests/evaluation/test_export.py` |
+| `analysis.py`, `report.py` | Family-weighted outcomes, paired exploratory bootstrap intervals, coverage and costs; safe JSON/CSV/Markdown output. | `tests/evaluation/test_analysis.py` |
+| `plan.py`, `cli.py` | Matched plans, dry-run, explicit isolated collection, locks, snapshots and offline/completed resume. | `tests/evaluation/test_plan.py`, optional `test_docker.py` |
+
+Instructions, proposal mapping and first-version limitations: [evaluation.md](evaluation.md).

@@ -33,7 +33,9 @@ a fixed editing agent to change later. For each task it:
    one (rejected) for DPO training.
 
 It holds the core pipeline and an initial DPO training implementation.
-Baselines and held-out evaluation are not built yet (see [Not built yet](#not-built-yet)). All
+Matched evaluation orchestration and saved-only comparison reports are now available
+(see [Writer evaluation](harness/docs/evaluation.md)). Baseline training and actual
+held-out comparison results are still pending. All
 paths from here on are relative to `harness/`.
 
 ### Quick start
@@ -287,10 +289,31 @@ These are in the proposal but not in the harness yet:
 - Training baselines
   (correctness-only fine-tuning, DPO on Radon maintainability rankings, a
   maintainability-focused prompt);
-- held-out evaluation (three-change sequences on eval tasks, confidence
-  intervals by resampling task families);
+- actual held-out model comparisons (the evaluation runner and family-bootstrap
+  report software are available; trained checkpoints and measured results are not);
 - the comment ablation (`editor.view_transform: strip_comments`) and the
   size-matched subset.
+
+### Writer evaluation and comparison
+
+The first-version evaluation tool reuses the collector in separate method/seed
+stores and compares all initial attempts, without selecting a passing alternative.
+Its default is a safe preview; model execution requires an explicit `--run`.
+Saved-only reporting needs no model server or Docker. It writes JSON, CSV and a
+readable report with initial test success, consecutive changes, full sequences,
+regressions, recorded costs, and paired task-family bootstrap intervals.
+
+```bash
+cd harness
+uv run python -m harness evaluate --plan configs/evaluation.example.yaml
+uv run python -m harness evaluation-report --input fixtures/evaluation/fixture_original.json fixtures/evaluation/fixture_candidate.json --reference fixture_original --out runs/evaluation-demo
+```
+
+The second command uses **synthetic validation fixtures, not model results**.
+See [the evaluation guide](harness/docs/evaluation.md) for matched plans, adding
+trained/baseline checkpoints, explicit execution, read-only export, resume, metric
+denominators, limitations and tests. Existing tasks, collection settings and saved
+results are unchanged. The tool does not train models or validate the hypothesis.
 
 ### DPO training
 

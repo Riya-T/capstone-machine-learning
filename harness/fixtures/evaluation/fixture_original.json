@@ -1,0 +1,248 @@
+{
+  "contract": {
+    "same_fixed_editor": "fixture-only"
+  },
+  "editor_reps": 3,
+  "generation_seed": 1,
+  "method": "fixture_original",
+  "provenance": {
+    "description": "Hand-authored software-validation fixture; no writer was trained or evaluated.",
+    "synthetic": true
+  },
+  "purpose": "fixture",
+  "samples": [
+    {
+      "candidate_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "initial_status": "pass",
+      "task": "one",
+      "trials": [
+        {
+          "rep": 0,
+          "sequence": "s1",
+          "steps": [
+            {
+              "change_id": "a",
+              "status": "success",
+              "step": 1,
+              "tokens_in": 10,
+              "tokens_out": 20,
+              "wall_s": 0.5
+            },
+            {
+              "change_id": "b",
+              "status": "fail_existing",
+              "step": 2,
+              "tokens_in": 10,
+              "tokens_out": 20,
+              "wall_s": 0.5
+            }
+          ]
+        },
+        {
+          "rep": 1,
+          "sequence": "s1",
+          "steps": [
+            {
+              "change_id": "a",
+              "status": "success",
+              "step": 1,
+              "tokens_in": 10,
+              "tokens_out": 20,
+              "wall_s": 0.5
+            },
+            {
+              "change_id": "b",
+              "status": "fail_existing",
+              "step": 2,
+              "tokens_in": 10,
+              "tokens_out": 20,
+              "wall_s": 0.5
+            }
+          ]
+        },
+        {
+          "rep": 2,
+          "sequence": "s1",
+          "steps": [
+            {
+              "change_id": "a",
+              "status": "success",
+              "step": 1,
+              "tokens_in": 10,
+              "tokens_out": 20,
+              "wall_s": 0.5
+            },
+            {
+              "change_id": "b",
+              "status": "fail_existing",
+              "step": 2,
+              "tokens_in": 10,
+              "tokens_out": 20,
+              "wall_s": 0.5
+            }
+          ]
+        },
+        {
+          "rep": 0,
+          "sequence": "s2",
+          "steps": [
+            {
+              "change_id": "c",
+              "status": "success",
+              "step": 1,
+              "tokens_in": 10,
+              "tokens_out": 20,
+              "wall_s": 0.5
+            },
+            {
+              "change_id": "a",
+              "status": "fail_existing",
+              "step": 2,
+              "tokens_in": 10,
+              "tokens_out": 20,
+              "wall_s": 0.5
+            }
+          ]
+        },
+        {
+          "rep": 1,
+          "sequence": "s2",
+          "steps": [
+            {
+              "change_id": "c",
+              "status": "success",
+              "step": 1,
+              "tokens_in": 10,
+              "tokens_out": 20,
+              "wall_s": 0.5
+            },
+            {
+              "change_id": "a",
+              "status": "fail_existing",
+              "step": 2,
+              "tokens_in": 10,
+              "tokens_out": 20,
+              "wall_s": 0.5
+            }
+          ]
+        },
+        {
+          "rep": 2,
+          "sequence": "s2",
+          "steps": [
+            {
+              "change_id": "c",
+              "status": "success",
+              "step": 1,
+              "tokens_in": 10,
+              "tokens_out": 20,
+              "wall_s": 0.5
+            },
+            {
+              "change_id": "a",
+              "status": "fail_existing",
+              "step": 2,
+              "tokens_in": 10,
+              "tokens_out": 20,
+              "wall_s": 0.5
+            }
+          ]
+        }
+      ],
+      "writer_cost": {
+        "tokens_in": 100,
+        "tokens_out": 200,
+        "wall_s": 1
+      }
+    },
+    {
+      "candidate_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "initial_status": "fail",
+      "task": "two",
+      "trials": [
+        {
+          "rep": 0,
+          "sequence": "s1",
+          "steps": []
+        },
+        {
+          "rep": 1,
+          "sequence": "s1",
+          "steps": []
+        },
+        {
+          "rep": 2,
+          "sequence": "s1",
+          "steps": []
+        },
+        {
+          "rep": 0,
+          "sequence": "s2",
+          "steps": []
+        },
+        {
+          "rep": 1,
+          "sequence": "s2",
+          "steps": []
+        },
+        {
+          "rep": 2,
+          "sequence": "s2",
+          "steps": []
+        }
+      ],
+      "writer_cost": {
+        "tokens_in": 100,
+        "tokens_out": 200,
+        "wall_s": 1
+      }
+    }
+  ],
+  "schema_version": 1,
+  "tasks": [
+    {
+      "family": "family_one",
+      "id": "one",
+      "sequences": [
+        {
+          "changes": [
+            "a",
+            "b"
+          ],
+          "id": "s1"
+        },
+        {
+          "changes": [
+            "c",
+            "a"
+          ],
+          "id": "s2"
+        }
+      ],
+      "split": "eval",
+      "version": "1111111111111111111111111111111111111111111111111111111111111111"
+    },
+    {
+      "family": "family_two",
+      "id": "two",
+      "sequences": [
+        {
+          "changes": [
+            "a",
+            "b"
+          ],
+          "id": "s1"
+        },
+        {
+          "changes": [
+            "c",
+            "a"
+          ],
+          "id": "s2"
+        }
+      ],
+      "split": "eval",
+      "version": "2222222222222222222222222222222222222222222222222222222222222222"
+    }
+  ]
+}

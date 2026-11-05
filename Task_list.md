@@ -76,8 +76,10 @@ This is a  rough list of tasks we need to complete and is definitely subject to 
 
 ## 6. Evaluation 
 
-- [ ] **Evaluation code** — Run every method on the eval tasks and compute
-  the scores, with confidence intervals by resampling task families.
+- [x] **Evaluation code (first version)** — Matched method plans reuse collection
+  in separate stores; saved-only JSON/CSV/reports include task-family intervals.
+  See `harness/docs/evaluation.md`. Actual trained-model evaluation and
+  cross-training-seed pooling remain separate work.
 - [ ] **Run all five methods** — Original model, maintainability prompt,
   correctness-only, static ranking and ours, on the held-out tasks with the
   same editor and budget.
