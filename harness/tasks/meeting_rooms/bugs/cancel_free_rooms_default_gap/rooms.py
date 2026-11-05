@@ -6,6 +6,12 @@ was added correctly, but get_free_rooms uses the default gap of 0 for
 every room instead of the room's own gap.
 Never shown to the writer or the editor; validate-tasks checks that the
 tests catch it.
+
+Usage:
+    from rooms import RoomPlanner
+    planner = RoomPlanner()
+    planner.add_room("blue")
+    planner.book("meeting-1", "blue", 2)
 """
 
 DEFAULT_GAP = 0  # free slots between two bookings of a room, unless set otherwise

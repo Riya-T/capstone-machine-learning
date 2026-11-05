@@ -5,6 +5,12 @@ room, so the same id can be booked again in another room. The public
 checks never reuse an id.
 Never shown to the writer or the editor; validate-tasks checks that the
 tests catch it.
+
+Usage:
+    from rooms import RoomPlanner
+    planner = RoomPlanner()
+    planner.add_room("blue")
+    planner.book("meeting-1", "blue", 2)
 """
 
 GAP = 0  # free slots needed between two bookings of the same room

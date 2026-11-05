@@ -4,6 +4,12 @@ with an adjustable number of free slots between meetings.
 Correct solution for meeting_rooms after c_booking_versions, c_buffer and c_cancel.
 Never shown to the writer or the editor; validate-tasks checks that it
 passes every test it should.
+
+Usage:
+    from rooms import RoomPlanner
+    planner = RoomPlanner()
+    planner.add_room("blue")
+    planner.book("meeting-1", "blue", 2)
 """
 
 DEFAULT_GAP = 0  # free slots between two bookings of a room, unless set otherwise

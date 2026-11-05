@@ -3,6 +3,12 @@
 Correct solution for meeting_rooms after c_usage.
 Never shown to the writer or the editor; validate-tasks checks that it
 passes every test it should.
+
+Usage:
+    from rooms import RoomPlanner
+    planner = RoomPlanner()
+    planner.add_room("blue")
+    planner.book("meeting-1", "blue", 2)
 """
 
 GAP = 0  # free slots needed between two bookings of the same room
