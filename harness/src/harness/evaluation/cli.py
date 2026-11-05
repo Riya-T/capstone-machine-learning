@@ -69,8 +69,16 @@ def main(argv=None):
     matching.add_argument(
         "--size-field", choices=("python_lines", "source_lines"), default="python_lines"
     )
+    seeds = sub.add_parser("evaluation-seeds", help="Summarize saved training checkpoints")
+    seeds.add_argument("--report", required=True, type=Path)
+    seeds.add_argument("--out", required=True, type=Path)
     args = parser.parse_args(argv)
     try:
+        if args.command == "evaluation-seeds":
+            from .seeds import run_seed_summary
+
+            print(json.dumps(run_seed_summary(args.report, args.out), indent=2))
+            return 0
         if args.command == "evaluation-size-match":
             from .matching import run_size_match
 
