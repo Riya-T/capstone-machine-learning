@@ -287,53 +287,48 @@ are never scored; the next run retries them.
 These are in the proposal but not in the harness yet:
 
 - Training baselines
-  (correctness-only fine-tuning, DPO on Radon maintainability rankings, a
-  maintainability-focused prompt);
-- actual held-out model comparisons (the evaluation runner and family-bootstrap
-  report software are available; trained checkpoints and measured results are not);
-- the comment ablation (`editor.view_transform: strip_comments`) and the
-  size-matched subset.
+  (correctness-only fine-tuning and DPO on Radon maintainability rankings);
+- actual held-out model comparisons (the evaluation tool is ready, but these
+  experiments have not been run);
+- the comment ablation (`editor.view_transform: strip_comments`);
+- applying the size-matching tool to real comparison results.
 
 ### Writer evaluation and comparison
 
-The first-version evaluation tool reuses the collector in separate method/seed
-stores and compares all initial attempts, without selecting a passing alternative.
-Its default is a safe preview; model execution requires an explicit `--run`.
-Saved-only reporting needs no model server or Docker. It writes JSON, CSV and a
-readable report with initial test success, consecutive changes, full sequences,
-regressions, recorded costs, and paired task-family bootstrap intervals. It also
-exports per-family and paired CSV tables, descriptive source/documentation metrics,
-and a checksum manifest for safe interrupted-report recovery. The offline HTML
-dashboard filters individual outcomes; checkpoint and first-stop CSV exports
-make failures inspectable. A verification command checks saved bundles and
-recomputes their analysis without rerunning models.
+The evaluation tool compares the original writer with trained writers and
+baselines, using the same tasks, editor and budgets. It reports:
+
+- How often each writer's initial program passes.
+- How many changes succeed before the first failure, and how often the whole
+  sequence succeeds.
+- How often an edit breaks existing behavior.
+- Recorded token and time costs.
+
+Outcome comparisons include uncertainty estimates across task families.
+Results are available as an HTML dashboard, tables and optional charts. The tool
+can run new evaluations or report on saved results without calling models.
+Existing results are not overwritten. It does not train models.
+
+Try the report workflow with **synthetic example data, not experimental results**:
 
 ```bash
 cd harness
-uv run python -m harness evaluate --plan configs/evaluation.example.yaml
-uv run python -m harness evaluation-report --input fixtures/evaluation/fixture_original.json fixtures/evaluation/fixture_candidate.json --reference fixture_original --out runs/evaluation-features-demo
+uv run python examples/evaluation_workflow.py --out runs/evaluation-readme-demo
 ```
 
-The second command uses **synthetic validation fixtures, not model results**.
-Open `harness/runs/evaluation-features-demo/report.html` to view the dashboard.
-From `harness/`, verify it with:
+From `harness/`, open `runs/evaluation-readme-demo/comparison/report.html`.
+For a real evaluation, start by previewing its plan; this makes no model calls:
 
 ```bash
-uv run python -m harness evaluation-verify --report runs/evaluation-features-demo
+uv run python -m harness evaluate --plan configs/evaluation.example.yaml
 ```
 
-The full five-condition setup, including three declared training checkpoints per
-trained method, is `harness/configs/evaluation.proposal.example.yaml`. Preview it
-with `uv run python -m harness evaluate --plan configs/evaluation.proposal.example.yaml`
-from `harness/`; it does not call models. All main proposal metrics are covered,
-including separate all-generated/initially-correct source statistics, writer/editor
-costs, and descriptive code-change sizes. See the
-[proposal coverage checklist and Linux/Docker validation](harness/docs/evaluation-coverage.md)
-for precise definitions, remaining experimental ablations and the working WSL setup.
-See [the evaluation guide](harness/docs/evaluation.md) for matched plans, adding
-trained/baseline checkpoints, explicit execution, read-only export, resume, metric
-denominators, limitations and tests. Existing tasks, collection settings and saved
-results are unchanged. The tool does not train models or validate the hypothesis.
+See the [evaluation guide](harness/docs/evaluation.md) to configure checkpoints,
+run an evaluation, resume it, or read saved results. The
+[proposal checklist](harness/docs/evaluation-coverage.md) explains what is covered
+and what still needs experimental work. Separate guides cover
+[charts and failure analysis](harness/docs/evaluation-analysis.md) and
+[missing-result checks and paired comparisons](harness/docs/evaluation-refinements.md).
 
 ### DPO training
 
@@ -476,23 +471,3 @@ The harness needs Linux and Docker; on Windows, use WSL2.
   prompt differs from other machines' and some tests fail.
 - If git inside WSL reports "dubious ownership", run
   `git config --global --add safe.directory '<repo path>'` inside WSL.
-
-
-### Additional evaluation analysis
-
-The evaluation tool also provides read-only preflight checks, size-matched
-sensitivity comparisons, fixed-checkpoint training-seed summaries, immutable human
-failure-review packs and PNG/SVG figures. These operate on saved reports and keep
-primary scores unchanged. See [the analysis workflow guide](harness/docs/evaluation-analysis.md).
-The [coverage and paired-comparison guide](harness/docs/evaluation-refinements.md)
-explains frozen checkpoint rosters and a separate comparison where both writers'
-initial programs passed on the same task/seed pairs.
-
-```bash
-cd harness
-uv sync --locked --extra plots
-uv run python examples/evaluation_workflow.py --out runs/evaluation-refinement-demo --plots
-```
-
-This walkthrough uses explicitly synthetic outcomes, sizes and checkpoint labels.
-It demonstrates software behavior, not a trained-model improvement.
