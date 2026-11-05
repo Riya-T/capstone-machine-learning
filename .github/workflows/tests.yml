@@ -23,3 +23,7 @@ jobs:
         run: uv sync --locked
       - name: Run tests
         run: uv run pytest -rs
+      - name: Run evaluation container smoke
+        run: |
+          docker info --format '{{.ServerVersion}}'
+          uv run pytest tests/evaluation/test_docker.py --slow -rs
