@@ -52,8 +52,21 @@ def main(argv=None):
         action="store_true",
         help="Skip analysis recomputation (e.g. for a historical analysis version)",
     )
+    preflight = sub.add_parser(
+        "evaluation-preflight", help="Read-only checks before live evaluation"
+    )
+    preflight.add_argument("--plan", required=True, type=Path)
+    preflight.add_argument(
+        "--probe", action="store_true", help="Inspect Docker and GET local model lists"
+    )
     args = parser.parse_args(argv)
     try:
+        if args.command == "evaluation-preflight":
+            from .preflight import check_preflight
+
+            result = check_preflight(prepare(args.plan), probe=args.probe)
+            print(json.dumps(result, indent=2, allow_nan=False))
+            return 0 if result["ready"] else 3
         if args.command == "evaluation-verify":
             print(
                 json.dumps(verify_report(args.report, recompute=not args.checksums_only), indent=2)

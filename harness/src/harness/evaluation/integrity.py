@@ -10,6 +10,7 @@ import hashlib
 from pathlib import Path
 
 from .analysis import compare
+from .artifacts import WORKFLOW_FILES
 from .records import HASH, EvaluationError, read_json
 from .report import OUTPUT_NAMES
 
@@ -42,9 +43,13 @@ def verify_report(directory: Path, *, recompute: bool = True) -> dict:
     ):
         raise EvaluationError("Invalid or incomplete report manifest")
     files = manifest.get("files")
-    if not isinstance(files, dict) or not files.keys() >= REQUIRED:
+    kind = manifest.get("kind")
+    if kind is not None and kind not in WORKFLOW_FILES:
+        raise EvaluationError("Unknown derived report kind")
+    required = WORKFLOW_FILES[kind] if kind else REQUIRED
+    if not isinstance(files, dict) or not files.keys() >= required:
         raise EvaluationError("Manifest omits required report files")
-    allowed = set(OUTPUT_NAMES) - {"manifest.json"}
+    allowed = WORKFLOW_FILES[kind] if kind else set(OUTPUT_NAMES) - {"manifest.json"}
     blobs = {}
     for name, digest in files.items():
         if name not in allowed:
@@ -54,14 +59,19 @@ def verify_report(directory: Path, *, recompute: bool = True) -> dict:
         blobs[name] = _regular(directory / name)
         if hashlib.sha256(blobs[name]).hexdigest() != digest:
             raise EvaluationError(f"Checksum mismatch: {name}")
-    if recompute:
+    if recompute and not kind:
         _analysis_matches(read_json(blobs["comparison.json"]))
     return dict(
         complete=True,
         checksums_valid=True,
         files_verified=sorted(files),
-        analysis_recomputed=recompute,
-        note="Local consistency only; does not authenticate results or rerun behavioral tests.",
+        analysis_recomputed=recompute and not kind,
+        kind=kind or "comparison",
+        note=(
+            "Derived artifacts: checksums only; reproduce the analysis with its saved rule."
+            if kind
+            else "Local consistency only; does not authenticate results or rerun behavioral tests."
+        ),
     )
 
 
