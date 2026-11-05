@@ -171,6 +171,27 @@ def _counts(cells):
     return dict(counts), costs
 
 
+def _source_descriptives(cells):
+    passing = [c for c in cells if c["sample"]["initial_status"] == "pass"]
+    names = ("source_lines", "python_documentation_density")
+    result = dict(initially_passing_samples=len(passing), fields={})
+    for name in names:
+        families = defaultdict(list)
+        missing = 0
+        for cell in passing:
+            value = (cell["sample"].get("source_metrics") or {}).get(name)
+            if value is None:
+                missing += 1
+            else:
+                families[cell["family"]].append(value)
+        result["fields"][name] = dict(
+            family_weighted_known_mean=_mean([_mean(v) for v in families.values()]),
+            contributing_families=len(families),
+            missing_samples=missing,
+        )
+    return result
+
+
 def compare(
     datasets: list[dict],
     *,
@@ -240,6 +261,8 @@ def compare(
             "Recorded costs can include estimated tokens and historical wall/latency effects.",
             "Training seeds/checkpoints remain separate method rows; no hierarchical pooling.",
             "Initial correctness means test passage, not proof of every written requirement.",
+            "Source/documentation measures describe initially passing saved programs only; "
+            "known means disclose missing samples and are not maintainability scores.",
         ],
     )
     family_scores = {}
@@ -277,6 +300,7 @@ def compare(
             families=f,
             counts=counts,
             costs=costs,
+            initial_source_descriptives=_source_descriptives(cells),
         )
     for method in sorted(methods):
         if method == reference:

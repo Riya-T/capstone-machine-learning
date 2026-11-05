@@ -7,6 +7,7 @@ Usage:
 import json
 
 from harness.__main__ import main
+from harness.evaluation.report import OUTPUT_NAMES
 
 from .test_analysis import example
 from .test_plan import forbidden
@@ -41,7 +42,7 @@ def test_report_command_uses_only_exported_json_and_replays_identically(
     assert main(args) == 0
     assert (tmp_path / "reports/comparison.json").read_bytes() == result
     assert [p.read_bytes() for p in sources] == before
-    assert set(paths) == {"comparison.json", "summary.csv", "trajectories.csv", "report.md"}
+    assert set(paths) == set(OUTPUT_NAMES)
 
 
 def test_report_command_cannot_overwrite_its_input(tmp_path, capsys):

@@ -17,6 +17,7 @@ from harness.evaluation.analysis import compare
 from harness.evaluation.export import export_dataset
 from harness.evaluation.plan import _write_new, execute, prepare
 from harness.evaluation.records import EvaluationError, identifier, read_json, validate_dataset
+from harness.evaluation.report import write_report
 from harness.evaluation.storage import publish_new
 
 from .helpers import IMAGE, saved
@@ -137,7 +138,8 @@ def test_publication_race_preserves_competing_evidence(tmp_path, monkeypatch):
 
 
 @pytest.mark.parametrize(
-    "text", ['{"method":"a","method":"b"}', '{"cost": NaN}', '{"cost": Infinity}']
+    "text",
+    ['{"method":"a","method":"b"}', '{"cost": NaN}', '{"cost": Infinity}', '{"cost": 1e999}'],
 )
 def test_ambiguous_json_rejected(text):
     with pytest.raises(EvaluationError):
@@ -208,3 +210,110 @@ def test_input_file_contents_change_fingerprint_before_generation(tmp_path):
     assert prepare(path).digest != before.digest
     with pytest.raises(EvaluationError, match="changed since preparation"):
         execute(before)
+
+
+def test_report_manifest_certifies_every_file_and_csv_matches_json(tmp_path):
+    import csv
+
+    result = compare([example(), example("candidate")], bootstrap_samples=20)
+    paths = write_report(result, tmp_path)
+    manifest = read_json(paths["manifest.json"].read_text())
+    assert manifest["complete"] is True
+    assert set(manifest["files"]) == set(paths) - {"manifest.json"}
+    for name, digest in manifest["files"].items():
+        assert hashlib.sha256(paths[name].read_bytes()).hexdigest() == digest
+    with paths["comparisons.csv"].open(newline="") as stream:
+        rows = list(csv.DictReader(stream))
+    completion = next(r for r in rows if r["metric"] == "change_completion")
+    assert float(completion["difference"]) == 0.5
+    with paths["families.csv"].open(newline="") as stream:
+        assert len(list(csv.DictReader(stream))) == 28
+    assert "+50.0 pp" in paths["report.md"].read_text(encoding="utf8")
+
+
+def test_interrupted_report_has_no_manifest_and_resumes_without_changing_files(
+    tmp_path, monkeypatch
+):
+    import harness.evaluation.report as report
+
+    original = report.publish_new
+    calls = 0
+
+    def interrupted(path, data):
+        nonlocal calls
+        calls += 1
+        if calls == 3:
+            raise OSError("interrupted bundle")
+        return original(path, data)
+
+    result = compare([example()], bootstrap_samples=20)
+    monkeypatch.setattr(report, "publish_new", interrupted)
+    with pytest.raises(OSError, match="interrupted bundle"):
+        write_report(result, tmp_path)
+    assert not (tmp_path / "manifest.json").exists()
+    before = {p.name: p.read_bytes() for p in tmp_path.iterdir()}
+    monkeypatch.setattr(report, "publish_new", original)
+    paths = write_report(result, tmp_path)
+    assert all(paths[name].read_bytes() == data for name, data in before.items())
+    assert read_json(paths["manifest.json"].read_text())["complete"]
+
+
+def test_single_method_report_has_a_header_only_comparisons_csv(tmp_path):
+    import csv
+
+    paths = write_report(compare([example()], bootstrap_samples=20), tmp_path)
+    with paths["comparisons.csv"].open(newline="") as stream:
+        assert list(csv.DictReader(stream)) == []
+
+
+def test_schedule_rotates_methods_and_is_frozen_in_preview(tmp_path):
+    from harness.evaluation.plan import preview
+
+    prepared = prepare(write_plan(tmp_path, lambda p: p.update(generation_seeds=[1, 2, 3])))
+    schedule = preview(prepared)["schedule"]
+    assert [(j["generation_seed"], j["method"]) for j in schedule] == [
+        (1, "original"),
+        (1, "candidate"),
+        (2, "candidate"),
+        (2, "original"),
+        (3, "original"),
+        (3, "candidate"),
+    ]
+    assert schedule == prepared.signature["schedule"]
+
+
+def test_export_includes_verified_initial_and_edited_source_descriptions(tmp_path):
+    _, data = saved(tmp_path)
+    sample = data["samples"][0]
+    assert sample["source_metrics"]["python_syntax_valid"]
+    assert sample["source_lines"] == sample["source_metrics"]["source_lines"]
+    for trial in sample["trials"]:
+        for step in trial["steps"]:
+            assert step["output_blob"] == sample["candidate_id"]
+            assert step["source_metrics"] == sample["source_metrics"]
+
+
+@pytest.mark.parametrize("value", [[], {}, {"signature": {}}, {"image_id": "x"}])
+def test_malformed_saved_locks_fail_clearly_before_execution(tmp_path, monkeypatch, value):
+    prepared = prepare(write_plan(tmp_path))
+    prepared.root.mkdir(parents=True)
+    (prepared.root / "evaluation.lock.json").write_text(json.dumps(value))
+    monkeypatch.setattr("harness.evaluation.plan.make_runner", forbidden)
+    with pytest.raises(EvaluationError, match="metadata"):
+        execute(prepared, export_only=True)
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        [],
+        {"python_documentation_density": 1.5},
+        {"source_lines": -1},
+        {"python_syntax_valid": "yes"},
+    ],
+)
+def test_invalid_source_measurements_are_rejected(value):
+    data = example()
+    data["samples"][0]["source_metrics"] = value
+    with pytest.raises(EvaluationError):
+        validate_dataset(data)

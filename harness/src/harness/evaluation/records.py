@@ -44,7 +44,13 @@ def read_json(text: str | bytes):
     def constant(value):
         raise EvaluationError(f"Nonstandard JSON constant: {value}")
 
-    return json.loads(text, object_pairs_hook=pairs, parse_constant=constant)
+    def number(value):
+        result = float(value)
+        if not math.isfinite(result):
+            raise EvaluationError(f"Nonfinite JSON number: {value}")
+        return result
+
+    return json.loads(text, object_pairs_hook=pairs, parse_constant=constant, parse_float=number)
 
 
 def identifier(value: Any, where: str) -> str:
@@ -163,6 +169,7 @@ def _validate(data: dict) -> dict:
             raise EvaluationError("Parse failure cannot have a parsed source hash")
         for name in ("tokens_in", "tokens_out", "wall_s"):
             cost(sample["writer_cost"][name], name, integral=name != "wall_s")
+        _source_metrics(sample.get("source_metrics"))
         seen = set()
         if not isinstance(sample["trials"], list):
             raise EvaluationError("trials: expected an array")
@@ -193,6 +200,7 @@ def _validate(data: dict) -> dict:
                 if "n_calls" in step:
                     cost(step["n_calls"], "n_calls", integral=True)
                 _test_counts(step)
+                _source_metrics(step.get("source_metrics"))
                 for name in ("tokens_in", "tokens_out", "wall_s"):
                     cost(step[name], name, integral=name != "wall_s")
             trajectory(sample, trial, len(changes))
@@ -204,6 +212,33 @@ def _validate(data: dict) -> dict:
     if samples != set(tasks):
         raise EvaluationError("Record must represent every scheduled initial sample")
     return data
+
+
+def _source_metrics(value):
+    if value is None:
+        return
+    if not isinstance(value, dict):
+        raise EvaluationError("source_metrics: expected an object or null")
+    for name in (
+        "source_files",
+        "source_lines",
+        "python_files",
+        "python_lines",
+        "python_comment_lines",
+        "python_docstring_lines",
+        "python_documentation_lines",
+    ):
+        if name in value:
+            cost(value[name], name, integral=True)
+    density = value.get("python_documentation_density")
+    cost(density, "python_documentation_density")
+    if density is not None and density > 1:
+        raise EvaluationError("Documentation density exceeds one")
+    if (
+        value.get("python_syntax_valid") is not None
+        and type(value["python_syntax_valid"]) is not bool
+    ):
+        raise EvaluationError("python_syntax_valid: expected a boolean or null")
 
 
 def _test_counts(step):

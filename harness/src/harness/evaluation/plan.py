@@ -73,6 +73,16 @@ def _hash(value):
     return hashlib.sha256(json_text(value).encode()).hexdigest()
 
 
+def _schedule(plan):
+    """Rotate writer order between generation seeds; each job stays sequential."""
+    count = len(plan.methods)
+    return [
+        dict(method=plan.methods[index].id, method_index=index, generation_seed=seed)
+        for number, seed in enumerate(plan.generation_seeds)
+        for index in [(offset + number) % count for offset in range(count)]
+    ]
+
+
 def prepare(path: Path) -> Prepared:
     path = Path(path).resolve()
     try:
@@ -176,6 +186,7 @@ def prepare(path: Path) -> Prepared:
         reference=plan.reference,
         generation_seeds=list(plan.generation_seeds),
         methods=descriptions,
+        schedule=_schedule(plan),
         tasks=task_signature,
         comparison_contract=contract,
         bootstrap=dict(
@@ -216,6 +227,7 @@ def preview(prepared: Prepared) -> dict:
         reference=p.reference,
         methods=[m.id for m in p.methods],
         generation_seeds=list(p.generation_seeds),
+        schedule=prepared.signature["schedule"],
         task_ids=sorted(prepared.signature["tasks"]),
         writer_samples_per_task_seed=1,
         selection_of_passing_alternatives=False,
@@ -315,6 +327,13 @@ def _assert_current(prepared):
         )
 
 
+def _metadata(path, fields):
+    value = read_json(path.read_text(encoding="utf8"))
+    if not isinstance(value, dict) or not fields <= value.keys():
+        raise EvaluationError(f"Malformed evaluation metadata: {path.name}")
+    return value
+
+
 def execute(prepared: Prepared, *, export_only: bool = False) -> dict:
     """Run the existing collector sequentially in new stores, or export saved-only."""
     _assert_current(prepared)
@@ -327,8 +346,12 @@ def execute(prepared: Prepared, *, export_only: bool = False) -> dict:
             _local_only(cfg)
     with _controller(root):
         if lock_path.exists():
-            lock = read_json(lock_path.read_text(encoding="utf8"))
-            if lock["signature"] != prepared.signature:
+            lock = _metadata(lock_path, {"signature", "image_id"})
+            if (
+                lock["signature"] != prepared.signature
+                or not isinstance(lock["image_id"], str)
+                or not lock["image_id"]
+            ):
                 raise EvaluationError("Evaluation lock does not match current inputs")
         else:
             if set(x.name for x in root.iterdir()) != {".controller.lock"}:
@@ -340,37 +363,32 @@ def execute(prepared: Prepared, *, export_only: bool = False) -> dict:
             lock = dict(signature=prepared.signature, image_id=image_ids[0])
             _write_new(lock_path, lock)
         datasets = []
-        for i, method in enumerate(p.methods):
-            for seed in p.generation_seeds:
+        for job in prepared.signature["schedule"]:
+            i, seed = job["method_index"], job["generation_seed"]
+            method = p.methods[i]
+            _assert_current(prepared)
+            cfg = _job(prepared, i, seed)
+            marker = cfg.runs_dir / "evaluation.completed.json"
+            dataset = export_dataset(cfg, lock["image_id"], method=method.id, purpose=p.purpose)
+            if marker.exists():
+                if _metadata(marker, {"dataset_hash"})["dataset_hash"] != _hash(dataset):
+                    raise EvaluationError("Completed saved evaluation changed; refusing to rerun")
+            elif not export_only:
+                # Image verification happens before any model calls in this job.
+                runner = make_runner(cfg, owner="evaluation-preflight")
+                if runner.ensure_image() != lock["image_id"]:
+                    raise EvaluationError("Sandbox image changed; existing scores are preserved")
                 _assert_current(prepared)
-                cfg = _job(prepared, i, seed)
-                marker = cfg.runs_dir / "evaluation.completed.json"
+                stats = collect(cfg)
+                _assert_current(prepared)
+                if runner.existing_image_id() != lock["image_id"]:
+                    raise EvaluationError("Sandbox image changed during collection")
                 dataset = export_dataset(cfg, lock["image_id"], method=method.id, purpose=p.purpose)
-                if marker.exists():
-                    if read_json(marker.read_text())["dataset_hash"] != _hash(dataset):
-                        raise EvaluationError(
-                            "Completed saved evaluation changed; refusing to rerun"
-                        )
-                elif not export_only:
-                    # Image verification happens before any model calls in this job.
-                    runner = make_runner(cfg, owner="evaluation-preflight")
-                    if runner.ensure_image() != lock["image_id"]:
-                        raise EvaluationError(
-                            "Sandbox image changed; existing scores are preserved"
-                        )
-                    _assert_current(prepared)
-                    stats = collect(cfg)
-                    _assert_current(prepared)
-                    if runner.existing_image_id() != lock["image_id"]:
-                        raise EvaluationError("Sandbox image changed during collection")
-                    dataset = export_dataset(
-                        cfg, lock["image_id"], method=method.id, purpose=p.purpose
-                    )
-                    if _complete(dataset):
-                        _write_new(marker, dict(dataset_hash=_hash(dataset), run_id=stats.run_id))
-                datasets.append(dataset)
-                snapshot = root / "exports" / f"{method.id}-{seed}-{_hash(dataset)[:16]}.json"
-                _write_new(snapshot, dataset)
+                if _complete(dataset):
+                    _write_new(marker, dict(dataset_hash=_hash(dataset), run_id=stats.run_id))
+            datasets.append(dataset)
+            snapshot = root / "exports" / f"{method.id}-{seed}-{_hash(dataset)[:16]}.json"
+            _write_new(snapshot, dataset)
         result = compare(
             datasets,
             reference=p.reference,

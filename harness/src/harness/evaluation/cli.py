@@ -17,7 +17,7 @@ from ..store import StoreError
 from .analysis import compare
 from .plan import execute, prepare, preview
 from .records import read_json
-from .report import write_report
+from .report import OUTPUT_NAMES, write_report
 
 
 def main(argv=None):
@@ -56,10 +56,7 @@ def main(argv=None):
             print(json.dumps(result, indent=2, allow_nan=False))
             return 0 if result.get("complete", True) else 3
         datasets = [read_json(p.read_text(encoding="utf8")) for p in args.input]
-        targets = {
-            args.out / name
-            for name in ("comparison.json", "summary.csv", "trajectories.csv", "report.md")
-        }
+        targets = {args.out / name for name in OUTPUT_NAMES}
         if {p.resolve() for p in args.input} & {p.resolve() for p in targets}:
             raise ConfigError("Report output would overwrite an input dataset")
         result = compare(

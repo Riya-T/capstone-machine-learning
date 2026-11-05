@@ -18,6 +18,7 @@ from ..config import ExperimentConfig
 from ..registry import build_writer_prompt, load_tasks, load_template, prompt_version
 from ..store import SCHEMA_VERSION, editor_cfg_hash, sandbox_cfg_hash, writer_cfg_hash
 from .records import HASH, VERSION, EvaluationError, identifier, read_json, validate_dataset
+from .source import describe_source
 
 COST_NOTE = (
     "Recorded editor token counts may include the collector's fallback estimates; "
@@ -152,6 +153,7 @@ def export_dataset(
                 parse_error=None,
                 writer_cost=dict(tokens_in=None, tokens_out=None, wall_s=None),
                 source_lines=None,
+                source_metrics=None,
                 trials=[],
             )
             if candidate is not None:
@@ -166,6 +168,7 @@ def export_dataset(
                 else:
                     files = _blob(cfg.runs_dir, cid)
                     sample["source_lines"] = sum(len(s.splitlines()) for s in files.values())
+                    sample["source_metrics"] = describe_source(files)
                     check = db.execute(
                         "SELECT * FROM initial_checks WHERE task_id=? AND task_version=? "
                         "AND candidate_id=? AND sandbox_cfg_hash=?",
@@ -198,8 +201,11 @@ def export_dataset(
                     steps = []
                     for row in rows:
                         run_ids.add(row["run_id"])
+                        source_metrics = None
                         if row["output_blob"] is not None:
-                            _blob(cfg.runs_dir, row["output_blob"])
+                            source_metrics = describe_source(
+                                _blob(cfg.runs_dir, row["output_blob"])
+                            )
                         steps.append(
                             {
                                 k: row[k]
@@ -221,6 +227,7 @@ def export_dataset(
                                 )
                             }
                         )
+                        steps[-1]["source_metrics"] = source_metrics
                     sample["trials"].append(dict(sequence=seq.id, rep=rep, steps=steps))
             data["samples"].append(sample)
         if db is not None:

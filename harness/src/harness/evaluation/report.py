@@ -7,12 +7,23 @@ Usage:
 from __future__ import annotations
 
 import csv
+import hashlib
 import io
 import json
 from pathlib import Path
 
 from .analysis import METRICS
 from .storage import check_existing, publish_new
+
+OUTPUT_NAMES = (
+    "comparison.json",
+    "summary.csv",
+    "comparisons.csv",
+    "families.csv",
+    "trajectories.csv",
+    "report.md",
+    "manifest.json",
+)
 
 
 def json_text(value):
@@ -29,6 +40,10 @@ def _csv(rows, fields):
 
 def _percent(value):
     return "unavailable" if value is None else f"{value:.1%}"
+
+
+def _points(value):
+    return "unavailable" if value is None else f"{value * 100:+.1f} pp"
 
 
 def render_markdown(result):
@@ -71,10 +86,10 @@ def render_markdown(result):
     for pair in result["comparisons"]:
         m = pair["metrics"]["change_completion"]
         ci = m["interval"]
-        text = "unavailable" if ci is None else f"[{ci[0]:.1%}, {ci[1]:.1%}]"
+        text = "unavailable" if ci is None else f"[{ci[0] * 100:+.1f}, {ci[1] * 100:+.1f}] pp"
         lines.append(
             f"| {pair['method']} vs {pair['reference']} | "
-            f"{_percent(m['difference'])} | {text} ({level:.0%}) | "
+            f"{_points(m['difference'])} | {text} ({level:.0%}) | "
             f"{m['paired_families']} |"
         )
     lines += [
@@ -92,6 +107,26 @@ def render_markdown(result):
             f"| {name} | {c['tokens_in']['known_total']} | {c['tokens_out']['known_total']} | "
             f"{c['wall_s']['known_total']:.3f} | "
             f"{sum(v['missing_records'] for v in c.values())} |"
+        )
+    lines += [
+        "",
+        "## Initial source descriptions",
+        "",
+        "Initially passing programs only. Known family-weighted means; missing samples "
+        "remain disclosed. These measurements do not establish maintainability.",
+        "",
+        "| Method | Source lines | Python documentation-line density | "
+        "Missing samples (lines / density) |",
+        "|---|---:|---:|---:|",
+    ]
+    for name, method in result["methods"].items():
+        fields = method["initial_source_descriptives"]["fields"]
+        size, density = fields["source_lines"], fields["python_documentation_density"]
+        size_text = size["family_weighted_known_mean"]
+        lines.append(
+            f"| {name} | {'unavailable' if size_text is None else f'{size_text:.1f}'} | "
+            f"{_percent(density['family_weighted_known_mean'])} | "
+            f"{size['missing_samples']} / {density['missing_samples']} |"
         )
     lines += ["", "## Interpretation and limits", ""]
     lines += [f"- {note}" for note in result["notes"]]
@@ -129,6 +164,50 @@ def write_report(result: dict, directory: Path) -> dict[str, Path]:
         "trajectories.csv": _csv(result["trajectories"], list(result["trajectories"][0])),
         "report.md": render_markdown(result),
     }
+    pair_fields = [
+        "method",
+        "reference",
+        "metric",
+        "difference",
+        "interval_low",
+        "interval_high",
+        "paired_families",
+        "coverage_complete",
+    ]
+    pairs = []
+    for pair in result["comparisons"]:
+        for name, metric in pair["metrics"].items():
+            pairs.append(
+                dict(
+                    method=pair["method"],
+                    reference=pair["reference"],
+                    metric=name,
+                    difference=metric["difference"],
+                    interval_low=None if metric["interval"] is None else metric["interval"][0],
+                    interval_high=None if metric["interval"] is None else metric["interval"][1],
+                    paired_families=metric["paired_families"],
+                    coverage_complete=metric["coverage_complete"],
+                )
+            )
+    outputs["comparisons.csv"] = _csv(pairs, pair_fields)
+    families = [
+        dict(method=method, family=family, metric=name, **metric)
+        for method, row in result["methods"].items()
+        for family, values in row["families"].items()
+        for name, metric in values.items()
+    ]
+    outputs["families.csv"] = _csv(families, ["method", "family", "metric", "value", "unresolved"])
+    # Published last: absent manifest means a bundle is incomplete and safe to resume.
+    outputs["manifest.json"] = json_text(
+        dict(
+            schema_version=1,
+            complete=True,
+            files={
+                name: hashlib.sha256(text.encode("utf8")).hexdigest()
+                for name, text in outputs.items()
+            },
+        )
+    )
     for name, text in outputs.items():
         check_existing(directory / name, text.encode("utf8"))
     for name, text in outputs.items():
