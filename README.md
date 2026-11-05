@@ -321,6 +321,15 @@ From `harness/`, verify it with:
 ```bash
 uv run python -m harness evaluation-verify --report runs/evaluation-features-demo
 ```
+
+The full five-condition setup, including three declared training checkpoints per
+trained method, is `harness/configs/evaluation.proposal.example.yaml`. Preview it
+with `uv run python -m harness evaluate --plan configs/evaluation.proposal.example.yaml`
+from `harness/`; it does not call models. All main proposal metrics are covered,
+including separate all-generated/initially-correct source statistics, writer/editor
+costs, and descriptive code-change sizes. See the
+[proposal coverage checklist and Linux/Docker validation](harness/docs/evaluation-coverage.md)
+for precise definitions, remaining experimental ablations and the working WSL setup.
 See [the evaluation guide](harness/docs/evaluation.md) for matched plans, adding
 trained/baseline checkpoints, explicit execution, read-only export, resume, metric
 denominators, limitations and tests. Existing tasks, collection settings and saved

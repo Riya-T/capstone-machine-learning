@@ -76,10 +76,13 @@ This is a  rough list of tasks we need to complete and is definitely subject to 
 
 ## 6. Evaluation 
 
-- [x] **Evaluation code (first version)** — Matched method plans reuse collection
-  in separate stores; saved-only JSON/CSV/reports include task-family intervals.
-  See `harness/docs/evaluation.md`. Actual trained-model evaluation and
-  cross-training-seed pooling remain separate work.
+- [x] **Evaluation code** — Matched plans, all main outcome measures, all-generated
+  and initially-correct populations, phase-separated costs, comment/source/edit-size
+  descriptions, dashboard and verified saved-only reports. The five-condition
+  template records three training checkpoints per trained method separately.
+  Real container smoke/isolation and Linux/Python 3.11 tests passed. See
+  `harness/docs/evaluation-coverage.md` for the proposal checklist and limits.
+  Actual trained-model evaluation and cross-training-seed pooling remain separate work.
 - [ ] **Run all five methods** — Original model, maintainability prompt,
   correctness-only, static ranking and ours, on the held-out tasks with the
   same editor and budget.
@@ -92,7 +95,8 @@ This is a  rough list of tasks we need to complete and is definitely subject to 
 
 - [ ] **Comments removed** — Rerun the evaluation with comments and
   docstrings removed before the editor sees the code.
-- [ ] **Comment density** — Report how much each method's code comments.
+- [ ] **Comment density** — Reporting code supports all generated and initially
+  correct programs; collect and interpret the actual methods' results.
 - [ ] **Size-matched check** — Check whether gains come only from shorter
   code.
 - [ ] **Shorter or fewer editing runs** — Train with pairs from 1 change

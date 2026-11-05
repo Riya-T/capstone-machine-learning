@@ -2,6 +2,9 @@
 
 For the offline dashboard, checkpoint inspection and verification workflow, see
 [inspection and verification features](evaluation-features.md).
+For the proposal checklist, all-five-method configuration and the later successful
+Linux/Docker validation, see [evaluation coverage](evaluation-coverage.md). That
+receipt supersedes the historical Docker-unavailable notes below.
 
 ## Purpose and first-version plan
 
@@ -112,6 +115,10 @@ Outputs:
 - `failures.csv`: each initial non-pass once and each editing trajectory's first
   non-success, including budget/infrastructure/missing stops. These are recorded
   stop reasons, not automated explanations of why code failed.
+- `resources.csv`: recorded writing/editing cost, separately for all generated
+  and initially correct programs, with unknown fields and unresolved work disclosed.
+- `source_descriptives.csv`: source/documentation measurements for both populations.
+- `methods.csv`: configured model tag/identity, condition and declared training seed.
 
 Identical output can be replayed; differing existing reports are never overwritten.
 Choose a new output directory when changing the inputs, report version, or analysis options.
@@ -165,6 +172,11 @@ answer from the training collection's 16 attempts. It keeps the supplied inferen
 settings and editor, and uses each declared generation seed in its own store.
 Training checkpoint seeds should be separate named methods; generation seeds are
 not a replacement for training seeds.
+The fuller `configs/evaluation.proposal.example.yaml` uses 11 named checkpoints
+for five conditions (three seeds per trained condition), matching the proposal's
+3,168-checkpoint maximum. Its `writer_model` overrides only a named writer;
+`method_group` and `training_seed` are provenance and do not cause training or
+change inference seeds. Replace all placeholder served model names before running.
 
 The preview includes the frozen execution schedule. Method order rotates between
 generation seeds; with one seed there is no order counterbalance. Jobs remain
@@ -303,6 +315,11 @@ actual module/class/function docstring lines, and their union divided by Python
 lines. Documentation cannot exceed one by double-counting overlapping lines.
 Invalid syntax/encoding makes documentation measurements unknown; parsing is
 never a claim of behavioral correctness. No candidate code runs during analysis.
-The report shows known family-weighted means for initially passing programs and
+The report shows known family-weighted means for all generated and initially passing programs and
 missing sample counts. These are not causal maintainability measures or size-matched
 comparisons. Old exported JSON remains usable with those fields unavailable.
+
+New checkpoint records also describe file/byte/Python-line changes using verified
+before/after blobs. They are not behavioral scores and never resolve missing
+outcomes. The existing first-pass synthetic demo directories are preserved; use
+`runs/evaluation-proposal-demo` for the latest reporting example.
