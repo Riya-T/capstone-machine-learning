@@ -1,0 +1,9 @@
+# Original writer on the existing eval split. Evaluation forces one sample
+# and max_programs=1; the training collection defaults are untouched.
+extends: rtx5070_eval.yaml
+name: evaluation-original
+writer:
+  samples_per_task: 1
+tasks:
+  max_programs: 1
+

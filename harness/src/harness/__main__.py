@@ -1,6 +1,6 @@
 """Command line for the harness.
 
-Commands (all take --config):
+Collection commands (take --config):
     collect         run the whole pipeline; safe to stop and rerun, and a
                     finished rerun makes no model calls. --until writer,
                     initial or edit stops after that step.
@@ -34,6 +34,11 @@ log = logging.getLogger("harness")
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    arguments = list(sys.argv[1:] if argv is None else argv)
+    if arguments and arguments[0] in ("evaluate", "evaluation-report"):
+        from .evaluation.cli import main as evaluation_main
+
+        return evaluation_main(arguments)
     parser = argparse.ArgumentParser(prog="python -m harness", description=__doc__.split("\n")[0])
     commands = parser.add_subparsers(dest="command", required=True)
     for name, text in [
@@ -52,7 +57,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
         if name == "report":
             sub.add_argument("--out", type=Path, help="output directory")
-    args = parser.parse_args(argv)
+    args = parser.parse_args(arguments)
     if not logging.getLogger().handlers:
         logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 

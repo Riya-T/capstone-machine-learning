@@ -1,0 +1,15 @@
+# Mock-model validation only; NEVER evidence of training performance.
+# --run requires the existing Docker/Apptainer sandbox, even for mock code.
+# Offline reporting from fixtures/evaluation/*.json needs neither.
+schema_version: 1
+name: mock-pipeline
+purpose: fixture
+output_dir: ../runs/evaluation-fixture
+reference: mock_a
+generation_seeds: [20261105]
+methods:
+  - {id: mock_a, config: mock.yaml}
+  - {id: mock_b, config: mock.yaml}
+bootstrap_samples: 200
+bootstrap_seed: 20261105
+
