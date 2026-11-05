@@ -235,6 +235,7 @@ def compare(
             "Intervals are exploratory percentile family bootstraps; one family has no interval.",
             "Recorded costs can include estimated tokens and historical wall/latency effects.",
             "Training seeds/checkpoints remain separate method rows; no hierarchical pooling.",
+            "Initial correctness means test passage, not proof of every written requirement.",
         ],
     )
     family_scores = {}

@@ -17,4 +17,3 @@ bootstrap_seed: 20261105
 confidence: 0.95
 max_method_runs: 64
 max_edit_checkpoints: 4096
-

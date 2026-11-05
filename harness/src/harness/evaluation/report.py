@@ -44,7 +44,7 @@ def render_markdown(result):
         "",
         "Family-weighted rates; unknown outcomes are not scored as failures.",
         "",
-        "| Method | Initial correct | Changes completed, all | Initially correct subset | "
+        "| Method | Initial tests passed | Changes completed, all | Initially passing subset | "
         "Whole sequences, all | Regressions / evaluated steps | Unresolved trials |",
         "|---|---:|---:|---:|---:|---:|---:|",
     ]
@@ -131,6 +131,8 @@ def write_report(result: dict, directory: Path) -> dict[str, Path]:
     }
     for name, text in outputs.items():
         path = directory / name
+        if path.is_symlink():
+            raise EvaluationError(f"Refusing symlinked report output: {path}")
         if path.exists() and path.read_bytes() != text.encode("utf8"):
             raise EvaluationError(f"Refusing to overwrite {path}; use a new report directory")
     directory.mkdir(parents=True, exist_ok=True)

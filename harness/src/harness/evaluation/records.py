@@ -82,6 +82,7 @@ def validate_dataset(data: dict) -> dict:
 
 
 def _validate(data: dict) -> dict:
+    integer(data["schema_version"], "schema_version", 1)
     if data["schema_version"] != VERSION:
         raise EvaluationError("Unsupported evaluation record schema")
     identifier(data["method"], "method")
@@ -138,6 +139,7 @@ def _validate(data: dict) -> dict:
             changes = tasks[task_id][key[0]]
             stopped = False
             for number, step in enumerate(trial["steps"], 1):
+                integer(step["step"], "step", 1)
                 if (
                     stopped
                     or step["step"] != number

@@ -33,7 +33,10 @@ def read_snapshot(path: Path):
     if not path.is_file():
         yield None
         return
-    source = sqlite3.connect(path.resolve().as_uri() + "?mode=ro", uri=True, timeout=5)
+    try:
+        source = sqlite3.connect(path.resolve().as_uri() + "?mode=ro", uri=True, timeout=5)
+    except sqlite3.Error as exc:
+        raise EvaluationError(f"Cannot open saved evaluation store: {exc}") from exc
     target = sqlite3.connect(":memory:")
     target.row_factory = sqlite3.Row
     started = time.monotonic()
@@ -76,6 +79,10 @@ def comparison_contract(cfg: ExperimentConfig, image_id: str) -> dict:
         image_id=image_id,
         writer_temperature=cfg.writer.backend.temperature,
         writer_max_tokens=cfg.writer.backend.max_tokens,
+        writer_timeout_s=cfg.writer.backend.request_timeout_s,
+        writer_max_retries=cfg.writer.backend.max_retries,
+        editor_reps=cfg.editor.reps,
+        sandbox_workers=cfg.execution.sandbox_workers,
         writer_samples_per_task=1,
         max_programs=1,
     )

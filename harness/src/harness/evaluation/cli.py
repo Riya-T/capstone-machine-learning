@@ -12,6 +12,8 @@ import json
 from pathlib import Path
 
 from ..config import ConfigError
+from ..sandbox.runner import SandboxError
+from ..store import StoreError
 from .analysis import compare
 from .plan import execute, prepare, preview
 from .report import write_report
@@ -68,7 +70,7 @@ def main(argv=None):
         )
         print(json.dumps({k: str(v) for k, v in write_report(result, args.out).items()}, indent=2))
         return 0
-    except (ConfigError, OSError, ValueError) as exc:
+    except (ConfigError, OSError, ValueError, SandboxError, StoreError) as exc:
         print(f"Evaluation error: {exc}", file=__import__("sys").stderr)
         return 2
 

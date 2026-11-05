@@ -57,6 +57,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
         if name == "report":
             sub.add_argument("--out", type=Path, help="output directory")
+    commands.add_parser("evaluate", help="preview/run a matched writer evaluation (--plan)")
+    commands.add_parser(
+        "evaluation-report", help="compare saved evaluation exports (--input, --out)"
+    )
     args = parser.parse_args(arguments)
     if not logging.getLogger().handlers:
         logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")

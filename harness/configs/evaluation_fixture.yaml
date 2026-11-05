@@ -12,4 +12,3 @@ methods:
   - {id: mock_b, config: mock.yaml}
 bootstrap_samples: 200
 bootstrap_seed: 20261105
-

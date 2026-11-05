@@ -287,6 +287,8 @@ def _complete(dataset):
 
 def _write_new(path, value):
     text = json_text(value)
+    if path.is_symlink():
+        raise EvaluationError(f"Refusing symlinked evidence output: {path}")
     if path.exists():
         if path.read_bytes() != text.encode("utf8"):
             raise EvaluationError(f"Refusing to replace locked evidence: {path}")

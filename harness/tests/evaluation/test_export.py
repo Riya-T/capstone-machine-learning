@@ -129,6 +129,8 @@ def test_failure_categories_remain_distinct(tmp_path, status):
         lambda d: d["samples"][0]["trials"][0]["steps"][0].update(tokens_in=-1),
         lambda d: d["samples"][0]["writer_cost"].update(wall_s=float("nan")),
         lambda d: d.update(method="../escape"),
+        lambda d: d.update(schema_version=True),
+        lambda d: d["samples"][0]["trials"][0]["steps"][0].update(step=True),
         lambda d: d["samples"][0]["trials"][0]["steps"][0].update(status="fail_new"),
         lambda d: d["samples"][0].update(initial_status="fail"),
     ],

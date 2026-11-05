@@ -268,3 +268,28 @@ def test_external_model_endpoints_are_rejected_before_inference(tmp_path):
     )
     with pytest.raises(EvaluationError, match="loopback"):
         module._local_only(cfg)
+
+
+def test_different_repetition_counts_are_rejected_before_execution(tmp_path):
+    path = write_plan(tmp_path)
+    candidate = tmp_path / "candidate.yaml"
+    data = yaml.safe_load(candidate.read_text())
+    data["editor"]["reps"] += 1
+    candidate.write_text(yaml.safe_dump(data))
+    with pytest.raises(EvaluationError, match="matched"):
+        prepare(path)
+
+
+def test_changed_completed_evidence_is_not_repaired_or_reexecuted(tmp_path, monkeypatch):
+    import sqlite3
+
+    prepared = prepare(write_plan(tmp_path))
+    mock_runtime(monkeypatch)
+    assert execute(prepared)["complete"]
+    db_path = module._job(prepared, 0, 11).runs_dir / "harness.sqlite"
+    with sqlite3.connect(db_path) as db:
+        db.execute("UPDATE checkpoints SET wall_s=wall_s+1")
+    monkeypatch.setattr(module, "make_runner", forbidden)
+    monkeypatch.setattr(module, "collect", forbidden)
+    with pytest.raises(EvaluationError, match="Completed saved evaluation changed"):
+        execute(prepared)
