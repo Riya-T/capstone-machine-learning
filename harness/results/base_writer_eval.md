@@ -51,6 +51,25 @@ Step endings: success 790, fail_new 297, budget_exhausted 212,
 fail_existing 10, fail_both 8. Breaking earlier behavior is rare; most
 failures are the new feature itself or running out of turns.
 
+## Task-family bootstrap intervals
+
+Resampling the 16 task families with replacement 200,000 times (seed
+20261105) gives these percentile 95% confidence intervals for the
+task-weighted averages:
+
+| Metric | Estimate | 95% confidence interval |
+|---|---:|---:|
+| Changes done before first failure (of 3) | 1.17 | 0.86–1.49 |
+| First change works | 58% | 46%–69% |
+| Whole sequence works | 20% | 11%–30% |
+
+These intervals are approximate: the bootstrap uses the rounded per-task
+means and percentages in the table above, since the raw run store is not
+included here. They measure variation across task families, not across
+individual programs or repetitions. A method comparison should bootstrap
+the same task families jointly and report the interval for the paired
+per-task difference.
+
 ## Being checked
 
 A few changes almost never succeed, for example spending_alerts
