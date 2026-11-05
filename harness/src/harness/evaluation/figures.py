@@ -48,8 +48,10 @@ def _rate_points(ax, names, metrics, *, difference=False):
             # Draw interval endpoints independently; a percentile interval need not
             # contain its point estimate, so asymmetric error lengths can be negative.
             ax.hlines(position, interval[0], interval[1], color="#2d5b94", linewidth=2)
-            ax.plot(interval, [position, position], "|", color="#2d5b94", markersize=9)
-        ax.plot(estimate, position, "o", color="#163c6a", markersize=6)
+            ax.plot(
+                interval, [position, position], "|", color="#2d5b94", markersize=9, clip_on=False
+            )
+        ax.plot(estimate, position, "o", color="#163c6a", markersize=6, clip_on=False)
     ax.set_yticks(range(len(names)), [textwrap.fill(name, 25) for name in names])
     ax.set_ylim(len(names) - 0.5, -0.5)
     ax.set_xlim((-1, 1) if difference else (0, 1))

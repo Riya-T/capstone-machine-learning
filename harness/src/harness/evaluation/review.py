@@ -165,6 +165,10 @@ def make_review_pack(directory, output, *, stores=None):
         for label in ("before", "after"):
             preview = case[label + "_preview"]
             html.append(f"<h3>{label.title()} source: {escape(preview['state'])}</h3>")
+            digest = case["input_source_hash" if label == "before" else "output_source_hash"]
+            html.append(f"<p>Saved source hash: <code>{escape(digest or 'unavailable')}</code></p>")
+            if preview.get("note"):
+                html.append(f"<p>{escape(preview['note'])}</p>")
             for file in preview["files"]:
                 suffix = " (truncated preview)" if file["truncated"] else ""
                 html.append(

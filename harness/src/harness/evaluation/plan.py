@@ -437,7 +437,8 @@ def execute(prepared: Prepared, *, export_only: bool = False) -> dict:
                     raise EvaluationError("Sandbox image changed during collection")
                 dataset = export_dataset(cfg, lock["image_id"], **metadata)
                 if _complete(dataset):
-                    # Only resolved jobs earn a completion marker; ordinary code failures are resolved.
+                    # Only resolved trials earn a completion marker.
+                    # Normal code failures are terminal outcomes, not missing work.
                     _write_new(marker, dict(dataset_hash=_hash(dataset), run_id=stats.run_id))
             datasets.append(dataset)
             snapshot = root / "exports" / f"{method.id}-{seed}-{_hash(dataset)[:16]}.json"
