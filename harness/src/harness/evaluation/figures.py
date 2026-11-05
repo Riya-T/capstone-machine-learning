@@ -8,6 +8,7 @@ Usage:
 from __future__ import annotations
 
 import io
+import platform
 import textwrap
 
 from .artifacts import encoded, publish_bundle, purpose_label, read_comparison
@@ -69,13 +70,21 @@ def export_figures(directory, output):
     result, source_hash = read_comparison(directory)
     try:
         import matplotlib
+        import numpy
+        import PIL
         from matplotlib.figure import Figure
     except ImportError as error:
         raise EvaluationError(
             "Install plotting support with: uv sync --locked --extra plots"
         ) from error
     data = figure_data(result, source_hash)
-    data["render_environment"] = dict(matplotlib=matplotlib.__version__)
+    data["render_environment"] = dict(
+        matplotlib=matplotlib.__version__,
+        numpy=numpy.__version__,
+        pillow=PIL.__version__,
+        python=platform.python_version(),
+        platform=platform.system() + "/" + platform.machine(),
+    )
     files = {}
     names = list(result["methods"])
     caption = (

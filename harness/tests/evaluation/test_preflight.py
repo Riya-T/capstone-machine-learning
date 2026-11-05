@@ -130,3 +130,28 @@ def test_cli_returns_not_ready_for_an_unprobed_plan(tmp_path, capsys):
     path = write_plan(tmp_path)
     assert main(["evaluation-preflight", "--plan", str(path)]) == 3
     assert not json.loads(capsys.readouterr().out)["ready"]
+
+
+@pytest.mark.parametrize("model", ["model:cloud", "model:8b-cloud"])
+def test_known_cloud_routes_are_not_allowed_through_a_loopback_server(tmp_path, model):
+    from dataclasses import replace
+
+    from harness.evaluation.plan import _local_only
+
+    prepared = prepare(write_plan(tmp_path))
+    cfg = prepared.configs[0]
+    cfg = replace(
+        cfg,
+        writer=replace(
+            cfg.writer,
+            backend=replace(
+                cfg.writer.backend,
+                kind="openai_compat",
+                fixtures=None,
+                base_url="http://127.0.0.1:8000/v1",
+                model=model,
+            ),
+        ),
+    )
+    with pytest.raises(EvaluationError, match="Cloud-routed"):
+        _local_only(cfg)

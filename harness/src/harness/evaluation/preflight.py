@@ -152,5 +152,5 @@ def check_preflight(prepared, *, probe=False):
         plan=preview(prepared),
         inference_performed=False,
         note="Readiness is a snapshot. Advertised model IDs do not certify weights, quantization, "
-        "context settings or future successful inference.",
+        "context settings, local-only routing or future successful inference.",
     )

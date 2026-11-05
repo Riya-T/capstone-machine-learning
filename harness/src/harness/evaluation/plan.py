@@ -310,6 +310,8 @@ def _local_only(cfg):
             raise EvaluationError("Real execution supports local loopback endpoints only")
         if "REPLACE" in backend.model:
             raise EvaluationError("Configure a locally served trained writer before --run")
+        if backend.model.casefold().endswith((":cloud", "-cloud")):
+            raise EvaluationError("Cloud-routed model tags are not authorized for local evaluation")
 
 
 @contextmanager
