@@ -113,6 +113,10 @@ def _validate(data: dict) -> dict:
     if data["schema_version"] != VERSION:
         raise EvaluationError("Unsupported evaluation record schema")
     identifier(data["method"], "method")
+    if data.get("method_group") is not None:
+        identifier(data["method_group"], "method_group")
+    if data.get("training_seed") is not None:
+        integer(data["training_seed"], "training_seed")
     integer(data["generation_seed"], "generation_seed")
     if data["purpose"] not in PURPOSES:
         raise EvaluationError("Unknown evaluation purpose")
@@ -134,6 +138,12 @@ def _validate(data: dict) -> dict:
         if expected_split and task["split"] != expected_split:
             raise EvaluationError("Task split does not match evaluation purpose")
         sequences = {}
+        if "change_kinds" in task:
+            if not isinstance(task["change_kinds"], dict):
+                raise EvaluationError("change_kinds: expected an object")
+            for change, kind in task["change_kinds"].items():
+                identifier(change, "change")
+                identifier(kind, "change kind")
         if not isinstance(task["sequences"], list):
             raise EvaluationError("sequences: expected an array")
         for seq in task["sequences"]:

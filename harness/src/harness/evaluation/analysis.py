@@ -266,7 +266,15 @@ def compare(
         methods[data["method"]].append(data)
     seed_sets = [{d["generation_seed"] for d in group} for group in methods.values()]
     for method, group in methods.items():
-        identity = [(d.get("writer_identity"), d.get("writer_model")) for d in group]
+        identity = [
+            (
+                d.get("writer_identity"),
+                d.get("writer_model"),
+                d.get("method_group", method),
+                d.get("training_seed"),
+            )
+            for d in group
+        ]
         if any(value != identity[0] for value in identity):
             raise EvaluationError(f"{method}: writer identity changed across generation seeds")
     if any(s != seed_sets[0] for s in seed_sets):
@@ -331,6 +339,10 @@ def compare(
         family_scores[method] = f
         counts, costs = _counts(cells)
         output["methods"][method] = dict(
+            method_group=methods[method][0].get("method_group", method),
+            training_seed=methods[method][0].get("training_seed"),
+            writer_model=methods[method][0].get("writer_model"),
+            writer_identity=methods[method][0].get("writer_identity"),
             metrics={
                 m: _summarize_families(f, m, bootstrap_samples, bootstrap_seed, confidence)
                 for m in METRICS

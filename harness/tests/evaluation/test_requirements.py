@@ -6,11 +6,16 @@ Usage:
 
 import csv
 
+import pytest
+
 from harness.evaluation.analysis import compare
+from harness.evaluation.plan import _job, prepare, preview
+from harness.evaluation.records import EvaluationError
 from harness.evaluation.report import write_report
 
-from .helpers import saved
+from .helpers import ROOT, saved
 from .test_analysis import example
+from .test_plan import forbidden, write_plan
 
 
 def test_failed_initial_source_is_in_all_generated_comment_measurements():
@@ -87,3 +92,68 @@ def test_edit_size_is_exported_from_verified_blobs_without_affecting_scores(tmp_
         rows = list(csv.DictReader(stream))
     assert all(row["files_changed"] == row["python_lines_added"] == "0" for row in rows)
     assert result["methods"]["original"]["metrics"]["change_completion"]["estimate"] == 1
+
+
+def test_full_proposal_plan_previews_five_conditions_and_three_trained_seeds(monkeypatch):
+    monkeypatch.setattr("harness.evaluation.plan.make_runner", forbidden)
+    prepared = prepare(ROOT / "configs/evaluation.proposal.example.yaml")
+    result = preview(prepared)
+    groups = {m["method_group"] for m in result["method_metadata"]}
+    assert groups == {
+        "original",
+        "maintainability_prompt",
+        "correctness_only",
+        "static_ranking",
+        "downstream_outcomes",
+    }
+    assert len(result["methods"]) == 11
+    assert result["max_edit_checkpoints"] == 3168
+    assert result["max_writer_generations"] == 176
+    assert result["inference_performed"] is False
+    for group in ("correctness_only", "static_ranking", "downstream_outcomes"):
+        assert {
+            m["training_seed"] for m in result["method_metadata"] if m["method_group"] == group
+        } == {11, 22, 33}
+    assert prepared.configs[0].writer.prompt_template != prepared.configs[1].writer.prompt_template
+
+
+def test_declared_training_seed_does_not_change_generation_seed(tmp_path):
+    def configure(p):
+        p["methods"][1].update(
+            writer_model="served-checkpoint", method_group="trained", training_seed=999
+        )
+
+    prepared = prepare(write_plan(tmp_path, configure))
+    cfg = _job(prepared, 1, 11)
+    assert cfg.seed == 11
+    assert cfg.writer.backend.model == "served-checkpoint"
+    assert preview(prepared)["method_metadata"][1]["training_seed"] == 999
+
+
+@pytest.mark.parametrize("repeat_seed", [False, True])
+def test_replicate_groups_reject_missing_or_duplicate_training_seeds(tmp_path, repeat_seed):
+    def configure(p):
+        for method in p["methods"]:
+            method["method_group"] = "trained"
+            if repeat_seed:
+                method["training_seed"] = 123
+
+    with pytest.raises(EvaluationError, match="training_seed"):
+        prepare(write_plan(tmp_path, configure))
+
+
+def test_checkpoint_exports_retain_declared_training_seed_and_change_kinds(tmp_path):
+    from harness.evaluation.export import export_dataset
+
+    from .helpers import IMAGE
+
+    cfg, _ = saved(tmp_path)
+    data = export_dataset(
+        cfg, IMAGE, method="replica", purpose="fixture", method_group="trained", training_seed=55
+    )
+    result = compare([data], bootstrap_samples=20)
+    row = result["methods"]["replica"]
+    assert row["training_seed"] == 55 and row["method_group"] == "trained"
+    paths = write_report(result, tmp_path / "report")
+    with paths["checkpoints.csv"].open(newline="") as stream:
+        assert all(row["change_kind"] for row in csv.DictReader(stream))

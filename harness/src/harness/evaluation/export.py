@@ -89,7 +89,13 @@ def comparison_contract(cfg: ExperimentConfig, image_id: str) -> dict:
 
 
 def export_dataset(
-    cfg: ExperimentConfig, image_id: str, *, method: str, purpose: str = "heldout"
+    cfg: ExperimentConfig,
+    image_id: str,
+    *,
+    method: str,
+    purpose: str = "heldout",
+    method_group: str | None = None,
+    training_seed: int | None = None,
 ) -> dict:
     """Read exactly sample zero; never select a better initially passing sample."""
     identifier(method, "method")
@@ -108,6 +114,8 @@ def export_dataset(
         editor_reps=cfg.editor.reps,
         writer_model=cfg.writer.backend.model,
         writer_identity=writer_hash,
+        method_group=method_group or method,
+        training_seed=training_seed,
         contract=comparison_contract(cfg, image_id),
         provenance=dict(
             config=cfg.to_dict(),
@@ -131,6 +139,7 @@ def export_dataset(
                     family=task.family,
                     split=task.split,
                     version=task.task_version,
+                    change_kinds={x.change.id: x.change.kind for s in sequences for x in s.steps},
                     sequences=[
                         dict(id=s.id, changes=[x.change.id for x in s.steps]) for s in sequences
                     ],

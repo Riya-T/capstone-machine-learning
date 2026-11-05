@@ -41,6 +41,9 @@ from .storage import publish_new
 class Method:
     id: str
     config: InputPath
+    writer_model: str | None = None
+    method_group: str | None = None
+    training_seed: int | None = None
 
 
 @dataclass(frozen=True)
@@ -114,6 +117,20 @@ def prepare(path: Path) -> Prepared:
     checkpoints = 0
     for method in plan.methods:
         original = load_config(method.config)
+        if method.method_group is not None:
+            identifier(method.method_group, "method_group")
+        if method.training_seed is not None:
+            integer(method.training_seed, "training_seed")
+        if method.writer_model is not None:
+            if not method.writer_model.strip() or "\x00" in method.writer_model:
+                raise EvaluationError("writer_model must name a served checkpoint")
+            original = dataclasses.replace(
+                original,
+                writer=dataclasses.replace(
+                    original.writer,
+                    backend=dataclasses.replace(original.writer.backend, model=method.writer_model),
+                ),
+            )
         cfg = dataclasses.replace(
             original,
             writer=dataclasses.replace(original.writer, samples_per_task=1),
@@ -170,10 +187,27 @@ def prepare(path: Path) -> Prepared:
                 method=method.id,
                 resolved_config=cfg.to_dict(),
                 writer_identity=writer_cfg_hash(cfg),
+                method_group=method.method_group or method.id,
+                training_seed=method.training_seed,
             )
         )
     if checkpoints > plan.max_edit_checkpoints:
         raise EvaluationError("Plan exceeds max_edit_checkpoints")
+    groups = {}
+    for description in descriptions:
+        groups.setdefault(description["method_group"], []).append(description)
+    for name, members in groups.items():
+        if len(members) < 2:
+            continue
+        seeds = [m["training_seed"] for m in members]
+        if None in seeds or len(set(seeds)) != len(seeds):
+            raise EvaluationError(
+                f"{name}: replicate checkpoints need distinct training_seed values"
+            )
+        if len({m["writer_identity"] for m in members}) != len(members):
+            raise EvaluationError(
+                f"{name}: replicate checkpoints must have distinct writer identities"
+            )
     source_root = Path(__file__).resolve().parents[1]
     sources = {
         p.relative_to(source_root).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
@@ -226,6 +260,15 @@ def preview(prepared: Prepared) -> dict:
         output_directory=str(prepared.root),
         reference=p.reference,
         methods=[m.id for m in p.methods],
+        method_metadata=[
+            dict(
+                method=m.id,
+                method_group=m.method_group or m.id,
+                training_seed=m.training_seed,
+                writer_model=cfg.writer.backend.model,
+            )
+            for m, cfg in zip(p.methods, prepared.configs, strict=True)
+        ],
         generation_seeds=list(p.generation_seeds),
         schedule=prepared.signature["schedule"],
         task_ids=sorted(prepared.signature["tasks"]),
@@ -369,7 +412,13 @@ def execute(prepared: Prepared, *, export_only: bool = False) -> dict:
             _assert_current(prepared)
             cfg = _job(prepared, i, seed)
             marker = cfg.runs_dir / "evaluation.completed.json"
-            dataset = export_dataset(cfg, lock["image_id"], method=method.id, purpose=p.purpose)
+            metadata = dict(
+                method=method.id,
+                purpose=p.purpose,
+                method_group=method.method_group,
+                training_seed=method.training_seed,
+            )
+            dataset = export_dataset(cfg, lock["image_id"], **metadata)
             if marker.exists():
                 if _metadata(marker, {"dataset_hash"})["dataset_hash"] != _hash(dataset):
                     raise EvaluationError("Completed saved evaluation changed; refusing to rerun")
@@ -383,7 +432,7 @@ def execute(prepared: Prepared, *, export_only: bool = False) -> dict:
                 _assert_current(prepared)
                 if runner.existing_image_id() != lock["image_id"]:
                     raise EvaluationError("Sandbox image changed during collection")
-                dataset = export_dataset(cfg, lock["image_id"], method=method.id, purpose=p.purpose)
+                dataset = export_dataset(cfg, lock["image_id"], **metadata)
                 if _complete(dataset):
                     _write_new(marker, dict(dataset_hash=_hash(dataset), run_id=stats.run_id))
             datasets.append(dataset)

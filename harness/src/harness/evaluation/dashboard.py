@@ -280,6 +280,7 @@ def render_dashboard(result):
         "failures.csv",
         "resources.csv",
         "source_descriptives.csv",
+        "methods.csv",
         "comparison.json",
         "manifest.json",
     ):

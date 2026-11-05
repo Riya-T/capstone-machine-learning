@@ -1,0 +1,5 @@
+# Prompt-only control: same served base writer, budgets, editor and task split.
+extends: evaluation_original.yaml
+name: evaluation-maintainability-prompt
+writer:
+  prompt_template: ../prompts/writer_maintainability_v1.md

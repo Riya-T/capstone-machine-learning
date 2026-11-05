@@ -27,6 +27,7 @@ OUTPUT_NAMES = (
     "failures.csv",
     "resources.csv",
     "source_descriptives.csv",
+    "methods.csv",
     "report.md",
     "report.html",
     "manifest.json",
@@ -269,6 +270,19 @@ def write_report(result: dict, directory: Path) -> dict[str, Path]:
             "contributing_families",
             "missing_samples",
         ],
+    )
+    method_rows = [
+        dict(
+            method=name,
+            **{
+                key: row[key]
+                for key in ("method_group", "training_seed", "writer_model", "writer_identity")
+            },
+        )
+        for name, row in result["methods"].items()
+    ]
+    outputs["methods.csv"] = _csv(
+        method_rows, ["method", "method_group", "training_seed", "writer_model", "writer_identity"]
     )
     # Published last: absent manifest means a bundle is incomplete and safe to resume.
     outputs["manifest.json"] = json_text(

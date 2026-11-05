@@ -93,7 +93,14 @@ def _analysis_matches(saved):
                     continue  # Added after the first report version.
                 if saved["methods"][method][key] != values[key]:
                     raise EvaluationError(f"Recomputed analysis differs: {method}/{key}")
-            for key in ("all_generated_source_descriptives", "resource_breakdown"):
+            for key in (
+                "all_generated_source_descriptives",
+                "resource_breakdown",
+                "method_group",
+                "training_seed",
+                "writer_model",
+                "writer_identity",
+            ):
                 if key in saved["methods"][method] and saved["methods"][method][key] != values[key]:
                     raise EvaluationError(f"Recomputed analysis differs: {method}/{key}")
     except (KeyError, TypeError, AttributeError) as exc:

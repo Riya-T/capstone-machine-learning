@@ -17,6 +17,7 @@ CHECKPOINT_FIELDS = (
     "rep",
     "step",
     "change_id",
+    "change_kind",
     "status",
     "recorded",
     "new_feature_failure",
@@ -109,6 +110,7 @@ def diagnostic_rows(result):
                         initial_status=initial,
                         step=number,
                         change_id=change,
+                        change_kind=task.get("change_kinds", {}).get(change),
                         status=status,
                         recorded=saved is not None,
                         new_feature_failure=(status in ("fail_new", "fail_both"))
