@@ -207,9 +207,11 @@ def compile_reviews(directory, annotation_paths, output):
             not isinstance(case, dict)
             or not isinstance(case.get("case_id"), str)
             or not HASH.fullmatch(case["case_id"])
+            or case.get("stage") not in ("initial", "edit")
         ):
             raise EvaluationError("Malformed review case")
     known = {c["case_id"] for c in payload["cases"]}
+    stages = {c["case_id"]: c["stage"] for c in payload["cases"]}
     if len(known) != len(payload["cases"]):
         raise EvaluationError("Duplicate review cases")
     reviews, seen, inputs = [], set(), []
@@ -231,6 +233,11 @@ def compile_reviews(directory, annotation_paths, output):
                 if case_id not in known or row["category"] not in CATEGORIES:
                     raise EvaluationError("Unknown case ID or review category")
                 category, confidence = row["category"], row["confidence"]
+                if stages[case_id] == "initial" and category in (
+                    "edit_bug",
+                    "structure_interaction",
+                ):
+                    raise EvaluationError("An initial-only case cannot assert a later edit defect")
                 if category == "unreviewed":
                     if confidence != "unreviewed" or any(
                         row[k].strip() for k in ("reviewer", "evidence", "notes")

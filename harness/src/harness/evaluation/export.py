@@ -167,6 +167,7 @@ def export_dataset(
                 trials=[],
             )
             if candidate is not None:
+                # Preserve the first scheduled answer even if a later answer would pass more tests.
                 run_ids.add(candidate["run_id"])
                 cid = candidate["candidate_id"]
                 sample.update(candidate_id=cid, parse_error=candidate["parse_error"])
@@ -210,6 +211,7 @@ def export_dataset(
                         ).fetchall()
                     )
                     steps = []
+                    # Every sequence/repetition starts from its own original parent.
                     previous_files = initial_files
                     for row in rows:
                         run_ids.add(row["run_id"])

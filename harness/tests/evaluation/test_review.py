@@ -162,3 +162,11 @@ def test_corrupt_explicit_source_blob_cannot_be_presented_as_verified_code(tmp_p
     with pytest.raises(EvaluationError, match="Corrupt"):
         make_review_pack(primary, tmp_path / "review", stores={"original": cfg.runs_dir})
     assert not (tmp_path / "review").exists()
+
+
+def test_initial_case_cannot_be_labeled_as_a_nonexistent_edit(tmp_path):
+    target, cases = pack(tmp_path)
+    initial = next(c for c in cases if c["stage"] == "initial")
+    source = annotations(tmp_path / "review.csv", [entry(initial, category="edit_bug")])
+    with pytest.raises(EvaluationError, match="initial-only"):
+        compile_reviews(target, [source], tmp_path / "summary")

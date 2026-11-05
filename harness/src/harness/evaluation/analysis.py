@@ -34,6 +34,7 @@ def percentile(values: list[float], fraction: float) -> float:
 
 
 def interval(values: list[float], samples: int, seed: int, confidence: float):
+    # One family cannot reveal variation between families, regardless of repetition count.
     if len(values) < 2:
         return None
     rng = random.Random(seed)
@@ -93,6 +94,7 @@ def _family_metrics(cells):
         )
     }
     for conditional, suffix in [(False, ""), (True, "_initially_correct")]:
+        # Keep both populations visible so improved editing cannot hide worse initial code.
         trials = [
             t
             for c in cells
@@ -131,6 +133,7 @@ def _family_metrics(cells):
 def _summarize_families(families, metric, samples, seed, confidence):
     values = [f[metric]["value"] for f in families.values() if f[metric]["value"] is not None]
     unresolved = any(f[metric]["unresolved"] for f in families.values())
+    # Unknown work blocks the primary estimate. A known-subset mean is diagnostic only.
     return dict(
         estimate=None if unresolved else _mean(values),
         interval=None if unresolved else interval(values, samples, seed, confidence),
@@ -265,6 +268,7 @@ def compare(
             raise EvaluationError("Unmatched task versions, editor, budget, sandbox, or purpose")
         methods[data["method"]].append(data)
     seed_sets = [{d["generation_seed"] for d in group} for group in methods.values()]
+    # A method name must refer to the same checkpoint and prompt on every generation seed.
     for method, group in methods.items():
         identity = [
             (
@@ -336,6 +340,7 @@ def compare(
                     )
                 )
         f = {name: _family_metrics(group) for name, group in sorted(families.items())}
+        # Average inside a family before bootstrapping; related tasks are not new samples.
         family_scores[method] = f
         counts, costs = _counts(cells)
         output["methods"][method] = dict(

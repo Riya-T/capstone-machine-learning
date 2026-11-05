@@ -15,7 +15,7 @@ import urllib.error
 import urllib.request
 
 from .plan import _local_only, preview
-from .records import EvaluationError
+from .records import EvaluationError, read_json
 
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -31,8 +31,16 @@ def _models(url):
         data = response.read(2 * 1024 * 1024 + 1)
     if len(data) > 2 * 1024 * 1024:
         raise EvaluationError("Model list exceeds the preflight response limit")
-    body = json.loads(data)
-    return {row["id"] for row in body["data"] if isinstance(row.get("id"), str)}
+    body = read_json(data)
+    if (
+        not isinstance(body, dict)
+        or not isinstance(body.get("data"), list)
+        or any(
+            not isinstance(row, dict) or not isinstance(row.get("id"), str) for row in body["data"]
+        )
+    ):
+        raise EvaluationError("Malformed advertised model list")
+    return {row["id"] for row in body["data"]}
 
 
 def _docker(*arguments):

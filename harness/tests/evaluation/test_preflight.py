@@ -90,7 +90,8 @@ def test_model_redirects_are_rejected():
         NoRedirect().redirect_request(None, None, 302, "", {}, "https://outside.example/models")
 
 
-def test_advertisement_probe_sends_only_a_get_request():
+@pytest.mark.parametrize("payload", [b'{"data":[{"id":"available"}]}', b'{"data":[null]}'])
+def test_advertisement_probe_sends_only_a_get_request(payload):
     import threading
     from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -103,7 +104,7 @@ def test_advertisement_probe_sends_only_a_get_request():
             requests.append((self.command, self.path, self.headers.get("Authorization")))
             self.send_response(200)
             self.end_headers()
-            self.wfile.write(b'{"data":[{"id":"available"}]}')
+            self.wfile.write(payload)
 
         def log_message(self, *args):
             pass
@@ -112,7 +113,12 @@ def test_advertisement_probe_sends_only_a_get_request():
     worker = threading.Thread(target=server.serve_forever, daemon=True)
     worker.start()
     try:
-        assert _models(f"http://127.0.0.1:{server.server_port}/v1") == {"available"}
+        url = f"http://127.0.0.1:{server.server_port}/v1"
+        if b"null" in payload:
+            with pytest.raises(EvaluationError, match="Malformed"):
+                _models(url)
+        else:
+            assert _models(url) == {"available"}
         assert requests == [("GET", "/v1/models", None)]
     finally:
         server.shutdown()

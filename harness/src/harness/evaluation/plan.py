@@ -285,6 +285,7 @@ def preview(prepared: Prepared) -> dict:
 
 
 def _job(prepared, index, seed):
+    # Separate stores prevent the collector's sample cache from merging generation seeds.
     cfg = prepared.configs[index]
     return dataclasses.replace(
         cfg,
@@ -295,6 +296,7 @@ def _job(prepared, index, seed):
 
 
 def _local_only(cfg):
+    # A preview or accidental configuration change must not turn into paid remote inference.
     for backend in (cfg.writer.backend, cfg.editor.backend):
         if backend.kind == "mock":
             continue
@@ -360,6 +362,7 @@ def _write_new(path, value):
 
 
 def _assert_current(prepared):
+    # Source files and prompts can change after preview, so freeze checks also run at execution.
     try:
         current = prepare(prepared.source_path)
     except (ConfigError, OSError) as exc:
@@ -434,6 +437,7 @@ def execute(prepared: Prepared, *, export_only: bool = False) -> dict:
                     raise EvaluationError("Sandbox image changed during collection")
                 dataset = export_dataset(cfg, lock["image_id"], **metadata)
                 if _complete(dataset):
+                    # Only resolved jobs earn a completion marker; ordinary code failures are resolved.
                     _write_new(marker, dict(dataset_hash=_hash(dataset), run_id=stats.run_id))
             datasets.append(dataset)
             snapshot = root / "exports" / f"{method.id}-{seed}-{_hash(dataset)[:16]}.json"

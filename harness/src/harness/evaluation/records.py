@@ -82,6 +82,7 @@ def trajectory(sample: dict, trial: dict, length: int) -> dict:
     initial = sample["initial_status"]
     steps = trial["steps"]
     if initial != "pass":
+        # Initial failures contribute zero to all-generated scores without inventing edit attempts.
         if steps:
             raise EvaluationError("An initially failing/unresolved program has editing steps")
         return dict(
@@ -229,6 +230,7 @@ def _validate(data: dict) -> dict:
                     cost(step[name], name, integral=name != "wall_s")
             trajectory(sample, trial, len(changes))
         expected = {(seq, rep) for seq in tasks[task_id] for rep in range(data["editor_reps"])}
+        # An omitted scheduled trial must stay visible as missing, not disappear from denominators.
         if seen != expected:
             raise EvaluationError(
                 "Record must represent every scheduled trajectory, even if missing"
