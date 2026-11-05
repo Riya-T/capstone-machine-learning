@@ -35,7 +35,7 @@ log = logging.getLogger("harness")
 
 def main(argv: Sequence[str] | None = None) -> int:
     arguments = list(sys.argv[1:] if argv is None else argv)
-    if arguments and arguments[0] in ("evaluate", "evaluation-report"):
+    if arguments and arguments[0] in ("evaluate", "evaluation-report", "evaluation-verify"):
         from .evaluation.cli import main as evaluation_main
 
         return evaluation_main(arguments)
@@ -61,6 +61,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     commands.add_parser(
         "evaluation-report", help="compare saved evaluation exports (--input, --out)"
     )
+    commands.add_parser("evaluation-verify", help="verify a saved evaluation report (--report)")
     args = parser.parse_args(arguments)
     if not logging.getLogger().handlers:
         logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")

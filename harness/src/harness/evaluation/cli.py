@@ -15,6 +15,7 @@ from ..config import ConfigError
 from ..sandbox.runner import SandboxError
 from ..store import StoreError
 from .analysis import compare
+from .integrity import verify_report
 from .plan import execute, prepare, preview
 from .records import read_json
 from .report import OUTPUT_NAMES, write_report
@@ -44,8 +45,20 @@ def main(argv=None):
     report.add_argument("--bootstrap-samples", type=int, default=2000)
     report.add_argument("--bootstrap-seed", type=int, default=20261105)
     report.add_argument("--confidence", type=float, default=0.95)
+    verify = sub.add_parser("evaluation-verify", help="Verify a saved report without inference")
+    verify.add_argument("--report", type=Path, required=True)
+    verify.add_argument(
+        "--checksums-only",
+        action="store_true",
+        help="Skip analysis recomputation (e.g. for a historical analysis version)",
+    )
     args = parser.parse_args(argv)
     try:
+        if args.command == "evaluation-verify":
+            print(
+                json.dumps(verify_report(args.report, recompute=not args.checksums_only), indent=2)
+            )
+            return 0
         if args.command == "evaluate":
             prepared = prepare(args.plan)
             result = (

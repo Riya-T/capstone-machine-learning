@@ -114,6 +114,20 @@ Individual files are flushed and published atomically without overwriting. If wr
 interrupted, the absent manifest marks the bundle incomplete; replay safely finishes it.
 A complete bundle is one whose files match every checksum in its manifest.
 
+Verify a report before sharing it, without a model server or Docker:
+
+```bash
+uv run python -m harness evaluation-verify --report runs/evaluation-demo-audited
+```
+
+This checks the manifest and recomputes the saved analysis from its embedded
+outcome records. It writes nothing and does not rerun private tests. A mismatch
+returns exit code 2. Checksums establish local integrity, not authenticity of the
+underlying experimental outcomes. For an intentionally different historical
+analysis version, `--checksums-only` skips recomputation and says so explicitly.
+Older manifest-bearing reports may omit newly introduced report files. Reports
+without a manifest cannot be certified complete by this command.
+
 ## Preview and run a matched comparison
 
 ```bash
