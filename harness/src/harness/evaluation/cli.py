@@ -82,8 +82,16 @@ def main(argv=None):
     review_compile.add_argument("--pack", required=True, type=Path)
     review_compile.add_argument("--annotations", required=True, type=Path, nargs="+")
     review_compile.add_argument("--out", required=True, type=Path)
+    plots = sub.add_parser("evaluation-plots", help="Export saved-result PNG/SVG figures")
+    plots.add_argument("--report", required=True, type=Path)
+    plots.add_argument("--out", required=True, type=Path)
     args = parser.parse_args(argv)
     try:
+        if args.command == "evaluation-plots":
+            from .figures import export_figures
+
+            print(json.dumps(export_figures(args.report, args.out), indent=2))
+            return 0
         if args.command == "evaluation-review":
             from .review import compile_reviews, make_review_pack
 
