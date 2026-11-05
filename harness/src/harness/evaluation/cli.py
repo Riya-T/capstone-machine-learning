@@ -81,6 +81,12 @@ def main(argv=None):
     seeds = sub.add_parser("evaluation-seeds", help="Summarize saved training checkpoints")
     seeds.add_argument("--report", required=True, type=Path)
     seeds.add_argument("--out", required=True, type=Path)
+    joint = sub.add_parser(
+        "evaluation-joint-pass", help="Compare aligned initially correct parents"
+    )
+    joint.add_argument("--report", required=True, type=Path)
+    joint.add_argument("--method", required=True)
+    joint.add_argument("--out", required=True, type=Path)
     review = sub.add_parser("evaluation-review", help="Prepare or compile human failure reviews")
     review_actions = review.add_subparsers(dest="action", required=True)
     review_init = review_actions.add_parser("init")
@@ -96,6 +102,12 @@ def main(argv=None):
     plots.add_argument("--out", required=True, type=Path)
     args = parser.parse_args(argv)
     try:
+        if args.command == "evaluation-joint-pass":
+            from .joint import run_joint_pass
+
+            result = run_joint_pass(args.report, args.method, args.out)
+            print(json.dumps(result, indent=2))
+            return 0 if result["status"] == "complete" else 3
         if args.command == "evaluation-contract":
             from .artifacts import encoded
             from .contract import check_contract, freeze_contract

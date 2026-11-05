@@ -16,6 +16,7 @@ from .records import EvaluationError, read_json
 from .storage import check_existing, publish_new
 
 WORKFLOW_FILES = {
+    "joint_pass": {"analysis.json", "parent_pairs.csv", "metrics.csv", "report.md"},
     "seed_summary": {"analysis.json", "seeds.csv", "groups.csv", "comparisons.csv", "report.md"},
     "size_match_empty": {"analysis.json", "matching.csv", "report.md"},
     "review_pack": {

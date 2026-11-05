@@ -15,6 +15,7 @@ from pathlib import Path
 
 from harness.evaluation.analysis import compare
 from harness.evaluation.artifacts import encoded
+from harness.evaluation.joint import run_joint_pass
 from harness.evaluation.matching import run_size_match
 from harness.evaluation.report import write_report
 from harness.evaluation.review import compile_reviews, make_review_pack
@@ -76,6 +77,7 @@ def main():
     write_report(compare(data, reference="fixture_original", bootstrap_samples=200), primary)
     run_size_match(primary, "fixture_trained_s11", args.out / "size-matched", tolerance=0.2)
     run_seed_summary(primary, args.out / "seeds")
+    run_joint_pass(primary, "fixture_trained_s11", args.out / "joint-pass")
     make_review_pack(primary, args.out / "review")
     compile_reviews(
         args.out / "review",
