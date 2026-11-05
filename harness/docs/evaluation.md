@@ -102,6 +102,11 @@ Outputs:
 - `manifest.json`: SHA-256 checksums, published last to mark a complete report bundle.
 - `trajectories.csv`: each scheduled sequence/repetition, including initial failures
   and unresolved outcomes. Steps after a failure are not fabricated.
+- `checkpoints.csv`: every planned change, with reached outcomes, missing work and
+  not-reached work distinguished; includes recorded test counts, source hashes and costs.
+- `failures.csv`: each initial non-pass once and each editing trajectory's first
+  non-success, including budget/infrastructure/missing stops. These are recorded
+  stop reasons, not automated explanations of why code failed.
 
 Identical output can be replayed; differing existing reports are never overwritten.
 Choose a new output directory when changing the inputs, report version, or analysis options.

@@ -13,6 +13,7 @@ import json
 from pathlib import Path
 
 from .analysis import METRICS
+from .diagnostics import CHECKPOINT_FIELDS, FAILURE_FIELDS, diagnostic_rows
 from .storage import check_existing, publish_new
 
 OUTPUT_NAMES = (
@@ -21,6 +22,8 @@ OUTPUT_NAMES = (
     "comparisons.csv",
     "families.csv",
     "trajectories.csv",
+    "checkpoints.csv",
+    "failures.csv",
     "report.md",
     "manifest.json",
 )
@@ -197,6 +200,9 @@ def write_report(result: dict, directory: Path) -> dict[str, Path]:
         for name, metric in values.items()
     ]
     outputs["families.csv"] = _csv(families, ["method", "family", "metric", "value", "unresolved"])
+    checkpoints, failures = diagnostic_rows(result)
+    outputs["checkpoints.csv"] = _csv(checkpoints, CHECKPOINT_FIELDS)
+    outputs["failures.csv"] = _csv(failures, FAILURE_FIELDS)
     # Published last: absent manifest means a bundle is incomplete and safe to resume.
     outputs["manifest.json"] = json_text(
         dict(
