@@ -103,6 +103,8 @@ def render_dashboard(result):
         "development": "Development comparison — not held-out evidence",
         "heldout": "Held-out writer comparison",
     }[result["purpose"]]
+    if result.get("size_matched_sensitivity"):
+        title = "Size-matched sensitivity analysis — " + title
     checkpoints, failures = diagnostic_rows(result)
     parts = [
         '<!doctype html><html lang="en"><head><meta charset="utf-8">',

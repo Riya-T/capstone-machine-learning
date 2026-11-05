@@ -32,6 +32,7 @@ OUTPUT_NAMES = (
     "report.html",
     "manifest.json",
 )
+OPTIONAL_OUTPUT_NAMES = {"matching.json", "matching.csv"}
 
 
 def json_text(value):
@@ -60,6 +61,8 @@ def render_markdown(result):
         "development": "Development comparison — not held-out evidence",
         "heldout": "Held-out writer comparison",
     }[result["purpose"]]
+    if result.get("size_matched_sensitivity"):
+        title = "Size-matched sensitivity analysis — " + title
     lines = [
         f"# {title}",
         "",
@@ -161,7 +164,7 @@ def render_markdown(result):
     return "\n".join(lines) + "\n"
 
 
-def write_report(result: dict, directory: Path) -> dict[str, Path]:
+def write_report(result: dict, directory: Path, *, supplemental=None) -> dict[str, Path]:
     """Only create outputs, or accept identical prior outputs. Never clobber others."""
     directory = Path(directory)
     metric_rows = []
@@ -284,6 +287,12 @@ def write_report(result: dict, directory: Path) -> dict[str, Path]:
     outputs["methods.csv"] = _csv(
         method_rows, ["method", "method_group", "training_seed", "writer_model", "writer_identity"]
     )
+    if supplemental:
+        from .records import EvaluationError
+
+        if not set(supplemental) <= OPTIONAL_OUTPUT_NAMES:
+            raise EvaluationError("Unsupported supplementary report artifacts")
+        outputs.update(supplemental)
     # Published last: absent manifest means a bundle is incomplete and safe to resume.
     outputs["manifest.json"] = json_text(
         dict(

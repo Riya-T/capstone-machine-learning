@@ -40,6 +40,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "evaluation-report",
         "evaluation-verify",
         "evaluation-preflight",
+        "evaluation-size-match",
     ):
         from .evaluation.cli import main as evaluation_main
 
@@ -68,6 +69,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     commands.add_parser("evaluation-verify", help="verify a saved evaluation report (--report)")
     commands.add_parser("evaluation-preflight", help="check readiness without generation (--plan)")
+    commands.add_parser(
+        "evaluation-size-match", help="saved-only size-matched sensitivity analysis"
+    )
     args = parser.parse_args(arguments)
     if not logging.getLogger().handlers:
         logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")

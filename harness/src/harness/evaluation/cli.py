@@ -18,7 +18,7 @@ from .analysis import compare
 from .integrity import verify_report
 from .plan import execute, prepare, preview
 from .records import read_json
-from .report import OUTPUT_NAMES, write_report
+from .report import OPTIONAL_OUTPUT_NAMES, OUTPUT_NAMES, write_report
 
 
 def main(argv=None):
@@ -59,8 +59,30 @@ def main(argv=None):
     preflight.add_argument(
         "--probe", action="store_true", help="Inspect Docker and GET local model lists"
     )
+    matching = sub.add_parser(
+        "evaluation-size-match", help="Separate size-matched sensitivity report"
+    )
+    matching.add_argument("--report", required=True, type=Path)
+    matching.add_argument("--method", required=True)
+    matching.add_argument("--out", required=True, type=Path)
+    matching.add_argument("--relative-tolerance", required=True, type=float)
+    matching.add_argument(
+        "--size-field", choices=("python_lines", "source_lines"), default="python_lines"
+    )
     args = parser.parse_args(argv)
     try:
+        if args.command == "evaluation-size-match":
+            from .matching import run_size_match
+
+            result = run_size_match(
+                args.report,
+                args.method,
+                args.out,
+                tolerance=args.relative_tolerance,
+                size_field=args.size_field,
+            )
+            print(json.dumps(result, indent=2, allow_nan=False))
+            return 0 if result["status"] == "complete" else 3
         if args.command == "evaluation-preflight":
             from .preflight import check_preflight
 
@@ -82,7 +104,7 @@ def main(argv=None):
             print(json.dumps(result, indent=2, allow_nan=False))
             return 0 if result.get("complete", True) else 3
         datasets = [read_json(p.read_text(encoding="utf8")) for p in args.input]
-        targets = {args.out / name for name in OUTPUT_NAMES}
+        targets = {args.out / name for name in set(OUTPUT_NAMES) | OPTIONAL_OUTPUT_NAMES}
         if {p.resolve() for p in args.input} & {p.resolve() for p in targets}:
             raise ConfigError("Report output would overwrite an input dataset")
         result = compare(

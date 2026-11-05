@@ -12,7 +12,7 @@ from pathlib import Path
 from .analysis import compare
 from .artifacts import WORKFLOW_FILES
 from .records import HASH, EvaluationError, read_json
-from .report import OUTPUT_NAMES
+from .report import OPTIONAL_OUTPUT_NAMES, OUTPUT_NAMES
 
 REQUIRED = {"comparison.json", "summary.csv", "trajectories.csv", "report.md"}
 
@@ -49,7 +49,11 @@ def verify_report(directory: Path, *, recompute: bool = True) -> dict:
     required = WORKFLOW_FILES[kind] if kind else REQUIRED
     if not isinstance(files, dict) or not files.keys() >= required:
         raise EvaluationError("Manifest omits required report files")
-    allowed = WORKFLOW_FILES[kind] if kind else set(OUTPUT_NAMES) - {"manifest.json"}
+    allowed = (
+        WORKFLOW_FILES[kind]
+        if kind
+        else (set(OUTPUT_NAMES) | OPTIONAL_OUTPUT_NAMES) - {"manifest.json"}
+    )
     blobs = {}
     for name, digest in files.items():
         if name not in allowed:
