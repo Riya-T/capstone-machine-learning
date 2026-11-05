@@ -1,0 +1,226 @@
+"""Export one evaluation seed from a consistent read-only SQLite snapshot.
+
+Usage:
+    dataset = export_dataset(cfg, image_id, method="original", purpose="heldout")
+    # No model server, Docker daemon, Store initialization, or writes to source.
+"""
+
+from __future__ import annotations
+
+import base64
+import hashlib
+import json
+import sqlite3
+import time
+from contextlib import contextmanager
+from pathlib import Path
+
+from ..config import ExperimentConfig
+from ..registry import build_writer_prompt, load_tasks, load_template, prompt_version
+from ..store import SCHEMA_VERSION, editor_cfg_hash, sandbox_cfg_hash, writer_cfg_hash
+from .records import HASH, VERSION, EvaluationError, identifier, validate_dataset
+
+COST_NOTE = (
+    "Recorded editor token counts may include the collector's fallback estimates; "
+    "they are not guaranteed provider-observed usage. Wall times are historical "
+    "recorded attempt times, not fresh replay time or GPU-only inference time."
+)
+
+
+@contextmanager
+def read_snapshot(path: Path):
+    """Backup a read-only source connection into RAM, preserving WAL visibility."""
+    if not path.is_file():
+        yield None
+        return
+    source = sqlite3.connect(path.resolve().as_uri() + "?mode=ro", uri=True, timeout=5)
+    target = sqlite3.connect(":memory:")
+    target.row_factory = sqlite3.Row
+    started = time.monotonic()
+
+    def progress(*_):
+        if time.monotonic() - started > 15:
+            raise EvaluationError("Timed out taking a consistent read-only database snapshot")
+
+    try:
+        source.backup(target, pages=256, progress=progress, sleep=0.01)
+        version = target.execute("PRAGMA user_version").fetchone()[0]
+        if version != SCHEMA_VERSION:
+            raise EvaluationError(f"Store schema {version}, expected {SCHEMA_VERSION}")
+        yield target
+    except sqlite3.Error as exc:
+        raise EvaluationError(f"Cannot read evaluation store {path}: {exc}") from exc
+    finally:
+        target.close()
+        source.close()
+
+
+def _blob(runs: Path, digest: str) -> dict[str, bytes]:
+    if not HASH.fullmatch(digest):
+        raise EvaluationError("Invalid saved source hash")
+    path = runs / "blobs" / (digest + ".json")
+    try:
+        data = path.read_bytes()
+        if hashlib.sha256(data).hexdigest() != digest:
+            raise EvaluationError(f"Corrupt source blob {digest}")
+        return {p: base64.b64decode(s, validate=True) for p, s in json.loads(data).items()}
+    except (OSError, ValueError, AttributeError) as exc:
+        raise EvaluationError(f"Cannot read saved program {digest}: {exc}") from exc
+
+
+def comparison_contract(cfg: ExperimentConfig, image_id: str) -> dict:
+    """Writer identity/prompt may differ; editor and inference budgets must match."""
+    return dict(
+        editor_hash=editor_cfg_hash(cfg, image_id),
+        sandbox_hash=sandbox_cfg_hash(cfg, image_id),
+        image_id=image_id,
+        writer_temperature=cfg.writer.backend.temperature,
+        writer_max_tokens=cfg.writer.backend.max_tokens,
+        writer_samples_per_task=1,
+        max_programs=1,
+    )
+
+
+def export_dataset(
+    cfg: ExperimentConfig, image_id: str, *, method: str, purpose: str = "heldout"
+) -> dict:
+    """Read exactly sample zero; never select a better initially passing sample."""
+    identifier(method, "method")
+    if cfg.writer.samples_per_task != 1 or cfg.tasks.max_programs != 1:
+        raise EvaluationError("Evaluation requires one writer sample and max_programs=1")
+    tasks = load_tasks(cfg.tasks)
+    template = load_template(cfg.writer.prompt_template)
+    writer_hash = writer_cfg_hash(cfg)
+    sandbox_hash = sandbox_cfg_hash(cfg, image_id)
+    editor_hash = editor_cfg_hash(cfg, image_id)
+    data = dict(
+        schema_version=VERSION,
+        method=method,
+        purpose=purpose,
+        generation_seed=cfg.seed,
+        editor_reps=cfg.editor.reps,
+        writer_model=cfg.writer.backend.model,
+        contract=comparison_contract(cfg, image_id),
+        provenance=dict(
+            config=cfg.to_dict(),
+            config_hash=cfg.config_hash,
+            source_store=str(cfg.runs_dir / "harness.sqlite"),
+            source_store_present=(cfg.runs_dir / "harness.sqlite").is_file(),
+            source_run_ids=[],
+            cost_note=COST_NOTE,
+            backend_model_revision="Not resolved by the existing collector; model tag is recorded.",
+        ),
+        tasks=[],
+        samples=[],
+    )
+    run_ids = set()
+    with read_snapshot(cfg.runs_dir / "harness.sqlite") as db:
+        for task in tasks.values():
+            sequences = task.sequences[: cfg.tasks.max_sequences]
+            data["tasks"].append(
+                dict(
+                    id=task.id,
+                    family=task.family,
+                    split=task.split,
+                    version=task.task_version,
+                    sequences=[
+                        dict(id=s.id, changes=[x.change.id for x in s.steps]) for s in sequences
+                    ],
+                )
+            )
+            prompt = build_writer_prompt(task.writer_view(), template)
+            candidate = (
+                None
+                if db is None
+                else db.execute(
+                    "SELECT * FROM candidates WHERE task_id=? AND prompt_version=? "
+                    "AND writer_cfg_hash=? AND sample_idx=0",
+                    (task.id, prompt_version(prompt), writer_hash),
+                ).fetchone()
+            )
+            sample = dict(
+                task=task.id,
+                candidate_id=None,
+                initial_status="unresolved",
+                parse_error=None,
+                writer_cost=dict(tokens_in=None, tokens_out=None, wall_s=None),
+                source_lines=None,
+                trials=[],
+            )
+            if candidate is not None:
+                run_ids.add(candidate["run_id"])
+                cid = candidate["candidate_id"]
+                sample.update(candidate_id=cid, parse_error=candidate["parse_error"])
+                sample["writer_cost"] = {
+                    k: candidate[k] for k in ("tokens_in", "tokens_out", "wall_s")
+                }
+                if cid is None:
+                    sample["initial_status"] = "parse_failure"
+                else:
+                    files = _blob(cfg.runs_dir, cid)
+                    sample["source_lines"] = sum(len(s.splitlines()) for s in files.values())
+                    check = db.execute(
+                        "SELECT * FROM initial_checks WHERE task_id=? AND task_version=? "
+                        "AND candidate_id=? AND sandbox_cfg_hash=?",
+                        (task.id, task.task_version, cid, sandbox_hash),
+                    ).fetchone()
+                    if check is not None:
+                        run_ids.add(check["run_id"])
+                        sample["initial_status"] = "pass" if check["passed"] else "fail"
+            for seq in sequences:
+                for rep in range(cfg.editor.reps):
+                    rows = (
+                        []
+                        if db is None or sample["candidate_id"] is None
+                        else db.execute(
+                            "SELECT * FROM checkpoints WHERE task_id=? AND task_version=? "
+                            "AND candidate_id=? AND sequence_id=? AND rep=? AND editor_cfg_hash=? "
+                            "ORDER BY step",
+                            (
+                                task.id,
+                                task.task_version,
+                                sample["candidate_id"],
+                                seq.id,
+                                rep,
+                                editor_hash,
+                            ),
+                        ).fetchall()
+                    )
+                    steps = []
+                    for row in rows:
+                        run_ids.add(row["run_id"])
+                        steps.append(
+                            {
+                                k: row[k]
+                                for k in (
+                                    "step",
+                                    "change_id",
+                                    "status",
+                                    "new_pass",
+                                    "new_total",
+                                    "existing_pass",
+                                    "existing_total",
+                                    "tokens_in",
+                                    "tokens_out",
+                                    "n_calls",
+                                    "wall_s",
+                                    "end_reason",
+                                    "infra_cause",
+                                )
+                            }
+                        )
+                    sample["trials"].append(dict(sequence=seq.id, rep=rep, steps=steps))
+            data["samples"].append(sample)
+        if db is not None:
+            # Original run metadata is evidence, not the current machine's state.
+            data["provenance"]["runs"] = [
+                dict(row)
+                for run_id in sorted(run_ids)
+                for row in db.execute(
+                    "SELECT run_id, git_commit, git_dirty, config_hash, started_at "
+                    "FROM runs WHERE run_id=?",
+                    (run_id,),
+                )
+            ]
+    data["provenance"]["source_run_ids"] = sorted(run_ids)
+    return validate_dataset(data)
