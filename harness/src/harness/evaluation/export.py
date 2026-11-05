@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import base64
 import hashlib
-import json
 import sqlite3
 import time
 from contextlib import contextmanager
@@ -18,7 +17,7 @@ from pathlib import Path
 from ..config import ExperimentConfig
 from ..registry import build_writer_prompt, load_tasks, load_template, prompt_version
 from ..store import SCHEMA_VERSION, editor_cfg_hash, sandbox_cfg_hash, writer_cfg_hash
-from .records import HASH, VERSION, EvaluationError, identifier, validate_dataset
+from .records import HASH, VERSION, EvaluationError, identifier, read_json, validate_dataset
 
 COST_NOTE = (
     "Recorded editor token counts may include the collector's fallback estimates; "
@@ -66,8 +65,8 @@ def _blob(runs: Path, digest: str) -> dict[str, bytes]:
         data = path.read_bytes()
         if hashlib.sha256(data).hexdigest() != digest:
             raise EvaluationError(f"Corrupt source blob {digest}")
-        return {p: base64.b64decode(s, validate=True) for p, s in json.loads(data).items()}
-    except (OSError, ValueError, AttributeError) as exc:
+        return {p: base64.b64decode(s, validate=True) for p, s in read_json(data).items()}
+    except (OSError, ValueError, AttributeError, TypeError) as exc:
         raise EvaluationError(f"Cannot read saved program {digest}: {exc}") from exc
 
 
@@ -107,6 +106,7 @@ def export_dataset(
         generation_seed=cfg.seed,
         editor_reps=cfg.editor.reps,
         writer_model=cfg.writer.backend.model,
+        writer_identity=writer_hash,
         contract=comparison_contract(cfg, image_id),
         provenance=dict(
             config=cfg.to_dict(),
@@ -173,6 +173,8 @@ def export_dataset(
                     ).fetchone()
                     if check is not None:
                         run_ids.add(check["run_id"])
+                        if check["passed"] not in (0, 1):
+                            raise EvaluationError("Invalid saved initial-check boolean")
                         sample["initial_status"] = "pass" if check["passed"] else "fail"
             for seq in sequences:
                 for rep in range(cfg.editor.reps):
@@ -196,6 +198,8 @@ def export_dataset(
                     steps = []
                     for row in rows:
                         run_ids.add(row["run_id"])
+                        if row["output_blob"] is not None:
+                            _blob(cfg.runs_dir, row["output_blob"])
                         steps.append(
                             {
                                 k: row[k]
@@ -203,6 +207,7 @@ def export_dataset(
                                     "step",
                                     "change_id",
                                     "status",
+                                    "output_blob",
                                     "new_pass",
                                     "new_total",
                                     "existing_pass",

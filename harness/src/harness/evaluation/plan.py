@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import dataclasses
 import hashlib
-import json
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
@@ -20,13 +19,22 @@ from urllib.parse import urlparse
 import yaml
 
 from ..collection.collect import collect
-from ..config import ExperimentConfig, InputPath, OutputPath, load_config, parse_dataclass
+from ..config import (
+    ConfigError,
+    ExperimentConfig,
+    InputPath,
+    OutputPath,
+    load_config,
+    parse_dataclass,
+)
 from ..registry import load_tasks
 from ..sandbox.runner import make_runner
+from ..store import writer_cfg_hash
 from .analysis import compare
 from .export import comparison_contract, export_dataset
-from .records import EvaluationError, identifier, integer, trajectory
+from .records import EvaluationError, identifier, integer, read_json, trajectory
 from .report import json_text, write_report
+from .storage import publish_new
 
 
 @dataclass(frozen=True)
@@ -58,6 +66,7 @@ class Prepared:
     signature: dict
     digest: str
     root: Path
+    source_path: Path
 
 
 def _hash(value):
@@ -75,7 +84,7 @@ def prepare(path: Path) -> Prepared:
         raise EvaluationError("Unsupported evaluation plan schema")
     identifier(plan.name, "plan name")
     ids = [identifier(m.id, "method") for m in plan.methods]
-    if not ids or len(ids) != len(set(ids)) or plan.reference not in ids:
+    if not ids or len(ids) != len({i.casefold() for i in ids}) or plan.reference not in ids:
         raise EvaluationError("Methods must be unique and include the reference")
     if not plan.generation_seeds or len(set(plan.generation_seeds)) != len(plan.generation_seeds):
         raise EvaluationError("Generation seeds must be nonempty and unique")
@@ -146,7 +155,13 @@ def prepare(path: Path) -> Prepared:
         )
         checkpoints += steps * cfg.editor.reps * len(plan.generation_seeds)
         configs.append(cfg)
-        descriptions.append(dict(method=method.id, resolved_config=cfg.to_dict()))
+        descriptions.append(
+            dict(
+                method=method.id,
+                resolved_config=cfg.to_dict(),
+                writer_identity=writer_cfg_hash(cfg),
+            )
+        )
     if checkpoints > plan.max_edit_checkpoints:
         raise EvaluationError("Plan exceeds max_edit_checkpoints")
     source_root = Path(__file__).resolve().parents[1]
@@ -172,7 +187,7 @@ def prepare(path: Path) -> Prepared:
     )
     digest = _hash(signature)
     return Prepared(
-        plan, tuple(configs), signature, digest, plan.output_dir / plan.name / digest[:16]
+        plan, tuple(configs), signature, digest, plan.output_dir / plan.name / digest[:16], path
     )
 
 
@@ -286,20 +301,23 @@ def _complete(dataset):
 
 
 def _write_new(path, value):
-    text = json_text(value)
-    if path.is_symlink():
-        raise EvaluationError(f"Refusing symlinked evidence output: {path}")
-    if path.exists():
-        if path.read_bytes() != text.encode("utf8"):
-            raise EvaluationError(f"Refusing to replace locked evidence: {path}")
-    else:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        with path.open("xb") as f:
-            f.write(text.encode("utf8"))
+    publish_new(path, json_text(value).encode("utf8"))
+
+
+def _assert_current(prepared):
+    try:
+        current = prepare(prepared.source_path)
+    except (ConfigError, OSError) as exc:
+        raise EvaluationError(f"Inputs changed since preparation: {exc}") from exc
+    if current.signature != prepared.signature or current.root != prepared.root:
+        raise EvaluationError(
+            "Inputs changed since preparation; preserve this run and prepare again"
+        )
 
 
 def execute(prepared: Prepared, *, export_only: bool = False) -> dict:
     """Run the existing collector sequentially in new stores, or export saved-only."""
+    _assert_current(prepared)
     p, root = prepared.plan, prepared.root
     lock_path = root / "evaluation.lock.json"
     if export_only and not lock_path.exists():
@@ -309,7 +327,7 @@ def execute(prepared: Prepared, *, export_only: bool = False) -> dict:
             _local_only(cfg)
     with _controller(root):
         if lock_path.exists():
-            lock = json.loads(lock_path.read_text(encoding="utf8"))
+            lock = read_json(lock_path.read_text(encoding="utf8"))
             if lock["signature"] != prepared.signature:
                 raise EvaluationError("Evaluation lock does not match current inputs")
         else:
@@ -324,11 +342,12 @@ def execute(prepared: Prepared, *, export_only: bool = False) -> dict:
         datasets = []
         for i, method in enumerate(p.methods):
             for seed in p.generation_seeds:
+                _assert_current(prepared)
                 cfg = _job(prepared, i, seed)
                 marker = cfg.runs_dir / "evaluation.completed.json"
                 dataset = export_dataset(cfg, lock["image_id"], method=method.id, purpose=p.purpose)
                 if marker.exists():
-                    if json.loads(marker.read_text())["dataset_hash"] != _hash(dataset):
+                    if read_json(marker.read_text())["dataset_hash"] != _hash(dataset):
                         raise EvaluationError(
                             "Completed saved evaluation changed; refusing to rerun"
                         )
@@ -339,7 +358,9 @@ def execute(prepared: Prepared, *, export_only: bool = False) -> dict:
                         raise EvaluationError(
                             "Sandbox image changed; existing scores are preserved"
                         )
+                    _assert_current(prepared)
                     stats = collect(cfg)
+                    _assert_current(prepared)
                     if runner.existing_image_id() != lock["image_id"]:
                         raise EvaluationError("Sandbox image changed during collection")
                     dataset = export_dataset(

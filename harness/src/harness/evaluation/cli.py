@@ -16,6 +16,7 @@ from ..sandbox.runner import SandboxError
 from ..store import StoreError
 from .analysis import compare
 from .plan import execute, prepare, preview
+from .records import read_json
 from .report import write_report
 
 
@@ -54,7 +55,7 @@ def main(argv=None):
             )
             print(json.dumps(result, indent=2, allow_nan=False))
             return 0 if result.get("complete", True) else 3
-        datasets = [json.loads(p.read_text(encoding="utf8")) for p in args.input]
+        datasets = [read_json(p.read_text(encoding="utf8")) for p in args.input]
         targets = {
             args.out / name
             for name in ("comparison.json", "summary.csv", "trajectories.csv", "report.md")

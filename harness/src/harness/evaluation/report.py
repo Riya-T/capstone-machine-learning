@@ -12,7 +12,7 @@ import json
 from pathlib import Path
 
 from .analysis import METRICS
-from .records import EvaluationError
+from .storage import check_existing, publish_new
 
 
 def json_text(value):
@@ -130,14 +130,7 @@ def write_report(result: dict, directory: Path) -> dict[str, Path]:
         "report.md": render_markdown(result),
     }
     for name, text in outputs.items():
-        path = directory / name
-        if path.is_symlink():
-            raise EvaluationError(f"Refusing symlinked report output: {path}")
-        if path.exists() and path.read_bytes() != text.encode("utf8"):
-            raise EvaluationError(f"Refusing to overwrite {path}; use a new report directory")
-    directory.mkdir(parents=True, exist_ok=True)
+        check_existing(directory / name, text.encode("utf8"))
     for name, text in outputs.items():
-        path = directory / name
-        if not path.exists():
-            path.write_bytes(text.encode("utf8"))
+        publish_new(directory / name, text.encode("utf8"))
     return {name: directory / name for name in outputs}

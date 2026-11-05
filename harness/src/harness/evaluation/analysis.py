@@ -206,6 +206,10 @@ def compare(
             raise EvaluationError("Unmatched task versions, editor, budget, sandbox, or purpose")
         methods[data["method"]].append(data)
     seed_sets = [{d["generation_seed"] for d in group} for group in methods.values()]
+    for method, group in methods.items():
+        identity = [(d.get("writer_identity"), d.get("writer_model")) for d in group]
+        if any(value != identity[0] for value in identity):
+            raise EvaluationError(f"{method}: writer identity changed across generation seeds")
     if any(s != seed_sets[0] for s in seed_sets):
         raise EvaluationError("Methods must have matching generation-seed sets")
     reference = reference or first["method"]

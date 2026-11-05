@@ -7,6 +7,7 @@ Usage:
 
 from __future__ import annotations
 
+import json
 import math
 import re
 from typing import Any
@@ -18,6 +19,9 @@ from ..store import FAILED
 VERSION = 1
 PURPOSES = {"heldout", "development", "fixture"}
 IDENTIFIER = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,63}")
+RESERVED = {"CON", "PRN", "AUX", "NUL"} | {
+    f"{prefix}{number}" for prefix in ("COM", "LPT") for number in range(1, 10)
+}
 HASH = re.compile(r"[0-9a-f]{64}")
 STATUSES = FAILED | {"success", "infra_error"}
 
@@ -26,8 +30,25 @@ class EvaluationError(ConfigError):
     """An invalid evaluation plan, record, or comparison."""
 
 
+def read_json(text: str | bytes):
+    """Reject ambiguous keys and nonstandard numeric constants in saved evidence."""
+
+    def pairs(items):
+        out = {}
+        for key, value in items:
+            if key in out:
+                raise EvaluationError(f"Duplicate JSON key: {key}")
+            out[key] = value
+        return out
+
+    def constant(value):
+        raise EvaluationError(f"Nonstandard JSON constant: {value}")
+
+    return json.loads(text, object_pairs_hook=pairs, parse_constant=constant)
+
+
 def identifier(value: Any, where: str) -> str:
-    if not isinstance(value, str) or not IDENTIFIER.fullmatch(value):
+    if not isinstance(value, str) or not IDENTIFIER.fullmatch(value) or value.upper() in RESERVED:
         raise EvaluationError(f"{where}: expected a simple identifier, not a path")
     return value
 
@@ -92,6 +113,11 @@ def _validate(data: dict) -> dict:
     integer(data["editor_reps"], "editor_reps", 1)
     if not isinstance(data["contract"], dict) or not data["contract"]:
         raise EvaluationError("Missing comparison contract")
+    for key in ("tasks", "samples"):
+        if not isinstance(data[key], list):
+            raise EvaluationError(f"{key}: expected an array")
+    if "writer_identity" in data and not HASH.fullmatch(data["writer_identity"]):
+        raise EvaluationError("Invalid writer identity hash")
     tasks = {}
     for task in data["tasks"]:
         identifier(task["id"], "task id")
@@ -102,10 +128,16 @@ def _validate(data: dict) -> dict:
         if expected_split and task["split"] != expected_split:
             raise EvaluationError("Task split does not match evaluation purpose")
         sequences = {}
+        if not isinstance(task["sequences"], list):
+            raise EvaluationError("sequences: expected an array")
         for seq in task["sequences"]:
             identifier(seq["id"], "sequence")
             if seq["id"] in sequences or not seq["changes"]:
                 raise EvaluationError("Duplicate or empty sequence")
+            if not isinstance(seq["changes"], list):
+                raise EvaluationError("changes: expected an array")
+            for change in seq["changes"]:
+                identifier(change, "change")
             if len(set(seq["changes"])) != len(seq["changes"]):
                 raise EvaluationError("A sequence repeats a change")
             sequences[seq["id"]] = seq["changes"]
@@ -127,9 +159,13 @@ def _validate(data: dict) -> dict:
             raise EvaluationError("Invalid candidate source hash")
         if sample["initial_status"] in ("pass", "fail") and cid is None:
             raise EvaluationError("Evaluated initial program has no source hash")
+        if sample["initial_status"] == "parse_failure" and cid is not None:
+            raise EvaluationError("Parse failure cannot have a parsed source hash")
         for name in ("tokens_in", "tokens_out", "wall_s"):
             cost(sample["writer_cost"][name], name, integral=name != "wall_s")
         seen = set()
+        if not isinstance(sample["trials"], list):
+            raise EvaluationError("trials: expected an array")
         for trial in sample["trials"]:
             key = (trial["sequence"], trial["rep"])
             integer(trial["rep"], "rep")
@@ -138,6 +174,8 @@ def _validate(data: dict) -> dict:
             seen.add(key)
             changes = tasks[task_id][key[0]]
             stopped = False
+            if not isinstance(trial["steps"], list):
+                raise EvaluationError("steps: expected an array")
             for number, step in enumerate(trial["steps"], 1):
                 integer(step["step"], "step", 1)
                 if (
@@ -150,6 +188,11 @@ def _validate(data: dict) -> dict:
                 if step["status"] not in STATUSES:
                     raise EvaluationError("Unknown editing status")
                 stopped = step["status"] != "success"
+                if step.get("output_blob") is not None and not HASH.fullmatch(step["output_blob"]):
+                    raise EvaluationError("Invalid edited source hash")
+                if "n_calls" in step:
+                    cost(step["n_calls"], "n_calls", integral=True)
+                _test_counts(step)
                 for name in ("tokens_in", "tokens_out", "wall_s"):
                     cost(step[name], name, integral=name != "wall_s")
             trajectory(sample, trial, len(changes))
@@ -161,3 +204,27 @@ def _validate(data: dict) -> dict:
     if samples != set(tasks):
         raise EvaluationError("Record must represent every scheduled initial sample")
     return data
+
+
+def _test_counts(step):
+    """Check supplied evidence; legacy exports may have no test-count fields."""
+    flags = {}
+    for suite in ("new", "existing"):
+        passed, total = step.get(suite + "_pass"), step.get(suite + "_total")
+        if passed is None and total is None:
+            continue
+        integer(passed, suite + "_pass")
+        integer(total, suite + "_total")
+        if passed > total:
+            raise EvaluationError("Passed tests exceed total tests")
+        flags[suite] = passed == total
+    expected = {
+        "success": {"new": True, "existing": True},
+        "fail_new": {"new": False, "existing": True},
+        "fail_existing": {"new": True, "existing": False},
+        "fail_both": {"new": False, "existing": False},
+    }.get(step["status"], {})
+    # A timeout/collection failure can have 0/0 (or even all cases passed).
+    # Counts alone cannot certify a suite passed; they can contradict a claimed pass.
+    if any(expected.get(k) is True and not value for k, value in flags.items()):
+        raise EvaluationError("Editing status contradicts recorded private test counts")
