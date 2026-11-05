@@ -157,8 +157,17 @@ def test_known_cloud_routes_are_not_allowed_through_a_loopback_server(tmp_path, 
         _local_only(cfg)
 
 
-@pytest.mark.parametrize("lock", [[], {"signature": {}, "image_id": "sha256:fixture"}])
-def test_damaged_saved_lock_fails_without_traceback_or_repair(tmp_path, monkeypatch, lock):
+@pytest.mark.parametrize(
+    "lock,failed_check",
+    [
+        ([], "docker_engine"),
+        ({"signature": {}, "image_id": "sha256:fixture"}, "locked_plan"),
+        ({"signature": {}, "image_id": []}, "docker_engine"),
+    ],
+)
+def test_damaged_saved_lock_fails_without_traceback_or_repair(
+    tmp_path, monkeypatch, lock, failed_check
+):
     prepared = prepare(write_plan(tmp_path))
     prepared.root.mkdir(parents=True)
     path = prepared.root / "evaluation.lock.json"
@@ -171,7 +180,7 @@ def test_damaged_saved_lock_fails_without_traceback_or_repair(tmp_path, monkeypa
     )
     result = check_preflight(prepared, probe=True)
     assert not result["ready"]
-    assert any(c["status"] == "fail" for c in result["checks"])
+    assert any(c["status"] == "fail" and c["check"] == failed_check for c in result["checks"])
     assert path.read_bytes() == raw
 
 

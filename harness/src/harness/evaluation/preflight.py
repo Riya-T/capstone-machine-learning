@@ -131,6 +131,8 @@ def check_preflight(prepared, *, probe=False):
             lock = prepared.root / "evaluation.lock.json"
             if lock.exists():
                 frozen = _metadata(lock, {"signature", "image_id"})
+                if not isinstance(frozen["image_id"], str) or not frozen["image_id"]:
+                    raise EvaluationError("Malformed saved image identity")
                 record(
                     "locked_plan",
                     "pass" if frozen["signature"] == prepared.signature else "fail",
