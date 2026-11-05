@@ -1,0 +1,12 @@
+# Maintainability-prompt baseline: the base writer on the 16 eval tasks,
+# with a prompt that also asks for clean, maintainable code that will be
+# changed later (prompts/writer_maintainable_v1.md; otherwise identical to
+# writer_v1.md). Same models, editor, budget and store as rtx5070_eval.yaml.
+#
+# Usage (from harness/, inside WSL):
+#     uv run python -m harness collect --config configs/rtx5070_eval_maintain.yaml
+#     uv run python scripts/eval_summary.py --config configs/rtx5070_eval_maintain.yaml
+extends: rtx5070_eval.yaml
+name: rtx5070-eval-maintain
+writer:
+  prompt_template: ../prompts/writer_maintainable_v1.md

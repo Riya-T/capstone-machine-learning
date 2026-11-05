@@ -285,10 +285,14 @@ are never scored; the next run retries them.
 These are in the proposal but not in the harness yet:
 
 - Training baselines
-  (correctness-only fine-tuning, DPO on Radon maintainability rankings, a
-  maintainability-focused prompt);
-- held-out evaluation (three-change sequences on eval tasks, confidence
-  intervals by resampling task families);
+  (correctness-only fine-tuning, DPO on Radon maintainability rankings).
+  The maintainability-focused prompt is written
+  (`prompts/writer_maintainable_v1.md`, run with
+  `configs/rtx5070_eval_maintain.yaml`);
+- held-out evaluation beyond the base writer: its run on the 16 eval tasks
+  is in [harness/results/base_writer_eval.md](harness/results/base_writer_eval.md),
+  made by `scripts/eval_summary.py`; confidence intervals by resampling task
+  families are not built yet;
 - the comment ablation (`editor.view_transform: strip_comments`) and the
   size-matched subset.
 

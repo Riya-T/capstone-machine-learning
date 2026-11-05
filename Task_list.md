@@ -67,8 +67,9 @@ This is a  rough list of tasks we need to complete and is definitely subject to 
 - [ ] **Choose training settings on dev tasks** — Learning rate, number of
   passes over the data, and DPO's beta.
 - [ ] **Train our writer** — Later-edit training, with several random seeds.
-- [ ] **Maintainability prompt** — Write the baseline prompt that asks for
+- [x] **Maintainability prompt** — Write the baseline prompt that asks for
   clean, maintainable code (otherwise identical to the normal prompt).
+  `harness/prompts/writer_maintainable_v1.md`.
 - [ ] **Correctness-only baseline** — Fine-tune the writer on its own programs
   that pass the initial tests.
 - [ ] **Static-ranking baseline** — Train the writer to prefer programs with
@@ -80,7 +81,8 @@ This is a  rough list of tasks we need to complete and is definitely subject to 
   the scores, with confidence intervals by resampling task families.
 - [ ] **Run all five methods** — Original model, maintainability prompt,
   correctness-only, static ranking and ours, on the held-out tasks with the
-  same editor and budget.
+  same editor and budget. Original model done:
+  `harness/results/base_writer_eval.md`.
 - [ ] **Report the main numbers** — Fraction of changes completed before the
   first failure, how often the first version works, how often a whole
   sequence succeeds, how often old behavior breaks, and the cost (tokens and
