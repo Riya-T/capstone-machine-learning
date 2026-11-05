@@ -1,4 +1,8 @@
-"""Tests for Radon-ranked static baseline preferences."""
+"""Tests for Radon-ranked static baseline preferences.
+
+Usage:
+    uv run pytest tests/test_static_ranking.py
+"""
 
 import json
 from dataclasses import replace
