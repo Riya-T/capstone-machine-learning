@@ -72,8 +72,33 @@ def main(argv=None):
     seeds = sub.add_parser("evaluation-seeds", help="Summarize saved training checkpoints")
     seeds.add_argument("--report", required=True, type=Path)
     seeds.add_argument("--out", required=True, type=Path)
+    review = sub.add_parser("evaluation-review", help="Prepare or compile human failure reviews")
+    review_actions = review.add_subparsers(dest="action", required=True)
+    review_init = review_actions.add_parser("init")
+    review_init.add_argument("--report", required=True, type=Path)
+    review_init.add_argument("--out", required=True, type=Path)
+    review_init.add_argument("--store", action="append", default=[], metavar="METHOD=STORE_ROOT")
+    review_compile = review_actions.add_parser("compile")
+    review_compile.add_argument("--pack", required=True, type=Path)
+    review_compile.add_argument("--annotations", required=True, type=Path, nargs="+")
+    review_compile.add_argument("--out", required=True, type=Path)
     args = parser.parse_args(argv)
     try:
+        if args.command == "evaluation-review":
+            from .review import compile_reviews, make_review_pack
+
+            if args.action == "init":
+                stores = {}
+                for value in args.store:
+                    name, separator, path = value.partition("=")
+                    if not separator or not path or name in stores or not Path(path).is_dir():
+                        raise ConfigError("Use unique METHOD=existing_store_root mappings")
+                    stores[name] = Path(path)
+                outputs = make_review_pack(args.report, args.out, stores=stores)
+            else:
+                outputs = compile_reviews(args.pack, args.annotations, args.out)
+            print(json.dumps(outputs, indent=2))
+            return 0
         if args.command == "evaluation-seeds":
             from .seeds import run_seed_summary
 
