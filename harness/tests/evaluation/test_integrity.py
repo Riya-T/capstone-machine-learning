@@ -119,3 +119,13 @@ def test_linked_artifact_rejected_without_needing_symlink_privilege(tmp_path, mo
 def test_cli_missing_manifest_returns_error_not_traceback(tmp_path, capsys):
     assert main(["evaluation-verify", "--report", str(tmp_path)]) == 2
     assert "manifest.json" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("kind", [[], {}, True, "unknown_workflow"])
+def test_malformed_derived_kind_has_a_clear_error(tmp_path, kind):
+    paths = bundle(tmp_path)
+    manifest = json.loads(paths["manifest.json"].read_text())
+    manifest["kind"] = kind
+    paths["manifest.json"].write_text(json.dumps(manifest))
+    with pytest.raises(EvaluationError, match="Unknown derived report kind"):
+        verify_report(tmp_path)

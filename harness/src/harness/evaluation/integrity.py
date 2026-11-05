@@ -44,7 +44,7 @@ def verify_report(directory: Path, *, recompute: bool = True) -> dict:
         raise EvaluationError("Invalid or incomplete report manifest")
     files = manifest.get("files")
     kind = manifest.get("kind")
-    if kind is not None and kind not in WORKFLOW_FILES:
+    if kind is not None and (not isinstance(kind, str) or kind not in WORKFLOW_FILES):
         raise EvaluationError("Unknown derived report kind")
     required = WORKFLOW_FILES[kind] if kind else REQUIRED
     if not isinstance(files, dict) or not files.keys() >= required:
