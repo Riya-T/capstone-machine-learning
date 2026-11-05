@@ -84,6 +84,9 @@ This is a  rough list of tasks we need to complete and is definitely subject to 
   `harness/docs/evaluation-coverage.md` for the proposal checklist and limits.
   Actual trained-model evaluation remains separate work. Optional checkpoint summaries
   retain individual seeds and condition uncertainty on the observed checkpoint set.
+  New runs freeze a planned checkpoint roster so missing methods/seeds are detectable.
+  A separate paired analysis compares editing on aligned parents that both initially pass.
+  See `harness/docs/evaluation-refinements.md` for commands and limitations.
 - [ ] **Run all five methods** — Original model, maintainability prompt,
   correctness-only, static ranking and ours, on the held-out tasks with the
   same editor and budget.

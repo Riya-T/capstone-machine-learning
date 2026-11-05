@@ -74,3 +74,40 @@ uv run python examples/evaluation_workflow.py --out runs/evaluation-refinement-d
 
 Every demonstration outcome is synthetic. Running this software example provides
 no evidence that any writer was trained or performs better.
+
+## Validation and remaining work
+
+The implementation at local commit `eff00eb` passed **1,873 Linux CPU checks**
+(one optional Node logic check skipped, 79 container/slow cases deselected),
+**1,736 relevant Windows checks** (four documented platform/container exclusions),
+and **31 real Docker checks**: evaluation smoke plus sandbox/evaluator isolation.
+The smoke exercises the actual collector with mock responses, private behavioral
+evaluation, terminal failures and zero-inference completed resume. It is software
+validation, not experimental model performance. A final malformed-image guard at
+`692ca4a` then passed all 14 preflight checks on Linux and the Windows preflight
+and course-header suite (1,227 checks). Ruff and whitespace checks passed too.
+
+Preservation checks confirmed all 60 original Windows task hashes, original
+prompts, collector, editor, primary scoring code, configuration, model backends
+and sandbox code are unchanged. Four historical manifest-bearing reports still
+recompute successfully. All 152 historical demonstration files remained unchanged
+during byte-identical replay of the new saved-only walkthrough. Local receipts
+and scripts are in `../evaluation_refinements/` relative to the Windows checkout.
+Earlier failed development checks are preserved there too. One preservation
+wrapper initially assumed the oldest pre-manifest demo had a manifest; it stopped
+without modifying it, and the corrected check distinguishes that historical case.
+
+New source metadata and reporting code change the evaluation-run fingerprint,
+not task hashes or previous scores. A new live run gets its own namespace.
+Resume a historical live run with its original checkout; saved-only historical
+reports remain readable. No teammate must rerun old experiments because of these
+additions. No real-model calls, training or model-weight downloads occurred.
+
+The remaining major project work is to provide the actual trained checkpoints,
+freeze the real evaluation roster and analysis choices, run the held-out study,
+and inspect its failures. Immutable weight/adapter digests still need independent
+recording; configured tags do not attest the weights served. The proposal's
+comment/docstring-removal ablation still needs its own frozen, validated transform
+and experimental runs. It is deliberately not inserted into the existing editor
+or applied to cached outcomes. These software refinements do not establish that
+the capstone's training hypothesis works.

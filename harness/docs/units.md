@@ -120,6 +120,8 @@ Additional evaluation units:
 | `review.py` | Immutable cases, verified source previews and separate human annotations. | `test_review.py` |
 | `figures.py` | Reproducible, labeled PNG/SVG export with optional Matplotlib. | `test_figures.py` |
 | `artifacts.py` | Non-overwriting derived bundles, safe CSV text and source-report binding. | Workflow and integrity tests |
+| `contract.py` | Freeze planned checkpoint/seed/task coverage before inference and verify later exports. | `test_contract.py` |
+| `joint.py` | Separate paired editing comparison using the same initially correct task/seed cells. | `test_joint.py` |
 
 `test_extension_cli.py` checks that the public saved-only commands interoperate
 without contacting model or container backends.

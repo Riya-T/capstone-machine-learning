@@ -1,7 +1,7 @@
 """Demonstrate saved-only evaluation tools with explicitly synthetic outcomes and sizes.
 
 Usage:
-    uv run python examples/evaluation_workflow.py --out runs/evaluation-analysis-demo --plots
+    uv run python examples/evaluation_workflow.py --out runs/evaluation-refinement-demo --plots
     # No model is trained, called or repaired. Every outcome/size here is a fixture.
 """
 
@@ -67,7 +67,7 @@ def synthetic_datasets():
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--out", type=Path, default=Path("runs/evaluation-analysis-demo"))
+    parser.add_argument("--out", type=Path, default=Path("runs/evaluation-refinement-demo"))
     parser.add_argument("--plots", action="store_true")
     args = parser.parse_args()
     data = synthetic_datasets()

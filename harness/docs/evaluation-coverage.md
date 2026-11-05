@@ -74,6 +74,15 @@ Report every seed, including adverse seeds, and predeclare any across-seed summa
 before inspecting the held-out results. The new prompt-only baseline is a draft
 control template; review/freeze it with the team using dev tasks before a real run.
 
+New runs automatically freeze the planned checkpoint/generation-seed roster
+before collection; saved-only reports can require that contract too. This detects
+omitted methods and seeds, not just unresolved work in the datasets supplied.
+Historical reports without a contract remain usable but cannot establish that no
+checkpoint was omitted. The optional joint initial-pass analysis compares the same
+task/seed pairs where both writers initially passed. See
+[coverage and paired comparisons](evaluation-refinements.md) for commands and
+selected-cohort limitations. Neither addition changes the primary scorer.
+
 ## Wider proposal: supported versus still requiring work
 
 | Item | Current status |

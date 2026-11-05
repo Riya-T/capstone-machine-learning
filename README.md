@@ -484,11 +484,14 @@ The evaluation tool also provides read-only preflight checks, size-matched
 sensitivity comparisons, fixed-checkpoint training-seed summaries, immutable human
 failure-review packs and PNG/SVG figures. These operate on saved reports and keep
 primary scores unchanged. See [the analysis workflow guide](harness/docs/evaluation-analysis.md).
+The [coverage and paired-comparison guide](harness/docs/evaluation-refinements.md)
+explains frozen checkpoint rosters and a separate comparison where both writers'
+initial programs passed on the same task/seed pairs.
 
 ```bash
 cd harness
 uv sync --locked --extra plots
-uv run python examples/evaluation_workflow.py --out runs/evaluation-analysis-demo-v2 --plots
+uv run python examples/evaluation_workflow.py --out runs/evaluation-refinement-demo --plots
 ```
 
 This walkthrough uses explicitly synthetic outcomes, sizes and checkpoint labels.

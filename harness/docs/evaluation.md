@@ -2,6 +2,9 @@
 
 The [additional analysis guide](evaluation-analysis.md) covers preflight, size matching,
 training-checkpoint summaries, human review and publication figures.
+The [coverage and paired-comparison guide](evaluation-refinements.md) adds a
+pre-inference checkpoint roster and a separate editing comparison restricted to
+aligned parents that both passed initially. Historical scores remain unchanged.
 
 For the offline dashboard, checkpoint inspection and verification workflow, see
 [inspection and verification features](evaluation-features.md).

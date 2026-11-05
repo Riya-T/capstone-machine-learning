@@ -4,13 +4,17 @@ These five additions use the same evaluation tool and preserve its primary score
 They do not train a writer, generate new programs, repair candidates, or infer
 preference labels. Use a new output directory for a new rule or report version.
 
+For planned-roster verification and aligned initial-pass comparisons, see the
+[refinement guide](evaluation-refinements.md). The original five workflows below
+remain available. New walkthrough outputs also include `joint-pass/`.
+
 ## Try everything with synthetic data
 
 From `harness/`:
 
 ```bash
 uv sync --locked --extra plots
-uv run python examples/evaluation_workflow.py --out runs/evaluation-analysis-demo-v2 --plots
+uv run python examples/evaluation_workflow.py --out runs/evaluation-refinement-demo --plots
 ```
 
 The walkthrough writes a primary comparison, size-matched sensitivity report,
