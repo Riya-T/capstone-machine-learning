@@ -68,8 +68,9 @@ All 16 eval tasks were run again on 2026-11-04 with
 that were fixed were run once more (`20261104T180011Z-504573`); see "Eval
 tasks (2026-11-04)" below. On 10-28 `aging_inventory` had 7,
 `auction_house` 5, and `document_versions` and `elevator_dispatch` 0.
-`library_catalog` was run again on 2026-11-05 after its redesign. Last
-updated 2026-11-05.
+`library_catalog` was run again on 2026-11-05 after its redesign, and five
+train tasks after theirs (see "Train tasks after the same check
+(2026-11-05)"). Last updated 2026-11-05.
 
 | Task | Split | Passing of 16 | Writer check |
 |---|---|---|---|
@@ -101,17 +102,17 @@ updated 2026-11-05.
 | `chat_rooms` | train | 6 | ✅ passed |
 | `feature_flags` | train | 6 | ✅ passed |
 | `gym_memberships` | train | 6 | ✅ passed |
-| `clinic_appointments` | train | 4 | ✅ passed |
-| `hotel_rooms` | train | 4 | ✅ passed |
-| `staff_directory` | train | 4 | ✅ passed |
-| `job_board` | train | 3 | ✅ passed (borderline) |
+| `clinic_appointments` | train | 4 (two redesigns gave 1 and 0; reverted) | ✅ passed |
+| `hotel_rooms` | train | 4 → 3 | ✅ passed after redesign (borderline) |
+| `staff_directory` | train | 4 → 13 | ✅ passed after redesign |
+| `job_board` | train | 3 (two redesigns gave 2 and 0; reverted) | ✅ passed (borderline) |
 | `stock_portfolio` | train | 0 → 16 | ✅ passed after fix |
 | `restaurant_orders` | train | 2 → 13 | ✅ passed after fix |
 | `movie_bookings` | train | 0 → 6 | ✅ passed after fix |
 | `school_roster` | train | 1 → 6 | ✅ passed after fix |
 | `recipe_box` | train | 1 → 0 → 5 | ✅ passed after second fix |
 | `ring_buffer` | train | 0 → 3 → 9 (7 distinct) | ✅ passed after second fix |
-| `login_sessions` | train | 0 → 0 → 3 | ✅ passed after second fix (borderline) |
+| `login_sessions` | train | 0 → 0 → 3 → 10 | ✅ passed after a third fix |
 | `robot_fleet` | train | 0 → 0 → 14 | ✅ passed after redesign |
 | `hangman_games` | train | 2 → 0 → 8 | ✅ passed after redesign |
 | `ticket_desk` | train | 0 → 0 → 0 → 16 | ✅ passed after second redesign |
@@ -1141,6 +1142,99 @@ Three required regression bugs are now also caught by a new public check
 `version_accepts_bad_house_increment`, `elevator_dispatch`
 `service_cancels_riders`). They still fail the hidden existing tests as
 declared.
+
+### Train tasks after the same check (2026-11-05)
+
+The same check was run on the train tasks' failed editing steps (the base
+run that gives the DPO pairs): 30 changes in 25 tasks were looked at, and
+sorted into the same four cases. The sandbox runs with `PYTHONHASHSEED=0`,
+so a `list(set(...))` can pass a public check by luck; three of the new
+public checks use names or cells for which a set's order is wrong. Every
+new public check fails the stored failed edits that miss its rule and
+passes every stored edit that succeeded, including later steps where it
+also runs. Five tasks where the writer passed only 3 or 4 of 16 were also
+redesigned, so they get new writer samples.
+
+Writer side (spec changed, so new writer samples; writer check run
+`20261106T032549Z-1b9abf` and its round-2 rerun):
+
+- `login_sessions`: `get_signed_in` lists each user once, in any order (3
+  programs used a set, 2 kept sign-in order). Writer check: 3 → 10 of 16.
+- `staff_directory`: after the empty id, which of `hire`'s errors comes
+  first is unspecified (8 of 8 failing programs checked the salary before
+  the department). Writer check: 4 → 13 of 16.
+- `hotel_rooms`: `get_guest(room, night)` became `get_booking_id(room,
+  night)`, the id `book` returned (6 programs returned the id from
+  `get_guest`; all 16 store the id per night). The guest is first read by
+  `c_occupancy`. Writer check: 4 → 3 of 16 (it passes, just; predicted
+  about 8, so writer sampling noise is large at 16 samples).
+- `job_board` and `clinic_appointments` were redesigned twice and are back
+  as they were. Predictions on the stored programs looked good (7 and 6 of
+  16), but fresh samples gave 2 then 0 (`job_board`) and 1 then 0
+  (`clinic_appointments`): the new wording pushed the writer towards the
+  designs that crash (`job_board`: two dicts named alike, one of them
+  never filled; `clinic_appointments`: open-minute lists plus a separate
+  bookings structure). The originals pass the writer check (3 and 4) and
+  keep their stored results.
+
+Public check added for a stated rule:
+
+- `budget_envelopes` `c_move`: `allocate_many` with a missing envelope
+  changes nothing (13 of 13).
+- `calendar_events` `c_cancel`: a cancelled id can be added again (8 of
+  8). `c_no_overlap`: conflicts earliest start first (12 of 12).
+- `document_store` `c_tag_groups`: group documents in the order added (16
+  of 19 used a set).
+- `feature_flags` `c_groups`: enabled users stay in registration order (23
+  of 23 used a set, which also broke an existing test).
+- `high_scores` `c_remove`: a repeated score loses its most recent copy (24
+  of 24 used `list.remove`).
+- `io_meter` `c_totals`: a tie for the busiest stream goes to the one
+  opened first (12 of 12; all 8 programs share one design and failed it
+  like coin flips, so its pairs were luck — this replaces the 11-02 "real
+  difficulty" call).
+- `movie_bookings` `c_search`: a customer's bookings in the order made (12
+  of 14).
+- `restaurant_orders` `c_void`: a dish voided away and ordered again goes
+  last (28 of 40).
+- `staff_directory` `c_payroll`: setting the same salary again is recorded
+  (10 of 10).
+- `ticket_desk` `c_reopen`: a resolved ticket can't be resolved or
+  reassigned (3 of 21; the rest are stuck on a visible check).
+- `token_bucket` `c_refund`: a request from an earlier window can be
+  refunded (19 of 22).
+
+Request made clearer (the misreading did not depend on the program):
+
+- `access_control` `c_groups`: `get_members` follows `get_clients()`, not
+  the order clients joined the group (18 of 18).
+- `chat_rooms` `c_delete`: ids change no existing method; `get_messages`
+  still returns `(username, text)` (16 of 17 added the id). `c_search`:
+  `get_posts` in posting order across rooms, not grouped by room (17 of
+  17).
+- `document_store` `c_trash`: a trashed document is still in the store
+  until purged (21 of 24 raised `KeyError`); its error-order test was
+  removed, as error order is unspecified elsewhere.
+- `hangman_games` `c_hint`: `get_missing_count` works for a game that is
+  over (118 of 146 stored replies raised there).
+- `job_queue` `c_deprules`: where the cycle check starts, with an example
+  (170 of 184 stored replies searched the wrong direction).
+- `party_inventory` `c_carry_limit`: carry weight counts each item in the
+  bag once, equipped or not (8 of 8 counted equipped items twice).
+- `token_bucket` `c_usage`: unknown clients raise `KeyError`, which only
+  the spec said (18 of 19 returned 0 or `[]`).
+- `warehouse_stock` `c_bundle`: a non-string sku is not a product, so
+  `KeyError` (5 of 6).
+
+Left as they are: `event_bus` `c_unsubscribe`, `gym_memberships`
+`c_visits`, `high_scores` `c_best`, `pantry_inventory` `c_expired`,
+`playlist_manager` `c_remove`, `recipe_box` `c_remove` and
+`stock_portfolio` `c_undo` (its failures follow the design exactly: the
+4 programs that delete a sold-out symbol fail every trial, the 4 that keep
+it pass every trial), plus `ring_buffer` and `order_workflow` (team
+decision). In `restaurant_orders` `c_void` and `ticket_desk` `c_reopen`
+all 8 programs share one design, so their pairs are mostly luck; the
+2-of-3-repeats pair filter should drop most of them.
 
 ## How the families were chosen
 
