@@ -23,14 +23,14 @@ def hotel():
 
 
 def state(hot, booking_ids=(1, 2, 3)):
-    rooms = {room: [hot.get_guest(room, n) for n in NIGHTS] for room in hot.get_rooms()}
+    rooms = {room: [hot.get_booking_id(room, n) for n in NIGHTS] for room in hot.get_rooms()}
     return rooms, [hot.get_status(b) for b in booking_ids]
 
 
 def test_a_cancelled_booking_gives_up_every_night(hotel):
     hotel.cancel(1)
-    assert [hotel.get_guest("101", n) for n in NIGHTS] == [
-        None, None, None, "ben", "ben", None, None, None,
+    assert [hotel.get_booking_id("101", n) for n in NIGHTS] == [
+        None, None, None, 2, 2, None, None, None,
     ]
     assert hotel.get_status(1) == "cancelled"
 
@@ -39,7 +39,7 @@ def test_other_bookings_are_untouched_by_a_cancellation(hotel):
     hotel.cancel(1)
     assert hotel.get_status(2) == "booked"
     assert hotel.get_status(3) == "booked"
-    assert hotel.get_guest("102", 2) == "cho"
+    assert hotel.get_booking_id("102", 2) == 3
 
 
 def test_freed_nights_can_be_booked_again(hotel):
@@ -47,8 +47,8 @@ def test_freed_nights_can_be_booked_again(hotel):
         hotel.book("101", "dee", 2, 3)
     hotel.cancel(1)
     assert hotel.book("101", "dee", 2, 3) == 4
-    assert hotel.get_guest("101", 1) is None
-    assert hotel.get_guest("101", 2) == "dee"
+    assert hotel.get_booking_id("101", 1) is None
+    assert hotel.get_booking_id("101", 2) == 4
 
 
 def test_cancelled_ids_are_never_reused(hotel):
@@ -106,6 +106,6 @@ def test_a_rebooked_room_can_be_cancelled_again(hotel):
     hotel.cancel(1)
     fourth = hotel.book("101", "dee", 1, 3)
     hotel.cancel(fourth)
-    assert hotel.get_guest("101", 2) is None
+    assert hotel.get_booking_id("101", 2) is None
     assert hotel.book("101", "eve", 1, 3) == 5
-    assert hotel.get_guest("101", 2) == "eve"
+    assert hotel.get_booking_id("101", 2) == 5

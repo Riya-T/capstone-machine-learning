@@ -19,7 +19,7 @@ class Hotel:
     def check_in(self, booking_id: int) -> None: ...
     def check_out(self, booking_id: int) -> None: ...
     def get_status(self, booking_id: int) -> str: ...
-    def get_guest(self, room: str, night: int) -> str | None: ...
+    def get_booking_id(self, room: str, night: int) -> int | None: ...
     def get_rooms(self) -> list[str]: ...
 ```
 
@@ -31,8 +31,9 @@ are no dates.
 - `add_room(room)` adds a room with no bookings. An empty name raises
   `ValueError`, and adding a name that is already a room raises `HotelError`.
 - `get_rooms()` returns the names of all rooms, in the order they were added.
-- `book` and `get_guest` raise `KeyError` when given a room name that is not a
-  room, including values that are not strings at all, such as `None` or `1`.
+- `book` and `get_booking_id` raise `KeyError` when given a room name that is
+  not a room, including values that are not strings at all, such as `None` or
+  `1`.
 
 ## Bookings
 
@@ -47,9 +48,17 @@ are no dates.
 - A room holds one booking per night. If any night of the range is already
   part of a booking for that room, `RoomUnavailable` is raised. A booking
   that ends on night 3 and one that starts on night 4 do not overlap.
-- `get_guest(room, night)` returns the guest whose booking covers that room on
-  that night, or `None` if no booking does. A night that is not an `int` of 1
-  or more raises `ValueError`.
+- `get_booking_id(room, night)` returns the id of the booking that holds that
+  room on that night (the id `book` returned for it), or `None` if no booking
+  does. A night that is not an `int` of 1 or more raises `ValueError`.
+
+For example, in a hotel with rooms `"101"` and `"102"`:
+`book("101", "ana", 2, 4)` returns 1 and `book("102", "ben", 1, 3)` returns
+2. Now `get_booking_id("101", 2)` and `get_booking_id("101", 4)` are 1,
+`get_booking_id("101", 1)` and `get_booking_id("101", 5)` are `None`, and
+`get_booking_id("102", 3)` is 2. `book("101", "cho", 4, 6)` raises
+`RoomUnavailable` because night 4 of room `"101"` is taken, and then
+`book("101", "cho", 5, 6)` returns 3, since the failed call used up no id.
 
 When a call to `book` has several problems, `ValueError` for an invalid
 guest or invalid nights is raised before `RoomUnavailable`.

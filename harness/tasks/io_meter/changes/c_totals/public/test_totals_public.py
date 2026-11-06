@@ -37,3 +37,12 @@ def test_the_busiest_stream_has_the_most_operations():
     io.record_read("data", 1)
     io.record_read("data", 1)
     assert io.get_busiest_stream() == "data"
+
+
+def test_a_tie_for_the_busiest_stream_goes_to_the_one_opened_first():
+    io = IOMeter()
+    io.open_stream("log")
+    io.open_stream("data")
+    io.record_read("data", 7)
+    io.record_write("log", 7)
+    assert io.get_busiest_stream() == "log"

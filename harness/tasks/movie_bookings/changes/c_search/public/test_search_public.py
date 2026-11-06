@@ -32,3 +32,10 @@ def test_a_customers_bookings_span_showings(office):
     office.book("h1", "ann", 3)
     assert office.find_customer_bookings("ann") == [("d1", 2), ("h1", 3)]
     assert office.find_customer_bookings("cat") == []
+
+
+def test_a_customers_bookings_are_in_the_order_they_were_made(office):
+    office.book("d2", "ann", 1)
+    office.book("d1", "ann", 2)
+    office.book("d2", "ann", 3)
+    assert office.find_customer_bookings("ann") == [("d2", 1), ("d1", 2), ("d2", 3)]

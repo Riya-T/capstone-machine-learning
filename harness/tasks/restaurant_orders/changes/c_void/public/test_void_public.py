@@ -35,6 +35,19 @@ def test_voiding_takes_back_one_call_not_the_whole_dish():
     assert r.get_bill("t1") == 650 + 1400
 
 
+def test_a_dish_voided_away_and_ordered_again_goes_last():
+    r = Restaurant()
+    r.add_dish("soup", 650)
+    r.add_dish("cake", 700)
+    r.open_table("t1")
+    r.order("t1", "soup", 1)
+    r.void_last("t1")
+    r.order("t1", "cake", 2)
+    r.order("t1", "soup", 1)
+    assert r.get_order("t1") == [("cake", 2), ("soup", 1)]
+    assert r.get_bill("t1") == 1400 + 650
+
+
 def test_nothing_left_to_void_raises():
     r = Restaurant()
     r.open_table("t1")

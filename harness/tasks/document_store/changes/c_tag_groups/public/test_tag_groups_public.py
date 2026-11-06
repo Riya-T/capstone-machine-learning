@@ -37,6 +37,11 @@ def test_tags_added_to_the_group_later_count(store):
     assert store.get_documents_in_group("place") == ["todo"]
 
 
+def test_documents_in_a_group_are_in_the_order_added(store):
+    store.tag_document("todo", "draft")
+    assert store.get_documents_in_group("status") == ["notes", "todo", "post"]
+
+
 def test_a_group_that_does_not_exist_raises_key_error(store):
     with pytest.raises(KeyError):
         store.get_documents_in_group("topic")

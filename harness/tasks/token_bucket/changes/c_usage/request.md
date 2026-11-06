@@ -13,6 +13,9 @@ made its requests.
   `start <= t < end`. For example, if `alice`, `bob` and `carol` were added
   in that order and only `carol` and then `alice` made requests in the
   range, the result is `["alice", "carol"]`.
+- `get_request_times` and `get_usage` raise `KeyError` for a client id
+  that is not registered, and so for `None`, `1` or any other value that
+  is not a string. They never return `[]` or 0 for such a client.
 - `start` and `end` must each be an `int` that is 0 or more, and `start`
   must not be greater than `end`; otherwise `ValueError` is raised. A range
   with `start == end` contains no times. Which error `get_usage` raises

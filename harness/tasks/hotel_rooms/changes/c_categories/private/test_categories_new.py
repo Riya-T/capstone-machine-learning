@@ -22,7 +22,7 @@ def hotel():
 
 
 def state(hot, booking_ids=()):
-    rooms = {room: [hot.get_guest(room, n) for n in NIGHTS] for room in hot.get_rooms()}
+    rooms = {room: [hot.get_booking_id(room, n) for n in NIGHTS] for room in hot.get_rooms()}
     return rooms, [hot.get_status(b) for b in booking_ids]
 
 
@@ -64,7 +64,7 @@ def test_book_any_skips_rooms_that_are_not_free(hotel):
     hotel.book("102", "ben", 3, 3)
     booking = hotel.book_any("single", "cho", 2, 4)
     assert booking == 3
-    assert hotel.get_guest("103", 2) == "cho"
+    assert hotel.get_booking_id("103", 2) == booking
     assert hotel.get_status(booking) == "booked"
 
 
@@ -72,9 +72,9 @@ def test_book_any_prefers_the_earliest_added_room(hotel):
     first = hotel.book_any("single", "ana", 1, 2)
     second = hotel.book_any("single", "ben", 1, 2)
     assert (first, second) == (1, 2)
-    assert hotel.get_guest("101", 1) == "ana"
-    assert hotel.get_guest("102", 1) == "ben"
-    assert hotel.get_guest("103", 1) is None
+    assert hotel.get_booking_id("101", 1) == first
+    assert hotel.get_booking_id("102", 1) == second
+    assert hotel.get_booking_id("103", 1) is None
 
 
 def test_book_any_only_uses_rooms_of_that_category(hotel):
@@ -90,7 +90,7 @@ def test_book_any_with_an_unknown_category_raises_key_error(hotel):
         hotel.book_any("penthouse", "ana", 1, 2)
     with pytest.raises(KeyError):
         hotel.book_any(None, "ana", 1, 2)
-    assert all(hotel.get_guest(r, 1) is None for r in hotel.get_rooms())
+    assert all(hotel.get_booking_id(r, 1) is None for r in hotel.get_rooms())
 
 
 @pytest.mark.parametrize(
@@ -111,4 +111,4 @@ def test_a_cancelled_room_is_free_for_book_any(hotel):
         hotel.book_any("single", "ben", 2, 2)
     hotel.cancel(2)
     assert hotel.book_any("single", "ben", 2, 2) == 4
-    assert hotel.get_guest("102", 2) == "ben"
+    assert hotel.get_booking_id("102", 2) == 4

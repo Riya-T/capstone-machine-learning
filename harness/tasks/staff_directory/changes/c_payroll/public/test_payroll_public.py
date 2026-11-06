@@ -37,3 +37,11 @@ def test_salary_history_starts_with_the_hire_salary(directory):
     directory.set_salary("ana", 310000)
     assert directory.get_salary_history("ana") == [300000, 320000, 310000]
     assert directory.get_salary_history("ben") == [250000]
+
+
+def test_setting_the_same_salary_again_is_still_recorded(directory):
+    directory.set_salary("ben", 250000)
+    directory.set_salary("cho", 210000)
+    directory.set_salary("cho", 210000)
+    assert directory.get_salary_history("ben") == [250000, 250000]
+    assert directory.get_salary_history("cho") == [200000, 210000, 210000]

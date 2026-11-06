@@ -15,7 +15,7 @@ def test_cancelling_frees_the_nights():
     booking = hot.book("101", "ana", 1, 3)
     hot.cancel(booking)
     assert hot.get_status(booking) == "cancelled"
-    assert hot.get_guest("101", 2) is None
+    assert hot.get_booking_id("101", 2) is None
     assert hot.book("101", "ben", 2, 4) == 2
 
 

@@ -41,7 +41,10 @@ All salaries are monthly amounts in whole cents, as `int`.
   An empty id raises `ValueError`; a department that does not exist raises
   `KeyError`; a salary that is not an `int` greater than 0 raises
   `ValueError`; an id that is already employed raises `DirectoryError`.
-  The checks happen in that order.
+  An empty id is reported before anything else. When a call has more than
+  one of the other three problems, which of their errors is raised is
+  unspecified: for example, `hire("dan", "hr", -1)` with no department
+  `"hr"` may raise `KeyError` or `ValueError`.
 - `set_salary(employee_id, salary)` replaces the employee's salary. It
   raises `KeyError` for an id that is not employed, then `ValueError` for an
   invalid salary.
@@ -57,6 +60,6 @@ employee and every salary is unchanged.
 
 Behavior not described here is unspecified, and no test depends on it. This
 includes names or ids that are not strings passed to `add_department` and
-`hire`, `bool` salaries, what happens if a returned list is changed, the
-text of error messages, saving the directory to a file, and use from several
-threads.
+`hire`, `bool` salaries, the order of `hire`'s checks after the empty id,
+what happens if a returned list is changed, the text of error messages,
+saving the directory to a file, and use from several threads.

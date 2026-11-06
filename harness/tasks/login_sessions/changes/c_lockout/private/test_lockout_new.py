@@ -20,7 +20,7 @@ def manager():
 def state(man):
     return (
         man.get_users(),
-        man.get_signed_in(),
+        sorted(man.get_signed_in()),  # any order (initial spec)
         [(man.is_locked(u), man.get_failed_attempts(u)) for u in man.get_users()],
     )
 

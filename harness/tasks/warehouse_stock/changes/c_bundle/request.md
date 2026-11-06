@@ -5,7 +5,9 @@ bundle is either taken from stock completely or not at all.
   of `(sku, quantity)` pairs. Every line is checked before anything changes;
   if any check fails, no stock, order or history changes. The checks:
   - `ValueError` if `lines` is empty;
-  - `KeyError` if a sku is not a product;
+  - `KeyError` if a sku is not a product. A sku that is not a string, such
+    as `None` or `7`, is not a product either, so it raises `KeyError`
+    (not `ValueError`), as in `place_order`;
   - `ValueError` if a quantity is not an `int` greater than 0;
   - `ValueError` if a sku appears in more than one line;
   - `OutOfStock` if any line asks for more than its product's stock.

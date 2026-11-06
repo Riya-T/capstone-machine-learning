@@ -10,9 +10,12 @@ Add hints to `hangman.py`, for players who are stuck.
   `HangmanError` when the game is over (won or lost), since there is no
   point in a hint.
 - Add `Hangman.get_missing_count(game_id) -> int`: how many different
-  letters of the word have not been guessed yet. It is 0 for a won game,
-  and still counts the letters left in a lost game. Raises `KeyError` for a
-  game id that is not in use.
+  letters of the word have not been guessed yet. Unlike `get_hint`, it
+  works for a game that is over and never raises `HangmanError`: it is 0
+  for a won game, and still counts the letters left in a lost game. For
+  the word `banana` with `max_wrong=1`, after guessing `a` and then `z`
+  the game is lost and the missing count is 2 (`b` and `n`). Raises
+  `KeyError` for a game id that is not in use.
 - Asking for a hint or the missing count changes nothing: the guesses, the
   wrong count, the progress and the status stay exactly as they were, and
   asking again gives the same answer until a guess is made.

@@ -142,15 +142,5 @@ def test_a_purged_id_can_be_reused_for_a_fresh_document(store):
     assert store.get_documents("work") == ["post"]
 
 
-def test_trashed_is_reported_before_a_bad_body_or_tag(store):
-    store.trash("notes")
-    with pytest.raises(DocumentTrashed):
-        store.update_body("notes", None)
-    with pytest.raises(DocumentTrashed):
-        store.tag_document("notes", "")
-    with pytest.raises(KeyError):
-        store.update_body("missing", None)
-
-
 def test_document_trashed_is_a_store_error():
     assert issubclass(DocumentTrashed, StoreError)

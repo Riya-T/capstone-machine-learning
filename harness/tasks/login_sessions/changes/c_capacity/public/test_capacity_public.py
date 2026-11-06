@@ -26,4 +26,4 @@ def test_without_a_limit_everyone_can_sign_in():
     for name in ["alice", "bob", "carol"]:
         man.register(name, "pw")
         man.sign_in(name, "pw")
-    assert man.get_signed_in() == ["alice", "bob", "carol"]
+    assert sorted(man.get_signed_in()) == ["alice", "bob", "carol"]

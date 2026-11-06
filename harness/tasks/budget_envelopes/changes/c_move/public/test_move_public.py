@@ -39,3 +39,10 @@ def test_allocate_many_is_all_or_nothing(budget):
     assert budget.get_balance("food") == 0
     assert budget.get_balance("fun") == 0
     assert budget.get_unassigned() == 10000
+
+
+def test_allocate_many_with_a_missing_envelope_changes_nothing(budget):
+    with pytest.raises(KeyError):
+        budget.allocate_many({"food": 2000, "travel": 1000})
+    assert budget.get_balance("food") == 0
+    assert budget.get_unassigned() == 10000

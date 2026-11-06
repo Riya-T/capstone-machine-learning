@@ -23,9 +23,9 @@ def hotel():
 
 
 def state(hot, booking_ids=()):
-    """Who holds every room on nights 1-8, plus each booking's status, to
-    check that a failed call changed nothing."""
-    rooms = {room: [hot.get_guest(room, n) for n in NIGHTS] for room in hot.get_rooms()}
+    """Which booking holds every room on nights 1-8, plus each booking's
+    status, to check that a failed call changed nothing."""
+    rooms = {room: [hot.get_booking_id(room, n) for n in NIGHTS] for room in hot.get_rooms()}
     return rooms, [hot.get_status(b) for b in booking_ids]
 
 
@@ -39,8 +39,8 @@ def test_rooms_are_listed_in_the_order_added():
     assert hot.get_rooms() == ["203", "101", "102"]
 
 
-def test_a_new_room_has_no_guests(hotel):
-    assert all(hotel.get_guest("101", n) is None for n in NIGHTS)
+def test_a_new_room_has_no_bookings(hotel):
+    assert all(hotel.get_booking_id("101", n) is None for n in NIGHTS)
 
 
 @pytest.mark.parametrize("bad_room", [""])
@@ -56,16 +56,16 @@ def test_adding_an_existing_room_is_rejected(hotel):
     with pytest.raises(HotelError):
         hotel.add_room("101")
     assert hotel.get_rooms() == ["101", "102"]
-    assert hotel.get_guest("101", 1) == "ana"
+    assert hotel.get_booking_id("101", 1) == 1
 
 
 @pytest.mark.parametrize(
     "call",
     [
         lambda hot: hot.book("303", "ana", 1, 2),
-        lambda hot: hot.get_guest("303", 1),
-        lambda hot: hot.get_guest(None, 1),
-        lambda hot: hot.get_guest(101, 1),
+        lambda hot: hot.get_booking_id("303", 1),
+        lambda hot: hot.get_booking_id(None, 1),
+        lambda hot: hot.get_booking_id(101, 1),
         lambda hot: hot.book(None, "ana", 1, 2),
     ],
 )
@@ -95,16 +95,16 @@ def test_a_failed_booking_uses_no_id(hotel):
 
 def test_every_night_of_the_range_is_booked_including_both_ends(hotel):
     hotel.book("101", "ana", 2, 4)
-    assert [hotel.get_guest("101", n) for n in NIGHTS] == [
-        None, "ana", "ana", "ana", None, None, None, None,
+    assert [hotel.get_booking_id("101", n) for n in NIGHTS] == [
+        None, 1, 1, 1, None, None, None, None,
     ]
 
 
 def test_a_single_night_booking(hotel):
     hotel.book("101", "ana", 5, 5)
-    assert hotel.get_guest("101", 5) == "ana"
-    assert hotel.get_guest("101", 4) is None
-    assert hotel.get_guest("101", 6) is None
+    assert hotel.get_booking_id("101", 5) == 1
+    assert hotel.get_booking_id("101", 4) is None
+    assert hotel.get_booking_id("101", 6) is None
 
 
 def test_overlapping_only_on_the_last_night_is_refused(hotel):
@@ -119,29 +119,29 @@ def test_overlapping_only_on_the_first_night_is_refused(hotel):
     hotel.book("101", "ana", 3, 5)
     with pytest.raises(RoomUnavailable):
         hotel.book("101", "ben", 1, 3)
-    assert hotel.get_guest("101", 3) == "ana"
+    assert hotel.get_booking_id("101", 3) == 1
 
 
 def test_a_booking_enclosing_another_is_refused(hotel):
     hotel.book("101", "ana", 3, 3)
     with pytest.raises(RoomUnavailable):
         hotel.book("101", "ben", 1, 6)
-    assert hotel.get_guest("101", 1) is None
-    assert hotel.get_guest("101", 3) == "ana"
+    assert hotel.get_booking_id("101", 1) is None
+    assert hotel.get_booking_id("101", 3) == 1
 
 
 def test_bookings_that_touch_do_not_overlap(hotel):
     hotel.book("101", "ana", 1, 3)
     hotel.book("101", "ben", 4, 5)
-    assert hotel.get_guest("101", 3) == "ana"
-    assert hotel.get_guest("101", 4) == "ben"
+    assert hotel.get_booking_id("101", 3) == 1
+    assert hotel.get_booking_id("101", 4) == 2
 
 
 def test_other_rooms_are_not_affected_by_a_booking(hotel):
     hotel.book("101", "ana", 1, 3)
     hotel.book("102", "ana", 1, 3)
-    assert hotel.get_guest("101", 2) == "ana"
-    assert hotel.get_guest("102", 2) == "ana"
+    assert hotel.get_booking_id("101", 2) == 1
+    assert hotel.get_booking_id("102", 2) == 2
 
 
 @pytest.mark.parametrize("guest", BAD_GUESTS)
@@ -161,9 +161,9 @@ def test_invalid_nights_are_rejected(hotel, first, last):
 
 
 @pytest.mark.parametrize("night", [0, -2, 1.5, "1", None])
-def test_get_guest_rejects_invalid_nights(hotel, night):
+def test_get_booking_id_rejects_invalid_nights(hotel, night):
     with pytest.raises(ValueError):
-        hotel.get_guest("101", night)
+        hotel.get_booking_id("101", night)
 
 
 def test_a_bad_guest_is_reported_before_bad_nights(hotel):
@@ -195,7 +195,7 @@ def test_checking_out_keeps_the_nights(hotel):
     booking = hotel.book("101", "ana", 1, 2)
     hotel.check_in(booking)
     hotel.check_out(booking)
-    assert hotel.get_guest("101", 1) == "ana"
+    assert hotel.get_booking_id("101", 1) == booking
     with pytest.raises(RoomUnavailable):
         hotel.book("101", "ben", 2, 3)
 
@@ -244,5 +244,5 @@ def test_hotels_do_not_share_rooms_or_bookings():
     first.book("101", "ana", 1, 2)
     assert second.get_rooms() == []
     second.add_room("101")
-    assert second.get_guest("101", 1) is None
+    assert second.get_booking_id("101", 1) is None
     assert second.book("101", "ben", 1, 2) == 1

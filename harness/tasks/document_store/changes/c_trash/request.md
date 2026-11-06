@@ -21,7 +21,12 @@ later, or thrown away for good.
   in the trash for good and returns their ids in trash order. Afterwards
   those ids are not in the store (`KeyError`) and may be used again by
   `add_document` for a fresh document with no tags.
+- A trashed document is still in the store until `purge_trash` deletes
+  it. So `trash` on a document that is already in the trash raises
+  `DocumentTrashed`, not `KeyError`, and `restore` on a document that is
+  in the store but not in the trash raises `StoreError`, not `KeyError`.
+  `KeyError` is only for ids that were never added or were purged.
 
-When a call has several problems, `KeyError` comes first, then
-`DocumentTrashed`, then any `ValueError`. A failed call changes nothing.
-All existing behavior must keep working.
+When a call on a trashed document also has an invalid body or tag, which
+of `DocumentTrashed` and `ValueError` is raised is unspecified. A failed
+call changes nothing. All existing behavior must keep working.

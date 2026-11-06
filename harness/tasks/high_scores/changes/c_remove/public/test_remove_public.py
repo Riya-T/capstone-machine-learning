@@ -39,3 +39,15 @@ def test_removing_a_score_the_player_never_had_raises(board):
     with pytest.raises(ScoreError):
         board.remove_score("ana", 999)
     assert board.get_scores("ana") == [300, 120]
+
+
+def test_a_repeated_score_loses_its_most_recent_occurrence():
+    bd = ScoreBoard()
+    bd.add_player("cy")
+    for score in [40, 90, 40]:
+        bd.record_score("cy", score)
+    assert bd.undo_last_score() == ("cy", 40)
+    assert bd.get_scores("cy") == [40, 90]
+    bd.record_score("cy", 40)
+    bd.remove_score("cy", 40)
+    assert bd.get_scores("cy") == [40, 90]

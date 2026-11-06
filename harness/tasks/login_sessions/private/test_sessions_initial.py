@@ -20,8 +20,9 @@ def manager():
 
 
 def state(man):
-    """Users and who is signed in, to check that a failed call changed nothing."""
-    return (man.get_users(), man.get_signed_in())
+    """Users and who is signed in (in any order), to check that a failed call
+    changed nothing."""
+    return (man.get_users(), sorted(man.get_signed_in()))
 
 
 # --- users ------------------------------------------------------------------
@@ -112,7 +113,7 @@ def test_signing_out_an_unregistered_user_raises(manager, username):
 def test_sign_in_and_sign_out_change_the_status(manager):
     manager.sign_in("alice", "hunter2")
     manager.sign_in("bob", "secret")
-    assert manager.get_signed_in() == ["alice", "bob"]
+    assert sorted(manager.get_signed_in()) == ["alice", "bob"]
     manager.sign_out("alice")
     assert not manager.is_signed_in("alice")
     assert manager.is_signed_in("bob")
@@ -173,15 +174,15 @@ def test_signing_out_a_user_who_is_not_signed_in_is_rejected(manager):
         manager.sign_out("bob")
 
 
-def test_signed_in_list_keeps_registration_order_whatever_the_sign_in_order():
+def test_signed_in_list_has_everyone_signed_in_once_in_any_order():
     man = SessionManager()
     for name in ["carol", "alice", "bob"]:
         man.register(name, "pw")
     man.sign_in("bob", "pw")
     man.sign_in("carol", "pw")
-    assert man.get_signed_in() == ["carol", "bob"]
+    assert sorted(man.get_signed_in()) == ["bob", "carol"]
     man.sign_in("alice", "pw")
-    assert man.get_signed_in() == ["carol", "alice", "bob"]
+    assert sorted(man.get_signed_in()) == ["alice", "bob", "carol"]
 
 
 def test_wrong_password_is_a_session_error():

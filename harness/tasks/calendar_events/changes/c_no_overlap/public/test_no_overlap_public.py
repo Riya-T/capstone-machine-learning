@@ -28,3 +28,13 @@ def test_events_that_touch_do_not_conflict():
     ag.add_attendee("debrief", "mira")
     assert ag.get_schedule("mira") == ["review", "debrief"]
     assert ag.get_conflicts("debrief", "mira") == []
+
+
+def test_conflicts_are_listed_earliest_start_first():
+    ag = Agenda()
+    ag.add_event("early", 600, 660)
+    ag.add_event("late", 660, 720)
+    ag.add_event("block", 630, 690)
+    ag.add_attendee("late", "mira")
+    ag.add_attendee("early", "mira")
+    assert ag.get_conflicts("block", "mira") == ["early", "late"]

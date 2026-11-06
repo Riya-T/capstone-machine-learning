@@ -9,8 +9,12 @@ Add ways to search the messages in `chat.py`.
   `by` is neither `None` nor a username that was added, then `ValueError`
   if `containing` is neither `None` nor a `str`.
 - Add `ChatServer.get_posts(username) -> list[tuple[str, str]]`: every
-  message the user has posted in any room, oldest first across all rooms,
-  as `(room, text)` tuples. It raises `KeyError` for a username that was
-  never added.
+  message the user has posted in any room, as `(room, text)` tuples, in
+  the order the user posted them. Messages from different rooms are mixed
+  in that order, not grouped by room. For example, after `alice` posts
+  `"a"` in `"general"`, then `"b"` in `"music"`, then `"c"` in
+  `"general"`, `get_posts("alice")` returns
+  `[("general", "a"), ("music", "b"), ("general", "c")]`. It raises
+  `KeyError` for a username that was never added.
 
 All existing behavior must keep working.

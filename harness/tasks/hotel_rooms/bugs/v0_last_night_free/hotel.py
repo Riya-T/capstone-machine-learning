@@ -1,10 +1,10 @@
 """Hotel rooms: rooms, bookings by night number, and check-in / check-out.
 
 Planted bug (initial version): the last night of a booking is never marked
-as taken, so another booking may start on it and get_guest reports it free.
-The public checks only look at inner nights and full overlaps, so only the
-hidden initial tests catch it. Never shown to the writer or the editor;
-validate-tasks checks that the tests catch it.
+as taken, so another booking may start on it and get_booking_id reports it
+free. The public checks only look at inner nights and full overlaps, so
+only the hidden initial tests catch it. Never shown to the writer or the
+editor; validate-tasks checks that the tests catch it.
 
 Usage:
     from hotel import Hotel
@@ -87,13 +87,10 @@ class Hotel:
     def get_status(self, booking_id):
         return self._require_booking(booking_id)["status"]
 
-    def get_guest(self, room, night):
+    def get_booking_id(self, room, night):
         self._require_room(room)
         check_night(night)
-        booking_id = self._rooms[room].get(night)
-        if booking_id is None:
-            return None
-        return self._bookings[booking_id]["guest"]
+        return self._rooms[room].get(night)
 
     def get_rooms(self):
         return list(self._rooms)

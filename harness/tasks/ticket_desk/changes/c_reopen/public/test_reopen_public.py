@@ -36,6 +36,21 @@ def test_a_resolved_ticket_stays_on_the_desk():
         d.assign("T1", "kim")
 
 
+def test_a_resolved_ticket_cannot_be_resolved_or_reassigned():
+    d = TicketDesk()
+    d.add_agent("kim")
+    d.add_agent("lee")
+    d.open_ticket("T1", 3)
+    d.assign("T1", "kim")
+    d.resolve("T1")
+    with pytest.raises(DeskError):
+        d.resolve("T1")
+    with pytest.raises(DeskError):
+        d.reassign("T1", "lee")
+    assert d.get_queue("kim") == []
+    assert d.get_queue("lee") == []
+
+
 def test_only_resolved_tickets_can_be_reopened():
     d = TicketDesk()
     d.add_agent("kim")

@@ -20,13 +20,14 @@ def manager():
 
 
 def state(man):
-    return (man.get_users(), man.get_signed_in(), man.get_max_signed_in())
+    # get_signed_in is in any order (initial spec), so compare sorted.
+    return (man.get_users(), sorted(man.get_signed_in()), man.get_max_signed_in())
 
 
 def test_exactly_the_limit_can_be_signed_in(manager):
     manager.sign_in("alice", "pw")
     manager.sign_in("bob", "pw")
-    assert manager.get_signed_in() == ["alice", "bob"]
+    assert sorted(manager.get_signed_in()) == ["alice", "bob"]
     before = state(manager)
     with pytest.raises(SessionLimitReached):
         manager.sign_in("carol", "pw")
@@ -38,7 +39,7 @@ def test_signing_out_frees_a_place(manager):
     manager.sign_in("bob", "pw")
     manager.sign_out("alice")
     manager.sign_in("carol", "pw")
-    assert manager.get_signed_in() == ["bob", "carol"]
+    assert sorted(manager.get_signed_in()) == ["bob", "carol"]
 
 
 def test_a_limit_of_zero_lets_nobody_in():
@@ -69,7 +70,7 @@ def test_set_max_signed_in_replaces_the_limit(manager):
     assert manager.get_max_signed_in() == 3
     for name in ["alice", "bob", "carol"]:
         manager.sign_in(name, "pw")
-    assert manager.get_signed_in() == ["alice", "bob", "carol"]
+    assert sorted(manager.get_signed_in()) == ["alice", "bob", "carol"]
 
 
 def test_the_limit_can_be_lowered_to_exactly_the_current_count(manager):

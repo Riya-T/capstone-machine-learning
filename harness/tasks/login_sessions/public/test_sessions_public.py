@@ -34,10 +34,10 @@ def test_wrong_password_is_refused(manager):
     assert not manager.is_signed_in("alice")
 
 
-def test_signed_in_users_are_listed_in_registration_order(manager):
+def test_signed_in_users_are_listed_in_any_order(manager):
     manager.sign_in("bob", "secret")
     manager.sign_in("alice", "hunter2")
-    assert manager.get_signed_in() == ["alice", "bob"]
+    assert sorted(manager.get_signed_in()) == ["alice", "bob"]
     assert manager.get_users() == ["alice", "bob"]
 
 

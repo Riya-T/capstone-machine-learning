@@ -21,18 +21,18 @@ def test_booking_returns_increasing_ids(hotel):
     assert hotel.book("102", "ben", 1, 1) == 2
 
 
-def test_the_guest_is_found_on_a_booked_night(hotel):
-    hotel.book("101", "ana", 2, 4)
-    assert hotel.get_guest("101", 3) == "ana"
-    assert hotel.get_guest("101", 1) is None
-    assert hotel.get_guest("102", 3) is None
+def test_the_booking_is_found_on_a_booked_night(hotel):
+    booking = hotel.book("101", "ana", 2, 4)
+    assert hotel.get_booking_id("101", 3) == booking
+    assert hotel.get_booking_id("101", 1) is None
+    assert hotel.get_booking_id("102", 3) is None
 
 
 def test_a_room_cannot_be_booked_twice_for_the_same_night(hotel):
-    hotel.book("101", "ana", 1, 3)
+    booking = hotel.book("101", "ana", 1, 3)
     with pytest.raises(RoomUnavailable):
         hotel.book("101", "ben", 2, 5)
-    assert hotel.get_guest("101", 2) == "ana"
+    assert hotel.get_booking_id("101", 2) == booking
 
 
 def test_check_in_then_check_out(hotel):
@@ -55,4 +55,4 @@ def test_unknown_room_raises_key_error(hotel):
     with pytest.raises(KeyError):
         hotel.book("303", "ana", 1, 2)
     with pytest.raises(KeyError):
-        hotel.get_guest("303", 1)
+        hotel.get_booking_id("303", 1)

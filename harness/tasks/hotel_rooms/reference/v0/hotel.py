@@ -85,13 +85,10 @@ class Hotel:
     def get_status(self, booking_id):
         return self._require_booking(booking_id)["status"]
 
-    def get_guest(self, room, night):
+    def get_booking_id(self, room, night):
         self._require_room(room)
         check_night(night)
-        booking_id = self._rooms[room].get(night)
-        if booking_id is None:
-            return None
-        return self._bookings[booking_id]["guest"]
+        return self._rooms[room].get(night)
 
     def get_rooms(self):
         return list(self._rooms)

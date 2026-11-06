@@ -50,11 +50,11 @@ class SessionManager:
   signed in: `is_signed_in` returns `False`, `sign_out` raises
   `SessionError`, and `sign_in` with their password signs them in again.
 - `is_signed_in(username)` tells whether the user is signed in right now.
-- `get_signed_in()` returns the same usernames as `get_users()`, in the
-  same order, but keeps only those signed in right now. The order in which
-  users signed in does not matter. For example, after registering `"ann"`,
-  `"ben"` and `"cy"` and then signing in `"cy"` and then `"ann"`,
-  `get_signed_in()` returns `["ann", "cy"]`.
+- `get_signed_in()` returns the usernames of the registered users who are
+  signed in right now, each once, in any order. For example, after
+  registering `"ann"`, `"ben"` and `"cy"` and then signing in `"cy"` and
+  then `"ann"`, `get_signed_in()` returns `"ann"` and `"cy"` in either
+  order; after `sign_out("cy")` it returns `["ann"]`.
 
 A failed call has no effect: if a method raises, who is signed in is
 unchanged, and so is the list of users.
@@ -64,6 +64,6 @@ unchanged, and so is the list of users.
 Behavior not described here is unspecified, and no test depends on it. This
 includes other values that are not strings, such as `7`, passed to
 `register` as a username or a password, passwords that are not strings
-passed to `sign_in`, what happens if a returned list is changed, the text
-of error messages, saving the users to a file, and use from several
-threads.
+passed to `sign_in`, the order of the names `get_signed_in` returns, what
+happens if a returned list is changed, the text of error messages, saving
+the users to a file, and use from several threads.

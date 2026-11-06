@@ -13,8 +13,21 @@ rules that keep the dependency graph sound.
   - `job_id` is already completed (`QueueError`);
   - `dep_id` is already a dependency of `job_id` (`QueueError`);
   - the dependency would form a cycle, that is `dep_id` already depends on
-    `job_id` either directly or through other jobs (`QueueError`).
+    `job_id` either directly or through other jobs (`QueueError`). Start
+    from `dep_id`: if `job_id` is among its dependencies, their
+    dependencies, and so on, the call is refused. The other direction is
+    no cycle: a job that already waits for `dep_id` through other jobs may
+    also wait for it directly.
 
   Several problems at once are reported in the order listed above.
+
+For example, after `add_job("build", 1)`,
+`add_job("test", 1, depends_on=["build"])` and
+`add_job("deploy", 1, depends_on=["test"])`:
+
+- `add_dependency("build", "test")` and `add_dependency("build", "deploy")`
+  are refused, because `test` and `deploy` already wait for `build`.
+- `add_dependency("deploy", "build")` succeeds, and
+  `get_dependencies("deploy")` is then `["test", "build"]`.
 
 All existing behavior must keep working.

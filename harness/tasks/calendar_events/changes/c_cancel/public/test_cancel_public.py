@@ -22,6 +22,17 @@ def test_a_cancelled_event_disappears():
         ag.get_time("review")
 
 
+def test_a_cancelled_id_can_be_added_again():
+    ag = Agenda()
+    ag.add_event("review", 600, 660)
+    ag.add_attendee("review", "mira")
+    ag.cancel_event("review")
+    ag.add_event("review", 900, 960)
+    assert ag.get_time("review") == (900, 960)
+    assert ag.get_attendees("review") == []
+    assert ag.get_cancelled() == ["review"]
+
+
 def test_a_removed_attendee_leaves_the_event():
     ag = Agenda()
     ag.add_event("review", 600, 660)

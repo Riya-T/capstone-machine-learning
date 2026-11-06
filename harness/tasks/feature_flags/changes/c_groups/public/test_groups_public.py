@@ -36,6 +36,14 @@ def test_members_joining_later_are_enabled_too(store):
     assert store.get_enabled_users("dark_mode") == ["ann", "cat"]
 
 
+def test_enabled_users_stay_in_registration_order(store):
+    store.add_user("sam", 95)
+    store.add_to_group("design", "sam")
+    store.enable_for_group("dark_mode", "design")
+    store.enable_for_user("dark_mode", "ann")
+    assert store.get_enabled_users("dark_mode") == ["ann", "cat", "sam"]
+
+
 def test_a_group_that_does_not_exist_raises_key_error(store):
     with pytest.raises(KeyError):
         store.enable_for_group("dark_mode", "sales")

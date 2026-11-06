@@ -12,8 +12,13 @@ whole group at once.
 - Add `Gateway.get_group(client_id) -> str | None`: the client's group,
   or `None` when it is in no group. It raises `KeyError` for a client that
   is not registered.
-- Add `Gateway.get_members(group) -> list[str]`: the clients in the group,
-  in the order they were registered. It raises `KeyError` for a group that
+- Add `Gateway.get_members(group) -> list[str]`: the same ids as
+  `get_clients()`, in the same order (the order the clients were
+  registered with `register`), but keeping only the clients in the group.
+  The order in which clients joined the group does not matter. For
+  example, after registering `"alpha"`, `"bravo"` and `"charlie"` and then
+  assigning `"charlie"` and then `"alpha"` to a group, `get_members`
+  returns `["alpha", "charlie"]`. It raises `KeyError` for a group that
   does not exist.
 - Add `Gateway.allow_group(group)`, which allows every member, exactly as
   if `allow` were called on each. If `allow` would raise for any member,

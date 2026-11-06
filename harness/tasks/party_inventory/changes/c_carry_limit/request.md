@@ -6,7 +6,11 @@ Limit how much a character in `party.py` can carry by their strength.
   weight of the bag plus the weight of the new item would be more than the
   character's strength. Exactly the strength is allowed.
 - Add `Party.get_carry_weight(name) -> int`: the total weight of the items
-  in the character's bag, equipped or not. An empty bag weighs 0.
+  in `get_bag(name)`. Equipped items are still in the bag, so each item the
+  character holds counts once, equipped or not: a character holding an axe
+  of weight 20 and a torch of weight 3, with the axe equipped, carries 23,
+  not 43. An empty bag weighs 0. The same total is what `give_item` and
+  `set_strength` compare with the strength.
 - Add `Party.get_strength(name) -> int`: the character's current strength.
 - Add `Party.set_strength(name, strength)`, which replaces the strength. It
   raises `KeyError` for an unknown character, `ValueError` for an invalid

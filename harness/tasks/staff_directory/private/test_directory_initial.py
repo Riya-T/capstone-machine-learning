@@ -175,14 +175,22 @@ def test_an_empty_id_is_reported_before_a_missing_department(directory):
         directory.hire("", "hr", 100000)
 
 
-def test_a_missing_department_is_reported_before_a_bad_salary(directory):
-    with pytest.raises(KeyError):
-        directory.hire("dan", "hr", -1)
-
-
-def test_a_bad_salary_is_reported_before_a_duplicate_id(directory):
-    with pytest.raises(ValueError):
-        directory.hire("ana", "ops", -1)
+# After the empty id, the order of hire's checks is unspecified: a call with
+# several problems may raise the error of any one of them.
+@pytest.mark.parametrize(
+    "args, errors",
+    [
+        (("dan", "hr", -1), (KeyError, ValueError)),
+        (("ana", "ops", -1), (ValueError, DirectoryError)),
+        (("ana", "hr", 100000), (KeyError, DirectoryError)),
+        (("ana", "hr", -1), (KeyError, ValueError, DirectoryError)),
+    ],
+)
+def test_a_hire_with_several_problems_raises_one_of_their_errors(directory, args, errors):
+    before = state(directory)
+    with pytest.raises(errors):
+        directory.hire(*args)
+    assert state(directory) == before
     assert directory.get_department("ana") == "sales"
 
 

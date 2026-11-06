@@ -28,6 +28,6 @@ def test_book_any_takes_the_first_free_room_of_the_category():
     hot.book("101", "ana", 1, 3)
     booking = hot.book_any("single", "ben", 2, 4)
     assert booking == 2
-    assert hot.get_guest("102", 3) == "ben"
+    assert hot.get_booking_id("102", 3) == booking
     with pytest.raises(RoomUnavailable):
         hot.book_any("single", "cho", 3, 3)
