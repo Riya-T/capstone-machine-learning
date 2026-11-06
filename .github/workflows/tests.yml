@@ -20,6 +20,10 @@ jobs:
         with:
           enable-cache: true
       - name: Install dependencies
-        run: uv sync --locked
+        run: uv sync --locked --extra plots
       - name: Run tests
         run: uv run pytest -rs
+      - name: Run evaluation container smoke
+        run: |
+          docker info --format '{{.ServerVersion}}'
+          uv run pytest tests/evaluation/test_docker.py --slow -rs

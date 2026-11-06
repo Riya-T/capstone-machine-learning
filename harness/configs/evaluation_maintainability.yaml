@@ -1,0 +1,5 @@
+# Prompt-only control: reuse the team's prompt with matched evaluation settings.
+extends: evaluation_original.yaml
+name: evaluation-maintainability-prompt
+writer:
+  prompt_template: ../prompts/writer_maintainable_v1.md

@@ -1,6 +1,6 @@
 """Command line for the harness.
 
-Commands (all take --config):
+Collection commands (take --config):
     collect         run the whole pipeline; safe to stop and rerun, and a
                     finished rerun makes no model calls. --until writer,
                     initial or edit stops after that step.
@@ -34,6 +34,22 @@ log = logging.getLogger("harness")
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    arguments = list(sys.argv[1:] if argv is None else argv)
+    if arguments and arguments[0] in (
+        "evaluate",
+        "evaluation-report",
+        "evaluation-verify",
+        "evaluation-preflight",
+        "evaluation-size-match",
+        "evaluation-seeds",
+        "evaluation-review",
+        "evaluation-plots",
+        "evaluation-contract",
+        "evaluation-joint-pass",
+    ):
+        from .evaluation.cli import main as evaluation_main
+
+        return evaluation_main(arguments)
     parser = argparse.ArgumentParser(prog="python -m harness", description=__doc__.split("\n")[0])
     commands = parser.add_subparsers(dest="command", required=True)
     for name, text in [
@@ -52,7 +68,21 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
         if name == "report":
             sub.add_argument("--out", type=Path, help="output directory")
-    args = parser.parse_args(argv)
+    commands.add_parser("evaluate", help="preview/run a matched writer evaluation (--plan)")
+    commands.add_parser(
+        "evaluation-report", help="compare saved evaluation exports (--input, --out)"
+    )
+    commands.add_parser("evaluation-verify", help="verify a saved evaluation report (--report)")
+    commands.add_parser("evaluation-preflight", help="check readiness without generation (--plan)")
+    commands.add_parser("evaluation-seeds", help="summarize observed training checkpoints")
+    commands.add_parser("evaluation-review", help="prepare/compile separate human failure reviews")
+    commands.add_parser("evaluation-plots", help="export publication figures from saved results")
+    commands.add_parser("evaluation-contract", help="freeze/check the planned result roster")
+    commands.add_parser("evaluation-joint-pass", help="compare aligned initially correct parents")
+    commands.add_parser(
+        "evaluation-size-match", help="saved-only size-matched sensitivity analysis"
+    )
+    args = parser.parse_args(arguments)
     if not logging.getLogger().handlers:
         logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 

@@ -33,7 +33,9 @@ a fixed editing agent to change later. For each task it:
    one (rejected) for DPO training.
 
 It holds the core pipeline and an initial DPO training implementation.
-Baselines and held-out evaluation are not built yet (see [Not built yet](#not-built-yet)). All
+Matched evaluation orchestration and saved-only comparison reports are now available
+(see [Writer evaluation](harness/docs/evaluation.md)). Baseline training and actual
+held-out comparison results are still pending. All
 paths from here on are relative to `harness/`.
 
 ### Quick start
@@ -285,19 +287,56 @@ are never scored; the next run retries them.
 These are in the proposal but not in the harness yet:
 
 - Training baselines
-  (correctness-only fine-tuning, DPO on Radon maintainability rankings).
-  `scripts/static_ranking.py` builds the Radon-ranked preference file from
-  collected, initially passing train programs; training and evaluation of
-  that baseline are still pending.
-  The maintainability-focused prompt is written
-  (`prompts/writer_maintainable_v1.md`, run with
-  `configs/rtx5070_eval_maintain.yaml`);
-- held-out evaluation beyond the base writer: its run on the 16 eval tasks
-  is in [harness/results/base_writer_eval.md](harness/results/base_writer_eval.md),
-  made by `scripts/eval_summary.py`; confidence intervals by resampling task
-  families are not built yet;
-- the comment ablation (`editor.view_transform: strip_comments`) and the
-  size-matched subset.
+  (correctness-only fine-tuning and DPO on Radon maintainability rankings).
+  `scripts/static_ranking.py` already builds the Radon-ranked preference file;
+  training and evaluation of that baseline are still pending;
+- held-out comparisons beyond the base writer. Its completed run is in
+  [harness/results/base_writer_eval.md](harness/results/base_writer_eval.md),
+  made by `scripts/eval_summary.py`. The new evaluation tool adds comparison
+  reports and uncertainty estimates, but the remaining methods still need runs;
+- the comment ablation (`editor.view_transform: strip_comments`);
+- applying the size-matching tool to real comparison results.
+
+The maintainability-focused prompt is already written in
+`prompts/writer_maintainable_v1.md`, with the team's collection config
+`configs/rtx5070_eval_maintain.yaml`. The new comparison plans reuse this prompt.
+
+### Writer evaluation and comparison
+
+The evaluation tool compares the original writer with trained writers and
+baselines, using the same tasks, editor and budgets. It reports:
+
+- How often each writer's initial program passes.
+- How many changes succeed before the first failure, and how often the whole
+  sequence succeeds.
+- How often an edit breaks existing behavior.
+- Recorded token and time costs.
+
+Outcome comparisons include uncertainty estimates across task families.
+Results are available as an HTML dashboard, tables and optional charts. The tool
+can run new evaluations or report on saved results without calling models.
+Existing results are not overwritten. It does not train models.
+
+Try the report workflow with **synthetic example data, not experimental results**:
+
+```bash
+cd harness
+uv run python examples/evaluation_workflow.py --out runs/evaluation-readme-demo
+```
+
+From `harness/`, open `runs/evaluation-readme-demo/comparison/report.html`.
+For a real evaluation, start by previewing its plan; this makes no model calls:
+
+```bash
+uv run python -m harness evaluate --plan configs/evaluation.example.yaml
+```
+
+See the [evaluation guide](harness/docs/evaluation.md) to configure checkpoints,
+run an evaluation, resume it, or read saved results. The
+[proposal checklist](harness/docs/evaluation-coverage.md) explains what is covered
+and what still needs experimental work. Separate guides cover
+[charts and failure analysis](harness/docs/evaluation-analysis.md) and
+[missing-result checks and paired comparisons](harness/docs/evaluation-refinements.md).
 
 ### DPO training
 

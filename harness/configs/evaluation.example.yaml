@@ -1,0 +1,19 @@
+# This is an evaluation PLAN, not a collection config.
+# Preview (no models, containers or writes):
+#   uv run python -m harness evaluate --plan configs/evaluation.example.yaml
+# Explicit execution, after replacing the trained model placeholder:
+#   uv run python -m harness evaluate --plan configs/evaluation.example.yaml --run
+schema_version: 1
+name: original-vs-trained
+purpose: heldout
+output_dir: ../runs/evaluation
+reference: original
+generation_seeds: [20261105]
+methods:
+  - {id: original, config: evaluation_original.yaml}
+  - {id: trained, config: evaluation_trained.yaml}
+bootstrap_samples: 2000
+bootstrap_seed: 20261105
+confidence: 0.95
+max_method_runs: 64
+max_edit_checkpoints: 4096

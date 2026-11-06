@@ -90,3 +90,38 @@ subpackages next to `collection/`.
 | `tests/helpers.py` | Builds valid config files for tests. |
 | `tests/data/` | Test inputs: the example task, and a real model answer for the parser test. pytest doesn't collect them (see `conftest.py`). |
 | `tests/test_headers.py` | Enforces the course rule that every source and test file has a header with a Usage section. |
+
+## Writer evaluation (`src/harness/evaluation/`)
+
+| Unit | Purpose | Tests |
+|---|---|---|
+| `records.py`, `export.py` | Validate evaluation records and read consistent SQLite snapshots without source-store writes. Preserve initial failures, unresolved work and source provenance. | `tests/evaluation/test_export.py` |
+| `analysis.py`, `report.py` | Family-weighted outcomes, paired exploratory bootstrap intervals, coverage and costs; safe JSON/CSV/Markdown output. | `tests/evaluation/test_analysis.py` |
+| `plan.py`, `cli.py` | Matched plans, dry-run, explicit isolated collection, locks, snapshots and offline/completed resume. | `tests/evaluation/test_plan.py`, optional `test_docker.py` |
+
+| `storage.py` | Atomic non-overwriting evidence publication and safe interrupted writes. | `tests/evaluation/test_audit.py` |
+| `source.py` | Non-executing descriptive source/comment/docstring measurements, with explicit unknowns. | `tests/evaluation/test_source.py` |
+
+Instructions, proposal mapping and first-version limitations: [evaluation.md](evaluation.md).
+
+Additional evaluation units:
+
+| Unit | Purpose | Tests |
+|---|---|---|
+| `diagnostics.py` | Planned-checkpoint ledger and first-stop accounting; never invents later outcomes. | `tests/evaluation/test_diagnostics.py` |
+| `integrity.py` | Read-only manifest verification and score recomputation from saved records. | `tests/evaluation/test_integrity.py` |
+| `dashboard.py` | Self-contained, escaped HTML dashboard with display-only filters. | `tests/evaluation/test_dashboard.py` |
+
+| Analysis unit | Purpose | Tests |
+|---|---|---|
+| `preflight.py` | Read-only readiness, local model advertisements and Docker/image inspection. | `test_preflight.py` |
+| `matching.py` | Outcome-blind whole-family size matching and separate sensitivity reports. | `test_matching.py` |
+| `seeds.py` | Observed checkpoint variation with task-family uncertainty. | `test_seeds.py` |
+| `review.py` | Immutable cases, verified source previews and separate human annotations. | `test_review.py` |
+| `figures.py` | Reproducible, labeled PNG/SVG export with optional Matplotlib. | `test_figures.py` |
+| `artifacts.py` | Non-overwriting derived bundles, safe CSV text and source-report binding. | Workflow and integrity tests |
+| `contract.py` | Freeze planned checkpoint/seed/task coverage before inference and verify later exports. | `test_contract.py` |
+| `joint.py` | Separate paired editing comparison using the same initially correct task/seed cells. | `test_joint.py` |
+
+`test_extension_cli.py` checks that the public saved-only commands interoperate
+without contacting model or container backends.

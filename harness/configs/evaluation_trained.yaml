@@ -1,0 +1,8 @@
+# Serve your merged/quantized trained writer under a local model name.
+# Replace the placeholder only when that writer is actually available.
+# All other writer inference settings, the editor and budgets stay matched.
+extends: evaluation_original.yaml
+name: evaluation-trained
+writer:
+  backend:
+    model: REPLACE_WITH_SERVED_TRAINED_WRITER

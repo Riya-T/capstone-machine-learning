@@ -1,0 +1,27 @@
+# Full proposal: five conditions, with three trained checkpoints per trained condition.
+# Training-seed labels must match actual checkpoints; these labels do not train models.
+# Preview only until every REPLACE model name is configured on your local server.
+# uv run python -m harness evaluate --plan configs/evaluation.proposal.example.yaml
+schema_version: 1
+name: proposal-five-methods
+purpose: heldout
+output_dir: ../runs/evaluation
+reference: original
+generation_seeds: [20261105]
+methods:
+  - {id: original, config: evaluation_original.yaml}
+  - {id: maintainability_prompt, config: evaluation_maintainability.yaml}
+  - {id: correctness_s11, config: evaluation_original.yaml, writer_model: REPLACE_CORRECTNESS_S11, method_group: correctness_only, training_seed: 11}
+  - {id: correctness_s22, config: evaluation_original.yaml, writer_model: REPLACE_CORRECTNESS_S22, method_group: correctness_only, training_seed: 22}
+  - {id: correctness_s33, config: evaluation_original.yaml, writer_model: REPLACE_CORRECTNESS_S33, method_group: correctness_only, training_seed: 33}
+  - {id: static_s11, config: evaluation_original.yaml, writer_model: REPLACE_STATIC_S11, method_group: static_ranking, training_seed: 11}
+  - {id: static_s22, config: evaluation_original.yaml, writer_model: REPLACE_STATIC_S22, method_group: static_ranking, training_seed: 22}
+  - {id: static_s33, config: evaluation_original.yaml, writer_model: REPLACE_STATIC_S33, method_group: static_ranking, training_seed: 33}
+  - {id: downstream_s11, config: evaluation_original.yaml, writer_model: REPLACE_DOWNSTREAM_S11, method_group: downstream_outcomes, training_seed: 11}
+  - {id: downstream_s22, config: evaluation_original.yaml, writer_model: REPLACE_DOWNSTREAM_S22, method_group: downstream_outcomes, training_seed: 22}
+  - {id: downstream_s33, config: evaluation_original.yaml, writer_model: REPLACE_DOWNSTREAM_S33, method_group: downstream_outcomes, training_seed: 33}
+bootstrap_samples: 2000
+bootstrap_seed: 20261105
+confidence: 0.95
+max_method_runs: 11
+max_edit_checkpoints: 3168

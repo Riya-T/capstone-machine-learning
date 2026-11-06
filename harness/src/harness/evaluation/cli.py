@@ -1,0 +1,209 @@
+"""Evaluation CLI: safe dry-run by default, explicit execution, offline comparison.
+
+Usage:
+    python -m harness evaluate --plan configs/evaluation.example.yaml
+    python -m harness evaluation-report --input original.json trained.json --out runs/comparison
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+from pathlib import Path
+
+from ..config import ConfigError
+from ..sandbox.runner import SandboxError
+from ..store import StoreError
+from .analysis import compare
+from .integrity import verify_report
+from .plan import execute, prepare, preview
+from .records import read_json
+from .report import OPTIONAL_OUTPUT_NAMES, OUTPUT_NAMES, write_report
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(
+        description="Matched writer evaluation and saved-only reporting"
+    )
+    sub = parser.add_subparsers(dest="command", required=True)
+    evaluate = sub.add_parser(
+        "evaluate", help="Preview or explicitly run a matched evaluation plan"
+    )
+    evaluate.add_argument("--plan", type=Path, required=True)
+    mode = evaluate.add_mutually_exclusive_group()
+    mode.add_argument("--run", action="store_true", help="Call configured local models and sandbox")
+    mode.add_argument("--dry-run", action="store_true", help="Preview only (the default)")
+    mode.add_argument(
+        "--export-only", action="store_true", help="Read saved stores; no inference/container"
+    )
+    report = sub.add_parser(
+        "evaluation-report", help="Compare exported records without models or Docker"
+    )
+    report.add_argument("--input", type=Path, nargs="+", required=True)
+    report.add_argument("--out", type=Path, required=True)
+    report.add_argument("--reference")
+    report.add_argument("--bootstrap-samples", type=int, default=2000)
+    report.add_argument("--bootstrap-seed", type=int, default=20261105)
+    report.add_argument("--confidence", type=float, default=0.95)
+    report.add_argument("--contract", type=Path, help="Require the pre-inference roster contract")
+    contract = sub.add_parser("evaluation-contract", help="Freeze/check a planned result roster")
+    contract_actions = contract.add_subparsers(dest="action", required=True)
+    contract_freeze = contract_actions.add_parser("freeze")
+    contract_freeze.add_argument("--plan", type=Path, required=True)
+    contract_freeze.add_argument("--out", type=Path, required=True)
+    contract_check = contract_actions.add_parser("check")
+    contract_check.add_argument("--contract", type=Path, required=True)
+    contract_check.add_argument("--input", type=Path, nargs="+", required=True)
+    verify = sub.add_parser("evaluation-verify", help="Verify a saved report without inference")
+    verify.add_argument("--report", type=Path, required=True)
+    verify.add_argument(
+        "--checksums-only",
+        action="store_true",
+        help="Skip analysis recomputation (e.g. for a historical analysis version)",
+    )
+    preflight = sub.add_parser(
+        "evaluation-preflight", help="Read-only checks before live evaluation"
+    )
+    preflight.add_argument("--plan", required=True, type=Path)
+    preflight.add_argument(
+        "--probe", action="store_true", help="Inspect Docker and GET local model lists"
+    )
+    matching = sub.add_parser(
+        "evaluation-size-match", help="Separate size-matched sensitivity report"
+    )
+    matching.add_argument("--report", required=True, type=Path)
+    matching.add_argument("--method", required=True)
+    matching.add_argument("--out", required=True, type=Path)
+    matching.add_argument("--relative-tolerance", required=True, type=float)
+    matching.add_argument(
+        "--size-field", choices=("python_lines", "source_lines"), default="python_lines"
+    )
+    seeds = sub.add_parser("evaluation-seeds", help="Summarize saved training checkpoints")
+    seeds.add_argument("--report", required=True, type=Path)
+    seeds.add_argument("--out", required=True, type=Path)
+    joint = sub.add_parser(
+        "evaluation-joint-pass", help="Compare aligned initially correct parents"
+    )
+    joint.add_argument("--report", required=True, type=Path)
+    joint.add_argument("--method", required=True)
+    joint.add_argument("--out", required=True, type=Path)
+    review = sub.add_parser("evaluation-review", help="Prepare or compile human failure reviews")
+    review_actions = review.add_subparsers(dest="action", required=True)
+    review_init = review_actions.add_parser("init")
+    review_init.add_argument("--report", required=True, type=Path)
+    review_init.add_argument("--out", required=True, type=Path)
+    review_init.add_argument("--store", action="append", default=[], metavar="METHOD=STORE_ROOT")
+    review_compile = review_actions.add_parser("compile")
+    review_compile.add_argument("--pack", required=True, type=Path)
+    review_compile.add_argument("--annotations", required=True, type=Path, nargs="+")
+    review_compile.add_argument("--out", required=True, type=Path)
+    plots = sub.add_parser("evaluation-plots", help="Export saved-result PNG/SVG figures")
+    plots.add_argument("--report", required=True, type=Path)
+    plots.add_argument("--out", required=True, type=Path)
+    args = parser.parse_args(argv)
+    try:
+        if args.command == "evaluation-joint-pass":
+            from .joint import run_joint_pass
+
+            result = run_joint_pass(args.report, args.method, args.out)
+            print(json.dumps(result, indent=2))
+            return 0 if result["status"] == "complete" else 3
+        if args.command == "evaluation-contract":
+            from .artifacts import encoded
+            from .contract import check_contract, freeze_contract
+            from .storage import publish_new
+
+            if args.action == "freeze":
+                frozen = freeze_contract(prepare(args.plan))
+                publish_new(args.out, encoded(frozen))
+                print(json.dumps(dict(contract_id=frozen["contract_id"], path=str(args.out))))
+                return 0
+            receipt = check_contract(
+                read_json(args.contract.read_bytes()),
+                [read_json(p.read_bytes()) for p in args.input],
+            )
+            print(json.dumps(receipt, indent=2))
+            return 0 if receipt["matches"] else 3
+        if args.command == "evaluation-plots":
+            from .figures import export_figures
+
+            print(json.dumps(export_figures(args.report, args.out), indent=2))
+            return 0
+        if args.command == "evaluation-review":
+            from .review import compile_reviews, make_review_pack
+
+            if args.action == "init":
+                stores = {}
+                for value in args.store:
+                    name, separator, path = value.partition("=")
+                    if not separator or not path or name in stores or not Path(path).is_dir():
+                        raise ConfigError("Use unique METHOD=existing_store_root mappings")
+                    stores[name] = Path(path)
+                outputs = make_review_pack(args.report, args.out, stores=stores)
+            else:
+                outputs = compile_reviews(args.pack, args.annotations, args.out)
+            print(json.dumps(outputs, indent=2))
+            return 0
+        if args.command == "evaluation-seeds":
+            from .seeds import run_seed_summary
+
+            print(json.dumps(run_seed_summary(args.report, args.out), indent=2))
+            return 0
+        if args.command == "evaluation-size-match":
+            from .matching import run_size_match
+
+            result = run_size_match(
+                args.report,
+                args.method,
+                args.out,
+                tolerance=args.relative_tolerance,
+                size_field=args.size_field,
+            )
+            print(json.dumps(result, indent=2, allow_nan=False))
+            return 0 if result["status"] == "complete" else 3
+        if args.command == "evaluation-preflight":
+            from .preflight import check_preflight
+
+            result = check_preflight(prepare(args.plan), probe=args.probe)
+            print(json.dumps(result, indent=2, allow_nan=False))
+            return 0 if result["ready"] else 3
+        if args.command == "evaluation-verify":
+            print(
+                json.dumps(verify_report(args.report, recompute=not args.checksums_only), indent=2)
+            )
+            return 0
+        if args.command == "evaluate":
+            prepared = prepare(args.plan)
+            result = (
+                execute(prepared, export_only=args.export_only)
+                if (args.run or args.export_only)
+                else preview(prepared)
+            )
+            print(json.dumps(result, indent=2, allow_nan=False))
+            return 0 if result.get("complete", True) else 3
+        datasets = [read_json(p.read_text(encoding="utf8")) for p in args.input]
+        targets = {args.out / name for name in set(OUTPUT_NAMES) | OPTIONAL_OUTPUT_NAMES}
+        if {p.resolve() for p in args.input} & {p.resolve() for p in targets}:
+            raise ConfigError("Report output would overwrite an input dataset")
+        result = compare(
+            datasets,
+            reference=args.reference,
+            bootstrap_samples=args.bootstrap_samples,
+            bootstrap_seed=args.bootstrap_seed,
+            confidence=args.confidence,
+        )
+        if args.contract:
+            from .contract import attach_contract
+
+            if args.contract.resolve() in {p.resolve() for p in targets}:
+                raise ConfigError("Report output would overwrite its frozen contract")
+            attach_contract(result, read_json(args.contract.read_bytes()))
+        print(json.dumps({k: str(v) for k, v in write_report(result, args.out).items()}, indent=2))
+        return 0
+    except (ConfigError, OSError, ValueError, SandboxError, StoreError) as exc:
+        print(f"Evaluation error: {exc}", file=__import__("sys").stderr)
+        return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
