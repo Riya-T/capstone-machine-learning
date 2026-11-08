@@ -341,23 +341,60 @@ and what still needs experimental work. Separate guides cover
 ### DPO training
 
 The scorer writes the preference pairs to `runs/<run_id>/preferences.jsonl`.
-Install the CUDA training extra and train the writer using the same writer
-prompts and code completions:
+`scripts/filter_pairs.py` turns them into the training file: it keeps a pair
+only if the chosen program wins in at least 2 of the 3 repetitions, and with
+`--drop-cosmetic` drops pairs whose two programs are the same code apart from
+strings, docstrings, local names and annotations (their pair can only be
+luck). Install the CUDA training extra and train the writer on the same
+writer prompts and code completions:
 
 ```bash
 cd harness
 uv sync --extra training
-uv run python -m harness.train_dpo runs/<run_id>/preferences.jsonl \
-  --output-dir ../models/writer-dpo
+python scripts/filter_pairs.py runs/<run_id>/preferences.jsonl pairs.jsonl \
+  --min-rep-wins 2 --drop-cosmetic
+.venv/bin/python -m harness.train_dpo pairs.jsonl \
+  --model Qwen/Qwen2.5-Coder-7B-Instruct --output-dir ../models/writer-dpo \
+  --learning-rate 5e-5 --beta 0.1 --epochs 2 --max-length 3200
 ```
 
-The command requires a CUDA GPU supported by bitsandbytes. It loads the base
-model in 4-bit NF4, applies PEFT LoRA adapters to linear layers, and uses
-TRL's DPOTrainer. The output is an adapter; load it with the same base model
-for generation. Adjust batch size/gradient accumulation and sequence lengths
-for available VRAM. `chosen_scores` and `rejected_scores` remain in each JSONL
-row for analysis; vanilla DPO uses their preference ordering, not their
-numeric magnitude.
+(`.venv/bin/python`, not `uv run`, so a later `uv run` of the collector does
+not have to re-sync the environment.) The command requires a CUDA GPU
+supported by bitsandbytes. It loads the base model in 4-bit NF4 and trains
+PEFT LoRA adapters (rank 16) on every linear layer. The DPO loop is our own:
+TRL's DPOTrainer computes the logits of the whole 152k-word vocabulary at
+every position, prompt included, which overflows a 12 GB GPU at these
+lengths, so here the vocabulary head runs only on the completion's
+positions, in chunks, and the embedding and head stay in bf16. The loss is
+standard sigmoid DPO on summed log-probabilities; the reference
+log-probabilities (adapters off) are computed once before training. On the
+RTX 5070 a run over 160 pairs and 2 epochs peaks at about 8 GB and takes
+about 30 minutes. The output is an adapter, plus `train_log.jsonl` with the
+loss, reward margin and accuracy per optimizer step. `chosen_scores` and
+`rejected_scores` remain in each JSONL row for analysis; DPO uses only their
+preference ordering, not their numeric magnitude. At learning rate 5e-6 the
+adapter barely moved (after 2 epochs the training loss was still 0.68, about
+where it starts: 0.69, i.e. ln 2); at 5e-5 it fell to about 0.2.
+
+### Serving the trained writer
+
+The base writer runs in Ollama as the official Q4_K_M GGUF of
+Qwen2.5-Coder-7B-Instruct. Ollama no longer loads LoRA adapters, cannot
+import Qwen2 safetensors, and cannot make Q4_K_M itself, so the trained
+writer is brought to the same format with llama.cpp:
+
+```bash
+.venv/bin/python scripts/merge_lora.py BASE_HF_DIR ADAPTER_DIR MERGED_DIR
+PYTHONPATH=llama.cpp/gguf-py python llama.cpp/convert_hf_to_gguf.py MERGED_DIR \
+  --outtype bf16 --outfile writer-bf16.gguf
+llama.cpp/build/bin/llama-quantize writer-bf16.gguf writer-q4km.gguf Q4_K_M
+ollama show qwen2.5-coder-7b-ctx8k --modelfile | sed "s#^FROM .*#FROM writer-q4km.gguf#" > Modelfile
+ollama create writer-dpo-ctx8k -f Modelfile
+```
+
+The Modelfile keeps the base writer's chat template and parameters (8k
+context). Only `llama-quantize` needs building (CPU, a few minutes:
+`cmake -B build && cmake --build build --target llama-quantize`).
 
 ### Static-ranking baseline
 

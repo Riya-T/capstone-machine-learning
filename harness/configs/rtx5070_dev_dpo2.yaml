@@ -1,0 +1,20 @@
+# DPO writer on the 8 dev tasks: Qwen2.5-Coder-7B-Instruct with a QLoRA
+# adapter trained by harness.train_dpo on the filtered train pairs (cap 8,
+# chosen beats rejected in at least 2 of 3 repetitions, cosmetic pairs
+# dropped: 160 pairs from 28 tasks), beta 0.1, learning rate 5e-5, 2 epochs,
+# seed 42. The adapter is merged into the base weights and quantized to
+# Q4_K_M with llama.cpp, the format of qwen2.5-coder-7b-ctx8k, and served by
+# Ollama as writer-dpo2-ctx8k with the base writer's template and parameters
+# (README, "Serving the trained writer"). Everything else (tasks, sampling,
+# editor, budget, store) is as in rtx5070_pc.yaml, so its results compare
+# with harness/results/base_writer_dev.md.
+#
+# Usage (from harness/, inside WSL):
+#     uv run python -m harness collect --config configs/rtx5070_dev_dpo2.yaml
+#     uv run python scripts/eval_compare.py --base configs/rtx5070_pc.yaml \
+#         --other configs/rtx5070_dev_dpo2.yaml
+extends: rtx5070_pc.yaml
+name: rtx5070-dev-dpo2
+writer:
+  backend:
+    model: writer-dpo2-ctx8k
