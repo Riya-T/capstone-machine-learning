@@ -11,6 +11,7 @@ sample order) and reports, over their trials (sequence x rep):
 Trials with an infrastructure error or not finished yet are left out and
 counted separately. The averages give every task the same weight. With
 --bootstrap N it also gives 95% intervals by resampling the tasks.
+`scripts/eval_compare.py` compares two writers task by task.
 
 Usage (from harness/, inside WSL):
     uv run python scripts/eval_summary.py --config configs/rtx5070_eval.yaml
@@ -30,23 +31,21 @@ from harness.registry import build_writer_prompt, load_tasks, load_template
 from harness.sandbox.runner import make_runner
 from harness.store import Store
 
+METRICS = ("mean", "first", "full")
+METRIC_NAMES = ("Changes done before first failure", "First change works", "Whole sequence works")
 
-def summarize(cfg, bootstrap: int = 0, seed: int = 20261105) -> str:
+
+def task_results(cfg):
+    """One dict per task (task_id, length, programs, trials, mean, first,
+    full, samples, passing_samples), plus the step endings and the trials
+    left out. Tasks without finished trials get trials 0 and no metrics."""
     image_id = make_runner(cfg, owner=sandbox_owner(cfg)).existing_image_id()
     if image_id is None:
         raise SystemExit("sandbox image not found; results are keyed by its id")
     keys = Keys.of(cfg, image_id)
     template = load_template(cfg.writer.prompt_template)
     tasks = load_tasks(cfg.tasks)
-    lines = [
-        "| Task | Programs | Trials | Changes done before first failure | "
-        "First change works | Whole sequence works |",
-        "|---|---|---|---|---|---|",
-    ]
-    totals = Counter()
-    endings = Counter()
-    left_out = Counter()
-    per_task = []  # (mean, first, full) per task with trials, for the bootstrap
+    rows, endings, left_out = [], Counter(), Counter()
     with Store(cfg.runs_dir) as store:
         for task_id in sorted(tasks):
             task = tasks[task_id]
@@ -62,6 +61,10 @@ def summarize(cfg, bootstrap: int = 0, seed: int = 20261105) -> str:
                 max_programs=cfg.tasks.max_programs,
             )
             length = record.sequence_length
+            samples = len(record.parse_failures) + sum(
+                len(c.sample_indices) for c in record.candidates
+            )
+            passing = sum(len(c.sample_indices) for c in record.candidates if c.initially_passed)
             done, programs = [], 0
             for cand in record.candidates:
                 if not cand.initially_passed or cand.over_program_cap:
@@ -82,55 +85,81 @@ def summarize(cfg, bootstrap: int = 0, seed: int = 20261105) -> str:
                             continue
                         done.append(n)
                         endings.update(s for s in statuses if s)
-            if not done:
-                lines.append(f"| {task_id} | {programs} | 0 | - | - | - |")
-                continue
-            mean = sum(done) / len(done)
-            first = sum(d >= 1 for d in done) / len(done)
-            full = sum(d == length for d in done) / len(done)
-            lines.append(
-                f"| {task_id} | {programs} | {len(done)} | {mean:.2f} of {length} "
-                f"| {first:.0%} | {full:.0%} |"
-            )
-            totals.update(
-                tasks=1, programs=programs, trials=len(done), mean=mean, first=first, full=full
-            )
-            per_task.append((mean, first, full))
-    t = totals["tasks"] or 1
+            row = dict(task_id=task_id, length=length, programs=programs, trials=len(done),
+                       samples=samples, passing_samples=passing)  # fmt: skip
+            if done:
+                row.update(
+                    mean=sum(done) / len(done),
+                    first=sum(d >= 1 for d in done) / len(done),
+                    full=sum(d == length for d in done) / len(done),
+                )
+            rows.append(row)
+    return rows, endings, left_out
+
+
+def summarize(cfg, bootstrap: int = 0, seed: int = 20261105) -> str:
+    rows, endings, left_out = task_results(cfg)
+    lines = [
+        "| Task | Programs | Trials | Changes done before first failure | "
+        "First change works | Whole sequence works |",
+        "|---|---|---|---|---|---|",
+    ]
+    scored = [r for r in rows if r["trials"]]
+    for r in rows:
+        if not r["trials"]:
+            lines.append(f"| {r['task_id']} | {r['programs']} | 0 | - | - | - |")
+            continue
+        lines.append(
+            f"| {r['task_id']} | {r['programs']} | {r['trials']} | {r['mean']:.2f} of "
+            f"{r['length']} | {r['first']:.0%} | {r['full']:.0%} |"
+        )
+    t = len(scored) or 1
+    avg = {m: sum(r[m] for r in scored) / t for m in METRICS}
     lines.append(
-        f"| **Average over {totals['tasks']} tasks** | {totals['programs']} | "
-        f"{totals['trials']} | {totals['mean'] / t:.2f} | {totals['first'] / t:.0%} | "
-        f"{totals['full'] / t:.0%} |"
+        f"| **Average over {len(scored)} tasks** | {sum(r['programs'] for r in rows)} | "
+        f"{sum(r['trials'] for r in rows)} | {avg['mean']:.2f} | {avg['first']:.0%} | "
+        f"{avg['full']:.0%} |"
     )
     lines += ["", "Step endings: " + ", ".join(f"{k} {v}" for k, v in endings.most_common())]
     if left_out:
         lines.append("Trials left out: " + ", ".join(f"{k} {v}" for k, v in left_out.items()))
-    if bootstrap and per_task:
+    if bootstrap and scored:
+        per_task = [tuple(r[m] for m in METRICS) for r in scored]
         lines += ["", *bootstrap_lines(per_task, bootstrap, seed)]
     return "\n".join(lines)
+
+
+def percentile_interval(values, n, seed):
+    """Percentile 95% intervals of the averages of each column of `values`
+    (one tuple per task), resampling the tasks with replacement n times."""
+    rng = random.Random(seed)
+    k = len(values)
+    means = [[] for _ in values[0]]
+    for _ in range(n):
+        sample = [values[rng.randrange(k)] for _ in range(k)]
+        for i in range(len(means)):
+            means[i].append(sum(s[i] for s in sample) / k)
+    out = []
+    for column in means:
+        column.sort()
+        out.append((column[int(0.025 * n)], column[int(0.975 * n) - 1]))
+    return out
 
 
 def bootstrap_lines(per_task, n, seed):
     """Percentile 95% intervals of the task averages, resampling tasks (each
     eval task is its own family) with replacement, from the exact per-task
     values."""
-    rng = random.Random(seed)
     k = len(per_task)
-    means = [[] for _ in range(3)]
-    for _ in range(n):
-        sample = [per_task[rng.randrange(k)] for _ in range(k)]
-        for i in range(3):
-            means[i].append(sum(s[i] for s in sample) / k)
     out = [
         f"Task bootstrap ({n} resamples of the {k} tasks, seed {seed}), 95% intervals:",
         "",
         "| Metric | Estimate | 95% interval |",
         "|---|---:|---:|",
     ]
-    names = ["Changes done before first failure", "First change works", "Whole sequence works"]
-    for i, name in enumerate(names):
+    intervals = percentile_interval(per_task, n, seed)
+    for i, (name, (lo, hi)) in enumerate(zip(METRIC_NAMES, intervals, strict=True)):
         est = sum(s[i] for s in per_task) / k
-        lo, hi = sorted(means[i])[int(0.025 * n)], sorted(means[i])[int(0.975 * n) - 1]
         fmt = "{:.2f}" if i == 0 else "{:.0%}"
         out.append(f"| {name} | {fmt.format(est)} | {fmt.format(lo)}–{fmt.format(hi)} |")
     return out
