@@ -381,20 +381,48 @@ where it starts: 0.69, i.e. ln 2); at 5e-5 it fell to about 0.2.
 The base writer runs in Ollama as the official Q4_K_M GGUF of
 Qwen2.5-Coder-7B-Instruct. Ollama no longer loads LoRA adapters, cannot
 import Qwen2 safetensors, and cannot make Q4_K_M itself, so the trained
-writer is brought to the same format with llama.cpp:
+writer is brought to the same format with llama.cpp (only `llama-quantize`
+needs building: CPU, a few minutes, `cmake -B build && cmake --build build
+--target llama-quantize`; the converter also needs `sentencepiece`):
 
 ```bash
-.venv/bin/python scripts/merge_lora.py BASE_HF_DIR ADAPTER_DIR MERGED_DIR
+.venv/bin/python scripts/merge_lora.py BASE_HF_DIR ADAPTER_DIR MERGED_DIR --dtype float16
 PYTHONPATH=llama.cpp/gguf-py python llama.cpp/convert_hf_to_gguf.py MERGED_DIR \
-  --outtype bf16 --outfile writer-bf16.gguf
-llama.cpp/build/bin/llama-quantize writer-bf16.gguf writer-q4km.gguf Q4_K_M
+  --outtype f16 --outfile writer-f16.gguf
+PYTHONPATH=llama.cpp/gguf-py python scripts/gguf_quant_types.py OFFICIAL.gguf types.txt
+llama.cpp/build/bin/llama-quantize --tensor-type-file types.txt writer-f16.gguf raw.gguf Q4_K_M
+PYTHONPATH=llama.cpp/gguf-py python llama.cpp/gguf-py/gguf/scripts/gguf_new_metadata.py \
+  --remove-metadata general.sampling.temp --remove-metadata general.sampling.top_k \
+  --remove-metadata general.sampling.top_p --remove-metadata general.sampling.penalty_repeat \
+  --remove-metadata tokenizer.ggml.add_eos_token --remove-metadata tokenizer.ggml.clean_spaces \
+  --remove-metadata tokenizer.ggml.normalizer.nfc raw.gguf writer-q4km.gguf
 ollama show qwen2.5-coder-7b-ctx8k --modelfile | sed "s#^FROM .*#FROM writer-q4km.gguf#" > Modelfile
 ollama create writer-dpo-ctx8k -f Modelfile
 ```
 
-The Modelfile keeps the base writer's chat template and parameters (8k
-context). Only `llama-quantize` needs building (CPU, a few minutes:
-`cmake -B build && cmake --build build --target llama-quantize`).
+`OFFICIAL.gguf` is the base writer's own file (the `FROM` line of
+`ollama show qwen2.5-coder-7b-ctx8k --modelfile`). Each step keeps the
+trained writer as close to the base writer as possible:
+
+- f16, not bf16: the official file was made from f16, and f16 also keeps
+  more of the small LoRA update.
+- `--tensor-type-file`: current llama.cpp keeps different layers at Q6_K
+  than the official file does, so the official file's choices are copied.
+- The removed keys are sampling defaults (from `generation_config.json`) and
+  tokenizer flags that the official file does not have. The harness sends
+  only the temperature, so the defaults would otherwise change top-k and
+  top-p for the trained writer only.
+- The Modelfile keeps the base writer's chat template, system prompt and
+  parameters (8k context).
+
+Check: the same steps on the untrained model (without the merge) give a
+file whose 339 tensors are byte for byte those of the official GGUF. In the
+trained writer's file, the 143 tensors that LoRA does not train (embeddings,
+norms, biases, output head) are byte for byte the official ones, and all 196
+trained weight matrices differ from them after quantization. So the trained
+writer differs from the base writer only by its training. (`merge_lora.py
+--dtype float16` converts only the merged weights; converting the others to
+f16 too would round a few values near 1e-6.)
 
 ### Static-ranking baseline
 

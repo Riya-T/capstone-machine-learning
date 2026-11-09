@@ -25,8 +25,16 @@ def main() -> None:
     parser.add_argument("base", type=Path)
     parser.add_argument("adapter", type=Path)
     parser.add_argument("out", type=Path)
+    parser.add_argument(
+        "--dtype",
+        choices=["base", "float16"],
+        default="base",
+        help="type of the merged weights (the others keep theirs); float16 keeps more of "
+        "the small LoRA update than bf16",
+    )
     args = parser.parse_args()
 
+    import torch
     from safetensors import safe_open
     from safetensors.torch import save_file
 
@@ -52,8 +60,9 @@ def main() -> None:
             for key in f.keys():  # noqa: SIM118
                 weight = f.get_tensor(key)
                 if key in lora:
+                    dtype = torch.float16 if args.dtype == "float16" else weight.dtype
                     a, b = lora[key]["A"].float(), lora[key]["B"].float()
-                    weight = (weight.float() + scale * (b @ a)).to(weight.dtype)
+                    weight = (weight.float() + scale * (b @ a)).to(dtype)
                     merged.add(key)
                 tensors[key] = weight.contiguous()
         save_file(tensors, args.out / shard, metadata={"format": "pt"})
