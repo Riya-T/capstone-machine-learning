@@ -1,0 +1,14 @@
+# The DPO writer of rtx5070_dev_dpo3.yaml (writer-dpo3-ctx8k) on the 16 eval
+# tasks, with everything else (sampling, editor, budget, selection, store)
+# as in rtx5070_eval.yaml, so its results compare with
+# harness/results/base_writer_eval.md.
+#
+# Usage (from harness/, inside WSL):
+#     uv run python -m harness collect --config configs/rtx5070_eval_dpo3.yaml
+#     uv run python scripts/eval_compare.py --base configs/rtx5070_eval.yaml \
+#         --other configs/rtx5070_eval_dpo3.yaml
+extends: rtx5070_eval.yaml
+name: rtx5070-eval-dpo3
+writer:
+  backend:
+    model: writer-dpo3-ctx8k

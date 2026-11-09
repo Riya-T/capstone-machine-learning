@@ -1,0 +1,16 @@
+# Second DPO setting on the 8 dev tasks: as rtx5070_dev_dpo2.yaml (same 160
+# pairs, beta 0.1, 2 epochs, seed 42) but learning rate 2e-5 instead of 5e-5,
+# after dpo2 ended with training loss 0.21 and less varied programs. Served
+# by Ollama as writer-dpo3-ctx8k, built the same way. Everything else is as
+# in rtx5070_pc.yaml, so its results compare with
+# harness/results/base_writer_dev.md.
+#
+# Usage (from harness/, inside WSL):
+#     uv run python -m harness collect --config configs/rtx5070_dev_dpo3.yaml
+#     uv run python scripts/eval_compare.py --base configs/rtx5070_pc.yaml \
+#         --other configs/rtx5070_dev_dpo3.yaml
+extends: rtx5070_pc.yaml
+name: rtx5070-dev-dpo3
+writer:
+  backend:
+    model: writer-dpo3-ctx8k
