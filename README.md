@@ -295,7 +295,12 @@ These are in the proposal but not in the harness yet:
   [harness/results/base_writer_eval.md](harness/results/base_writer_eval.md),
   made by `scripts/eval_summary.py`. The new evaluation tool adds comparison
   reports and uncertainty estimates, but the remaining methods still need runs;
-- the comment ablation (`editor.view_transform: strip_comments`);
+- runs of the comment ablation. The code is in: `editor.view_transform:
+  strip_comments` (`collection/view.py`) removes every comment and docstring
+  before a sequence's first step, and the editor edits that stripped program
+  for the whole sequence (its own comments stay). The setting is part of the
+  editor key, so ablation trials never mix with normal ones, while the
+  writer's programs and initial checks are reused;
 - applying the size-matching tool to real comparison results.
 
 The maintainability-focused prompt is already written in

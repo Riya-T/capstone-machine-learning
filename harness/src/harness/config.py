@@ -180,10 +180,11 @@ class EditorConfig:
     max_prompt_chars: int
     # Check output shown to the editor is cut to this many characters.
     max_check_output_chars: int
-    # What the editor sees of the program. Only "none" is implemented;
-    # "strip_comments" (the comment ablation) will be added as a new value,
-    # and being in this section puts it in the editor key.
-    view_transform: Literal["none"] = "none"
+    # What the editor sees of the program (collection/view.py): "none", or
+    # "strip_comments" for the comment ablation, which removes comments and
+    # docstrings before a sequence's first step. Being in this section puts
+    # it in the editor key, so the two never share trials.
+    view_transform: Literal["none", "strip_comments"] = "none"
     # How many of the editor's latest turns are summarized in each prompt, one
     # line each (0 shows none). Bounded, so the prompt still can't grow.
     history_turns: int = 3

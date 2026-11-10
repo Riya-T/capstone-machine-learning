@@ -25,7 +25,8 @@ failed; never scored).
 Usage:
     editor = Editor(cfg.editor, evaluator)
     backend = CachedBackend(make_backend(cfg.editor.backend, rep_seed), store)  # one per trial
-    outcome = editor.edit(backend, program, task.sequence("s1").steps[0])
+    shown = editor.view(program)  # before a sequence's first step (editor.view_transform)
+    outcome = editor.edit(backend, shown, task.sequence("s1").steps[0])
     outcome.status, outcome.program, outcome.tokens_in, outcome.diff_lines
 """
 
@@ -43,6 +44,7 @@ from ..models.backends import Backend, BackendError
 from ..models.parser import parse_program, prose_lines, render_program
 from ..registry import Program, Step, load_template
 from ..sandbox.evaluator import CategoryResult, Evaluator
+from .view import make_view
 
 EditStatus = Literal["done", "budget_exhausted", "infra_error"]
 # Part of the editor result key: raise it whenever a code change alters how
@@ -104,9 +106,9 @@ class Editor:
         *,
         clock: Callable[[], float] = time.monotonic,
     ) -> None:
-        if cfg.view_transform != "none":
-            raise NotImplementedError(f"view_transform {cfg.view_transform!r}")
         self.cfg = cfg
+        # What the editor sees of a program at the start of a sequence.
+        self.view = make_view(cfg.view_transform)
         self.evaluator = evaluator
         self.template = load_template(cfg.prompt_template, TEMPLATE_FIELDS)
         self._clock = clock  # injectable so wall-time tests don't sleep

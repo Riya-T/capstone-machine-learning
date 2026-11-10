@@ -91,7 +91,7 @@ def test_output_path_may_be_missing_but_input_path_must_exist(tmp_path):
             r"tasks\.sequence_length: eval: must be > 0",
         ),
         (lambda d: d["writer"].pop("prompt_template"), r"writer\.prompt_template: missing"),
-        (lambda d: d["editor"].update(view_transform="strip_comments"), r"view_transform: must be"),
+        (lambda d: d["editor"].update(view_transform="strip_tests"), r"view_transform: must be"),
         (lambda d: d["editor"].update(history_turns=-1), r"editor: history_turns: must be >= 0"),
         (
             lambda d: d["editor"].update(max_prompt_chars=0),
