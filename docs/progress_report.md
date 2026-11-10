@@ -217,6 +217,54 @@ the one before succeeded, and a run that stops resumes from the store.
 
 Results pages for both will be added to `harness/results/` as they finish.
 
+### What these two runs are, in plain words
+
+A baseline is a simpler alternative that our method is compared against,
+to see whether learning from real editing results is worth its cost. Both
+of these were planned in the proposal from the start. They are part of the
+five-method comparison, not new attempts after the first results.
+
+**1. Static-ranking baseline (Radon)**
+
+- **The idea:** instead of watching an editor change the code, a fixed
+  formula judges which program is "more maintainable". Radon is a standard
+  tool that scores code from things like length and complexity.
+- **How it was trained:** exactly like dpo3, with the same 28 tasks, the
+  same number of pairs (160), the same training settings and the same
+  conversion. The only difference is who decided which program in each
+  pair was better: the formula instead of the editor. If it does as well
+  as dpo3, a cheap formula could replace our expensive editing step.
+- **The terms in the list above:**
+  - `configs/rtx5070_eval_radon.yaml` is the settings file for this run.
+  - `20261110T134603Z-31b2e3` is the run's ID: its start time plus a
+    random tag. It is how its results are found in the database later.
+  - "Loss 0.54 at the last step (dpo3: 0.55)" is a training progress
+    number. The two being so close means both trainings went about
+    equally far, which keeps the comparison fair.
+  - "Passed the same export checks" means it was converted for Ollama the
+    same verified way as dpo3, so the conversion did not change anything
+    by accident.
+- **Where it is now:** training is done. It is taking the "final exam"
+  (the 16 eval tasks), which takes about a day, so it should finish
+  Wednesday morning.
+
+**2. Correctness-only baseline**
+
+- **The idea:** no preferences at all. The writer is simply trained on its
+  own programs that worked, 201 of them from the same 28 tasks.
+- **Why it matters:** dpo3's one clear effect was writing working programs
+  more often (64% vs 58%). This baseline tests whether that comes from our
+  method or just from extra training on correct code. If this one gets the
+  same boost, the boost is not special to our method.
+- **The steps:** about 15 minutes of training, about 20 minutes converting
+  the model ("export"), then about a day on the eval tasks. It starts
+  automatically when the Radon run finishes, so it should be done Thursday
+  morning.
+- **The caveat:** its training code is new. Its automatic tests pass, but
+  it has not run on the graphics card yet, because the card is busy with
+  the Radon run. If it crashes at startup, the run stops safely, nothing
+  else is affected, and it gets fixed.
+
 ## What was done
 
 ### Tasks (2026-10-21 to 2026-11-05)
