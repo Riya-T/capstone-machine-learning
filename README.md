@@ -8,7 +8,7 @@ experimental design.
 ## Repository layout
 
 ```
-docs/       project documents (the proposal)
+docs/       project documents (the proposal, the progress report)
 harness/    the pipeline: generates programs, runs the editor, builds preference pairs
 ```
 
@@ -32,10 +32,11 @@ a fixed editing agent to change later. For each task it:
 5. pairs the higher-scoring implementation (chosen) against a lower-scoring
    one (rejected) for DPO training.
 
-It holds the core pipeline and an initial DPO training implementation.
+It holds the core pipeline and DPO training.
 Matched evaluation orchestration and saved-only comparison reports are now available
-(see [Writer evaluation](harness/docs/evaluation.md)). Baseline training and actual
-held-out comparison results are still pending. All
+(see [Writer evaluation](harness/docs/evaluation.md)). Held-out results so far are
+in `harness/results/`; [docs/progress_report.md](docs/progress_report.md)
+summarizes the work, the findings and what is running. All
 paths from here on are relative to `harness/`.
 
 ### Quick start
