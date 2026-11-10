@@ -1,0 +1,21 @@
+# Static-ranking baseline on the 16 eval tasks: Qwen2.5-Coder-7B-Instruct
+# with a QLoRA adapter trained by harness.train_dpo to prefer the program
+# with the higher Radon Maintainability Index. The pairs are those of
+# scripts/static_ranking.py on the train tasks, matched by
+# scripts/match_pairs.py to our training file (the same 28 tasks and 160
+# pairs, largest MI gaps first), and the training settings are dpo3's
+# (learning rate 2e-5, beta 0.1, 2 epochs, seed 42), so the two writers
+# differ only in which program each pair prefers. Built and served like
+# writer-dpo3-ctx8k (README, "Serving the trained writer") as
+# writer-radon-ctx8k. Everything else is as in rtx5070_eval.yaml, so its
+# results compare with harness/results/base_writer_eval.md.
+#
+# Usage (from harness/, inside WSL):
+#     uv run python -m harness collect --config configs/rtx5070_eval_radon.yaml
+#     uv run python scripts/eval_compare.py --base configs/rtx5070_eval.yaml \
+#         --other configs/rtx5070_eval_radon.yaml
+extends: rtx5070_eval.yaml
+name: rtx5070-eval-radon
+writer:
+  backend:
+    model: writer-radon-ctx8k

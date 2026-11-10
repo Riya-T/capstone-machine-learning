@@ -60,13 +60,19 @@ This is a  rough list of tasks we need to complete and is definitely subject to 
 
 ## 5. Training 
 
-- [ ] **Training code** — DPO training of the writer with QLoRA adapters
-  (TRL and PEFT).
+- [x] **Training code** — DPO training of the writer with QLoRA adapters
+  (our own loop with PEFT instead of TRL): `harness/src/harness/train_dpo.py`,
+  served through `scripts/merge_lora.py` and llama.cpp (README, "Serving the
+  trained writer").
 - [ ] **Training tests** — Check the loss, which tokens are trained on, that
-  the adapters change and that the original weights don't.
+  the adapters change and that the original weights don't. So far only
+  loading and chat formatting are tested (`harness/tests/test_train_dpo.py`).
 - [ ] **Choose training settings on dev tasks** — Learning rate, number of
-  passes over the data, and DPO's beta.
+  passes over the data, and DPO's beta. Learning rate done: 2e-5 over 5e-5
+  (`harness/results/dpo2_dev.md`, `harness/results/dpo3_dev.md`); passes (2)
+  and beta (0.1) not varied yet.
 - [ ] **Train our writer** — Later-edit training, with several random seeds.
+  One seed so far (dpo3, seed 42): `harness/results/dpo3_eval.md`.
 - [x] **Maintainability prompt** — Write the baseline prompt that asks for
   clean, maintainable code (otherwise identical to the normal prompt).
   `harness/prompts/writer_maintainable_v1.md`.
@@ -74,6 +80,9 @@ This is a  rough list of tasks we need to complete and is definitely subject to 
   that pass the initial tests.
 - [ ] **Static-ranking baseline** — Train the writer to prefer programs with
   a higher Radon maintainability score (Radon settings chosen on dev tasks).
+  Pairs from `scripts/static_ranking.py`, matched to our training file by
+  `scripts/match_pairs.py` (same 28 tasks and 160 pairs) and trained with
+  dpo3's settings; config `harness/configs/rtx5070_eval_radon.yaml`.
 
 ## 6. Evaluation 
 
@@ -90,8 +99,10 @@ This is a  rough list of tasks we need to complete and is definitely subject to 
   See `harness/docs/evaluation-refinements.md` for commands and limitations.
 - [ ] **Run all five methods** — Original model, maintainability prompt,
   correctness-only, static ranking and ours, on the held-out tasks with the
-  same editor and budget. Original model done:
-  `harness/results/base_writer_eval.md`.
+  same editor and budget. Original model, maintainability prompt and ours
+  (dpo3) done: `harness/results/base_writer_eval.md`,
+  `harness/results/maintainability_prompt_eval.md`,
+  `harness/results/dpo3_eval.md`.
 - [ ] **Report the main numbers** — Fraction of changes completed before the
   first failure, how often the first version works, how often a whole
   sequence succeeds, how often old behavior breaks, and the cost (tokens and

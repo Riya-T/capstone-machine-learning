@@ -430,19 +430,30 @@ Build a separate DPO dataset by ranking initially passing writer samples
 within each train task by Radon's Maintainability Index (higher is better):
 
 ```bash
-uv run python scripts/static_ranking.py --config configs/rtx5070_train.yaml
-uv run python -m harness.train_dpo \
-  runs/rtx5070_pc/static_ranking/preferences.jsonl \
-  --output-dir ../models/writer-static-ranking
+uv run python scripts/static_ranking.py --config configs/rtx5070_train.yaml \
+  --out runs/rtx5070_pc/dpo/radon_cap8_all.jsonl
+.venv/bin/python scripts/match_pairs.py runs/rtx5070_pc/dpo/radon_cap8_all.jsonl \
+  runs/rtx5070_pc/dpo/pairs_cap8_f23_nocosm.jsonl runs/rtx5070_pc/dpo/radon_matched.jsonl \
+  --model Qwen/Qwen2.5-Coder-7B-Instruct
+.venv/bin/python -m harness.train_dpo runs/rtx5070_pc/dpo/radon_matched.jsonl \
+  --model Qwen/Qwen2.5-Coder-7B-Instruct --output-dir ../models/writer-radon \
+  --learning-rate 2e-5 --max-length 3200
 ```
 
 The first command reads the existing collection store and initial-check
 results only; it makes no model calls and runs no sandboxes. It writes the
-preference JSONL plus a pair-count report under `runs/rtx5070_pc/`. Scores
-are LOC-weighted across a program's files; only unequal-score pairs are
-kept, with the largest score gaps retained up to the configured per-task
-pair cap. The second command is actual QLoRA training and requires a
-supported CUDA GPU.
+preference JSONL plus a pair-count report. Scores are LOC-weighted across a
+program's files; only unequal-score pairs are kept, with the largest score
+gaps retained up to the configured per-task pair cap (271 pairs from the 36
+train tasks). The second command keeps, for each task of our filtered
+training file, as many Radon pairs as that file has (largest gaps first, none
+longer than the training limit), so the baseline sees the same 28 tasks and
+160 pairs as our writer, and the third trains it with our writer's settings.
+The two writers then differ only in which program each pair prefers: 33 of
+the 160 Radon pairs are pairs of ours with the same winner, 22 are pairs of
+ours with the other winner, and 105 are pairs ours does not have. The
+trained writer is built like ours ("Serving the trained writer") and scored
+with `configs/rtx5070_eval_radon.yaml`.
 
 ## Changes from the proposal
 
