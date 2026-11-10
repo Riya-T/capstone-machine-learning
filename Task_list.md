@@ -64,9 +64,12 @@ This is a  rough list of tasks we need to complete and is definitely subject to 
   (our own loop with PEFT instead of TRL): `harness/src/harness/train_dpo.py`,
   served through `scripts/merge_lora.py` and llama.cpp (README, "Serving the
   trained writer").
-- [ ] **Training tests** — Check the loss, which tokens are trained on, that
-  the adapters change and that the original weights don't. So far only
-  loading and chat formatting are tested (`harness/tests/test_train_dpo.py`).
+- [x] **Training tests** — The loss, which tokens are scored, the training
+  order, that only the adapters change and that the reference model stays
+  fixed, on a tiny random Qwen2 model on the CPU
+  (`harness/tests/test_train_dpo.py`). The torch tests are skipped without
+  the training extras, so CI skips them; the file's header shows how to run
+  them in a CPU-only venv.
 - [ ] **Choose training settings on dev tasks** — Learning rate, number of
   passes over the data, and DPO's beta. Learning rate done: 2e-5 over 5e-5
   (`harness/results/dpo2_dev.md`, `harness/results/dpo3_dev.md`); passes (2)

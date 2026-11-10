@@ -118,6 +118,82 @@ def completion_logp(model: Any, prompt: list[int], completion: list[int], chunk:
     return total
 
 
+def reference_logps(model: Any, pairs: list[dict]) -> list[tuple[float, float]]:
+    """(chosen, rejected) log-probabilities per pair under the reference
+    model: the same model with its adapters disabled."""
+    import torch
+
+    model.eval()
+    with torch.no_grad(), model.disable_adapter():
+        return [
+            (
+                completion_logp(model, pair["prompt"], pair["chosen"]).item(),
+                completion_logp(model, pair["prompt"], pair["rejected"]).item(),
+            )
+            for pair in pairs
+        ]
+
+
+def epoch_order(num_pairs: int, epochs: float, rng: random.Random) -> list[int]:
+    """Pair indices in training order: a fresh shuffle per whole epoch, then
+    a random subset of round(fraction * num_pairs) pairs for a fractional
+    epoch."""
+    whole, part = int(epochs), epochs - int(epochs)
+    order: list[int] = []
+    for _ in range(whole):
+        order += rng.sample(range(num_pairs), num_pairs)
+    if part:
+        order += rng.sample(range(num_pairs), round(part * num_pairs))
+    return order
+
+
+def optimizer_steps(
+    model: Any,
+    pairs: list[dict],
+    reference: list[tuple[float, float]],
+    order: list[int],
+    optimizer: Any,
+    schedule: Any,
+    *,
+    beta: float,
+    accumulation: int,
+    max_grad_norm: float,
+):
+    """Train on the pairs in `order`, stepping the optimizer every
+    `accumulation` pairs and after the last one. Yields one log entry per
+    optimizer step, averaged over that step's pairs."""
+    import torch
+
+    params = [p for p in model.parameters() if p.requires_grad]
+    steps = math.ceil(len(order) / accumulation)
+    model.train()
+    window = []
+    for i, index in enumerate(order, start=1):
+        pair = pairs[index]
+        policy_chosen = completion_logp(model, pair["prompt"], pair["chosen"])
+        policy_rejected = completion_logp(model, pair["prompt"], pair["rejected"])
+        ref_chosen, ref_rejected = reference[index]
+        loss, margin = dpo_loss(policy_chosen, policy_rejected, ref_chosen, ref_rejected, beta)
+        (loss / accumulation).backward()
+        window.append((loss.item(), margin.item()))
+        if i % accumulation == 0 or i == len(order):
+            grad_norm = torch.nn.utils.clip_grad_norm_(params, max_grad_norm).item()
+            optimizer.step()
+            schedule.step()
+            optimizer.zero_grad(set_to_none=True)
+            yield {
+                "step": math.ceil(i / accumulation),
+                "steps": steps,
+                "epoch": round(i / len(pairs), 3),
+                "loss": sum(x for x, _ in window) / len(window),
+                "reward_margin": sum(m for _, m in window) / len(window),
+                "reward_accuracy": sum(m > 0 for _, m in window) / len(window),
+                "grad_norm": grad_norm,
+                "learning_rate": schedule.get_last_lr()[0],
+            }
+            window = []
+
+
 def train(args: argparse.Namespace) -> None:
     try:
         import bitsandbytes as bnb
@@ -175,65 +251,35 @@ def train(args: argparse.Namespace) -> None:
     log_path = args.output_dir / "train_log.jsonl"
     log = log_path.open("w", encoding="utf-8")
 
-    # Reference log-probabilities: the same model with the adapters off.
-    model.eval()
-    reference = []
     started = time.monotonic()
-    with torch.no_grad(), model.disable_adapter():
-        for pair in pairs:
-            reference.append(
-                (
-                    completion_logp(model, pair["prompt"], pair["chosen"]).item(),
-                    completion_logp(model, pair["prompt"], pair["rejected"]).item(),
-                )
-            )
+    reference = reference_logps(model, pairs)
     print(f"reference log-probabilities: {len(pairs)} pairs in {time.monotonic() - started:.0f}s")
 
     rng = random.Random(args.seed)
     torch.manual_seed(args.seed)
-    whole, part = int(args.epochs), args.epochs - int(args.epochs)
-    order = []
-    for _ in range(whole):
-        order += rng.sample(range(len(pairs)), len(pairs))
-    if part:
-        order += rng.sample(range(len(pairs)), round(part * len(pairs)))
+    order = epoch_order(len(pairs), args.epochs, rng)
     steps = math.ceil(len(order) / args.gradient_accumulation_steps)
     params = [p for p in model.parameters() if p.requires_grad]
     optimizer = bnb.optim.PagedAdamW8bit(params, lr=args.learning_rate, weight_decay=0.0)
     schedule = get_linear_schedule_with_warmup(optimizer, round(args.warmup_ratio * steps), steps)
 
-    model.train()
-    window = []
     started = time.monotonic()
-    for i, index in enumerate(order, start=1):
-        pair = pairs[index]
-        policy_chosen = completion_logp(model, pair["prompt"], pair["chosen"])
-        policy_rejected = completion_logp(model, pair["prompt"], pair["rejected"])
-        ref_chosen, ref_rejected = reference[index]
-        loss, margin = dpo_loss(policy_chosen, policy_rejected, ref_chosen, ref_rejected, args.beta)
-        (loss / args.gradient_accumulation_steps).backward()
-        window.append((loss.item(), margin.item()))
-        if i % args.gradient_accumulation_steps == 0 or i == len(order):
-            grad_norm = torch.nn.utils.clip_grad_norm_(params, args.max_grad_norm).item()
-            optimizer.step()
-            schedule.step()
-            optimizer.zero_grad(set_to_none=True)
-            entry = {
-                "step": math.ceil(i / args.gradient_accumulation_steps),
-                "steps": steps,
-                "epoch": round(i / len(pairs), 3),
-                "loss": sum(x for x, _ in window) / len(window),
-                "reward_margin": sum(m for _, m in window) / len(window),
-                "reward_accuracy": sum(m > 0 for _, m in window) / len(window),
-                "grad_norm": grad_norm,
-                "learning_rate": schedule.get_last_lr()[0],
-                "elapsed_s": round(time.monotonic() - started),
-                "max_memory_gb": round(torch.cuda.max_memory_allocated() / 2**30, 2),
-            }
-            print(json.dumps(entry), flush=True)
-            log.write(json.dumps(entry) + "\n")
-            log.flush()
-            window = []
+    for entry in optimizer_steps(
+        model,
+        pairs,
+        reference,
+        order,
+        optimizer,
+        schedule,
+        beta=args.beta,
+        accumulation=args.gradient_accumulation_steps,
+        max_grad_norm=args.max_grad_norm,
+    ):
+        entry["elapsed_s"] = round(time.monotonic() - started)
+        entry["max_memory_gb"] = round(torch.cuda.max_memory_allocated() / 2**30, 2)
+        print(json.dumps(entry), flush=True)
+        log.write(json.dumps(entry) + "\n")
+        log.flush()
     log.close()
     model.save_pretrained(args.output_dir)
     tokenizer.save_pretrained(args.output_dir)
