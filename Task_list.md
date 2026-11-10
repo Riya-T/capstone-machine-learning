@@ -117,7 +117,9 @@ This is a  rough list of tasks we need to complete and is definitely subject to 
 ## 7. Experimental variations 
 
 - [ ] **Comments removed** — Rerun the evaluation with comments and
-  docstrings removed before the editor sees the code.
+  docstrings removed before the editor sees the code. Code done
+  (`editor.view_transform: strip_comments`, `collection/view.py`); runs not
+  started.
 - [ ] **Comment density** — Reporting code supports all generated and initially
   correct programs; collect and interpret the actual methods' results.
 - [ ] **Size-matched check** — A saved-only sensitivity tool now records matching

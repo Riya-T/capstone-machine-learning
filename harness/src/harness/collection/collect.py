@@ -280,6 +280,10 @@ def _run_trial(
     seed = derive_seed(cfg.seed, task.id, cid, sequence.id, rep, "editor")
     backend = CachedBackend(make_backend(cfg.editor.backend, seed), store, start_index)
     program: Program = store.get_blob(point.input_blob or cid)
+    if point.input_blob is None:
+        # The first step starts from what the editor sees of the program
+        # (editor.view_transform); later steps continue from its output.
+        program = editor.view(program)
 
     statuses = []
     for step in sequence.steps[point.next_step - 1 :]:
