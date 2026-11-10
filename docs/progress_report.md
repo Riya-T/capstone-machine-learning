@@ -1,5 +1,154 @@
 # Progress report, 2026-11-10
 
+## The project in plain words
+
+This section assumes no knowledge of the project. The rest of the report
+gives the details.
+
+### The question
+
+Code is rarely written once and left alone. After a program is written,
+people keep asking for changes: a new feature, a new rule, a fix. Some code
+is easy to change, because it is organized so that a new feature fits in
+one place. Other code is hard to change, because one small request means
+touching many places, and something else breaks along the way.
+
+AI models that write code are usually trained only to write code that works
+today. Our question: **if an AI that writes code is trained on how easy its
+code turned out to be to change later, does it learn to write code that is
+easier to change?**
+
+### The two AI models
+
+- **The writer** is the model we try to improve. It is a coding model
+  called Qwen2.5-Coder-7B ("7B" means it has 7 billion parameters, the
+  numbers it learns). It gets a task description and writes a small Python
+  program.
+- **The editor** is a larger coding model of the same family
+  (Qwen2.5-Coder-14B). It plays a programmer who comes along later. It gets
+  the writer's program and a change request, such as "add discount codes",
+  and edits the program. The editor is never trained or changed, so it
+  treats every writer's code the same way. If it does better on one
+  program than another, the difference comes from the code.
+
+Both models run on one home graphics card (an RTX 5070 with 12 GB of
+memory). They are stored in a compressed 4-bit form, so that both fit.
+
+### The tasks
+
+We wrote 60 small programming tasks, such as a bank ledger, a parking
+garage, a library catalog or a shopping cart. Each task has:
+
+- a description of the first version of the program;
+- tests that check the first version works ("initial tests");
+- a sequence of later change requests, 2 or 3 of them, each with its own
+  tests. Some tests are shown to the editor ("public checks") and the rest
+  are hidden, so the editor cannot just aim at the tests.
+
+The tasks are split three ways, like in a school course:
+
+- **36 training tasks** are used to collect training examples.
+- **8 development ("dev") tasks** are used to choose training settings,
+  like practice exams.
+- **16 evaluation ("eval") tasks** are never used for training or for
+  choosing settings. They are the final exam: the only fair test of
+  whether a writer really got better.
+
+Much of the early work went into making the tasks fair: fixing tests that
+were wrong or unclear, so that a program fails only for real reasons.
+
+### How a program is scored
+
+1. The writer writes 16 versions of the program for a task.
+2. The versions that pass the initial tests go on, at most 8 per task.
+3. The editor applies the change requests one by one. After each change,
+   all the tests run: the new feature must work, and nothing that worked
+   before may break.
+4. The program's score is **how many changes in a row the editor got
+   done before the first failure**. On the eval tasks that is 0 to 3.
+   This is the main number in this report: a higher number means code
+   that was easier to change.
+
+The editor does not give the same answer every time, so each program goes
+through 2 different change sequences, 3 times each, and the results are
+averaged.
+
+### How the writer is trained
+
+Take two working programs for the same task. If the editor clearly did
+better with program A than with program B, that makes a **preference
+pair**: A is preferred over B. From the 36 training tasks we collected
+229 such pairs, and kept the 160 most reliable ones.
+
+The training method is **DPO** (Direct Preference Optimization). It nudges
+the writer to make programs like A more likely and programs like B less
+likely. The writer has billions of parameters and the graphics card only
+12 GB, so we train a small add-on to the model (a "LoRA adapter"), not the
+whole model.
+
+After training, the trained writer is compressed the same way as the
+original. We checked that the conversion itself changes nothing, so any
+difference in results comes from the training.
+
+### What we compare
+
+Five ways of producing a writer, all scored on the same 16 eval tasks with
+the same editor:
+
+1. **The original writer**, unchanged. This is the starting point.
+2. **A maintainability prompt:** the original writer, asked in its
+   instructions to write clean, maintainable code. This tests whether
+   simply asking is enough.
+3. **Ours:** the writer trained with DPO on the editing results.
+4. **Static ranking:** the same training, except that programs are
+   preferred by a standard code-quality formula (the Radon Maintainability
+   Index) instead of by how the editor did. This tests whether a simple
+   formula works as well as real editing results.
+5. **Correctness-only:** the writer trained on its own working programs,
+   with no preferences at all. This tests whether any gain comes simply
+   from extra training on correct code.
+
+### What we found so far
+
+Methods 1, 2 and 3 are done:
+
+- **All three score about the same.** The editor gets 1.43, 1.43 and 1.45
+  changes done before its first failure, out of 3. Those differences are
+  smaller than the random variation between runs. So far, neither asking
+  for maintainable code nor our training made the code easier to change.
+- **Our training had a side effect:** the trained writer writes working
+  programs more often. 64% of its programs pass the initial tests, against
+  58% for the original, and that difference is too large to be chance.
+- **Training too aggressively made the writer repetitive:** it kept
+  writing the same few programs. A gentler setting fixed this, and that
+  gentler version is the one we evaluated.
+
+### What is running now
+
+Methods 4 and 5 are running on the graphics card, one after the other.
+Each takes about a day: training and converting the model take under an
+hour, and scoring on the 16 eval tasks takes the rest. They should be done on Wednesday and
+Thursday mornings (2026-11-11 and 11-12).
+
+### Words used in the rest of this report
+
+- **Change sequence:** the list of later change requests for a task.
+- **Trial:** one run of the editor through one change sequence for one
+  program.
+- **Pass rate, or initial pass:** the share of the writer's programs that
+  pass the initial tests.
+- **"First change works", "whole sequence works":** how often the editor
+  got the first change done, or all of them.
+- **95% interval:** the range the true difference most likely lies in,
+  given the random variation. If it includes 0, we cannot say the
+  difference is real.
+- **Learning rate:** how big each training step is. Too big, and the model
+  overdoes it; too small, and it barely learns.
+- **dpo2, dpo3:** our two trained writers, trained with a larger and a
+  smaller learning rate; dpo3 is the one evaluated.
+
+## Who did what
+
 What has been done on the RTX 5070 machine since 2026-10-21 (Karin): the
 tasks, the training data, DPO training, serving the trained writer, and the
 first held-out results. It builds on the harness (Noah), the evaluation
