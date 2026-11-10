@@ -1,0 +1,19 @@
+# Correctness-only baseline on the 16 eval tasks: Qwen2.5-Coder-7B-Instruct
+# with a QLoRA adapter trained by harness.train_sft on the writer's own
+# passing programs of the 28 train tasks our DPO pairs come from (the first
+# 8 per task, as edited: 201 programs, scripts/sft_programs.py), with the
+# DPO writer's settings (learning rate 2e-5, 2 epochs, seed 42). It sees the
+# same programs as our writer but no editing outcomes. Built and served like
+# writer-dpo3-ctx8k (README, "Serving the trained writer") as
+# writer-sft-ctx8k. Everything else is as in rtx5070_eval.yaml, so its
+# results compare with harness/results/base_writer_eval.md.
+#
+# Usage (from harness/, inside WSL):
+#     uv run python -m harness collect --config configs/rtx5070_eval_sft.yaml
+#     uv run python scripts/eval_compare.py --base configs/rtx5070_eval.yaml \
+#         --other configs/rtx5070_eval_sft.yaml
+extends: rtx5070_eval.yaml
+name: rtx5070-eval-sft
+writer:
+  backend:
+    model: writer-sft-ctx8k

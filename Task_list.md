@@ -77,7 +77,10 @@ This is a  rough list of tasks we need to complete and is definitely subject to 
   clean, maintainable code (otherwise identical to the normal prompt).
   `harness/prompts/writer_maintainable_v1.md`.
 - [ ] **Correctness-only baseline** — Fine-tune the writer on its own programs
-  that pass the initial tests.
+  that pass the initial tests. Training code `harness/src/harness/train_sft.py`
+  and data `scripts/sft_programs.py` (the 201 passing programs of the 28 tasks
+  our pairs come from), dpo3's settings; config
+  `harness/configs/rtx5070_eval_sft.yaml`.
 - [ ] **Static-ranking baseline** — Train the writer to prefer programs with
   a higher Radon maintainability score (Radon settings chosen on dev tasks).
   Pairs from `scripts/static_ranking.py`, matched to our training file by

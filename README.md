@@ -455,6 +455,29 @@ ours with the other winner, and 105 are pairs ours does not have. The
 trained writer is built like ours ("Serving the trained writer") and scored
 with `configs/rtx5070_eval_radon.yaml`.
 
+### Correctness-only baseline
+
+Fine-tune the writer on its own programs that pass the initial checks, with
+no preference between them:
+
+```bash
+uv run python scripts/sft_programs.py --config configs/rtx5070_train.yaml \
+  --tasks-from runs/rtx5070_pc/dpo/pairs_cap8_f23_nocosm.jsonl \
+  --out runs/rtx5070_pc/dpo/sft_programs.jsonl
+.venv/bin/python -m harness.train_sft runs/rtx5070_pc/dpo/sft_programs.jsonl \
+  --model Qwen/Qwen2.5-Coder-7B-Instruct --output-dir ../models/writer-sft
+```
+
+The first command reads the store only. For each of the 28 tasks of our
+filtered training file it writes the first 8 passing programs in sample
+order, the programs the editor worked on and our pairs were built from (201
+programs, which include all 157 programs in our pairs). `harness.train_sft`
+has `harness.train_dpo`'s QLoRA setup and defaults (learning rate 2e-5, 2
+epochs, 8 examples per step, seed 42) with the plain supervised loss, the
+mean negative log-probability of each program's tokens. So this baseline
+sees the same programs as our writer but not which of them were easier to
+change. It is built like ours and scored with `configs/rtx5070_eval_sft.yaml`.
+
 ## Changes from the proposal
 
 Decisions made while setting up the pipeline that differ from, or fill in,
