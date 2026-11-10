@@ -14,6 +14,7 @@ import time
 from contextlib import contextmanager
 from pathlib import Path
 
+from ..collection.view import make_view
 from ..config import ExperimentConfig
 from ..registry import build_writer_prompt, load_tasks, load_template, prompt_version
 from ..store import SCHEMA_VERSION, editor_cfg_hash, sandbox_cfg_hash, writer_cfg_hash
@@ -104,6 +105,7 @@ def export_dataset(
         raise EvaluationError("Evaluation requires one writer sample and max_programs=1")
     tasks = load_tasks(cfg.tasks)
     template = load_template(cfg.writer.prompt_template)
+    view = make_view(cfg.editor.view_transform)
     writer_hash = writer_cfg_hash(cfg)
     sandbox_hash = sandbox_cfg_hash(cfg, image_id)
     editor_hash = editor_cfg_hash(cfg, image_id)
@@ -213,8 +215,11 @@ def export_dataset(
                         ).fetchall()
                     )
                     steps = []
-                    # Every sequence/repetition starts from its own original parent.
-                    previous_files = initial_files
+                    # Every sequence/repetition starts from its own original
+                    # parent, as the editor saw it: with editor.view_transform
+                    # (the comment ablation), the stripped program, so removed
+                    # comments don't count as part of the first edit.
+                    previous_files = initial_files and view(initial_files)
                     for row in rows:
                         run_ids.add(row["run_id"])
                         source_metrics = None
