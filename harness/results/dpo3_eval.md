@@ -14,8 +14,9 @@ tasks only; these tasks were not used for training or for choosing.
   Windows Update restarted WSL, and 20261110T051632Z-30453c at b0620d3
   (which only adds a results page), which resumed it. Finished 2026-11-10.
   No infrastructure errors; all 256 writer samples parsed.
-- Cost: 3,847 editor calls, 6.9M prompt tokens, 3.8M reply tokens (base
-  writer: 4,124, 7.5M and 4.2M). 15 dpo3 programs are identical to programs
+- Cost: 4,221 editor calls, 7.5M prompt tokens, 4.2M reply tokens over
+  all 1,473 editing steps (base writer: 4,124, 7.5M and 4.2M over 1,434).
+  15 dpo3 programs are identical to programs
   the base writer wrote (light_grid 6, locker_room 4, aging_inventory 2,
   document_versions 2, scoreboard 1) and reuse its trials (172 of the
   1,473 editing steps).

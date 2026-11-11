@@ -459,7 +459,8 @@ The two writers then differ only in which program each pair prefers: 33 of
 the 160 Radon pairs are pairs of ours with the same winner, 22 are pairs of
 ours with the other winner, and 105 are pairs ours does not have. The
 trained writer is built like ours ("Serving the trained writer") and scored
-with `configs/rtx5070_eval_radon.yaml`.
+with `configs/rtx5070_eval_radon.yaml`. Results:
+`harness/results/radon_eval.md`.
 
 ### Correctness-only baseline
 

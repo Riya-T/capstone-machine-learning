@@ -1,4 +1,4 @@
-# Progress report, 2026-11-10
+# Progress report, 2026-11-11
 
 ## The project in plain words
 
@@ -110,25 +110,28 @@ the same editor:
 
 ### What we found so far
 
-Methods 1, 2 and 3 are done:
+Methods 1 to 4 are done:
 
-- **All three score about the same.** The editor gets 1.43, 1.43 and 1.45
-  changes done before its first failure, out of 3. Those differences are
-  smaller than the random variation between runs. So far, neither asking
-  for maintainable code nor our training made the code easier to change.
+- **None of them makes the code easier to change.** The editor gets 1.43
+  (original), 1.43 (maintainability prompt), 1.45 (ours) and 1.35 (static
+  ranking) changes done before its first failure, out of 3. Those
+  differences are smaller than the random variation between runs. So far,
+  neither asking for maintainable code, nor our training, nor training on
+  the code-quality formula made the code easier to change.
 - **Our training had a side effect:** the trained writer writes working
   programs more often. 64% of its programs pass the initial tests, against
-  58% for the original, and that difference is too large to be chance.
+  58% for the original, and that difference is too large to be chance. The
+  static-ranking writer, trained the same way but on the formula's
+  preferences, does not have it: only 50% of its programs pass.
 - **Training too aggressively made the writer repetitive:** it kept
   writing the same few programs. A gentler setting fixed this, and that
   gentler version is the one we evaluated.
 
 ### What is running now
 
-Methods 4 and 5 are running on the graphics card, one after the other.
-Each takes about a day: training and converting the model take under an
-hour, and scoring on the 16 eval tasks takes the rest. They should be done on Wednesday and
-Thursday mornings (2026-11-11 and 11-12).
+Method 5 (correctness-only) is running on the graphics card. Training and
+converting the model take under an hour, and scoring on the 16 eval tasks
+takes about a day, so it should be done on Thursday morning (2026-11-12).
 
 ### Words used in the rest of this report
 
@@ -153,25 +156,30 @@ What has been done on the RTX 5070 machine since 2026-10-21 (Karin): the
 tasks, the training data, DPO training, serving the trained writer, and the
 first held-out results. It builds on the harness (Noah), the evaluation
 tool (Thoomy), and the confidence intervals, static-ranking generator and
-first training code (Riya). Details and reproduce commands are in the pages
-linked from each section; this report collects them in one place.
+first training code (Riya). Pull requests #6 and #7 (2026-11-10) added
+tests of the DPO training loop on a tiny CPU model and the code for the
+comment ablation (`editor.view_transform: strip_comments`). Details and
+reproduce commands are in the pages linked from each section; this report
+collects them in one place.
 
 ## In short
 
 - **The full pipeline runs end to end on one 12 GB GPU:** 60 tasks, writer
   sampling, editing trials, preference pairs, DPO training, a trained writer
   served exactly like the original, and held-out evaluation.
-- **Three of the five methods are done on the 16 eval tasks, and none makes
+- **Four of the five methods are done on the 16 eval tasks, and none makes
   the code measurably easier to change.** The editor gets through 1.43 of 3
   changes before its first failure with the original writer, 1.43 with the
-  maintainability prompt and 1.45 with our DPO writer. Every interval
-  includes 0.
+  maintainability prompt, 1.45 with our DPO writer and 1.35 with the
+  static-ranking (Radon) writer. Every interval against the original
+  includes 0, and ours and Radon cannot be told apart either.
 - **The one clear effect of our training is not the one it aimed for.** The
   DPO writer's programs pass the initial tests more often: 64% against 58%,
-  95% interval +2 to +12 points.
-- **The other two baselines are running now.** The static-ranking (Radon)
-  baseline is on the eval tasks, and the correctness-only baseline is queued
-  behind it. Both should be done by Thursday morning (see "Running now").
+  95% interval +2 to +12 points. The Radon writer, trained the same way on
+  the same tasks, passes less often (50%), 14 points below ours (interval
+  −24 to −5).
+- **The correctness-only baseline is running now** and should be done by
+  Thursday morning (see "Running now").
 
 ## The five methods
 
@@ -180,8 +188,8 @@ linked from each section; this report collects them in one place.
 | Original writer | done | 1.43 | 67% | 26% | 58% |
 | Maintainability prompt | done | 1.43 | 70% | 25% | 60% |
 | Ours (DPO on editing outcomes, dpo3) | done | 1.45 | 71% | 25% | 64% |
-| Static ranking (DPO on Radon MI) | eval running | – | – | – | – |
-| Correctness-only (fine-tuning on passing programs) | queued | – | – | – | – |
+| Static ranking (DPO on Radon MI) | done | 1.35 | 67% | 23% | 50% |
+| Correctness-only (fine-tuning on passing programs) | running | – | – | – | – |
 
 All rows use the same 16 eval tasks, the same frozen editor
 (Qwen2.5-Coder-14B), budget and selection. The selection is the writer's
@@ -193,31 +201,33 @@ paired bootstrap over the 16 tasks:
 |---|---|---|---|---|
 | Maintainability prompt | +0.00 (−0.10 to +0.10) | +3 pts (−1 to +8) | −1 pt (−5 to +4) | +2 pts (−3 to +8) |
 | Ours (dpo3) | +0.02 (−0.11 to +0.19) | +4 pts (+0 to +9) | −1 pt (−6 to +5) | +6 pts (+2 to +12) |
+| Static ranking | −0.08 (−0.23 to +0.08) | +0 pts (−6 to +8) | −3 pts (−8 to +1) | −8 pts (−18 to +1) |
+
+Static ranking against ours (Radon minus dpo3): −0.10 (−0.35 to +0.11),
+−4 pts (−11 to +3), −3 pts (−10 to +3) and −14 pts (−24 to −5).
 
 Pages: [original writer](../harness/results/base_writer_eval.md),
 [maintainability prompt](../harness/results/maintainability_prompt_eval.md),
-[ours](../harness/results/dpo3_eval.md).
+[ours](../harness/results/dpo3_eval.md),
+[static ranking](../harness/results/radon_eval.md).
 
 ## Running now
 
-As of 2026-11-10 05:50 PST, on the RTX 5070 machine. Each step runs only if
+As of 2026-11-11 04:05 PST, on the RTX 5070 machine. Each step runs only if
 the one before succeeded, and a run that stops resumes from the store.
 
-1. **Static-ranking baseline, eval tasks** (`configs/rtx5070_eval_radon.yaml`,
-   run 20261110T134603Z-31b2e3, started 05:46 PST). Its training is done:
-   160 Radon-ranked pairs matched to ours, dpo3's settings, loss 0.54 at
-   the last step (dpo3: 0.55). It passed the same export checks as ours. Expected to
-   finish around Wednesday 2026-11-11 in the morning.
-2. **Correctness-only baseline** (`configs/rtx5070_eval_sft.yaml`), queued
-   to start when the Radon run finishes: about 15 minutes of training,
-   20 minutes of export, then about a day on the eval tasks. Expected
-   around Thursday 2026-11-12 in the morning. Its trainer is new and passes
-   its tests, but has not run on the GPU yet (the GPU is busy). If it fails
-   at startup, the run stops and gets fixed.
+- **Correctness-only baseline** (`configs/rtx5070_eval_sft.yaml`), started
+  at 03:55 PST when the Radon run finished. About 15 minutes of training
+  (running fine on the GPU: the loss fell from 0.05 to 0.03 over its first
+  20 of 51 steps), 20 minutes of export, then about a day on the eval
+  tasks. Expected around Thursday 2026-11-12 in the morning. Its results
+  page will be added to `harness/results/` when it finishes.
 
-Results pages for both will be added to `harness/results/` as they finish.
+The static-ranking baseline finished on 2026-11-11 at 03:54 PST (run
+20261110T134603Z-31b2e3): see "The five methods" and
+[its page](../harness/results/radon_eval.md).
 
-### What these two runs are, in plain words
+### The two baselines, in plain words
 
 A baseline is a simpler alternative that our method is compared against,
 to see whether learning from real editing results is worth its cost. Both
@@ -234,7 +244,7 @@ five-method comparison, not new attempts after the first results.
   conversion. The only difference is who decided which program in each
   pair was better: the formula instead of the editor. If it does as well
   as dpo3, a cheap formula could replace our expensive editing step.
-- **The terms in the list above:**
+- **The terms used for it:**
   - `configs/rtx5070_eval_radon.yaml` is the settings file for this run.
   - `20261110T134603Z-31b2e3` is the run's ID: its start time plus a
     random tag. It is how its results are found in the database later.
@@ -244,9 +254,19 @@ five-method comparison, not new attempts after the first results.
   - "Passed the same export checks" means it was converted for Ollama the
     same verified way as dpo3, so the conversion did not change anything
     by accident.
-- **Where it is now:** training is done. It is taking the "final exam"
-  (the 16 eval tasks), which takes about a day, so it should finish
-  Wednesday morning.
+- **The result (finished 2026-11-11):** it did no better than the original
+  writer. The editor got 1.35 changes done before its first failure,
+  against 1.43 (difference −0.08, interval −0.23 to +0.08), and fewer of
+  its programs passed the initial tests (50% against 58%). Its programs
+  score only slightly higher on the formula itself (43.5 against 42.6 out
+  of 100), about as much as just asking for maintainable code. Against
+  dpo3 the main measure cannot be told apart either (−0.10, interval −0.35
+  to +0.11). Because neither trained writer beat the original, this
+  comparison cannot yet say whether real editing results are a better
+  training signal than the formula. It does suggest that dpo3's higher
+  pass rate does not come from DPO training on pairs of working programs
+  as such: the Radon writer was trained the same way and passes 14 points
+  less often than dpo3.
 
 **2. Correctness-only baseline**
 
@@ -257,13 +277,12 @@ five-method comparison, not new attempts after the first results.
   method or just from extra training on correct code. If this one gets the
   same boost, the boost is not special to our method.
 - **The steps:** about 15 minutes of training, about 20 minutes converting
-  the model ("export"), then about a day on the eval tasks. It starts
-  automatically when the Radon run finishes, so it should be done Thursday
-  morning.
-- **The caveat:** its training code is new. Its automatic tests pass, but
-  it has not run on the graphics card yet, because the card is busy with
-  the Radon run. If it crashes at startup, the run stops safely, nothing
-  else is affected, and it gets fixed.
+  the model ("export"), then about a day on the eval tasks. It started
+  automatically when the Radon run finished (03:55 PST on 2026-11-11), so
+  it should be done Thursday morning.
+- **The caveat:** its training code is new. Its automatic tests pass, and
+  it started fine on the graphics card. If a later step fails, the run
+  stops safely, nothing else is affected, and it gets fixed.
 
 ## What was done
 
@@ -387,6 +406,10 @@ the training signal differs:
   - 33 of the 160 are pairs of ours with the same winner;
   - 22 are pairs of ours with the opposite winner;
   - 105 are pairs ours does not have.
+
+  Its training fit the formula's preferences more easily than ours fit
+  the editing ones: by the second epoch, mean loss 0.55 against 0.61 and
+  reward accuracy 99% against 96%.
 - **Correctness-only:** supervised fine-tuning
   (`harness/src/harness/train_sft.py`) on the 201 passing programs these
   tasks' pairs were built from (`scripts/sft_programs.py`). It sees the same
@@ -394,24 +417,33 @@ the training signal differs:
 
 ## Findings so far
 
-1. **No method changes how far the editor gets.** The three finished
-   methods are within 0.02 changes of each other on 16 tasks, and every
-   interval includes 0.
+1. **No method changes how far the editor gets.** The four finished
+   methods are within 0.10 changes of each other on 16 tasks (1.35 to
+   1.45), and every interval against the original writer includes 0.
 2. **Our writer's small gain comes from one task.** Per task, 6 tasks go up
    and 9 go down. race_telemetry carries the average (1.20 → 2.23 on 5
    programs); without it, the difference is about −0.05.
 3. **Our training makes the writer pass the initial tests more often** (+6
-   points), although every pair compares two passing programs. The
-   correctness-only baseline tests whether plain fine-tuning on passing
-   programs does the same.
-4. **The learning rate matters, and too high a rate narrows the writer.**
+   points), although every pair compares two passing programs. The Radon
+   writer's pairs also compare two passing programs, with the same tasks
+   and settings, and it passes less often (−8 points against the
+   original, −14 against ours). So the gain seems to come from which
+   programs our pairs prefer, not from DPO on passing programs as such
+   (one seed each). The correctness-only baseline tests whether plain
+   fine-tuning on passing programs does the same.
+4. **Training on the code-quality formula does not help either.** The
+   Radon writer gets 1.35 changes against 1.43 (−0.08, −0.23 to +0.08).
+   Its programs score only a little higher on Radon's own index (43.5
+   against 42.6 out of 100), about as much as the maintainability prompt
+   gives (43.6).
+5. **The learning rate matters, and too high a rate narrows the writer.**
    dpo2 lost program variety and collapsed on one task. dpo3 kept the
    variety.
-5. **Most editing failures are the editor running out of turns.** That is
+6. **Most editing failures are the editor running out of turns.** That is
    two thirds of the failed steps for dpo3 (337 of 507), mostly while a
    public check it can see still fails. That limits how much a
    better-structured program can show.
-6. **The comparison can only see large effects.** With 16 tasks, the 95%
+7. **The comparison can only see large effects.** With 16 tasks, the 95%
    interval of the main measure spans 0.2 to 0.3 changes, and the training
    signal is 160 pairs from 28 tasks.
 
@@ -428,9 +460,9 @@ the training signal differs:
   describes a different one (one unselected first attempt per task and
   seed), which has not been run. We should agree which one the final report
   uses.
-- **Task list:** items still open in `Task_list.md` include the training
-  tests (the loss, trained tokens, frozen weights), how often old behaviour
-  breaks, and the cost summary.
+- **Task list:** items still open in `Task_list.md` include how often old
+  behaviour breaks, the cost summary, and the comment-ablation runs (its
+  code is in; no runs yet).
 - **Hard tasks:** library_catalog stays a hard dev task (6 of 16 samples
   pass), and job_board and clinic_appointments got worse with each
   redesign, so they were restored. Keep them, or drop them?
