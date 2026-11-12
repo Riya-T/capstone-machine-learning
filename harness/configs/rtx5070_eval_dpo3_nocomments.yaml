@@ -1,0 +1,17 @@
+# Comment ablation for the DPO writer: rtx5070_eval_dpo3.yaml with the
+# editor seeing each program without its comments and docstrings
+# (editor.view_transform: strip_comments, collection/view.py). As in
+# rtx5070_eval_nocomments.yaml, only programs with comments or docstrings (5
+# of dpo3's 113) are edited anew; the rest replay. Compare with
+# rtx5070_eval_dpo3.yaml, and the difference with that of
+# rtx5070_eval_nocomments.yaml, to see whether comments matter more for
+# one writer's programs.
+#
+# Usage (from harness/, inside WSL):
+#     uv run python -m harness collect --config configs/rtx5070_eval_dpo3_nocomments.yaml
+#     uv run python scripts/eval_compare.py --base configs/rtx5070_eval_dpo3.yaml \
+#         --other configs/rtx5070_eval_dpo3_nocomments.yaml
+extends: rtx5070_eval_dpo3.yaml
+name: rtx5070-eval-dpo3-nocomments
+editor:
+  view_transform: strip_comments

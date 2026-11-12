@@ -1,0 +1,18 @@
+# Comment ablation for the base writer: rtx5070_eval.yaml with the editor
+# seeing each program without its comments and docstrings
+# (editor.view_transform: strip_comments, collection/view.py). The writer's
+# samples and initial checks are reused. The view is part of the editor key,
+# so the trials are recorded apart from the normal ones, but a program with
+# nothing to strip gets the same prompts and seeds, so its trials replay from
+# the stored model replies; only programs with comments or docstrings (4 of
+# the base writer's 110) are edited anew. Compare with rtx5070_eval.yaml to
+# see how much the comments help the editor.
+#
+# Usage (from harness/, inside WSL):
+#     uv run python -m harness collect --config configs/rtx5070_eval_nocomments.yaml
+#     uv run python scripts/eval_compare.py --base configs/rtx5070_eval.yaml \
+#         --other configs/rtx5070_eval_nocomments.yaml
+extends: rtx5070_eval.yaml
+name: rtx5070-eval-nocomments
+editor:
+  view_transform: strip_comments

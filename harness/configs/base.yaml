@@ -46,7 +46,7 @@ writer:
 editor:
   scaffold: turn_loop        # see src/harness/collection/editor.py
   reps: 3                    # proposal: each sequence repeated three times
-  view_transform: none       # strip_comments (comment ablation) not implemented yet
+  view_transform: none       # strip_comments: the comment ablation (collection/view.py)
   history_turns: 3           # one-line summaries of the latest turns in each prompt
   prompt_template: ../prompts/editor_v2.md
   # Context is 8192 tokens: a prompt of at most ~16k characters (~4.5k tokens)

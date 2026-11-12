@@ -1,0 +1,12 @@
+# Comment ablation for the correctness-only writer: rtx5070_eval_sft.yaml
+# with the editor seeing each program without its comments and docstrings
+# (editor.view_transform: strip_comments). See rtx5070_eval_nocomments.yaml.
+#
+# Usage (from harness/, inside WSL):
+#     uv run python -m harness collect --config configs/rtx5070_eval_sft_nocomments.yaml
+#     uv run python scripts/eval_compare.py --base configs/rtx5070_eval_sft.yaml \
+#         --other configs/rtx5070_eval_sft_nocomments.yaml
+extends: rtx5070_eval_sft.yaml
+name: rtx5070-eval-sft-nocomments
+editor:
+  view_transform: strip_comments

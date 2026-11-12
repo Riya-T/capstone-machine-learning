@@ -1,0 +1,12 @@
+# Comment ablation for the static-ranking writer: rtx5070_eval_radon.yaml
+# with the editor seeing each program without its comments and docstrings
+# (editor.view_transform: strip_comments). See rtx5070_eval_nocomments.yaml.
+#
+# Usage (from harness/, inside WSL):
+#     uv run python -m harness collect --config configs/rtx5070_eval_radon_nocomments.yaml
+#     uv run python scripts/eval_compare.py --base configs/rtx5070_eval_radon.yaml \
+#         --other configs/rtx5070_eval_radon_nocomments.yaml
+extends: rtx5070_eval_radon.yaml
+name: rtx5070-eval-radon-nocomments
+editor:
+  view_transform: strip_comments
