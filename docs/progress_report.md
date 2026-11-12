@@ -1,4 +1,4 @@
-# Progress report, 2026-11-11
+# Progress report, 2026-11-12
 
 ## The project in plain words
 
@@ -110,28 +110,33 @@ the same editor:
 
 ### What we found so far
 
-Methods 1 to 4 are done:
+All five methods are done:
 
 - **None of them makes the code easier to change.** The editor gets 1.43
-  (original), 1.43 (maintainability prompt), 1.45 (ours) and 1.35 (static
-  ranking) changes done before its first failure, out of 3. Those
-  differences are smaller than the random variation between runs. So far,
-  neither asking for maintainable code, nor our training, nor training on
-  the code-quality formula made the code easier to change.
-- **Our training had a side effect:** the trained writer writes working
-  programs more often. 64% of its programs pass the initial tests, against
-  58% for the original, and that difference is too large to be chance. The
-  static-ranking writer, trained the same way but on the formula's
-  preferences, does not have it: only 50% of its programs pass.
+  (original), 1.43 (maintainability prompt), 1.45 (ours), 1.35 (static
+  ranking) and 1.47 (correctness-only) changes done before its first
+  failure, out of 3. Those differences are smaller than the random
+  variation between runs.
+- **Our training does no better than plain training on the same
+  programs.** The correctness-only writer saw the same working programs as
+  ours, but not which ones were easier to change, and the two behave
+  almost identically on every measure. So the editing results in our 160
+  pairs had no effect we can detect.
+- **Training on the writer's own working programs has a side effect:** it
+  writes working programs more often. 64% of our writer's programs and 66%
+  of the correctness-only writer's pass the initial tests, against 58% for
+  the original, and both differences are too large to be chance. So this
+  comes from the extra training on working code, not from our method. The
+  static-ranking writer, trained on the formula's preferences, does not
+  have it: only 50% of its programs pass.
 - **Training too aggressively made the writer repetitive:** it kept
   writing the same few programs. A gentler setting fixed this, and that
   gentler version is the one we evaluated.
 
 ### What is running now
 
-Method 5 (correctness-only) is running on the graphics card. Training and
-converting the model take under an hour, and scoring on the 16 eval tasks
-takes about a day, so it should be done on Thursday morning (2026-11-12).
+Nothing; the graphics card is free. What to run next is one of the open
+questions for the team at the end of this report.
 
 ### Words used in the rest of this report
 
@@ -167,19 +172,21 @@ collects them in one place.
 - **The full pipeline runs end to end on one 12 GB GPU:** 60 tasks, writer
   sampling, editing trials, preference pairs, DPO training, a trained writer
   served exactly like the original, and held-out evaluation.
-- **Four of the five methods are done on the 16 eval tasks, and none makes
-  the code measurably easier to change.** The editor gets through 1.43 of 3
+- **All five methods are done on the 16 eval tasks, and none makes the
+  code measurably easier to change.** The editor gets through 1.43 of 3
   changes before its first failure with the original writer, 1.43 with the
-  maintainability prompt, 1.45 with our DPO writer and 1.35 with the
-  static-ranking (Radon) writer. Every interval against the original
-  includes 0, and ours and Radon cannot be told apart either.
-- **The one clear effect of our training is not the one it aimed for.** The
-  DPO writer's programs pass the initial tests more often: 64% against 58%,
-  95% interval +2 to +12 points. The Radon writer, trained the same way on
-  the same tasks, passes less often (50%), 14 points below ours (interval
-  −24 to −5).
-- **The correctness-only baseline is running now** and should be done by
-  Thursday morning (see "Running now").
+  maintainability prompt, 1.45 with our DPO writer, 1.35 with the
+  static-ranking (Radon) writer and 1.47 with the correctness-only writer.
+  Every interval against the original includes 0.
+- **Our DPO writer and the correctness-only writer cannot be told apart.**
+  Fine-tuning on the same programs without preferences gives the same
+  results on every measure (main measure +0.03, interval −0.05 to +0.10).
+  The editing outcomes in our 160 pairs add nothing detectable.
+- **The one clear effect of training is not the one it aimed for, and it
+  is not ours.** Both writers trained on the writer's own passing programs
+  pass the initial tests more often: 64% (ours, +2 to +12 points) and 66%
+  (correctness-only, +1 to +15) against 58%. The Radon writer passes less
+  often (50%).
 
 ## The five methods
 
@@ -189,7 +196,7 @@ collects them in one place.
 | Maintainability prompt | done | 1.43 | 70% | 25% | 60% |
 | Ours (DPO on editing outcomes, dpo3) | done | 1.45 | 71% | 25% | 64% |
 | Static ranking (DPO on Radon MI) | done | 1.35 | 67% | 23% | 50% |
-| Correctness-only (fine-tuning on passing programs) | running | – | – | – | – |
+| Correctness-only (fine-tuning on passing programs) | done | 1.47 | 72% | 25% | 66% |
 
 All rows use the same 16 eval tasks, the same frozen editor
 (Qwen2.5-Coder-14B), budget and selection. The selection is the writer's
@@ -202,32 +209,27 @@ paired bootstrap over the 16 tasks:
 | Maintainability prompt | +0.00 (−0.10 to +0.10) | +3 pts (−1 to +8) | −1 pt (−5 to +4) | +2 pts (−3 to +8) |
 | Ours (dpo3) | +0.02 (−0.11 to +0.19) | +4 pts (+0 to +9) | −1 pt (−6 to +5) | +6 pts (+2 to +12) |
 | Static ranking | −0.08 (−0.23 to +0.08) | +0 pts (−6 to +8) | −3 pts (−8 to +1) | −8 pts (−18 to +1) |
+| Correctness-only | +0.05 (−0.09 to +0.22) | +5 pts (+1 to +10) | −1 pt (−7 to +6) | +8 pts (+1 to +15) |
 
-Static ranking against ours (Radon minus dpo3): −0.10 (−0.35 to +0.11),
-−4 pts (−11 to +3), −3 pts (−10 to +3) and −14 pts (−24 to −5).
+Against ours (dpo3), same measures in the same order:
+
+| Method | Changes done before first failure | First change works | Whole sequence works | Samples passing initial tests |
+|---|---|---|---|---|
+| Static ranking minus ours | −0.10 (−0.35 to +0.11) | −4 pts (−11 to +3) | −3 pts (−10 to +3) | −14 pts (−24 to −5) |
+| Correctness-only minus ours | +0.03 (−0.05 to +0.10) | +1 pt (−2 to +4) | −0 pts (−2 to +2) | +2 pts (−5 to +8) |
 
 Pages: [original writer](../harness/results/base_writer_eval.md),
 [maintainability prompt](../harness/results/maintainability_prompt_eval.md),
 [ours](../harness/results/dpo3_eval.md),
-[static ranking](../harness/results/radon_eval.md).
+[static ranking](../harness/results/radon_eval.md),
+[correctness-only](../harness/results/sft_eval.md).
 
-## Running now
+## The two trained baselines, in plain words
 
-As of 2026-11-11 04:05 PST, on the RTX 5070 machine. Each step runs only if
-the one before succeeded, and a run that stops resumes from the store.
-
-- **Correctness-only baseline** (`configs/rtx5070_eval_sft.yaml`), started
-  at 03:55 PST when the Radon run finished. About 15 minutes of training
-  (running fine on the GPU: the loss fell from 0.05 to 0.03 over its first
-  20 of 51 steps), 20 minutes of export, then about a day on the eval
-  tasks. Expected around Thursday 2026-11-12 in the morning. Its results
-  page will be added to `harness/results/` when it finishes.
-
-The static-ranking baseline finished on 2026-11-11 at 03:54 PST (run
-20261110T134603Z-31b2e3): see "The five methods" and
-[its page](../harness/results/radon_eval.md).
-
-### The two baselines, in plain words
+Both ran on the RTX 5070 machine, one after the other: static ranking from
+2026-11-10 05:00 to 2026-11-11 03:54 PST (run 20261110T134603Z-31b2e3),
+correctness-only from 2026-11-11 03:55 to 2026-11-12 03:34 PST (run
+20261111T122905Z-5cae35). Nothing is running now.
 
 A baseline is a simpler alternative that our method is compared against,
 to see whether learning from real editing results is worth its cost. Both
@@ -263,10 +265,11 @@ five-method comparison, not new attempts after the first results.
   dpo3 the main measure cannot be told apart either (−0.10, interval −0.35
   to +0.11). Because neither trained writer beat the original, this
   comparison cannot yet say whether real editing results are a better
-  training signal than the formula. It does suggest that dpo3's higher
-  pass rate does not come from DPO training on pairs of working programs
-  as such: the Radon writer was trained the same way and passes 14 points
-  less often than dpo3.
+  training signal than the formula. Its pass rate is 14 points below
+  dpo3's, although both were trained on pairs of working programs.
+  Together with the correctness-only result below, this suggests the
+  formula's preferences work against the pass rate, while training on the
+  writer's own working programs lifts it.
 
 **2. Correctness-only baseline**
 
@@ -276,13 +279,19 @@ five-method comparison, not new attempts after the first results.
   more often (64% vs 58%). This baseline tests whether that comes from our
   method or just from extra training on correct code. If this one gets the
   same boost, the boost is not special to our method.
-- **The steps:** about 15 minutes of training, about 20 minutes converting
-  the model ("export"), then about a day on the eval tasks. It started
-  automatically when the Radon run finished (03:55 PST on 2026-11-11), so
-  it should be done Thursday morning.
-- **The caveat:** its training code is new. Its automatic tests pass, and
-  it started fine on the graphics card. If a later step fails, the run
-  stops safely, nothing else is affected, and it gets fixed.
+- **The steps:** 16 minutes of training, about 15 minutes converting the
+  model ("export", with the same checks as dpo3), then 23 hours on the
+  eval tasks.
+- **The result (finished 2026-11-12):** it got the same boost. 66% of its
+  programs pass the initial tests, against 58% for the original (interval
+  +1 to +15 points) and 64% for dpo3. On every measure it is as good as
+  dpo3: 1.47 changes done before the first failure against dpo3's 1.45
+  (difference +0.03, interval −0.05 to +0.10), and the first change works
+  72% of the time against 71%. So the boost is not special to our method,
+  and the preferences in our 160 pairs (which program the editor found
+  easier to change) made no difference we can measure. Its programs are a
+  little less varied: 234 different programs among 256 samples, against
+  252 for the original and dpo3.
 
 ## What was done
 
@@ -395,7 +404,7 @@ Pages: [dpo2](../harness/results/dpo2_dev.md),
 [dpo3](../harness/results/dpo3_dev.md),
 [original](../harness/results/base_writer_dev.md).
 
-### The two remaining baselines (2026-11-10)
+### The two trained baselines (2026-11-10 to 11-12)
 
 Both see the same 28 train tasks and use dpo3's training settings, so only
 the training signal differs:
@@ -413,37 +422,44 @@ the training signal differs:
 - **Correctness-only:** supervised fine-tuning
   (`harness/src/harness/train_sft.py`) on the 201 passing programs these
   tasks' pairs were built from (`scripts/sft_programs.py`). It sees the same
-  programs as our writer but not which were easier to change.
+  programs as our writer but not which were easier to change. 51 steps in
+  16 minutes; the loss per program token fell from 0.051 to 0.019.
 
 ## Findings so far
 
-1. **No method changes how far the editor gets.** The four finished
-   methods are within 0.10 changes of each other on 16 tasks (1.35 to
-   1.45), and every interval against the original writer includes 0.
-2. **Our writer's small gain comes from one task.** Per task, 6 tasks go up
-   and 9 go down. race_telemetry carries the average (1.20 → 2.23 on 5
-   programs); without it, the difference is about −0.05.
-3. **Our training makes the writer pass the initial tests more often** (+6
-   points), although every pair compares two passing programs. The Radon
-   writer's pairs also compare two passing programs, with the same tasks
-   and settings, and it passes less often (−8 points against the
-   original, −14 against ours). So the gain seems to come from which
-   programs our pairs prefer, not from DPO on passing programs as such
-   (one seed each). The correctness-only baseline tests whether plain
-   fine-tuning on passing programs does the same.
-4. **Training on the code-quality formula does not help either.** The
+1. **No method changes how far the editor gets.** The five methods are
+   within 0.12 changes of each other on 16 tasks (1.35 to 1.47), and every
+   interval against the original writer includes 0.
+2. **DPO on editing outcomes does no better than plain fine-tuning on the
+   same programs.** The correctness-only writer and ours cannot be told
+   apart on any measure, and their intervals are the narrowest of all
+   (main measure +0.03, −0.05 to +0.10). With 160 pairs, which program the
+   editor found easier to change adds nothing we can detect.
+3. **Both small gains come from one task.** Per task, ours has 6 tasks up
+   and 9 down, the correctness-only writer 8 up, 7 down and 1 the same.
+   race_telemetry carries both averages (1.20 → 2.23 and 2.17 on 5
+   programs); without it, the differences are about −0.05 and −0.01.
+4. **Training on the writer's own passing programs makes it pass the
+   initial tests more often**: +6 points for ours (+2 to +12) and +8 for
+   the correctness-only writer (+1 to +15), which get the same boost
+   without any preferences. The Radon writer's pairs also compare passing
+   programs, with the same tasks and settings, yet it passes less often
+   (−8 points against the original, −14 against ours), so the formula's
+   preferences seem to work against the pass rate (one seed each).
+5. **Training on the code-quality formula does not help either.** The
    Radon writer gets 1.35 changes against 1.43 (−0.08, −0.23 to +0.08).
    Its programs score only a little higher on Radon's own index (43.5
    against 42.6 out of 100), about as much as the maintainability prompt
    gives (43.6).
-5. **The learning rate matters, and too high a rate narrows the writer.**
+6. **The learning rate matters, and too high a rate narrows the writer.**
    dpo2 lost program variety and collapsed on one task. dpo3 kept the
-   variety.
-6. **Most editing failures are the editor running out of turns.** That is
+   variety (252 distinct programs among 256 eval samples, as many as the
+   original); the correctness-only writer has a little less (234).
+7. **Most editing failures are the editor running out of turns.** That is
    two thirds of the failed steps for dpo3 (337 of 507), mostly while a
    public check it can see still fails. That limits how much a
    better-structured program can show.
-7. **The comparison can only see large effects.** With 16 tasks, the 95%
+8. **The comparison can only see large effects.** With 16 tasks, the 95%
    interval of the main measure spans 0.2 to 0.3 changes, and the training
    signal is 160 pairs from 28 tasks.
 
@@ -452,9 +468,11 @@ the training signal differs:
 - **Seeds:** the proposal asks for several random seeds for our writer.
   Only one (seed 42) is done, and each costs about a day of evaluation.
 - **Stronger signal:** should we strengthen the training signal before
-  spending GPU days on seeds? Options: more pairs (more samples or train
-  tasks), different beta or epochs (chosen on dev tasks), or longer change
-  sequences.
+  spending GPU days on seeds? The correctness-only result says the
+  preferences in our 160 pairs had no detectable effect of their own, so
+  more seeds of the same training would mostly measure fine-tuning.
+  Options: more pairs (more samples or train tasks), different beta or
+  epochs (chosen on dev tasks), or longer change sequences.
 - **Protocol:** these results use the collection store's protocol: selected
   passing programs, at most 8 per task. `harness/docs/evaluation.md`
   describes a different one (one unselected first attempt per task and

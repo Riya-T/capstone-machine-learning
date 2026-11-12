@@ -79,11 +79,12 @@ This is a  rough list of tasks we need to complete and is definitely subject to 
 - [x] **Maintainability prompt** — Write the baseline prompt that asks for
   clean, maintainable code (otherwise identical to the normal prompt).
   `harness/prompts/writer_maintainable_v1.md`.
-- [ ] **Correctness-only baseline** — Fine-tune the writer on its own programs
+- [x] **Correctness-only baseline** — Fine-tune the writer on its own programs
   that pass the initial tests. Training code `harness/src/harness/train_sft.py`
   and data `scripts/sft_programs.py` (the 201 passing programs of the 28 tasks
   our pairs come from), dpo3's settings; config
-  `harness/configs/rtx5070_eval_sft.yaml`.
+  `harness/configs/rtx5070_eval_sft.yaml`. Results:
+  `harness/results/sft_eval.md`.
 - [x] **Static-ranking baseline** — Train the writer to prefer programs with
   a higher Radon maintainability score (Radon settings chosen on dev tasks).
   Pairs from `scripts/static_ranking.py`, matched to our training file by
@@ -104,13 +105,13 @@ This is a  rough list of tasks we need to complete and is definitely subject to 
   New runs freeze a planned checkpoint roster so missing methods/seeds are detectable.
   A separate paired analysis compares editing on aligned parents that both initially pass.
   See `harness/docs/evaluation-refinements.md` for commands and limitations.
-- [ ] **Run all five methods** — Original model, maintainability prompt,
+- [x] **Run all five methods** — Original model, maintainability prompt,
   correctness-only, static ranking and ours, on the held-out tasks with the
-  same editor and budget. Original model, maintainability prompt, ours
-  (dpo3) and static ranking done: `harness/results/base_writer_eval.md`,
+  same editor and budget. All five done, one seed per trained method:
+  `harness/results/base_writer_eval.md`,
   `harness/results/maintainability_prompt_eval.md`,
-  `harness/results/dpo3_eval.md`, `harness/results/radon_eval.md`.
-  Correctness-only running.
+  `harness/results/dpo3_eval.md`, `harness/results/radon_eval.md`,
+  `harness/results/sft_eval.md`.
 - [ ] **Report the main numbers** — Fraction of changes completed before the
   first failure, how often the first version works, how often a whole
   sequence succeeds, how often old behavior breaks, and the cost (tokens and

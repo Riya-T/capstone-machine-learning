@@ -484,6 +484,7 @@ epochs, 8 examples per step, seed 42) with the plain supervised loss, the
 mean negative log-probability of each program's tokens. So this baseline
 sees the same programs as our writer but not which of them were easier to
 change. It is built like ours and scored with `configs/rtx5070_eval_sft.yaml`.
+Results: `harness/results/sft_eval.md`.
 
 ## Changes from the proposal
 
