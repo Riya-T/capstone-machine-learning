@@ -8,7 +8,8 @@ For each task:
    of them) through every change sequence, editor.reps times. A trial stops
    at its first failed step.
 4. Scoring: write preferences.jsonl and preferences_report.json to the
-   run's directory.
+   run's directory. Each pair carries a `source` block saying which run,
+   store and settings made it (collection/source.py).
 
 Everything resumes: finished samples, checks and steps are skipped, a
 half-done trial continues from its first unfinished step (replaying saved
@@ -49,6 +50,7 @@ from ..store import (
 )
 from .editor import Editor
 from .scorer import Scorer, ScoreResult, load_task_record, summary_table, write_outputs
+from .source import pair_source, run_source
 
 log = logging.getLogger("harness")
 
@@ -133,7 +135,7 @@ def collect(cfg: ExperimentConfig, until: str = "edit") -> CollectStats:
                             cfg, store, editor, evaluator, task, cid, sequence, rep, keys, stats
                         )
                 log.info("%s: trials done for candidate %d/%d", task.id, n, len(passed))
-        result = score(cfg, store, tasks, keys, stats.run_dir, scorer)
+        result = score(cfg, store, tasks, keys, stats.run_dir, scorer, run_id=stats.run_id)
         stats.pairs = len(result.pairs)
     print(summary_table(result.report), flush=True)
     log.info(
@@ -162,7 +164,16 @@ def report(cfg: ExperimentConfig, out_dir: Path | None = None) -> ScoreResult:
     return result
 
 
-def score(cfg, store: Store, tasks: dict[str, Task], keys: Keys, out_dir: Path, scorer=None):
+def score(
+    cfg,
+    store: Store,
+    tasks: dict[str, Task],
+    keys: Keys,
+    out_dir: Path,
+    scorer=None,
+    *,
+    run_id: str | None = None,
+):
     scorer = scorer or Scorer(cfg.scorer, cfg.editor.reps)
     template = load_template(cfg.writer.prompt_template)
     records = [
@@ -180,6 +191,11 @@ def score(cfg, store: Store, tasks: dict[str, Task], keys: Keys, out_dir: Path, 
         for task in tasks.values()
     ]
     result = scorer.build(records, store.get_blob)
+    # Every pair says where it came from, so files from several stores can be
+    # joined later (collection/source.py, harness/data/README.md).
+    base = run_source(cfg, keys, run_id=run_id)
+    for pair in result.pairs:
+        pair["source"] = pair_source(base, tasks[pair["task_id"]], pair["prompt"])
     write_outputs(result, out_dir)
     return result
 

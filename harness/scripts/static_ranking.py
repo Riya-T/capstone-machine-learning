@@ -4,6 +4,8 @@ Usage (from harness/):
     uv run python scripts/static_ranking.py --config configs/rtx5070_train.yaml
     uv run python scripts/static_ranking.py --config configs/rtx5070_train.yaml \
         --out runs/static-ranking/preferences.jsonl
+    uv run python scripts/static_ranking.py --config configs/rtx5070_train.yaml \
+        --dataset train-v2   # into harness/data/train-v2/ (harness/data/README.md)
 
 This reads the existing collection store and runs no models or sandboxes.
 """
@@ -23,6 +25,7 @@ from radon.raw import analyze
 
 from harness.collection.collect import Keys, sandbox_owner
 from harness.config import ExperimentConfig, load_config
+from harness.datasets import add_file
 from harness.models.parser import render_program
 from harness.registry import build_writer_prompt, load_tasks, load_template, prompt_version
 from harness.sandbox.runner import make_runner
@@ -175,7 +178,13 @@ def main() -> None:
         type=Path,
         help="preference JSONL output (default: <runs_dir>/static_ranking/preferences.jsonl)",
     )
+    parser.add_argument(
+        "--dataset",
+        help="write to harness/data/DATASET/ as radon_all.jsonl and radon_all_report.json",
+    )
     args = parser.parse_args()
+    if args.out and args.dataset:
+        parser.error("give --out or --dataset, not both")
     cfg = load_config(args.config)
     runner = make_runner(cfg, owner=sandbox_owner(cfg))
     image_id = runner.existing_image_id()
@@ -183,6 +192,13 @@ def main() -> None:
         raise SystemExit("sandbox image not found; initial checks are keyed by its id")
 
     pairs, report = build_preferences(cfg, image_id)
+    if args.dataset:
+        text = "".join(json.dumps(pair, ensure_ascii=False) + "\n" for pair in pairs)
+        output = add_file(args.dataset, "radon_all.jsonl", text.encode("utf-8"))
+        report_text = json.dumps(report, indent=2) + "\n"
+        add_file(args.dataset, "radon_all_report.json", report_text.encode("utf-8"))
+        print(f"Wrote {len(pairs)} static-ranking preference pairs to {output}")
+        return
     output = args.out or cfg.runs_dir / "static_ranking" / "preferences.jsonl"
     output.parent.mkdir(parents=True, exist_ok=True)
     with output.open("w", encoding="utf-8") as file:
