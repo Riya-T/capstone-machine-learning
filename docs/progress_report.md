@@ -136,12 +136,21 @@ All five methods are done:
   comment removed before the editor sees the code, and the results did not
   change. The writers rarely write comments unless asked for maintainable
   code, and our trained writer did not learn to add hints for the editor.
+- **Why nothing shows up: the editor's luck.** The same program, given the
+  same changes, often passes one time and fails the next. Within a task,
+  95% of the differences in score come from this luck and about 4% from
+  the program itself. The writer's programs are small (about 47 lines) and
+  almost all built the same way, so there is little for training to find,
+  and our 160 pairs mostly taught the writer to repeat them. Training
+  tweaks cannot fix this; the tasks need to change (see "Why nothing shows
+  up, in plain words").
 
 ### What is running now
 
-Nothing; the graphics card is free since the comment test finished on
-2026-11-13. What to run next is one of the open questions for the team at
-the end of this report.
+A quick test of the editor's randomness: the 8 dev tasks' programs edited
+again with the editor at temperature 0.2 instead of 0.7, from 2026-11-13
+13:31 PST, about 7 hours (`configs/rtx5070_pc_editor_t02.yaml`). It shows
+whether a less random editor gives labels that depend more on the program.
 
 ### Words used in the rest of this report
 
@@ -197,6 +206,15 @@ them in one place.
   removed before the editor sees the code, no writer's main measure moves
   by more than 0.02. On the 52 programs that had any, the editor does
   about as well without them (−0.04, interval −0.26 to +0.19).
+- **The testbed cannot show an effect yet, because the labels are mostly
+  the editor's randomness.** Within a task, 95% of the variance of a
+  trial's score on the train tasks is the editor (temperature 0.7), 4% the
+  program. The best program on one change sequence is no better than
+  average on the other (+0.03), and a pair's winner on one sequence wins
+  on the other only 58% of the time. dpo3 ranks pairs it never saw 55%
+  correctly (97% on its training pairs). Programs are about 47 lines and
+  share one design in 30 of 36 train tasks.
+  [Diagnostics](../harness/results/diagnostics.md).
 
 ## The five methods
 
@@ -332,6 +350,45 @@ five-method comparison, not new attempts after the first results.
   comments. Our writer comments as rarely as the original, so it did not
   learn to leave hints. Page:
   [comment ablation](../harness/results/nocomments_eval.md).
+
+## Why nothing shows up, in plain words
+
+Four checks on the results we already have (2026-11-13), to find out
+whether the problem is the test, the training signal or the training:
+
+- **Is there room to improve at all?** For each task, take the program
+  that did best on one list of changes and see how it does on the other
+  list. On the train tasks it does no better than average (+0.03 changes).
+  On the eval tasks it does somewhat better (+0.15 to +0.27), but a writer
+  that only leans towards its better programs would gain under 0.1, less
+  than this eval can detect.
+- **Do winners stay winners?** If program A beats program B on one list of
+  changes, does it also beat B on the other? Only 58% of the time, close
+  to a coin flip. Even two runs of the same list agree only 60% of the
+  time.
+- **Did our writer learn anything that carries over?** On pairs it never
+  saw, it prefers the winner 55% of the time (63% on eval tasks, 36% on
+  dev tasks), against 97% on the pairs it was trained on. It mostly
+  memorized its training pairs.
+- **What do winners look like?** No code feature (length, number of
+  functions, complexity, Radon score, comments, ...) tells winners from
+  losers consistently, and our writer's code did not change on any of
+  them. The Radon writer's code did change, on exactly the features its
+  formula rewards, so training works when the labels are consistent.
+
+**The reason:** the editor is random enough (temperature 0.7) that the
+same program, given the same changes, often succeeds once and fails the
+next time. 95% of the differences in score within a task come from this,
+and 4% from the program. The programs are about 47 lines long, nearly all
+built the same way (the task fixes the methods), and the editor rewrites
+whole files, so how a program is organized barely matters to it.
+
+**What it means:** more seeds or other training settings cannot help. The
+tasks need to make the program matter: bigger programs with room for
+different designs, changes that cut across the design, an editor that
+patches code instead of rewriting it, and a check with these diagnostics on
+a few pilot tasks before more training. Page:
+[diagnostics](../harness/results/diagnostics.md).
 
 ## What was done
 
@@ -477,6 +534,21 @@ the training signal differs:
   calls, about a tenth of the five normal runs' 20,078.
 - One trial hit a Docker error and was retried by rerunning its config.
 
+### Diagnostics (2026-11-13)
+
+- `scripts/diagnostics.py`: headroom (best program by one sequence, scored
+  on the other), how often winners agree across sequences and repetitions,
+  and a variance decomposition of trial scores (program, program ×
+  sequence, trial), also for other measures of the first change.
+- `scripts/implicit_reward.py`: DPO's implicit reward of the four adapters
+  on the training pairs and on the base writer's dev-task and eval-task
+  pairs (forward passes, 2.5 hours on the GPU).
+- `scripts/winner_features.py`: 23 static features, their within-task
+  correlation with the editing score, a leave-one-task-out pair
+  classifier, and how far each trained writer's programs moved on them.
+- `configs/rtx5070_pc_editor_t02.yaml`: the editor-temperature probe on
+  the dev tasks (running).
+
 ## Findings so far
 
 1. **No method changes how far the editor gets.** The five methods are
@@ -521,17 +593,40 @@ the training signal differs:
 9. **The comparison can only see large effects.** With 16 tasks, the 95%
    interval of the main measure spans 0.2 to 0.3 changes, and the training
    signal is 160 pairs from 28 tasks.
+10. **The labels are mostly the editor's randomness.** Within a task, the
+    editor's randomness is 95% of the variance of a trial's score on the
+    train tasks (89% on eval tasks), the program 4% (0% to 8%; eval 11%).
+    A program's mean over its 6 trials measures its own part with a
+    reliability of 0.18. The best program by one sequence gains +0.03 on
+    the other (−0.04 to +0.10), and winners agree across sequences 58% of
+    the time (47% to 68%). Turns used, edit size, reply length and the
+    share of hidden tests passed are no better (program share 0% to 13%).
+11. **There is little difference between programs to find.** The writer's
+    programs are about 47 lines and have exactly the same functions and
+    classes in 30 of 36 train tasks; the editor rewrites whole files. No
+    static feature separates winners from losers (leave-one-task-out
+    classifier 54%, 43% to 64%).
+12. **dpo3 mostly memorized its pairs.** It ranks its training pairs 97%
+    correctly but pairs it never saw 55% (47% to 63%; 63% on eval tasks,
+    36% on dev tasks), with a tenth of the reward margin, and its programs
+    moved on no feature. The Radon writer's programs did move, on the
+    features its formula rewards (Radon MI +0.43 SD), so training follows
+    labels that are consistent.
 
 ## Open questions for the team
 
-- **Seeds:** the proposal asks for several random seeds for our writer.
-  Only one (seed 42) is done, and each costs about a day of evaluation.
-- **Stronger signal:** should we strengthen the training signal before
-  spending GPU days on seeds? The correctness-only result says the
-  preferences in our 160 pairs had no detectable effect of their own, so
-  more seeds of the same training would mostly measure fine-tuning.
-  Options: more pairs (more samples or train tasks), different beta or
-  epochs (chosen on dev tasks), or longer change sequences.
+- **Testbed (the main question):** the diagnostics say the current tasks
+  cannot show an effect, because the editor's randomness swamps the
+  differences between programs. Do we build a pilot of a few bigger dev
+  tasks (a few hundred lines, design left open, changes that cut across
+  it) with a patch-based editor, and go ahead only if the diagnostics show
+  a program share well above 4% (say 25%) and headroom above 0.3? Or do we
+  write up the current results as a well-explained negative result? The
+  editor-temperature probe (running) shows whether a setting alone helps.
+- **Seeds and training settings:** the proposal asks for several seeds
+  for our writer; only seed 42 is done. More seeds, beta or epochs would
+  measure training on labels that are mostly noise, so they should wait
+  for the testbed decision.
 - **Protocol:** these results use the collection store's protocol: selected
   passing programs, at most 8 per task. `harness/docs/evaluation.md`
   describes a different one (one unselected first attempt per task and
@@ -557,4 +652,5 @@ the training signal differs:
 | Training, export and baselines | README, "DPO training", "Serving the trained writer", "Static-ranking baseline", "Correctness-only baseline" |
 | Configs | `harness/configs/rtx5070_*.yaml` (`_pc` dev, `_train`, `_eval`, and one per writer) |
 | Summaries and comparisons | `scripts/eval_summary.py`, `scripts/eval_compare.py`, `scripts/ablation_compare.py` (comment ablation) |
+| Diagnostics | `scripts/diagnostics.py`, `scripts/implicit_reward.py`, `scripts/winner_features.py`; `harness/results/diagnostics.md` |
 | Task checklist | `Task_list.md` |

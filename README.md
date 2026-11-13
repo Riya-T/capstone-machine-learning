@@ -502,6 +502,32 @@ hours instead of about five days. `scripts/ablation_compare.py` checks that
 those replayed trials match the normal run exactly and compares the
 programs that had comments. Results: `harness/results/nocomments_eval.md`.
 
+### Diagnostics
+
+Three scripts check, from stored results, whether a config's tasks and
+editor can show a difference between programs at all:
+
+```bash
+uv run python scripts/diagnostics.py --config configs/rtx5070_train.yaml --measures \
+  --pairs runs/rtx5070_pc/dpo/pairs_cap8_f23_nocosm.jsonl
+uv run python scripts/winner_features.py --config configs/rtx5070_train.yaml \
+  --pairs runs/rtx5070_pc/dpo/pairs_cap8_f23_nocosm.jsonl \
+  --base configs/rtx5070_eval.yaml --writer configs/rtx5070_eval_dpo3.yaml
+.venv/bin/python scripts/implicit_reward.py --model /home/pc/models/hf/Qwen2.5-Coder-7B-Instruct \
+  --adapter dpo3=/home/pc/models/dpo/dpo3 --config configs/rtx5070_pc.yaml \
+  --out runs/rtx5070_pc/dpo/implicit_reward.jsonl
+```
+
+`diagnostics.py` gives the headroom (each task's best program by one change
+sequence, scored on the other), how often winners agree across sequences
+and repetitions, and how much of a trial's score belongs to the program
+rather than to the editor's randomness. `winner_features.py` relates static
+features of the programs to their editing scores and to training.
+`implicit_reward.py` (training extras, GPU) scores DPO's implicit reward of
+trained adapters on pairs they never saw. Run them on a few tasks before
+collecting training data for a new task set or editor setting. Results for
+the current tasks: `harness/results/diagnostics.md`.
+
 ## Changes from the proposal
 
 Decisions made while setting up the pipeline that differ from, or fill in,

@@ -134,6 +134,16 @@ This is a  rough list of tasks we need to complete and is definitely subject to 
   signal works as well.
 - [ ] **Second editor (stretch goal)** — Evaluate with a different, non-Qwen
   editor.
+- [x] **Diagnostics** — Headroom, label stability, variance of trial scores,
+  dpo3's implicit reward on held-out pairs and the features of winners
+  (`scripts/diagnostics.py`, `scripts/implicit_reward.py`,
+  `scripts/winner_features.py`). The labels are 95% editor randomness on
+  the current tasks: `harness/results/diagnostics.md`.
+- [ ] **Editor-temperature probe** — Dev tasks re-edited with the editor at
+  0.2 instead of 0.7 (`configs/rtx5070_pc_editor_t02.yaml`); running.
+- [ ] **Testbed pilot (proposed)** — A few bigger dev tasks with design left
+  open and a patch-based editor, checked with the diagnostics before any
+  more training. See the progress report's open questions.
 
 ## 8. Analysis and write-up 
 

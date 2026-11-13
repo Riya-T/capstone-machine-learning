@@ -1,0 +1,16 @@
+# Editor-temperature probe on the dev tasks: rtx5070_pc.yaml with the editor
+# at temperature 0.2 instead of 0.7. scripts/diagnostics.py finds that the
+# editor's randomness is 96% of the variance of a dev trial's score (95% on
+# the train tasks), so a label says little about the program. This checks
+# whether a cooler editor leaves more of the score to the program. The
+# writer's samples and initial checks are reused; the temperature is part of
+# the editor key and of the model-call cache key, so every trial is new.
+#
+# Usage (from harness/, inside WSL):
+#     uv run python -m harness collect --config configs/rtx5070_pc_editor_t02.yaml
+#     uv run python scripts/diagnostics.py --config configs/rtx5070_pc_editor_t02.yaml
+extends: rtx5070_pc.yaml
+name: rtx5070-pc-editor-t02
+editor:
+  backend:
+    temperature: 0.2
