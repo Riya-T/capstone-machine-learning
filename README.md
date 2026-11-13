@@ -285,27 +285,16 @@ are never scored; the next run retries them.
 
 ### Not built yet
 
-These are in the proposal but not in the harness yet:
+The training baselines, the held-out comparison of all five methods and
+the comment ablation are done; their results are in `harness/results/`
+("Static-ranking baseline", "Correctness-only baseline" and "Comment
+ablation" below). Still to do from the proposal: applying the
+size-matching tool to real comparison results.
 
-- Training baselines
-  (correctness-only fine-tuning and DPO on Radon maintainability rankings).
-  `scripts/static_ranking.py` already builds the Radon-ranked preference file;
-  training and evaluation of that baseline are still pending;
-- held-out comparisons beyond the base writer. Its completed run is in
-  [harness/results/base_writer_eval.md](harness/results/base_writer_eval.md),
-  made by `scripts/eval_summary.py`. The new evaluation tool adds comparison
-  reports and uncertainty estimates, but the remaining methods still need runs;
-- runs of the comment ablation. The code is in: `editor.view_transform:
-  strip_comments` (`collection/view.py`) removes every comment and docstring
-  before a sequence's first step, and the editor edits that stripped program
-  for the whole sequence (its own comments stay). The setting is part of the
-  editor key, so ablation trials never mix with normal ones, while the
-  writer's programs and initial checks are reused;
-- applying the size-matching tool to real comparison results.
-
-The maintainability-focused prompt is already written in
+The maintainability-focused prompt is in
 `prompts/writer_maintainable_v1.md`, with the team's collection config
-`configs/rtx5070_eval_maintain.yaml`. The new comparison plans reuse this prompt.
+`configs/rtx5070_eval_maintain.yaml`. The new comparison plans reuse this
+prompt. Results: `harness/results/maintainability_prompt_eval.md`.
 
 ### Writer evaluation and comparison
 
@@ -485,6 +474,30 @@ mean negative log-probability of each program's tokens. So this baseline
 sees the same programs as our writer but not which of them were easier to
 change. It is built like ours and scored with `configs/rtx5070_eval_sft.yaml`.
 Results: `harness/results/sft_eval.md`.
+
+### Comment ablation
+
+`editor.view_transform: strip_comments` (`collection/view.py`) removes every
+comment and docstring before a sequence's first step, and the editor edits
+that stripped program for the whole sequence (its own comments stay). The
+setting is part of the editor key, so ablation trials never mix with normal
+ones, while the writer's programs and initial checks are reused. Each eval
+config has an ablation twin, `configs/rtx5070_eval*_nocomments.yaml`:
+
+```bash
+uv run python -m harness collect --config configs/rtx5070_eval_dpo3_nocomments.yaml
+uv run python scripts/eval_compare.py --base configs/rtx5070_eval_dpo3.yaml \
+  --other configs/rtx5070_eval_dpo3_nocomments.yaml --bootstrap 20000
+uv run python scripts/ablation_compare.py \
+  configs/rtx5070_eval_dpo3.yaml configs/rtx5070_eval_dpo3_nocomments.yaml
+```
+
+A program with nothing to strip gives the editor the same prompt with the
+same seed as the normal run, so its trials replay from the stored replies
+and only the tests run again; the five writers' ablation runs took 27.5
+hours instead of about five days. `scripts/ablation_compare.py` checks that
+those replayed trials match the normal run exactly and compares the
+programs that had comments. Results: `harness/results/nocomments_eval.md`.
 
 ## Changes from the proposal
 

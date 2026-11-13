@@ -1,4 +1,4 @@
-# Progress report, 2026-11-12
+# Progress report, 2026-11-13
 
 ## The project in plain words
 
@@ -132,11 +132,16 @@ All five methods are done:
 - **Training too aggressively made the writer repetitive:** it kept
   writing the same few programs. A gentler setting fixed this, and that
   gentler version is the one we evaluated.
+- **Comments make no difference.** We reran all five methods with every
+  comment removed before the editor sees the code, and the results did not
+  change. The writers rarely write comments unless asked for maintainable
+  code, and our trained writer did not learn to add hints for the editor.
 
 ### What is running now
 
-Nothing; the graphics card is free. What to run next is one of the open
-questions for the team at the end of this report.
+Nothing; the graphics card is free since the comment test finished on
+2026-11-13. What to run next is one of the open questions for the team at
+the end of this report.
 
 ### Words used in the rest of this report
 
@@ -163,9 +168,10 @@ first held-out results. It builds on the harness (Noah), the evaluation
 tool (Thoomy), and the confidence intervals, static-ranking generator and
 first training code (Riya). Pull requests #6 and #7 (2026-11-10) added
 tests of the DPO training loop on a tiny CPU model and the code for the
-comment ablation (`editor.view_transform: strip_comments`). Details and
-reproduce commands are in the pages linked from each section; this report
-collects them in one place.
+comment ablation (`editor.view_transform: strip_comments`), whose runs on
+all five writers followed (2026-11-12 to 11-13). Details and reproduce
+commands are in the pages linked from each section; this report collects
+them in one place.
 
 ## In short
 
@@ -187,6 +193,10 @@ collects them in one place.
   pass the initial tests more often: 64% (ours, +2 to +12 points) and 66%
   (correctness-only, +1 to +15) against 58%. The Radon writer passes less
   often (50%).
+- **No result depends on comments.** With every comment and docstring
+  removed before the editor sees the code, no writer's main measure moves
+  by more than 0.02. On the 52 programs that had any, the editor does
+  about as well without them (−0.04, interval −0.26 to +0.19).
 
 ## The five methods
 
@@ -292,6 +302,36 @@ five-method comparison, not new attempts after the first results.
   easier to change) made no difference we can measure. Its programs are a
   little less varied: 234 different programs among 256 samples, against
   252 for the original and dpo3.
+
+## The comment test, in plain words
+
+- **The worry:** a writer could "win" without writing better-organized
+  code, by leaving comments that tell the editor what to do. The proposal
+  plans this check: rerun the evaluation with all comments removed before
+  the editor sees the code. If a method's results drop, its advantage came
+  from the comments.
+- **How it ran:** all five methods, on the same programs, from 2026-11-12
+  03:47 to 2026-11-13 07:16 PST (27.5 hours). Most programs have no
+  comments at all. The editor sees exactly the same thing for those as in
+  the normal run, so their results were reused from the store instead of
+  asking the editor again (all 2,904 of these trials came out identical,
+  as they should). Only the 52 programs with comments needed new editing.
+  That made it about a day instead of five.
+- **The result (finished 2026-11-13):** nothing changes.
+
+  | Method | Programs with comments | Changes done before first failure, normal → no comments |
+  |---|---:|---:|
+  | Original writer | 4 of 110 | 1.43 → 1.41 |
+  | Maintainability prompt | 32 of 108 | 1.43 → 1.44 |
+  | Ours (dpo3) | 5 of 113 | 1.45 → 1.45 |
+  | Static ranking | 8 of 94 | 1.35 → 1.35 |
+  | Correctness-only | 3 of 111 | 1.47 → 1.48 |
+
+  Only the maintainability prompt makes the writer comment much (a third
+  of its programs), and the editor does just as well without those
+  comments. Our writer comments as rarely as the original, so it did not
+  learn to leave hints. Page:
+  [comment ablation](../harness/results/nocomments_eval.md).
 
 ## What was done
 
@@ -425,6 +465,18 @@ the training signal differs:
   programs as our writer but not which were easier to change. 51 steps in
   16 minutes; the loss per program token fell from 0.051 to 0.019.
 
+### Comment ablation (2026-11-12 to 11-13)
+
+- One config per writer (`configs/rtx5070_eval*_nocomments.yaml`): the
+  normal eval config plus `editor.view_transform: strip_comments`, which
+  removes every comment and docstring before a sequence's first step.
+- Programs with nothing to strip give the editor the same prompt with the
+  same seed, so their trials replay from the stored replies. All 2,904 of
+  them match the normal run step for step (status and output program;
+  `scripts/ablation_compare.py`). The five runs needed 1,980 new editor
+  calls, about a tenth of the five normal runs' 20,078.
+- One trial hit a Docker error and was retried by rerunning its config.
+
 ## Findings so far
 
 1. **No method changes how far the editor gets.** The five methods are
@@ -451,15 +503,22 @@ the training signal differs:
    Its programs score only a little higher on Radon's own index (43.5
    against 42.6 out of 100), about as much as the maintainability prompt
    gives (43.6).
-6. **The learning rate matters, and too high a rate narrows the writer.**
+6. **No result depends on comments.** With comments and docstrings
+   removed before the editor sees the code, no writer's main measure moves
+   by more than 0.02. On the 52 programs that had any (32 of them from the
+   maintainability prompt), the editor does about as well without them
+   (−0.04, −0.26 to +0.19). dpo3 comments as rarely as the original writer
+   (5 of 113 programs against 4 of 110), and only 14 of the 256 train
+   programs have comments, so comments did not drive our pairs either.
+7. **The learning rate matters, and too high a rate narrows the writer.**
    dpo2 lost program variety and collapsed on one task. dpo3 kept the
    variety (252 distinct programs among 256 eval samples, as many as the
    original); the correctness-only writer has a little less (234).
-7. **Most editing failures are the editor running out of turns.** That is
+8. **Most editing failures are the editor running out of turns.** That is
    two thirds of the failed steps for dpo3 (337 of 507), mostly while a
    public check it can see still fails. That limits how much a
    better-structured program can show.
-8. **The comparison can only see large effects.** With 16 tasks, the 95%
+9. **The comparison can only see large effects.** With 16 tasks, the 95%
    interval of the main measure spans 0.2 to 0.3 changes, and the training
    signal is 160 pairs from 28 tasks.
 
@@ -479,8 +538,8 @@ the training signal differs:
   seed), which has not been run. We should agree which one the final report
   uses.
 - **Task list:** items still open in `Task_list.md` include how often old
-  behaviour breaks, the cost summary, and the comment-ablation runs (its
-  code is in; no runs yet).
+  behaviour breaks, the cost summary, comment density and the size-matched
+  check.
 - **Hard tasks:** library_catalog stays a hard dev task (6 of 16 samples
   pass), and job_board and clinic_appointments got worse with each
   redesign, so they were restored. Keep them, or drop them?
@@ -497,5 +556,5 @@ the training signal differs:
 | Decisions that differ from the proposal | README, "Changes from the proposal" |
 | Training, export and baselines | README, "DPO training", "Serving the trained writer", "Static-ranking baseline", "Correctness-only baseline" |
 | Configs | `harness/configs/rtx5070_*.yaml` (`_pc` dev, `_train`, `_eval`, and one per writer) |
-| Summaries and comparisons | `scripts/eval_summary.py`, `scripts/eval_compare.py` |
+| Summaries and comparisons | `scripts/eval_summary.py`, `scripts/eval_compare.py`, `scripts/ablation_compare.py` (comment ablation) |
 | Task checklist | `Task_list.md` |

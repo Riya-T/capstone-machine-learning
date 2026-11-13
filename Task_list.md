@@ -56,7 +56,9 @@ This is a  rough list of tasks we need to complete and is definitely subject to 
   often repeated runs agree.
 - [ ] **Review a sample of pairs** — Read some winning and losing programs to
   make sure winners are really better code, and don't win because of
-  comments that hint to the editor.
+  comments that hint to the editor. (Comments: only 14 of the 256 edited
+  train programs have any, and the comment ablation shows the editor does
+  as well without them; `harness/results/nocomments_eval.md`.)
 
 ## 5. Training 
 
@@ -119,10 +121,10 @@ This is a  rough list of tasks we need to complete and is definitely subject to 
 
 ## 7. Experimental variations 
 
-- [ ] **Comments removed** — Rerun the evaluation with comments and
-  docstrings removed before the editor sees the code. Code done
-  (`editor.view_transform: strip_comments`, `collection/view.py`); runs not
-  started.
+- [x] **Comments removed** — Rerun the evaluation with comments and
+  docstrings removed before the editor sees the code
+  (`editor.view_transform: strip_comments`, `collection/view.py`). Done for
+  all five writers: no result changes. `harness/results/nocomments_eval.md`.
 - [ ] **Comment density** — Reporting code supports all generated and initially
   correct programs; collect and interpret the actual methods' results.
 - [ ] **Size-matched check** — A saved-only sensitivity tool now records matching
