@@ -133,6 +133,16 @@ def outputs(directory: Path) -> tuple[str, dict]:
     return pairs, report
 
 
+def same_outputs(directory: Path) -> tuple[list[dict], dict]:
+    """outputs() with each pair's source.run_id removed: a rerun or report
+    makes the same pairs, but under its own run id."""
+    pairs_text, report = outputs(directory)
+    pairs = [json.loads(line) for line in pairs_text.splitlines()]
+    for pair in pairs:
+        pair["source"].pop("run_id")
+    return pairs, report
+
+
 def test_first_run_scores_and_pairs(setup):
     path, first, duplicated = setup
     assert first.model_calls > 0 and first.samples_recorded == 3 and first.pairs == 1
@@ -161,6 +171,14 @@ def test_first_run_scores_and_pairs(setup):
     # The duplicated variant's pair entry lists both of its writer answers.
     calls = {"modular": pair["chosen_call_keys"], "tangled": pair["rejected_call_keys"]}
     assert len(calls[duplicated]) == 2 and sum(len(k) for k in calls.values()) == 3
+    # Where the pair came from, for joining files from several stores.
+    source = pair["source"]
+    assert source["run_id"] == first.run_id and source["config"] == "e2e"
+    assert source["store"] == load_config(path).runs_dir.name
+    assert len(source["git_commit"]) == 40 and len(source["settings_hash"]) == 64
+    cfg = load_config(path)
+    assert source["settings"]["editor"]["backend"]["model"] == cfg.editor.backend.model
+    assert source["prompt_version"] and source["task_version"]
 
     run = json.loads((first.run_dir / "run.json").read_text())
     assert len(run["git_commit"]) == 40 and run["config"]["name"] == "e2e"
@@ -178,7 +196,7 @@ def test_rerun_makes_no_model_calls_and_changes_nothing(setup):
         0,
     )
     assert dump(db) == before
-    assert outputs(second.run_dir) == outputs(first.run_dir)
+    assert same_outputs(second.run_dir) == same_outputs(first.run_dir)
 
 
 def test_interrupted_trial_resumes_by_replaying_from_the_cache(setup):
@@ -213,7 +231,7 @@ def test_report_rebuilds_the_files_without_any_backend(setup, tmp_path, monkeypa
 
     monkeypatch.setattr(collect_module, "make_backend", no_backends)
     assert main(["report", "--config", str(path), "--out", str(tmp_path / "report")]) == 0
-    assert outputs(tmp_path / "report") == outputs(first.run_dir)
+    assert same_outputs(tmp_path / "report") == same_outputs(first.run_dir)
 
 
 def test_validate_tasks_command(setup):

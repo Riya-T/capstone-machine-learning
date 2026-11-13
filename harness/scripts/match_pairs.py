@@ -12,6 +12,9 @@ Usage (from harness/):
     .venv/bin/python scripts/match_pairs.py runs/rtx5070_pc/dpo/radon_cap8_all.jsonl \
         runs/rtx5070_pc/dpo/pairs_cap8_f23_nocosm.jsonl \
         runs/rtx5070_pc/dpo/radon_matched.jsonl --model Qwen/Qwen2.5-Coder-7B-Instruct
+    # or into a tracked dataset (harness/data/README.md):
+    .venv/bin/python scripts/match_pairs.py data/train-v2/radon_all.jsonl \
+        data/train-v2/pairs.jsonl --dataset train-v2 --model Qwen/Qwen2.5-Coder-7B-Instruct
 """
 
 import argparse
@@ -19,15 +22,22 @@ import json
 from collections import Counter
 from pathlib import Path
 
+from harness.datasets import save_output
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("source", type=Path, help="pairs to take from")
     parser.add_argument("reference", type=Path, help="pairs whose per-task counts to match")
-    parser.add_argument("out", type=Path)
+    parser.add_argument("out", type=Path, nargs="?", help="output file (or use --dataset)")
+    parser.add_argument(
+        "--dataset", help="write to harness/data/DATASET/radon_matched.jsonl instead"
+    )
     parser.add_argument("--model", required=True, help="tokenizer of the model to train")
     parser.add_argument("--max-length", type=int, default=3200, help="as passed to train_dpo")
     args = parser.parse_args()
+    if (args.out is None) == (args.dataset is None):
+        parser.error("give an output file or --dataset, not both")
 
     from transformers import AutoTokenizer
 
@@ -59,8 +69,9 @@ def main() -> None:
         kept.append(row)
     got = Counter(row["task_id"] for row in kept)
     short = {task: (got[task], n) for task, n in wanted.items() if got[task] < n}
-    args.out.write_text("".join(json.dumps(r) + "\n" for r in kept), encoding="utf-8")
-    print(f"kept {len(kept)} of {sum(wanted.values())} pairs from {len(got)} tasks -> {args.out}")
+    text = "".join(json.dumps(r) + "\n" for r in kept)
+    out = save_output(text, out=args.out, dataset=args.dataset, filename="radon_matched.jsonl")
+    print(f"kept {len(kept)} of {sum(wanted.values())} pairs from {len(got)} tasks -> {out}")
     print(f"skipped as too long: {dict(too_long)}; tasks short of pairs: {short}")
 
 

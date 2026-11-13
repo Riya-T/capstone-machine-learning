@@ -12,8 +12,11 @@ Keeps a pair only if:
 - its task is not in --drop-tasks.
 
 Usage (from harness/):
-    python scripts/filter_pairs.py runs/rtx5070_pc/dpo/pairs_cap8_all.jsonl \
+    .venv/bin/python scripts/filter_pairs.py runs/rtx5070_pc/dpo/pairs_cap8_all.jsonl \
         runs/rtx5070_pc/dpo/pairs_cap8_f23_nocosm.jsonl --min-rep-wins 2 --drop-cosmetic
+    # or into a tracked dataset (harness/data/README.md):
+    .venv/bin/python scripts/filter_pairs.py runs/<run_id>/preferences.jsonl --dataset train-v2 \
+        --min-rep-wins 2 --drop-cosmetic
 """
 
 import argparse
@@ -23,6 +26,8 @@ import json
 import re
 from collections import Counter
 from pathlib import Path
+
+from harness.datasets import add_file, save_output
 
 BLOCK = re.compile(r"```python file=\S+\n(.*?)```", re.S)
 BUILTINS = set(dir(builtins))
@@ -91,14 +96,21 @@ def rep_wins(row: dict) -> int:
     return sum(sum(seq[i] for seq in chosen) > sum(seq[i] for seq in rejected) for i in range(reps))
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("source", type=Path)
-    parser.add_argument("out", type=Path)
+    parser.add_argument("out", type=Path, nargs="?", help="output file (or use --dataset)")
+    parser.add_argument(
+        "--dataset",
+        help="write to harness/data/DATASET/ as pairs.jsonl, with the input as "
+        "pairs_unfiltered.jsonl (see harness/data/README.md)",
+    )
     parser.add_argument("--min-rep-wins", type=int, default=2)
     parser.add_argument("--drop-cosmetic", action="store_true")
     parser.add_argument("--drop-tasks", default="", help="comma-separated task ids")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
+    if (args.out is None) == (args.dataset is None):
+        parser.error("give an output file or --dataset, not both")
     drop_tasks = {t for t in args.drop_tasks.split(",") if t}
     kept, dropped = [], Counter()
     for line in args.source.read_text(encoding="utf-8").splitlines():
@@ -111,9 +123,12 @@ def main() -> None:
             dropped["cosmetic"] += 1
         else:
             kept.append(row)
-    args.out.write_text("".join(json.dumps(r) + "\n" for r in kept), encoding="utf-8")
+    text = "".join(json.dumps(r) + "\n" for r in kept)
+    if args.dataset:
+        add_file(args.dataset, "pairs_unfiltered.jsonl", args.source.read_bytes())
+    out = save_output(text, out=args.out, dataset=args.dataset, filename="pairs.jsonl")
     tasks = Counter(r["task_id"] for r in kept)
-    print(f"kept {len(kept)} pairs from {len(tasks)} tasks; dropped: {dict(dropped)} -> {args.out}")
+    print(f"kept {len(kept)} pairs from {len(tasks)} tasks; dropped: {dict(dropped)} -> {out}")
 
 
 if __name__ == "__main__":

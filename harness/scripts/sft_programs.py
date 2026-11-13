@@ -14,6 +14,9 @@ Usage (from harness/):
     uv run python scripts/sft_programs.py --config configs/rtx5070_train.yaml \
         --tasks-from runs/rtx5070_pc/dpo/pairs_cap8_f23_nocosm.jsonl \
         --out runs/rtx5070_pc/dpo/sft_programs.jsonl
+    # or into a tracked dataset (harness/data/README.md):
+    uv run python scripts/sft_programs.py --config configs/rtx5070_train.yaml \
+        --tasks-from data/train-v2/pairs.jsonl --dataset train-v2
 """
 
 import argparse
@@ -22,6 +25,7 @@ from pathlib import Path
 
 from harness.collection.collect import Keys, sandbox_owner
 from harness.config import load_config
+from harness.datasets import save_output
 from harness.models.parser import render_program
 from harness.registry import build_writer_prompt, load_tasks, load_template, prompt_version
 from harness.sandbox.runner import make_runner
@@ -31,9 +35,14 @@ from harness.store import Store
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--config", required=True, type=Path)
-    parser.add_argument("--out", required=True, type=Path)
+    parser.add_argument("--out", type=Path, help="output file (or use --dataset)")
+    parser.add_argument(
+        "--dataset", help="write to harness/data/DATASET/sft_programs.jsonl instead"
+    )
     parser.add_argument("--tasks-from", type=Path, help="pairs JSONL whose tasks to keep")
     args = parser.parse_args()
+    if (args.out is None) == (args.dataset is None):
+        parser.error("give --out or --dataset, not both")
     cfg = load_config(args.config)
     image_id = make_runner(cfg, owner=sandbox_owner(cfg)).existing_image_id()
     if image_id is None:
@@ -73,10 +82,9 @@ def main() -> None:
                         "completion": completion,
                     }
                 )
-    args.out.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
-    print(
-        f"wrote {len(rows)} programs from {len({r['task_id'] for r in rows})} tasks -> {args.out}"
-    )
+    text = "".join(json.dumps(r) + "\n" for r in rows)
+    out = save_output(text, out=args.out, dataset=args.dataset, filename="sft_programs.jsonl")
+    print(f"wrote {len(rows)} programs from {len({r['task_id'] for r in rows})} tasks -> {out}")
 
 
 if __name__ == "__main__":

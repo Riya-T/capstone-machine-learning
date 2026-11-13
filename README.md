@@ -336,6 +336,9 @@ and what still needs experimental work. Separate guides cover
 ### DPO training
 
 The scorer writes the preference pairs to `runs/<run_id>/preferences.jsonl`.
+`runs/` is not in git, so the final training files go in
+[harness/data/](harness/data/README.md): give the scripts below
+`--dataset NAME` in place of an output path, and commit the folder.
 `scripts/filter_pairs.py` turns them into the training file: it keeps a pair
 only if the chosen program wins in at least 2 of the 3 repetitions, and with
 `--drop-cosmetic` drops pairs whose two programs are the same code apart from
@@ -346,7 +349,7 @@ writer prompts and code completions:
 ```bash
 cd harness
 uv sync --extra training
-python scripts/filter_pairs.py runs/<run_id>/preferences.jsonl pairs.jsonl \
+.venv/bin/python scripts/filter_pairs.py runs/<run_id>/preferences.jsonl pairs.jsonl \
   --min-rep-wins 2 --drop-cosmetic
 .venv/bin/python -m harness.train_dpo pairs.jsonl \
   --model Qwen/Qwen2.5-Coder-7B-Instruct --output-dir ../models/writer-dpo \
