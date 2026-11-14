@@ -26,6 +26,7 @@ both designs passed every later Wallet revision.
 | [Editing and replication](editing.md) | Six-family collection, Stock Portfolio and Feature Flags, neutral and controlled Wallet results |
 | [Protocols](protocols) | Selected written protocols and representative initial source |
 | [Structured outcomes](data) | Allowlisted table fields, per-trial outcomes and an export manifest |
+| [Runnable Wallet example](examples/reward_wallet/README.md) | Checks both starting programs against 512 small traces |
 
 ## Verify the tables
 

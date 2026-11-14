@@ -169,14 +169,24 @@ def verify_pantry_trial():
     data = load("pantry-trial")
     pantry, playlist = data["pantry_inventory"], data["playlist_manager"]
     for family in (pantry, playlist):
-        require(len(family["starts"]) == 3 and all(r["status"] == "passed" for r in family["starts"]),
-                "verified trial start count differs")
+        require(
+            len(family["starts"]) == 3 and all(r["status"] == "passed" for r in family["starts"]),
+            "verified trial start count differs",
+        )
         require(family["training_label"] is None, "unexpected verified trial label")
     require(not playlist["discovery"], "unexpected Playlist Manager edits")
     states = Counter(s for row in pantry["discovery"] for s in row["steps"])
-    require(states == {"success": 12, "fail_both": 2, "fail_existing": 1,
-                       "budget_exhausted": 4, "not_reached": 5},
-            f"Pantry discovery counts differ: {states}")
+    require(
+        states
+        == {
+            "success": 12,
+            "fail_both": 2,
+            "fail_existing": 1,
+            "budget_exhausted": 4,
+            "not_reached": 5,
+        },
+        f"Pantry discovery counts differ: {states}",
+    )
     print("Verified starting-program trial: 6 correct starts, 12/24 Pantry checkpoint slots passed")
 
 

@@ -151,7 +151,8 @@ def pantry_trial(export):
         family: {
             **fields(record, "abstention_reason training_label"),
             "starts": rows(
-                record["writer_source_statuses"], "case_id source_sha256 status writer_model",
+                record["writer_source_statuses"],
+                "case_id source_sha256 status writer_model",
             ),
             "discovery": rows(
                 record["trajectory_outcomes"].get("discovery", []),
