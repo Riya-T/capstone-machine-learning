@@ -145,6 +145,23 @@ def collection(export):
     return {**fields(original, "validated_family_count family_count"), "families": families}
 
 
+def pantry_trial(export):
+    original = export.load("docs/verified_pair_trial_20261112/evidence/pair-export.json")
+    return {
+        family: {
+            **fields(record, "abstention_reason training_label"),
+            "starts": rows(
+                record["writer_source_statuses"], "case_id source_sha256 status writer_model",
+            ),
+            "discovery": rows(
+                record["trajectory_outcomes"].get("discovery", []),
+                "parent rep seeds sequence steps successful_prefix complete_behavioral",
+            ),
+        }
+        for family, record in original["families"].items()
+    }
+
+
 def replication(export):
     results = {}
     for family, stem in (("stock_portfolio", "stock"), ("feature_flags", "feature_flags")):
@@ -222,6 +239,7 @@ EXACT = {
     STOCK_DOCUMENTS + "feature_flags_protocol.md": "protocols/feature-flags-replication.md",
     "docs/fresh_label_validation_20261113/protocol.md": "protocols/neutral-collection.md",
     "docs/controlled_wallet_20261113/protocol.md": "protocols/controlled-wallet.md",
+    "docs/verified_pair_trial_20261112/protocol.md": "protocols/verified-starting-programs.md",
     "docs/wallet_contract_followthrough_20261113/protocol.md": "protocols/clarified-wallet.md",
     WALLET + "repair_queue/spec.md": "examples/repair_queue/initial.md",
     WALLET + "reward_wallet/spec.md": "examples/reward_wallet/initial.md",
@@ -241,6 +259,7 @@ def main():
     export = Export(args.archive_checkout, args.archive_revision, args.destination)
     for name, project in (
         ("matched-local-writers", matched_local_writers),
+        ("pantry-trial", pantry_trial),
         ("sourcing", sourcing),
         ("six-family-edits", collection),
         ("replication", replication),

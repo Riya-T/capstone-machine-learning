@@ -1,0 +1,233 @@
+{
+  "pantry_inventory": {
+    "abstention_reason": "incomplete_behavioral_evidence",
+    "discovery": [
+      {
+        "complete_behavioral": true,
+        "parent": "pantry_inventory/teacher/sample_01",
+        "rep": 0,
+        "seeds": [
+          1590297411,
+          967464341
+        ],
+        "sequence": "s1",
+        "steps": [
+          "fail_both",
+          "not_reached"
+        ],
+        "successful_prefix": 0
+      },
+      {
+        "complete_behavioral": true,
+        "parent": "pantry_inventory/teacher/sample_00",
+        "rep": 0,
+        "seeds": [
+          1590297411,
+          967464341
+        ],
+        "sequence": "s1",
+        "steps": [
+          "success",
+          "success"
+        ],
+        "successful_prefix": 2
+      },
+      {
+        "complete_behavioral": true,
+        "parent": "pantry_inventory/teacher/sample_00",
+        "rep": 0,
+        "seeds": [
+          1234240987,
+          1751885518
+        ],
+        "sequence": "s2",
+        "steps": [
+          "fail_existing",
+          "not_reached"
+        ],
+        "successful_prefix": 0
+      },
+      {
+        "complete_behavioral": false,
+        "parent": "pantry_inventory/teacher/sample_01",
+        "rep": 0,
+        "seeds": [
+          1234240987,
+          1751885518
+        ],
+        "sequence": "s2",
+        "steps": [
+          "success",
+          "budget_exhausted"
+        ],
+        "successful_prefix": 1
+      },
+      {
+        "complete_behavioral": true,
+        "parent": "pantry_inventory/teacher/sample_00",
+        "rep": 1,
+        "seeds": [
+          1996401560,
+          761085505
+        ],
+        "sequence": "s1",
+        "steps": [
+          "success",
+          "success"
+        ],
+        "successful_prefix": 2
+      },
+      {
+        "complete_behavioral": false,
+        "parent": "pantry_inventory/teacher/sample_01",
+        "rep": 1,
+        "seeds": [
+          1996401560,
+          761085505
+        ],
+        "sequence": "s1",
+        "steps": [
+          "budget_exhausted",
+          "not_reached"
+        ],
+        "successful_prefix": 0
+      },
+      {
+        "complete_behavioral": true,
+        "parent": "pantry_inventory/teacher/sample_01",
+        "rep": 1,
+        "seeds": [
+          1181652484,
+          1522982287
+        ],
+        "sequence": "s2",
+        "steps": [
+          "success",
+          "success"
+        ],
+        "successful_prefix": 2
+      },
+      {
+        "complete_behavioral": false,
+        "parent": "pantry_inventory/teacher/sample_00",
+        "rep": 1,
+        "seeds": [
+          1181652484,
+          1522982287
+        ],
+        "sequence": "s2",
+        "steps": [
+          "budget_exhausted",
+          "not_reached"
+        ],
+        "successful_prefix": 0
+      },
+      {
+        "complete_behavioral": true,
+        "parent": "pantry_inventory/teacher/sample_01",
+        "rep": 2,
+        "seeds": [
+          1683818689,
+          1300129147
+        ],
+        "sequence": "s1",
+        "steps": [
+          "fail_both",
+          "not_reached"
+        ],
+        "successful_prefix": 0
+      },
+      {
+        "complete_behavioral": true,
+        "parent": "pantry_inventory/teacher/sample_00",
+        "rep": 2,
+        "seeds": [
+          1683818689,
+          1300129147
+        ],
+        "sequence": "s1",
+        "steps": [
+          "success",
+          "success"
+        ],
+        "successful_prefix": 2
+      },
+      {
+        "complete_behavioral": true,
+        "parent": "pantry_inventory/teacher/sample_00",
+        "rep": 2,
+        "seeds": [
+          448632367,
+          692398074
+        ],
+        "sequence": "s2",
+        "steps": [
+          "success",
+          "success"
+        ],
+        "successful_prefix": 2
+      },
+      {
+        "complete_behavioral": false,
+        "parent": "pantry_inventory/teacher/sample_01",
+        "rep": 2,
+        "seeds": [
+          448632367,
+          692398074
+        ],
+        "sequence": "s2",
+        "steps": [
+          "success",
+          "budget_exhausted"
+        ],
+        "successful_prefix": 1
+      }
+    ],
+    "starts": [
+      {
+        "case_id": "pantry_inventory/teacher/sample_00",
+        "source_sha256": "30a427b142c573c537b0002a90199613e5abf24980bcebc6b17f9cdef977739d",
+        "status": "passed",
+        "writer_model": "gpt-6.1-sol"
+      },
+      {
+        "case_id": "pantry_inventory/teacher/sample_01",
+        "source_sha256": "59a858527367fb4a693a270f2b3aad7a1bd205b2f5f095d891652268377defbc",
+        "status": "passed",
+        "writer_model": "gpt-6.1-sol"
+      },
+      {
+        "case_id": "pantry_inventory/teacher/sample_02",
+        "source_sha256": "03a604d4b85ba18879b16930bef10e919c8e0e956d9abfb1e45aecb1db830558",
+        "status": "passed",
+        "writer_model": "gpt-6.1-sol"
+      }
+    ],
+    "training_label": null
+  },
+  "playlist_manager": {
+    "abstention_reason": "fewer_than_two_verified_groups_or_selection_unavailable",
+    "discovery": [],
+    "starts": [
+      {
+        "case_id": "playlist_manager/teacher/sample_00",
+        "source_sha256": "41abbb5e61901461515f832c0afa7170c9fe319786a737cf0fd2772c05afdd25",
+        "status": "passed",
+        "writer_model": "gpt-6.1-sol"
+      },
+      {
+        "case_id": "playlist_manager/teacher/sample_01",
+        "source_sha256": "fb3becfb5739cc37b2aa9a840bf3366ae81ec2720278d3ff086a399e3375a4a3",
+        "status": "passed",
+        "writer_model": "gpt-6.1-sol"
+      },
+      {
+        "case_id": "playlist_manager/teacher/sample_02",
+        "source_sha256": "ae252e34c7a2a6f8d4f963355f2e1bb1d8cf49aa7a405164b2221febe44b96bc",
+        "status": "passed",
+        "writer_model": "gpt-6.1-sol"
+      }
+    ],
+    "training_label": null
+  }
+}

@@ -2,6 +2,7 @@
   "archive_revision": "c85458be78508317e21695d66212576ea131a08f",
   "export_sha256": {
     "data/matched-local-writers.json": "bd67f92d24502bee691048ed4ed2403c322bb94dc824b59a6494f1b713af3327",
+    "data/pantry-trial.json": "3c48ec1f9bf5166872f3982a5d5242b2bf2585ff30107af06368b07916222b9c",
     "data/replication.json": "079e85b0b5e2abfcfff8a3c74375f0c7c7dc299b062133a36ef47fa7aa93f2d9",
     "data/six-family-edits.json": "cdadefb5b43fcdbf4a00a8163e5312d547d33a22a6b351850a68c1a1b23c93c6",
     "data/sourcing.json": "3ed2bdc69c2c5004d14c42b61f98a8eb508a248476b24350c8856211b6d674f5",
@@ -17,7 +18,8 @@
     "protocols/feature-flags-replication.md": "2e2e81d663698489f9f165f9aacb8bb852fe7bd190b4180cf0d69428f781a38b",
     "protocols/neutral-collection.md": "726d88b21a11028631c4015a3dc70a0b10692eab8678d287ad3a6b11fa6e954b",
     "protocols/stock-replication.md": "301af78b216571e5baba5b19fbabc7d25b2cabd35804ed6d0f3b8c7009696ced",
-    "protocols/teacher-sourcing.md": "c84c13aee2b00e9483d6eb0b0c220810dbfa089318baaa2e40025c95d115d858"
+    "protocols/teacher-sourcing.md": "c84c13aee2b00e9483d6eb0b0c220810dbfa089318baaa2e40025c95d115d858",
+    "protocols/verified-starting-programs.md": "f42b7e2758ca68131e7f3e51eace0cc1a245e45554fd2d90ef7fd1fbdfcf372d"
   },
   "schema_version": 1,
   "source_sha256": {
@@ -37,6 +39,8 @@
     "c85458be78508317e21695d66212576ea131a08f:docs/stock_replication_20261113/evidence/stock_summary.json": "5ea8b15b72606f335c07625117f829565a18b8ec9afd7b5c9fc67ef6483efba8",
     "c85458be78508317e21695d66212576ea131a08f:docs/stock_replication_20261113/feature_flags_protocol.md": "2e2e81d663698489f9f165f9aacb8bb852fe7bd190b4180cf0d69428f781a38b",
     "c85458be78508317e21695d66212576ea131a08f:docs/stock_replication_20261113/protocol.md": "301af78b216571e5baba5b19fbabc7d25b2cabd35804ed6d0f3b8c7009696ced",
+    "c85458be78508317e21695d66212576ea131a08f:docs/verified_pair_trial_20261112/evidence/pair-export.json": "9485699e59ce91bfa983b5b24e49f59ce5582969e809a989c0c6e2d69f306bc7",
+    "c85458be78508317e21695d66212576ea131a08f:docs/verified_pair_trial_20261112/protocol.md": "f42b7e2758ca68131e7f3e51eace0cc1a245e45554fd2d90ef7fd1fbdfcf372d",
     "c85458be78508317e21695d66212576ea131a08f:docs/wallet_contract_followthrough_20261113/protocol.md": "8c30f375ec24d9e3061bc3309420a073b79bc8808d7d51780d3f3795e53b547a",
     "c85458be78508317e21695d66212576ea131a08f:docs/writer_same_roster_20261112/comparison.json": "a308522d6c775d5c435368f98fefdd148d1e7a7bb2831dd3d3d2abc8a8a93dcb",
     "c85458be78508317e21695d66212576ea131a08f:harness/probes/controlled_wallet_20261113/parents/ledger/wallet.py": "aada4c5a4b6f82fa450faec2f5805d885e4678fea8206963c7ac1b02aedc58c7",

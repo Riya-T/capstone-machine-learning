@@ -1,5 +1,19 @@
 # Editing results and why the labels were withheld
 
+## First verified starting-program comparison
+
+All six teacher starts passed. Pantry Inventory had three initial
+implementation groups. Playlist Manager had one and did not enter
+editing. The list and deque Pantry implementations entered the
+comparison. The list-based start led on expiry then categories. An
+advantage across both sequences remained unconfirmed.
+
+The Pantry roster contained 24 planned checkpoint slots. Twelve
+passed, three reached a behavioral failure, four stopped at the token
+budget, and five later checkpoints were never reached. The separate
+[Pantry outcome rows](data/pantry-trial.json) preserve these states.
+[Protocol](protocols/verified-starting-programs.md)
+
 ## From collection to replication
 
 The six-family collection started from 24 correct teacher-written
