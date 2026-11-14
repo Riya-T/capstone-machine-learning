@@ -526,7 +526,9 @@ features of the programs to their editing scores and to training.
 `implicit_reward.py` (training extras, GPU) scores DPO's implicit reward of
 trained adapters on pairs they never saw. Run them on a few tasks before
 collecting training data for a new task set or editor setting. Results for
-the current tasks: `harness/results/diagnostics.md`.
+the current tasks, and for the editor at temperature 0.2
+(`configs/rtx5070_pc_editor_t02.yaml`, no better):
+`harness/results/diagnostics.md`.
 
 ## Changes from the proposal
 

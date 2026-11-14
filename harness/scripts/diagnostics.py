@@ -259,11 +259,15 @@ def reliability(v, sequences, reps):
 
 def bootstrap(per_task, statistic, n, seed):
     """Percentile 95% interval of statistic(list of per-task values),
-    resampling the tasks with replacement."""
+    resampling the tasks with replacement. Resamples where the statistic is
+    undefined (NaN: say, only tasks with no decided pairs) are left out; kept
+    in, they would break the sort."""
     rng = random.Random(seed)
     values = list(per_task)
-    stats = sorted(statistic([rng.choice(values) for _ in values]) for _ in range(n))
-    return stats[int(0.025 * n)], stats[int(0.975 * n) - 1]
+    stats = (statistic([rng.choice(values) for _ in values]) for _ in range(n))
+    stats = sorted(s for s in stats if not math.isnan(s))
+    m = len(stats)
+    return stats[int(0.025 * m)], stats[int(0.975 * m) - 1]
 
 
 def ratio(key):

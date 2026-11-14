@@ -10,7 +10,8 @@ Scores are changes done before the first failure, per change sequence (the
 main measure is their mean over a task's two sequences). Every task has 2
 sequences × 3 repetitions per program (3 changes per sequence on train and
 eval tasks, 2 on dev tasks). Intervals resample the tasks (paired task
-bootstrap, 20,000 resamples, seed 20261105).
+bootstrap, 20,000 resamples, seed 20261105); resamples in which a share
+is undefined (no pair decided on both sides) are left out.
 
 ## Summary
 
@@ -26,7 +27,9 @@ variance of one trial's score is the editor's randomness.** Only 4% (0% to
 8%) belongs to the program on train tasks, 11% (0% to 26%) on eval tasks.
 The writer's programs are small (median 47 lines) and nearly identical in
 design (the same functions and classes in 30 of 36 train tasks), and the
-editor rewrites whole files.
+editor rewrites whole files. A cooler editor does not fix it: at
+temperature 0.2 instead of 0.7 the program's share on the dev tasks is 1%
+(0% to 16%) and the held-out headroom is gone (probe below).
 
 ## 1. Headroom
 
@@ -173,6 +176,37 @@ Radon writer's programs differ in exactly the features one would expect to
 matter (shorter, simpler functions, more helpers), and the editor does no
 better on them (−0.08, −0.23 to +0.08).
 
+## Editor-temperature probe
+
+The base writer's dev-task programs (8 tasks, 51 programs) edited again
+with the editor at temperature 0.2 instead of 0.7, everything else the
+same (`configs/rtx5070_pc_editor_t02.yaml`, run 20261114T014031Z-9433c1:
+343 steps, 1,059 editor calls, 0 infrastructure errors, about 6.5 hours).
+
+| Dev tasks, base writer | Editor at 0.7 | Editor at 0.2 |
+|---|---:|---:|
+| Changes done before the first failure (of 2) | 1.25 | 1.22 (−0.03, −0.14 to +0.06) |
+| Whole sequence works | 53% | 52% (−1 point, −10 to +6) |
+| All 3 repetitions of a sequence get the same score | 55% of 102 | 59% of 102 |
+| Two repetitions of the same sequence pick the same winner | 50% (42% to 63%) | 68% (65% to 76%) |
+| Winner on one repetition of A also wins on one of B | 55% (51% to 60%) | 49% (29% to 73%) |
+| Winner on A (3 repetitions) also wins on B | 59% (48% to 71%) | 49% (21% to 84%) |
+| Variance share: program | 4% (0% to 7%) | 1% (0% to 16%) |
+| Variance share: program × sequence | 0% | 9% |
+| Variance share: trial | 96% | 89% |
+| Held-out headroom (best program on the other sequence) | +0.12 (+0.01 to +0.27) | −0.00 (−0.23 to +0.19) |
+
+The cooler editor does no better or worse on the changes. It repeats
+itself a little more: two repetitions of the same sequence agree on the
+winner 68% of the time instead of 50%. But what it repeats is particular
+to that sequence and does not carry over to the other one. The program's
+share falls to 1%, winners on one sequence are a coin flip on the other,
+and the held-out headroom disappears. Most of the trial-to-trial
+variation is still there (89%; all three repetitions agree in 59% of
+cells against 55%), so it does not come mainly from the sampling
+temperature. With 8 tasks the intervals are wide, but no measure points
+towards a cooler editor making the labels depend on the program.
+
 ## What this means for the next step
 
 Tuning DPO (beta, epochs, seeds) cannot help while the labels are mostly
@@ -187,16 +221,20 @@ needs a testbed where the program matters more:
 2. **An editor that edits rather than rewrites:** search-and-replace
    patches instead of whole files, so it has to work within the existing
    structure.
-3. **Less editor luck per label:** a cooler editor and more, shorter
-   change sequences per task rather than more repetitions. The probe
-   below tests the temperature.
+3. **Less editor luck per label:** more, shorter change sequences per
+   task rather than more repetitions. A cooler editor alone does not help
+   (probe above).
 4. **Check before training.** Run `scripts/diagnostics.py` on a pilot of
    a few dev tasks first, and train only once the program share is well
    above today's 4% (say 25% or more) and the held-out headroom above
    0.3.
 
-Running now: the editor-temperature probe, the dev tasks re-edited with the
-editor at 0.2 instead of 0.7 (`configs/rtx5070_pc_editor_t02.yaml`).
+A separate controlled pilot (`docs/wallet_pair_pilot/`: two hand-written
+wallet designs, two change requests, a Qwen3-8B editor) found no pair
+whose winner led on both requests, and proposes concrete checks for the
+next testbed: failure rules stated in each change, a public example per
+change, and private tests certified against a reference and a broken
+implementation before scoring.
 
 ## Reproduce
 
@@ -210,6 +248,10 @@ uv run python scripts/diagnostics.py --config configs/rtx5070_eval.yaml --measur
 uv run python scripts/diagnostics.py --config configs/rtx5070_eval.yaml \
     --config configs/rtx5070_eval_maintain.yaml --config configs/rtx5070_eval_dpo3.yaml \
     --config configs/rtx5070_eval_radon.yaml --config configs/rtx5070_eval_sft.yaml
+uv run python -m harness collect --config configs/rtx5070_pc_editor_t02.yaml   # GPU, ~6.5 h
+uv run python scripts/diagnostics.py --config configs/rtx5070_pc_editor_t02.yaml
+uv run python scripts/eval_compare.py --base configs/rtx5070_pc.yaml \
+    --other configs/rtx5070_pc_editor_t02.yaml --bootstrap 20000
 uv run python scripts/winner_features.py --config configs/rtx5070_train.yaml \
     --pairs runs/rtx5070_pc/dpo/pairs_cap8_f23_nocosm.jsonl --base configs/rtx5070_eval.yaml \
     --writer configs/rtx5070_eval_dpo3.yaml --writer configs/rtx5070_eval_sft.yaml \

@@ -145,12 +145,15 @@ All five methods are done:
   tweaks cannot fix this; the tasks need to change (see "Why nothing shows
   up, in plain words").
 
+- **A less random editor does not fix it.** With the editor's randomness
+  turned down (temperature 0.2 instead of 0.7), the editor repeats itself
+  a little more on the same changes, but which program does better still
+  does not carry over to other changes. The program's share falls to 1%.
+
 ### What is running now
 
-A quick test of the editor's randomness: the 8 dev tasks' programs edited
-again with the editor at temperature 0.2 instead of 0.7, from 2026-11-13
-13:31 PST, about 7 hours (`configs/rtx5070_pc_editor_t02.yaml`). It shows
-whether a less random editor gives labels that depend more on the program.
+Nothing. The last run, the less random editor on the 8 dev tasks,
+finished 2026-11-13 at 22:40 PST.
 
 ### Words used in the rest of this report
 
@@ -213,7 +216,9 @@ them in one place.
   average on the other (+0.03), and a pair's winner on one sequence wins
   on the other only 58% of the time. dpo3 ranks pairs it never saw 55%
   correctly (97% on its training pairs). Programs are about 47 lines and
-  share one design in 30 of 36 train tasks.
+  share one design in 30 of 36 train tasks. An editor at temperature 0.2
+  does not help: on the dev tasks the program share is 1% (0% to 16%) and
+  the held-out headroom −0.00.
   [Diagnostics](../harness/results/diagnostics.md).
 
 ## The five methods
@@ -383,6 +388,12 @@ and 4% from the program. The programs are about 47 lines long, nearly all
 built the same way (the task fixes the methods), and the editor rewrites
 whole files, so how a program is organized barely matters to it.
 
+**Is it just the editor's temperature?** No. We reran the dev tasks with
+the editor at temperature 0.2. It got the same results and repeated
+itself a little more on the same changes, but a program that did well on
+one set of changes still did no better on the other. Only 1% of the
+differences came from the program. Most of the luck stayed.
+
 **What it means:** more seeds or other training settings cannot help. The
 tasks need to make the program matter: bigger programs with room for
 different designs, changes that cut across the design, an editor that
@@ -546,8 +557,22 @@ the training signal differs:
 - `scripts/winner_features.py`: 23 static features, their within-task
   correlation with the editing score, a leave-one-task-out pair
   classifier, and how far each trained writer's programs moved on them.
-- `configs/rtx5070_pc_editor_t02.yaml`: the editor-temperature probe on
-  the dev tasks (running).
+- Fixed: a resample in which no pair was decided on both sides gave an
+  undefined share that broke the sort of the bootstrap. Every interval
+  in the diagnostics page is unchanged; only the small dev-task runs drew
+  such resamples.
+
+### Editor-temperature probe (2026-11-13)
+
+- `configs/rtx5070_pc_editor_t02.yaml`: the 8 dev tasks' programs edited
+  again with the editor at temperature 0.2 instead of 0.7. Run
+  20261114T014031Z-9433c1: 343 steps, 1,059 editor calls, 0 infrastructure
+  errors, about 6.5 hours (paused for 3 hours on request).
+- Same results on the changes (−0.03, −0.14 to +0.06). Two repetitions of
+  the same sequence pick the same winner more often (68% against 50%), but
+  winners on one sequence are a coin flip on the other (49%), the program
+  share falls from 4% to 1% (0% to 16%), and the held-out headroom from
+  +0.12 to −0.00.
 
 ## Findings so far
 
@@ -612,6 +637,11 @@ the training signal differs:
     moved on no feature. The Radon writer's programs did move, on the
     features its formula rewards (Radon MI +0.43 SD), so training follows
     labels that are consistent.
+13. **A cooler editor does not make the labels depend on the program.**
+    At temperature 0.2 the editor agrees with itself more on the same
+    changes, but the program's share of the variance is 1% (0% to 16%)
+    on the dev tasks, against 4% at 0.7, and the best program on one
+    sequence gains nothing on the other.
 
 ## Open questions for the team
 
@@ -622,7 +652,9 @@ the training signal differs:
   it) with a patch-based editor, and go ahead only if the diagnostics show
   a program share well above 4% (say 25%) and headroom above 0.3? Or do we
   write up the current results as a well-explained negative result? The
-  editor-temperature probe (running) shows whether a setting alone helps.
+  editor-temperature probe says a setting alone does not help. The
+  wallet pilot in `docs/wallet_pair_pilot/` (two hand-written designs, no
+  usable pair) proposes concrete test checks for such a pilot.
 - **Seeds and training settings:** the proposal asks for several seeds
   for our writer; only seed 42 is done. More seeds, beta or epochs would
   measure training on labels that are mostly noise, so they should wait
@@ -652,5 +684,6 @@ the training signal differs:
 | Training, export and baselines | README, "DPO training", "Serving the trained writer", "Static-ranking baseline", "Correctness-only baseline" |
 | Configs | `harness/configs/rtx5070_*.yaml` (`_pc` dev, `_train`, `_eval`, and one per writer) |
 | Summaries and comparisons | `scripts/eval_summary.py`, `scripts/eval_compare.py`, `scripts/ablation_compare.py` (comment ablation) |
-| Diagnostics | `scripts/diagnostics.py`, `scripts/implicit_reward.py`, `scripts/winner_features.py`; `harness/results/diagnostics.md` |
+| Diagnostics | `scripts/diagnostics.py`, `scripts/implicit_reward.py`, `scripts/winner_features.py`; `harness/results/diagnostics.md` (also the editor-temperature probe) |
+| Controlled wallet pilot | `docs/wallet_pair_pilot/` |
 | Task checklist | `Task_list.md` |

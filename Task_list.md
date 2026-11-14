@@ -139,11 +139,14 @@ This is a  rough list of tasks we need to complete and is definitely subject to 
   (`scripts/diagnostics.py`, `scripts/implicit_reward.py`,
   `scripts/winner_features.py`). The labels are 95% editor randomness on
   the current tasks: `harness/results/diagnostics.md`.
-- [ ] **Editor-temperature probe** — Dev tasks re-edited with the editor at
-  0.2 instead of 0.7 (`configs/rtx5070_pc_editor_t02.yaml`); running.
+- [x] **Editor-temperature probe** — Dev tasks re-edited with the editor at
+  0.2 instead of 0.7 (`configs/rtx5070_pc_editor_t02.yaml`). It does not
+  help: program share 1% (0% to 16%), held-out headroom −0.00.
+  `harness/results/diagnostics.md`.
 - [ ] **Testbed pilot (proposed)** — A few bigger dev tasks with design left
   open and a patch-based editor, checked with the diagnostics before any
-  more training. See the progress report's open questions.
+  more training. See the progress report's open questions, and the test
+  checks proposed in `docs/wallet_pair_pilot/testbed.md`.
 
 ## 8. Analysis and write-up 
 
