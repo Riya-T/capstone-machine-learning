@@ -68,6 +68,10 @@ def verify(data):
             raise ValueError(f"{name}: inconsistent replay accounting")
     if seeds[0] & seeds[1]:
         raise ValueError("the follow-up reused an original seed")
+    for request, expected in data["explicit_contract"]["request_sha256"].items():
+        source = (ROOT / "method" / f"{request}.md").read_text(encoding="utf8")
+        if hashlib.sha256(source.encode()).hexdigest() != expected:
+            raise ValueError(f"{request}: the included request bytes changed")
     historical = data["historical_diagnostic"]["rows"]
     original = {r["case"]: r["status"] for r in data["original"]["rows"]}
     if (

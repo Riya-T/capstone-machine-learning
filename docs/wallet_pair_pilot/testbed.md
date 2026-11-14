@@ -9,8 +9,8 @@ writer output. It complements the team's stored-run diagnostics with
 new matched editor attempts and test-level correctness checks.
 
 The November 13 diagnostics estimate that about 4% of within-task trial
-variance belongs to the program on the present training tasks. Cross-
-sequence winner agreement was 58% among comparisons where both
+variance belongs to the program on the present training tasks.
+Winner agreement across sequences was 58% among comparisons where both
 sequences had a winner. The controlled pilot asks a narrower question
 under another editor configuration. Do two specific, correct designs
 exhibit a repeatable difference on two requests that both exercise the
@@ -42,8 +42,6 @@ different populations and are kept separate.
    task as a group. Check label stability before training on the
    collected data.
 
-This folder describes a research pilot. It adds no new training data,
-changes no existing benchmark contract, and affects no training or
-evaluation command. Full raw generations and replay logs are retained
-in an independently verified local archive. Reviewable compact outcome
-and provenance records accompany the result.
+This folder contains the pilot write-up, compact outcome evidence and
+the exact study contracts and starting designs. Full raw generations
+and replay logs are retained in a verified local archive.
