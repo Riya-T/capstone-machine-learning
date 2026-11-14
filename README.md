@@ -166,9 +166,13 @@ The editor replies with complete new files and/or one command:
 The step also ends as soon as every public check passes. With
 `editor.edit_format: search_replace` (`models/patch.py`,
 `prompts/editor_patch_v1.md`) it sends SEARCH/REPLACE edits of the current
-files instead, which apply all or nothing; an edit whose lines don't match
-exactly one place is a wasted turn. The default, `whole_file`, is what every
-result so far used, and it stays out of the editor key.
+files instead. The edits apply in order; one whose lines don't match
+exactly one place is skipped and reported, the others still apply, and a
+reply in which no edit applies is a wasted turn. The default, `whole_file`,
+is what every result so far used, and it stays out of the editor key. The
+14B editor handles SEARCH/REPLACE edits poorly (the whole sequence works
+25% of the time instead of 53% on the dev tasks;
+`harness/results/diagnostics.md`), so it is not used for any result.
 
 Three rules keep the loop from wasting turns, a problem the pilot found
 (the editor sent the same reply 7 or 8 times in a row):
@@ -532,8 +536,10 @@ features of the programs to their editing scores and to training.
 `implicit_reward.py` (training extras, GPU) scores DPO's implicit reward of
 trained adapters on pairs they never saw. Run them on a few tasks before
 collecting training data for a new task set or editor setting. Results for
-the current tasks, and for the editor at temperature 0.2
-(`configs/rtx5070_pc_editor_t02.yaml`, no better):
+the current tasks, for the editor at temperature 0.2
+(`configs/rtx5070_pc_editor_t02.yaml`, no better) and for an editor that
+sends SEARCH/REPLACE edits (`configs/rtx5070_pc_editor_patch.yaml`, worse
+at the changes and no better):
 `harness/results/diagnostics.md`.
 
 ## Changes from the proposal

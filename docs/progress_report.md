@@ -149,11 +149,15 @@ All five methods are done:
   turned down (temperature 0.2 instead of 0.7), the editor repeats itself
   a little more on the same changes, but which program does better still
   does not carry over to other changes. The program's share falls to 1%.
+- **An editor that patches code instead of rewriting it does not fix it
+  either.** Our editor model is bad at sending small edits: it finishes
+  both changes 25% of the time instead of 53%, and the program's share is
+  again 1%.
 
 ### What is running now
 
-Nothing. The last run, the less random editor on the 8 dev tasks,
-finished 2026-11-13 at 22:40 PST.
+Nothing. The last run, the patching editor on the 8 dev tasks, finished
+2026-11-14 at 10:06 PST.
 
 ### Words used in the rest of this report
 
@@ -218,7 +222,10 @@ them in one place.
   correctly (97% on its training pairs). Programs are about 47 lines and
   share one design in 30 of 36 train tasks. An editor at temperature 0.2
   does not help: on the dev tasks the program share is 1% (0% to 16%) and
-  the held-out headroom −0.00.
+  the held-out headroom −0.00. Neither does an editor that sends
+  SEARCH/REPLACE edits instead of whole files: the 14B editor handles the
+  format poorly (whole sequence 25% against 53%, −43 to −13 points), and
+  the program share is again 1% (0% to 16%).
   [Diagnostics](../harness/results/diagnostics.md).
 
 ## The five methods
@@ -394,11 +401,21 @@ itself a little more on the same changes, but a program that did well on
 one set of changes still did no better on the other. Only 1% of the
 differences came from the program. Most of the luck stayed.
 
+**Is it because the editor rewrites whole files?** We can't tell yet. We
+made the editor send small search-and-replace edits instead, so it has to
+work within the existing code. The editor model is bad at this: it sends
+too many edits at once, gets cut off, or tries to edit code that isn't
+there yet. It finished both changes 25% of the time instead of 53%. Again
+only 1% of the differences came from the program, but with this many
+format mistakes the run can't tell whether a better patching editor would
+help.
+
 **What it means:** more seeds or other training settings cannot help. The
 tasks need to make the program matter: bigger programs with room for
 different designs, changes that cut across the design, an editor that
-patches code instead of rewriting it, and a check with these diagnostics on
-a few pilot tasks before more training. Page:
+works within the existing code (which needs a stronger editor or a
+simpler edit format than search-and-replace), and a check with these
+diagnostics on a few pilot tasks before more training. Page:
 [diagnostics](../harness/results/diagnostics.md).
 
 ## What was done
@@ -574,6 +591,25 @@ the training signal differs:
   share falls from 4% to 1% (0% to 16%), and the held-out headroom from
   +0.12 to −0.00.
 
+### Patch-editor probe (2026-11-13 to 11-14)
+
+- `editor.edit_format: search_replace` (`models/patch.py`,
+  `prompts/editor_patch_v1.md`): the editor sends SEARCH/REPLACE edits of
+  the current files instead of whole files. Off by default; the editor key
+  of every existing config is unchanged.
+- The format went through three versions on one dev task: edits applied
+  one by one instead of all or nothing, a message for edits that quote
+  code not yet in the file, and a worked example in the prompt.
+- `configs/rtx5070_pc_editor_patch.yaml`: the same 51 dev-task programs.
+  Run 20261114T075822Z-4da442: 482 steps, 1,889 editor calls, 0
+  infrastructure errors, about 10 hours.
+- Much worse on the changes: the whole sequence works 25% of the time
+  against 53% (−43 to −13 points). Per step, 3.9 editor calls against 2.2,
+  out of turns 22% against 10%, and 6% of replies cut off at the length
+  limit (none for whole files). Program share 1% (0% to 16%), winners on
+  one sequence win on the other 48% of the time, held-out headroom +0.05
+  (−0.22 to +0.32).
+
 ## Findings so far
 
 1. **No method changes how far the editor gets.** The five methods are
@@ -642,6 +678,13 @@ the training signal differs:
     changes, but the program's share of the variance is 1% (0% to 16%)
     on the dev tasks, against 4% at 0.7, and the best program on one
     sequence gains nothing on the other.
+14. **The 14B editor cannot patch code reliably.** Sending SEARCH/REPLACE
+    edits instead of whole files halves how often it finishes a sequence
+    (25% against 53% on the dev tasks): it sends too many edits at once,
+    gets cut off, or quotes code that is not in the file yet. The program
+    share stays at 1% (0% to 16%). Because the format failures dominate,
+    this does not show whether an editor that patches well would make the
+    program matter; it does rule out this editor with this format.
 
 ## Open questions for the team
 
@@ -649,10 +692,13 @@ the training signal differs:
   cannot show an effect, because the editor's randomness swamps the
   differences between programs. Do we build a pilot of a few bigger dev
   tasks (a few hundred lines, design left open, changes that cut across
-  it) with a patch-based editor, and go ahead only if the diagnostics show
-  a program share well above 4% (say 25%) and headroom above 0.3? Or do we
-  write up the current results as a well-explained negative result? The
-  editor-temperature probe says a setting alone does not help. The
+  it), and go ahead only if the diagnostics show a program share well
+  above 4% (say 25%) and headroom above 0.3? Or do we write up the current
+  results as a well-explained negative result? The editor-temperature
+  probe says a setting alone does not help, and the patch-editor probe
+  says the 14B editor cannot work with search-and-replace edits, so a
+  pilot would need a stronger editor or a coarser edit format (one
+  function at a time). The
   wallet pilot in `docs/wallet_pair_pilot/` (two hand-written designs, no
   usable pair) proposes concrete test checks for such a pilot.
 - **Seeds and training settings:** the proposal asks for several seeds
@@ -684,6 +730,7 @@ the training signal differs:
 | Training, export and baselines | README, "DPO training", "Serving the trained writer", "Static-ranking baseline", "Correctness-only baseline" |
 | Configs | `harness/configs/rtx5070_*.yaml` (`_pc` dev, `_train`, `_eval`, and one per writer) |
 | Summaries and comparisons | `scripts/eval_summary.py`, `scripts/eval_compare.py`, `scripts/ablation_compare.py` (comment ablation) |
-| Diagnostics | `scripts/diagnostics.py`, `scripts/implicit_reward.py`, `scripts/winner_features.py`; `harness/results/diagnostics.md` (also the editor-temperature probe) |
+| Diagnostics | `scripts/diagnostics.py`, `scripts/implicit_reward.py`, `scripts/winner_features.py`; `harness/results/diagnostics.md` (also the editor-temperature and patch-editor probes) |
+| Patch editor | `harness/src/harness/models/patch.py`, `harness/prompts/editor_patch_v1.md`, `harness/configs/rtx5070_pc_editor_patch.yaml` |
 | Controlled wallet pilot | `docs/wallet_pair_pilot/` |
 | Task checklist | `Task_list.md` |

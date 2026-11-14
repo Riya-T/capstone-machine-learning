@@ -29,7 +29,10 @@ The writer's programs are small (median 47 lines) and nearly identical in
 design (the same functions and classes in 30 of 36 train tasks), and the
 editor rewrites whole files. A cooler editor does not fix it: at
 temperature 0.2 instead of 0.7 the program's share on the dev tasks is 1%
-(0% to 16%) and the held-out headroom is gone (probe below).
+(0% to 16%) and the held-out headroom is gone (probe below). Nor does an
+editor that patches the code instead of rewriting it: the 14B editor
+handles SEARCH/REPLACE edits poorly (the whole sequence works 25% of the
+time instead of 53%), and the program's share is again 1% (0% to 16%).
 
 ## 1. Headroom
 
@@ -207,6 +210,59 @@ cells against 55%), so it does not come mainly from the sampling
 temperature. With 8 tasks the intervals are wide, but no measure points
 towards a cooler editor making the labels depend on the program.
 
+## Patch-editor probe
+
+The same 51 dev-task programs edited again by an editor that sends
+SEARCH/REPLACE edits of the current files instead of whole files
+(`editor.edit_format: search_replace`, `configs/rtx5070_pc_editor_patch.yaml`,
+editor temperature 0.7 as in the base run; run 20261114T075822Z-4da442:
+482 steps, 1,889 editor calls, 0 infrastructure errors, about 10 hours).
+The idea was that an editor which must work within the existing code
+would make the program's structure matter more.
+
+| Dev tasks, base writer | Whole files | SEARCH/REPLACE edits |
+|---|---:|---:|
+| Changes done before the first failure (of 2) | 1.25 | 0.81 (−0.44, −0.67 to −0.20) |
+| First change works | 72% | 56% (−16 points, −26 to −5) |
+| Whole sequence works | 53% | 25% (−28 points, −43 to −13) |
+| All 3 repetitions of a sequence get the same score | 55% of 102 | 44% of 102 |
+| Two repetitions of the same sequence pick the same winner | 50% (42% to 63%) | 63% (54% to 80%) |
+| Winner on one repetition of A also wins on one of B | 55% (51% to 60%) | 53% (37% to 73%) |
+| Winner on A (3 repetitions) also wins on B | 59% (48% to 71%) | 48% (24% to 69%) |
+| Variance share: program | 4% (0% to 7%) | 1% (0% to 16%) |
+| Variance share: program × sequence | 0% | 8% |
+| Variance share: trial | 96% | 91% |
+| Held-out headroom (best program on the other sequence) | +0.12 (+0.01 to +0.27) | +0.05 (−0.22 to +0.32) |
+
+Steps of the same 306 trials (a step is one change; a trial stops at its
+first failure):
+
+| Per step | Whole files | SEARCH/REPLACE edits |
+|---|---:|---:|
+| Change works | 75% | 53% |
+| Ran out of turns (8) | 10% | 22% |
+| Public checks pass, hidden checks fail | 14% | 23% |
+| Editor calls | 2.2 | 3.9 |
+| Tokens written by the editor | 1,756 | 3,377 |
+| Replies cut off at the 3,072-token limit | 0% | 6% |
+
+The 14B editor handles the format poorly. Its median reply holds two
+edits, but 12% hold ten or more, and a reply cut off at the length limit held 18
+edits on median. In the trials replayed by hand, edits also quoted new
+methods as if they were already in the file, or applied only in part and
+left code that no longer ran. Each problem costs a turn, so steps take
+nearly twice as many calls and run out of turns twice as often. Even its
+replies are not shorter (median 672 tokens against 748 for whole files).
+The prompt and the parser went through three versions on one task
+(partial application, a message for quoted new code, a worked example)
+before this run; none closed the gap.
+
+The labels depend on the program no more than before: a 1% program share,
+winners on one sequence a coin flip on the other, and no reliable held-out
+headroom. Because format failures dominate, this does not settle whether
+an editor that patches well would make structure matter. It does settle
+that this editor, given this format, does not.
+
 ## What this means for the next step
 
 Tuning DPO (beta, epochs, seeds) cannot help while the labels are mostly
@@ -218,9 +274,11 @@ needs a testbed where the program matters more:
    only the public interface, and change sequences that cut across the
    design (a rule used in several places, a new kind of entity, a new
    output format).
-2. **An editor that edits rather than rewrites:** search-and-replace
-   patches instead of whole files, so it has to work within the existing
-   structure.
+2. **An editor that edits rather than rewrites,** so it has to work within
+   the existing structure. The frozen 14B editor cannot do this with
+   search-and-replace edits (probe above: the whole sequence works 25% of
+   the time instead of 53%), so it needs a stronger editor or a coarser
+   format, such as replacing one function or method at a time.
 3. **Less editor luck per label:** more, shorter change sequences per
    task rather than more repetitions. A cooler editor alone does not help
    (probe above).
@@ -252,6 +310,10 @@ uv run python -m harness collect --config configs/rtx5070_pc_editor_t02.yaml   #
 uv run python scripts/diagnostics.py --config configs/rtx5070_pc_editor_t02.yaml
 uv run python scripts/eval_compare.py --base configs/rtx5070_pc.yaml \
     --other configs/rtx5070_pc_editor_t02.yaml --bootstrap 20000
+uv run python -m harness collect --config configs/rtx5070_pc_editor_patch.yaml   # GPU, ~10 h
+uv run python scripts/diagnostics.py --config configs/rtx5070_pc_editor_patch.yaml
+uv run python scripts/eval_compare.py --base configs/rtx5070_pc.yaml \
+    --other configs/rtx5070_pc_editor_patch.yaml --bootstrap 20000
 uv run python scripts/winner_features.py --config configs/rtx5070_train.yaml \
     --pairs runs/rtx5070_pc/dpo/pairs_cap8_f23_nocosm.jsonl --base configs/rtx5070_eval.yaml \
     --writer configs/rtx5070_eval_dpo3.yaml --writer configs/rtx5070_eval_sft.yaml \

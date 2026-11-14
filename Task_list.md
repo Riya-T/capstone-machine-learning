@@ -143,9 +143,16 @@ This is a  rough list of tasks we need to complete and is definitely subject to 
   0.2 instead of 0.7 (`configs/rtx5070_pc_editor_t02.yaml`). It does not
   help: program share 1% (0% to 16%), held-out headroom −0.00.
   `harness/results/diagnostics.md`.
+- [x] **Patch-editor probe** — Dev tasks re-edited by an editor that sends
+  SEARCH/REPLACE edits instead of whole files
+  (`configs/rtx5070_pc_editor_patch.yaml`, `models/patch.py`). The 14B
+  editor handles the format poorly (whole sequence 25% against 53%), and
+  the program share is again 1% (0% to 16%).
+  `harness/results/diagnostics.md`.
 - [ ] **Testbed pilot (proposed)** — A few bigger dev tasks with design left
-  open and a patch-based editor, checked with the diagnostics before any
-  more training. See the progress report's open questions, and the test
+  open and an editor that works within the existing code (a stronger
+  editor, or edits of one function at a time), checked with the
+  diagnostics before any more training. See the progress report's open questions, and the test
   checks proposed in `docs/wallet_pair_pilot/testbed.md`.
 
 ## 8. Analysis and write-up 
