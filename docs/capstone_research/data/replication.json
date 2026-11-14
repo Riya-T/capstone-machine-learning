@@ -1,0 +1,454 @@
+{
+  "feature_flags": {
+    "behavioral_replay_matches": true,
+    "decision": {
+      "eligible": false,
+      "preferred_parent": null,
+      "sample_00_direction": {
+        "block_gaps": [
+          -1,
+          -2,
+          -2
+        ],
+        "eligible": false,
+        "observed_gate": false,
+        "sensitivity": {
+          "abstain": 6
+        },
+        "sequence_gaps": [
+          -2,
+          -3
+        ],
+        "status": "assessed",
+        "total_gap": -5
+      },
+      "sample_01_direction": {
+        "block_gaps": [
+          1,
+          2,
+          2
+        ],
+        "eligible": false,
+        "observed_gate": true,
+        "sensitivity": {
+          "abstain": 1,
+          "qualifies": 5
+        },
+        "sequence_gaps": [
+          2,
+          3
+        ],
+        "status": "assessed",
+        "total_gap": 5
+      }
+    },
+    "states": {
+      "fail_both": 4,
+      "not_reached": 1,
+      "success": 19
+    },
+    "submission_paths": {
+      "budget_draft": 2,
+      "done": 20,
+      "retained_public_pass": 1
+    },
+    "training_label": null,
+    "trajectories": [
+      {
+        "block": 0,
+        "budget_draft_steps": [],
+        "parent": "sample_00",
+        "sequence": "s1",
+        "steps": [
+          "success",
+          "fail_both"
+        ]
+      },
+      {
+        "block": 0,
+        "budget_draft_steps": [],
+        "parent": "sample_01",
+        "sequence": "s1",
+        "steps": [
+          "success",
+          "success"
+        ]
+      },
+      {
+        "block": 0,
+        "budget_draft_steps": [],
+        "parent": "sample_01",
+        "sequence": "s2",
+        "steps": [
+          "success",
+          "success"
+        ]
+      },
+      {
+        "block": 0,
+        "budget_draft_steps": [],
+        "parent": "sample_00",
+        "sequence": "s2",
+        "steps": [
+          "success",
+          "success"
+        ]
+      },
+      {
+        "block": 1,
+        "budget_draft_steps": [
+          1
+        ],
+        "parent": "sample_00",
+        "sequence": "s2",
+        "steps": [
+          "fail_both",
+          "not_reached"
+        ]
+      },
+      {
+        "block": 1,
+        "budget_draft_steps": [],
+        "parent": "sample_01",
+        "sequence": "s2",
+        "steps": [
+          "success",
+          "success"
+        ]
+      },
+      {
+        "block": 1,
+        "budget_draft_steps": [],
+        "parent": "sample_01",
+        "sequence": "s1",
+        "steps": [
+          "success",
+          "success"
+        ]
+      },
+      {
+        "block": 1,
+        "budget_draft_steps": [],
+        "parent": "sample_00",
+        "sequence": "s1",
+        "steps": [
+          "success",
+          "success"
+        ]
+      },
+      {
+        "block": 2,
+        "budget_draft_steps": [],
+        "parent": "sample_00",
+        "sequence": "s1",
+        "steps": [
+          "success",
+          "fail_both"
+        ]
+      },
+      {
+        "block": 2,
+        "budget_draft_steps": [],
+        "parent": "sample_01",
+        "sequence": "s1",
+        "steps": [
+          "success",
+          "success"
+        ]
+      },
+      {
+        "block": 2,
+        "budget_draft_steps": [],
+        "parent": "sample_01",
+        "sequence": "s2",
+        "steps": [
+          "success",
+          "success"
+        ]
+      },
+      {
+        "block": 2,
+        "budget_draft_steps": [
+          2
+        ],
+        "parent": "sample_00",
+        "sequence": "s2",
+        "steps": [
+          "success",
+          "fail_both"
+        ]
+      }
+    ]
+  },
+  "historical_budget_diagnostics": {
+    "attempts": [
+      {
+        "case_id": "recipe_box/s1/r2/sample_02/step_2",
+        "family": "recipe_box",
+        "original_reason": "max_total_tokens",
+        "original_status": "budget_exhausted",
+        "post_hoc_status": "fail_new",
+        "source_changed": true
+      },
+      {
+        "case_id": "recipe_box/s2/r4/sample_00/step_1",
+        "family": "recipe_box",
+        "original_reason": "max_total_tokens",
+        "original_status": "budget_exhausted",
+        "post_hoc_status": "fail_new",
+        "source_changed": true
+      },
+      {
+        "case_id": "restaurant_orders/s2/r1/sample_00/step_2",
+        "family": "restaurant_orders",
+        "original_reason": "max_total_tokens",
+        "original_status": "budget_exhausted",
+        "post_hoc_status": "fail_new",
+        "source_changed": true
+      },
+      {
+        "case_id": "robot_fleet/s1/r0/sample_00/step_1",
+        "family": "robot_fleet",
+        "original_reason": "max_total_tokens",
+        "original_status": "budget_exhausted",
+        "post_hoc_status": "fail_new",
+        "source_changed": true
+      },
+      {
+        "case_id": "robot_fleet/s1/r0/sample_01/step_1",
+        "family": "robot_fleet",
+        "original_reason": "max_total_tokens",
+        "original_status": "budget_exhausted",
+        "post_hoc_status": "fail_new",
+        "source_changed": true
+      },
+      {
+        "case_id": "robot_fleet/s1/r1/sample_00/step_1",
+        "family": "robot_fleet",
+        "original_reason": "max_total_tokens",
+        "original_status": "budget_exhausted",
+        "post_hoc_status": "fail_new",
+        "source_changed": true
+      },
+      {
+        "case_id": "robot_fleet/s1/r1/sample_01/step_1",
+        "family": "robot_fleet",
+        "original_reason": "max_total_tokens",
+        "original_status": "budget_exhausted",
+        "post_hoc_status": "fail_new",
+        "source_changed": true
+      },
+      {
+        "case_id": "robot_fleet/s2/r0/sample_00/step_2",
+        "family": "robot_fleet",
+        "original_reason": "max_total_tokens",
+        "original_status": "budget_exhausted",
+        "post_hoc_status": "fail_new",
+        "source_changed": true
+      },
+      {
+        "case_id": "robot_fleet/s2/r0/sample_01/step_2",
+        "family": "robot_fleet",
+        "original_reason": "max_total_tokens",
+        "original_status": "budget_exhausted",
+        "post_hoc_status": "fail_new",
+        "source_changed": true
+      },
+      {
+        "case_id": "robot_fleet/s2/r1/sample_00/step_2",
+        "family": "robot_fleet",
+        "original_reason": "max_total_tokens",
+        "original_status": "budget_exhausted",
+        "post_hoc_status": "fail_new",
+        "source_changed": true
+      },
+      {
+        "case_id": "school_roster/s1/r0/sample_00/step_1",
+        "family": "school_roster",
+        "original_reason": "max_total_tokens",
+        "original_status": "budget_exhausted",
+        "post_hoc_status": "fail_both",
+        "source_changed": true
+      },
+      {
+        "case_id": "school_roster/s2/r0/sample_01/step_2",
+        "family": "school_roster",
+        "original_reason": "max_total_tokens",
+        "original_status": "budget_exhausted",
+        "post_hoc_status": "fail_new",
+        "source_changed": true
+      },
+      {
+        "case_id": "stock_portfolio/s1/r0/sample_00/step_2",
+        "family": "stock_portfolio",
+        "original_reason": "max_total_tokens",
+        "original_status": "budget_exhausted",
+        "post_hoc_status": "fail_new",
+        "source_changed": true
+      }
+    ],
+    "experimental_calls": 0,
+    "scores_modified": 0
+  },
+  "stock_portfolio": {
+    "behavioral_replay_matches": true,
+    "decision": {
+      "block_gaps": [
+        0,
+        2,
+        1
+      ],
+      "eligible": false,
+      "observed_gate": false,
+      "sensitivity": {
+        "abstain": 8
+      },
+      "sequence_gaps": [
+        -1,
+        4
+      ],
+      "status": "assessed",
+      "total_gap": 3
+    },
+    "states": {
+      "fail_both": 1,
+      "fail_new": 8,
+      "not_reached": 2,
+      "success": 13
+    },
+    "submission_paths": {
+      "budget_draft": 3,
+      "done": 17,
+      "retained_public_pass": 2
+    },
+    "training_label": null,
+    "trajectories": [
+      {
+        "block": 0,
+        "budget_draft_steps": [],
+        "parent": "sample_00",
+        "sequence": "s1",
+        "steps": [
+          "fail_new",
+          "not_reached"
+        ]
+      },
+      {
+        "block": 0,
+        "budget_draft_steps": [
+          2
+        ],
+        "parent": "sample_03",
+        "sequence": "s1",
+        "steps": [
+          "success",
+          "fail_new"
+        ]
+      },
+      {
+        "block": 0,
+        "budget_draft_steps": [],
+        "parent": "sample_03",
+        "sequence": "s2",
+        "steps": [
+          "success",
+          "fail_new"
+        ]
+      },
+      {
+        "block": 0,
+        "budget_draft_steps": [],
+        "parent": "sample_00",
+        "sequence": "s2",
+        "steps": [
+          "success",
+          "success"
+        ]
+      },
+      {
+        "block": 1,
+        "budget_draft_steps": [],
+        "parent": "sample_00",
+        "sequence": "s2",
+        "steps": [
+          "success",
+          "success"
+        ]
+      },
+      {
+        "block": 1,
+        "budget_draft_steps": [],
+        "parent": "sample_03",
+        "sequence": "s2",
+        "steps": [
+          "fail_both",
+          "not_reached"
+        ]
+      },
+      {
+        "block": 1,
+        "budget_draft_steps": [
+          2
+        ],
+        "parent": "sample_03",
+        "sequence": "s1",
+        "steps": [
+          "success",
+          "fail_new"
+        ]
+      },
+      {
+        "block": 1,
+        "budget_draft_steps": [],
+        "parent": "sample_00",
+        "sequence": "s1",
+        "steps": [
+          "success",
+          "fail_new"
+        ]
+      },
+      {
+        "block": 2,
+        "budget_draft_steps": [
+          2
+        ],
+        "parent": "sample_00",
+        "sequence": "s1",
+        "steps": [
+          "success",
+          "fail_new"
+        ]
+      },
+      {
+        "block": 2,
+        "budget_draft_steps": [],
+        "parent": "sample_03",
+        "sequence": "s1",
+        "steps": [
+          "success",
+          "fail_new"
+        ]
+      },
+      {
+        "block": 2,
+        "budget_draft_steps": [],
+        "parent": "sample_03",
+        "sequence": "s2",
+        "steps": [
+          "success",
+          "fail_new"
+        ]
+      },
+      {
+        "block": 2,
+        "budget_draft_steps": [],
+        "parent": "sample_00",
+        "sequence": "s2",
+        "steps": [
+          "success",
+          "success"
+        ]
+      }
+    ]
+  }
+}

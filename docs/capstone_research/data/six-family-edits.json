@@ -1,0 +1,1099 @@
+{
+  "families": {
+    "recipe_box": {
+      "abstention_reason": "confirmation_did_not_reproduce_direction",
+      "phases": {
+        "confirmation": [
+          {
+            "case_id": "recipe_box/s1/r2/sample_00",
+            "complete_behavioral": true,
+            "parent": "recipe_box/teacher/sample_00",
+            "rep": 2,
+            "seeds": [
+              423083378,
+              1085092944
+            ],
+            "sequence": "s1",
+            "source_sha256": "0d94c985739417233069cf850621e14b4a5a07a5beb1d1f1ce39cff65ab6c803",
+            "steps": [
+              "success",
+              "success"
+            ],
+            "successful_prefix": 2
+          },
+          {
+            "case_id": "recipe_box/s1/r2/sample_02",
+            "complete_behavioral": false,
+            "parent": "recipe_box/teacher/sample_02",
+            "rep": 2,
+            "seeds": [
+              423083378,
+              1085092944
+            ],
+            "sequence": "s1",
+            "source_sha256": "5b5d9e64f8700f1a47391c9161088de2b7bccea3312c0d633fc3b00e71bcd84c",
+            "steps": [
+              "success",
+              "budget_exhausted"
+            ],
+            "successful_prefix": 1
+          },
+          {
+            "case_id": "recipe_box/s2/r2/sample_02",
+            "complete_behavioral": true,
+            "parent": "recipe_box/teacher/sample_02",
+            "rep": 2,
+            "seeds": [
+              1944398759,
+              374070121
+            ],
+            "sequence": "s2",
+            "source_sha256": "5b5d9e64f8700f1a47391c9161088de2b7bccea3312c0d633fc3b00e71bcd84c",
+            "steps": [
+              "success",
+              "success"
+            ],
+            "successful_prefix": 2
+          },
+          {
+            "case_id": "recipe_box/s2/r2/sample_00",
+            "complete_behavioral": true,
+            "parent": "recipe_box/teacher/sample_00",
+            "rep": 2,
+            "seeds": [
+              1944398759,
+              374070121
+            ],
+            "sequence": "s2",
+            "source_sha256": "0d94c985739417233069cf850621e14b4a5a07a5beb1d1f1ce39cff65ab6c803",
+            "steps": [
+              "success",
+              "success"
+            ],
+            "successful_prefix": 2
+          },
+          {
+            "case_id": "recipe_box/s2/r3/sample_00",
+            "complete_behavioral": true,
+            "parent": "recipe_box/teacher/sample_00",
+            "rep": 3,
+            "seeds": [
+              777782761,
+              833638895
+            ],
+            "sequence": "s2",
+            "source_sha256": "0d94c985739417233069cf850621e14b4a5a07a5beb1d1f1ce39cff65ab6c803",
+            "steps": [
+              "success",
+              "success"
+            ],
+            "successful_prefix": 2
+          },
+          {
+            "case_id": "recipe_box/s2/r3/sample_02",
+            "complete_behavioral": true,
+            "parent": "recipe_box/teacher/sample_02",
+            "rep": 3,
+            "seeds": [
+              777782761,
+              833638895
+            ],
+            "sequence": "s2",
+            "source_sha256": "5b5d9e64f8700f1a47391c9161088de2b7bccea3312c0d633fc3b00e71bcd84c",
+            "steps": [
+              "fail_existing",
+              "not_reached"
+            ],
+            "successful_prefix": 0
+          },
+          {
+            "case_id": "recipe_box/s1/r3/sample_02",
+            "complete_behavioral": true,
+            "parent": "recipe_box/teacher/sample_02",
+            "rep": 3,
+            "seeds": [
+              616384214,
+              113340589
+            ],
+            "sequence": "s1",
+            "source_sha256": "5b5d9e64f8700f1a47391c9161088de2b7bccea3312c0d633fc3b00e71bcd84c",
+            "steps": [
+              "success",
+              "success"
+            ],
+            "successful_prefix": 2
+          },
+          {
+            "case_id": "recipe_box/s1/r3/sample_00",
+            "complete_behavioral": true,
+            "parent": "recipe_box/teacher/sample_00",
+            "rep": 3,
+            "seeds": [
+              616384214,
+              113340589
+            ],
+            "sequence": "s1",
+            "source_sha256": "0d94c985739417233069cf850621e14b4a5a07a5beb1d1f1ce39cff65ab6c803",
+            "steps": [
+              "success",
+              "success"
+            ],
+            "successful_prefix": 2
+          },
+          {
+            "case_id": "recipe_box/s1/r4/sample_00",
+            "complete_behavioral": true,
+            "parent": "recipe_box/teacher/sample_00",
+            "rep": 4,
+            "seeds": [
+              1535676874,
+              55292359
+            ],
+            "sequence": "s1",
+            "source_sha256": "0d94c985739417233069cf850621e14b4a5a07a5beb1d1f1ce39cff65ab6c803",
+            "steps": [
+              "success",
+              "fail_existing"
+            ],
+            "successful_prefix": 1
+          },
+          {
+            "case_id": "recipe_box/s1/r4/sample_02",
+            "complete_behavioral": true,
+            "parent": "recipe_box/teacher/sample_02",
+            "rep": 4,
+            "seeds": [
+              1535676874,
+              55292359
+            ],
+            "sequence": "s1",
+            "source_sha256": "5b5d9e64f8700f1a47391c9161088de2b7bccea3312c0d633fc3b00e71bcd84c",
+            "steps": [
+              "success",
+              "success"
+            ],
+            "successful_prefix": 2
+          },
+          {
+            "case_id": "recipe_box/s2/r4/sample_02",
+            "complete_behavioral": true,
+            "parent": "recipe_box/teacher/sample_02",
+            "rep": 4,
+            "seeds": [
+              1591585956,
+              1847621483
+            ],
+            "sequence": "s2",
+            "source_sha256": "5b5d9e64f8700f1a47391c9161088de2b7bccea3312c0d633fc3b00e71bcd84c",
+            "steps": [
+              "fail_new",
+              "not_reached"
+            ],
+            "successful_prefix": 0
+          },
+          {
+            "case_id": "recipe_box/s2/r4/sample_00",
+            "complete_behavioral": false,
+            "parent": "recipe_box/teacher/sample_00",
+            "rep": 4,
+            "seeds": [
+              1591585956,
+              1847621483
+            ],
+            "sequence": "s2",
+            "source_sha256": "0d94c985739417233069cf850621e14b4a5a07a5beb1d1f1ce39cff65ab6c803",
+            "steps": [
+              "budget_exhausted",
+              "not_reached"
+            ],
+            "successful_prefix": 0
+          }
+        ],
+        "discovery": [
+          {
+            "case_id": "recipe_box/s1/r0/sample_00",
+            "complete_behavioral": true,
+            "parent": "recipe_box/teacher/sample_00",
+            "rep": 0,
+            "seeds": [
+              1534571194,
+              695418406
+            ],
+            "sequence": "s1",
+            "source_sha256": "0d94c985739417233069cf850621e14b4a5a07a5beb1d1f1ce39cff65ab6c803",
+            "steps": [
+              "success",
+              "success"
+            ],
+            "successful_prefix": 2
+          },
+          {
+            "case_id": "recipe_box/s1/r0/sample_02",
+            "complete_behavioral": true,
+            "parent": "recipe_box/teacher/sample_02",
+            "rep": 0,
+            "seeds": [
+              1534571194,
+              695418406
+            ],
+            "sequence": "s1",
+            "source_sha256": "5b5d9e64f8700f1a47391c9161088de2b7bccea3312c0d633fc3b00e71bcd84c",
+            "steps": [
+              "success",
+              "fail_new"
+            ],
+            "successful_prefix": 1
+          },
+          {
+            "case_id": "recipe_box/s2/r0/sample_02",
+            "complete_behavioral": true,
+            "parent": "recipe_box/teacher/sample_02",
+            "rep": 0,
+            "seeds": [
+              1103292465,
+              1130292396
+            ],
+            "sequence": "s2",
+            "source_sha256": "5b5d9e64f8700f1a47391c9161088de2b7bccea3312c0d633fc3b00e71bcd84c",
+            "steps": [
+              "success",
+              "success"
+            ],
+            "successful_prefix": 2
+          },
+          {
+            "case_id": "recipe_box/s2/r0/sample_00",
+            "complete_behavioral": true,
+            "parent": "recipe_box/teacher/sample_00",
+            "rep": 0,
+            "seeds": [
+              1103292465,
+              1130292396
+            ],
+            "sequence": "s2",
+            "source_sha256": "0d94c985739417233069cf850621e14b4a5a07a5beb1d1f1ce39cff65ab6c803",
+            "steps": [
+              "success",
+              "success"
+            ],
+            "successful_prefix": 2
+          },
+          {
+            "case_id": "recipe_box/s2/r1/sample_00",
+            "complete_behavioral": true,
+            "parent": "recipe_box/teacher/sample_00",
+            "rep": 1,
+            "seeds": [
+              282839339,
+              92797726
+            ],
+            "sequence": "s2",
+            "source_sha256": "0d94c985739417233069cf850621e14b4a5a07a5beb1d1f1ce39cff65ab6c803",
+            "steps": [
+              "success",
+              "success"
+            ],
+            "successful_prefix": 2
+          },
+          {
+            "case_id": "recipe_box/s2/r1/sample_02",
+            "complete_behavioral": true,
+            "parent": "recipe_box/teacher/sample_02",
+            "rep": 1,
+            "seeds": [
+              282839339,
+              92797726
+            ],
+            "sequence": "s2",
+            "source_sha256": "5b5d9e64f8700f1a47391c9161088de2b7bccea3312c0d633fc3b00e71bcd84c",
+            "steps": [
+              "fail_existing",
+              "not_reached"
+            ],
+            "successful_prefix": 0
+          },
+          {
+            "case_id": "recipe_box/s1/r1/sample_02",
+            "complete_behavioral": true,
+            "parent": "recipe_box/teacher/sample_02",
+            "rep": 1,
+            "seeds": [
+              518540103,
+              1995556610
+            ],
+            "sequence": "s1",
+            "source_sha256": "5b5d9e64f8700f1a47391c9161088de2b7bccea3312c0d633fc3b00e71bcd84c",
+            "steps": [
+              "success",
+              "success"
+            ],
+            "successful_prefix": 2
+          },
+          {
+            "case_id": "recipe_box/s1/r1/sample_00",
+            "complete_behavioral": true,
+            "parent": "recipe_box/teacher/sample_00",
+            "rep": 1,
+            "seeds": [
+              518540103,
+              1995556610
+            ],
+            "sequence": "s1",
+            "source_sha256": "0d94c985739417233069cf850621e14b4a5a07a5beb1d1f1ce39cff65ab6c803",
+            "steps": [
+              "success",
+              "success"
+            ],
+            "successful_prefix": 2
+          }
+        ]
+      },
+      "training_label": null,
+      "writer_counts": {
+        "passed": 4
+      }
+    },
+    "restaurant_orders": {
+      "abstention_reason": "incomplete_behavioral_outcomes",
+      "phases": {
+        "confirmation": null,
+        "discovery": [
+          {
+            "case_id": "restaurant_orders/s1/r0/sample_00",
+            "complete_behavioral": true,
+            "parent": "restaurant_orders/teacher/sample_00",
+            "rep": 0,
+            "seeds": [
+              2108991888,
+              709388132
+            ],
+            "sequence": "s1",
+            "source_sha256": "3b0d3fc1381e0e3f73b9c6085bee1a720837126f90a1949d06f5e16480a4ef9a",
+            "steps": [
+              "success",
+              "success"
+            ],
+            "successful_prefix": 2
+          },
+          {
+            "case_id": "restaurant_orders/s1/r0/sample_03",
+            "complete_behavioral": true,
+            "parent": "restaurant_orders/teacher/sample_03",
+            "rep": 0,
+            "seeds": [
+              2108991888,
+              709388132
+            ],
+            "sequence": "s1",
+            "source_sha256": "3bfb362da263986e9c541068a2546c0458acffd6c2486e6c520ba90c9b2ae2d8",
+            "steps": [
+              "success",
+              "success"
+            ],
+            "successful_prefix": 2
+          },
+          {
+            "case_id": "restaurant_orders/s2/r0/sample_03",
+            "complete_behavioral": true,
+            "parent": "restaurant_orders/teacher/sample_03",
+            "rep": 0,
+            "seeds": [
+              959357412,
+              242235227
+            ],
+            "sequence": "s2",
+            "source_sha256": "3bfb362da263986e9c541068a2546c0458acffd6c2486e6c520ba90c9b2ae2d8",
+            "steps": [
+              "success",
+              "success"
+            ],
+            "successful_prefix": 2
+          },
+          {
+            "case_id": "restaurant_orders/s2/r0/sample_00",
+            "complete_behavioral": true,
+            "parent": "restaurant_orders/teacher/sample_00",
+            "rep": 0,
+            "seeds": [
+              959357412,
+              242235227
+            ],
+            "sequence": "s2",
+            "source_sha256": "3b0d3fc1381e0e3f73b9c6085bee1a720837126f90a1949d06f5e16480a4ef9a",
+            "steps": [
+              "fail_existing",
+              "not_reached"
+            ],
+            "successful_prefix": 0
+          },
+          {
+            "case_id": "restaurant_orders/s2/r1/sample_00",
+            "complete_behavioral": false,
+            "parent": "restaurant_orders/teacher/sample_00",
+            "rep": 1,
+            "seeds": [
+              662026443,
+              191367941
+            ],
+            "sequence": "s2",
+            "source_sha256": "3b0d3fc1381e0e3f73b9c6085bee1a720837126f90a1949d06f5e16480a4ef9a",
+            "steps": [
+              "success",
+              "budget_exhausted"
+            ],
+            "successful_prefix": 1
+          },
+          {
+            "case_id": "restaurant_orders/s2/r1/sample_03",
+            "complete_behavioral": true,
+            "parent": "restaurant_orders/teacher/sample_03",
+            "rep": 1,
+            "seeds": [
+              662026443,
+              191367941
+            ],
+            "sequence": "s2",
+            "source_sha256": "3bfb362da263986e9c541068a2546c0458acffd6c2486e6c520ba90c9b2ae2d8",
+            "steps": [
+              "success",
+              "success"
+            ],
+            "successful_prefix": 2
+          },
+          {
+            "case_id": "restaurant_orders/s1/r1/sample_03",
+            "complete_behavioral": true,
+            "parent": "restaurant_orders/teacher/sample_03",
+            "rep": 1,
+            "seeds": [
+              2080757435,
+              1592312007
+            ],
+            "sequence": "s1",
+            "source_sha256": "3bfb362da263986e9c541068a2546c0458acffd6c2486e6c520ba90c9b2ae2d8",
+            "steps": [
+              "fail_existing",
+              "not_reached"
+            ],
+            "successful_prefix": 0
+          },
+          {
+            "case_id": "restaurant_orders/s1/r1/sample_00",
+            "complete_behavioral": true,
+            "parent": "restaurant_orders/teacher/sample_00",
+            "rep": 1,
+            "seeds": [
+              2080757435,
+              1592312007
+            ],
+            "sequence": "s1",
+            "source_sha256": "3b0d3fc1381e0e3f73b9c6085bee1a720837126f90a1949d06f5e16480a4ef9a",
+            "steps": [
+              "success",
+              "success"
+            ],
+            "successful_prefix": 2
+          }
+        ]
+      },
+      "training_label": null,
+      "writer_counts": {
+        "passed": 4
+      }
+    },
+    "ring_buffer": {
+      "abstention_reason": "quantitative_gate_failed",
+      "phases": {
+        "confirmation": null,
+        "discovery": [
+          {
+            "case_id": "ring_buffer/s1/r0/sample_00",
+            "complete_behavioral": true,
+            "parent": "ring_buffer/teacher/sample_00",
+            "rep": 0,
+            "seeds": [
+              1485281756,
+              1298004199
+            ],
+            "sequence": "s1",
+            "source_sha256": "d27abfef008112da33b3bf0231635bf523954cfb166de5ffd8fcbef83ee4f5a1",
+            "steps": [
+              "success",
+              "success"
+            ],
+            "successful_prefix": 2
+          },
+          {
+            "case_id": "ring_buffer/s1/r0/sample_03",
+            "complete_behavioral": true,
+            "parent": "ring_buffer/teacher/sample_03",
+            "rep": 0,
+            "seeds": [
+              1485281756,
+              1298004199
+            ],
+            "sequence": "s1",
+            "source_sha256": "d7db3f36c02a488d28a9a2e22127dee31ba9060db27ec6991cb19cc59dd292c0",
+            "steps": [
+              "success",
+              "success"
+            ],
+            "successful_prefix": 2
+          },
+          {
+            "case_id": "ring_buffer/s2/r0/sample_03",
+            "complete_behavioral": true,
+            "parent": "ring_buffer/teacher/sample_03",
+            "rep": 0,
+            "seeds": [
+              1772769283,
+              1289226487
+            ],
+            "sequence": "s2",
+            "source_sha256": "d7db3f36c02a488d28a9a2e22127dee31ba9060db27ec6991cb19cc59dd292c0",
+            "steps": [
+              "success",
+              "success"
+            ],
+            "successful_prefix": 2
+          },
+          {
+            "case_id": "ring_buffer/s2/r0/sample_00",
+            "complete_behavioral": true,
+            "parent": "ring_buffer/teacher/sample_00",
+            "rep": 0,
+            "seeds": [
+              1772769283,
+              1289226487
+            ],
+            "sequence": "s2",
+            "source_sha256": "d27abfef008112da33b3bf0231635bf523954cfb166de5ffd8fcbef83ee4f5a1",
+            "steps": [
+              "success",
+              "success"
+            ],
+            "successful_prefix": 2
+          },
+          {
+            "case_id": "ring_buffer/s2/r1/sample_00",
+            "complete_behavioral": true,
+            "parent": "ring_buffer/teacher/sample_00",
+            "rep": 1,
+            "seeds": [
+              1584269693,
+              2095547994
+            ],
+            "sequence": "s2",
+            "source_sha256": "d27abfef008112da33b3bf0231635bf523954cfb166de5ffd8fcbef83ee4f5a1",
+            "steps": [
+              "success",
+              "success"
+            ],
+            "successful_prefix": 2
+          },
+          {
+            "case_id": "ring_buffer/s2/r1/sample_03",
+            "complete_behavioral": true,
+            "parent": "ring_buffer/teacher/sample_03",
+            "rep": 1,
+            "seeds": [
+              1584269693,
+              2095547994
+            ],
+            "sequence": "s2",
+            "source_sha256": "d7db3f36c02a488d28a9a2e22127dee31ba9060db27ec6991cb19cc59dd292c0",
+            "steps": [
+              "success",
+              "success"
+            ],
+            "successful_prefix": 2
+          },
+          {
+            "case_id": "ring_buffer/s1/r1/sample_03",
+            "complete_behavioral": true,
+            "parent": "ring_buffer/teacher/sample_03",
+            "rep": 1,
+            "seeds": [
+              1944760443,
+              386795028
+            ],
+            "sequence": "s1",
+            "source_sha256": "d7db3f36c02a488d28a9a2e22127dee31ba9060db27ec6991cb19cc59dd292c0",
+            "steps": [
+              "success",
+              "success"
+            ],
+            "successful_prefix": 2
+          },
+          {
+            "case_id": "ring_buffer/s1/r1/sample_00",
+            "complete_behavioral": true,
+            "parent": "ring_buffer/teacher/sample_00",
+            "rep": 1,
+            "seeds": [
+              1944760443,
+              386795028
+            ],
+            "sequence": "s1",
+            "source_sha256": "d27abfef008112da33b3bf0231635bf523954cfb166de5ffd8fcbef83ee4f5a1",
+            "steps": [
+              "success",
+              "success"
+            ],
+            "successful_prefix": 2
+          }
+        ]
+      },
+      "training_label": null,
+      "writer_counts": {
+        "passed": 4
+      }
+    },
+    "robot_fleet": {
+      "abstention_reason": "incomplete_behavioral_outcomes",
+      "phases": {
+        "confirmation": null,
+        "discovery": [
+          {
+            "case_id": "robot_fleet/s1/r0/sample_00",
+            "complete_behavioral": false,
+            "parent": "robot_fleet/teacher/sample_00",
+            "rep": 0,
+            "seeds": [
+              1601176089,
+              143807
+            ],
+            "sequence": "s1",
+            "source_sha256": "bd3273b181fa0fa7f225a78c5b46cca09c0ce5c197189b5cfd4e3856173efbb8",
+            "steps": [
+              "budget_exhausted",
+              "not_reached"
+            ],
+            "successful_prefix": 0
+          },
+          {
+            "case_id": "robot_fleet/s1/r0/sample_01",
+            "complete_behavioral": false,
+            "parent": "robot_fleet/teacher/sample_01",
+            "rep": 0,
+            "seeds": [
+              1601176089,
+              143807
+            ],
+            "sequence": "s1",
+            "source_sha256": "a214a12fc302b9c69248c19e965ba31e2c684a5f2e4602a6e9bb9c42df41bf54",
+            "steps": [
+              "budget_exhausted",
+              "not_reached"
+            ],
+            "successful_prefix": 0
+          },
+          {
+            "case_id": "robot_fleet/s2/r0/sample_01",
+            "complete_behavioral": false,
+            "parent": "robot_fleet/teacher/sample_01",
+            "rep": 0,
+            "seeds": [
+              584097703,
+              1137065105
+            ],
+            "sequence": "s2",
+            "source_sha256": "a214a12fc302b9c69248c19e965ba31e2c684a5f2e4602a6e9bb9c42df41bf54",
+            "steps": [
+              "success",
+              "budget_exhausted"
+            ],
+            "successful_prefix": 1
+          },
+          {
+            "case_id": "robot_fleet/s2/r0/sample_00",
+            "complete_behavioral": false,
+            "parent": "robot_fleet/teacher/sample_00",
+            "rep": 0,
+            "seeds": [
+              584097703,
+              1137065105
+            ],
+            "sequence": "s2",
+            "source_sha256": "bd3273b181fa0fa7f225a78c5b46cca09c0ce5c197189b5cfd4e3856173efbb8",
+            "steps": [
+              "success",
+              "budget_exhausted"
+            ],
+            "successful_prefix": 1
+          },
+          {
+            "case_id": "robot_fleet/s2/r1/sample_00",
+            "complete_behavioral": false,
+            "parent": "robot_fleet/teacher/sample_00",
+            "rep": 1,
+            "seeds": [
+              1092126301,
+              742300013
+            ],
+            "sequence": "s2",
+            "source_sha256": "bd3273b181fa0fa7f225a78c5b46cca09c0ce5c197189b5cfd4e3856173efbb8",
+            "steps": [
+              "success",
+              "budget_exhausted"
+            ],
+            "successful_prefix": 1
+          },
+          {
+            "case_id": "robot_fleet/s2/r1/sample_01",
+            "complete_behavioral": true,
+            "parent": "robot_fleet/teacher/sample_01",
+            "rep": 1,
+            "seeds": [
+              1092126301,
+              742300013
+            ],
+            "sequence": "s2",
+            "source_sha256": "a214a12fc302b9c69248c19e965ba31e2c684a5f2e4602a6e9bb9c42df41bf54",
+            "steps": [
+              "success",
+              "success"
+            ],
+            "successful_prefix": 2
+          },
+          {
+            "case_id": "robot_fleet/s1/r1/sample_01",
+            "complete_behavioral": false,
+            "parent": "robot_fleet/teacher/sample_01",
+            "rep": 1,
+            "seeds": [
+              344951053,
+              1775196234
+            ],
+            "sequence": "s1",
+            "source_sha256": "a214a12fc302b9c69248c19e965ba31e2c684a5f2e4602a6e9bb9c42df41bf54",
+            "steps": [
+              "budget_exhausted",
+              "not_reached"
+            ],
+            "successful_prefix": 0
+          },
+          {
+            "case_id": "robot_fleet/s1/r1/sample_00",
+            "complete_behavioral": false,
+            "parent": "robot_fleet/teacher/sample_00",
+            "rep": 1,
+            "seeds": [
+              344951053,
+              1775196234
+            ],
+            "sequence": "s1",
+            "source_sha256": "bd3273b181fa0fa7f225a78c5b46cca09c0ce5c197189b5cfd4e3856173efbb8",
+            "steps": [
+              "budget_exhausted",
+              "not_reached"
+            ],
+            "successful_prefix": 0
+          }
+        ]
+      },
+      "training_label": null,
+      "writer_counts": {
+        "passed": 4
+      }
+    },
+    "school_roster": {
+      "abstention_reason": "incomplete_behavioral_outcomes",
+      "phases": {
+        "confirmation": null,
+        "discovery": [
+          {
+            "case_id": "school_roster/s1/r0/sample_00",
+            "complete_behavioral": false,
+            "parent": "school_roster/teacher/sample_00",
+            "rep": 0,
+            "seeds": [
+              742717329,
+              663838824
+            ],
+            "sequence": "s1",
+            "source_sha256": "2fc8dd75563de3bd7379b451ac58ee65871c4df2041ed53581746672a0fe94cd",
+            "steps": [
+              "budget_exhausted",
+              "not_reached"
+            ],
+            "successful_prefix": 0
+          },
+          {
+            "case_id": "school_roster/s1/r0/sample_01",
+            "complete_behavioral": true,
+            "parent": "school_roster/teacher/sample_01",
+            "rep": 0,
+            "seeds": [
+              742717329,
+              663838824
+            ],
+            "sequence": "s1",
+            "source_sha256": "f3363481e04496544398ef2f058a591f4acdcc8ba1d6704d02b30e32eaa2513f",
+            "steps": [
+              "fail_new",
+              "not_reached"
+            ],
+            "successful_prefix": 0
+          },
+          {
+            "case_id": "school_roster/s2/r0/sample_01",
+            "complete_behavioral": false,
+            "parent": "school_roster/teacher/sample_01",
+            "rep": 0,
+            "seeds": [
+              1062121829,
+              797682145
+            ],
+            "sequence": "s2",
+            "source_sha256": "f3363481e04496544398ef2f058a591f4acdcc8ba1d6704d02b30e32eaa2513f",
+            "steps": [
+              "success",
+              "budget_exhausted"
+            ],
+            "successful_prefix": 1
+          },
+          {
+            "case_id": "school_roster/s2/r0/sample_00",
+            "complete_behavioral": true,
+            "parent": "school_roster/teacher/sample_00",
+            "rep": 0,
+            "seeds": [
+              1062121829,
+              797682145
+            ],
+            "sequence": "s2",
+            "source_sha256": "2fc8dd75563de3bd7379b451ac58ee65871c4df2041ed53581746672a0fe94cd",
+            "steps": [
+              "success",
+              "success"
+            ],
+            "successful_prefix": 2
+          },
+          {
+            "case_id": "school_roster/s2/r1/sample_00",
+            "complete_behavioral": true,
+            "parent": "school_roster/teacher/sample_00",
+            "rep": 1,
+            "seeds": [
+              1356015812,
+              1419669946
+            ],
+            "sequence": "s2",
+            "source_sha256": "2fc8dd75563de3bd7379b451ac58ee65871c4df2041ed53581746672a0fe94cd",
+            "steps": [
+              "fail_new",
+              "not_reached"
+            ],
+            "successful_prefix": 0
+          },
+          {
+            "case_id": "school_roster/s2/r1/sample_01",
+            "complete_behavioral": true,
+            "parent": "school_roster/teacher/sample_01",
+            "rep": 1,
+            "seeds": [
+              1356015812,
+              1419669946
+            ],
+            "sequence": "s2",
+            "source_sha256": "f3363481e04496544398ef2f058a591f4acdcc8ba1d6704d02b30e32eaa2513f",
+            "steps": [
+              "success",
+              "success"
+            ],
+            "successful_prefix": 2
+          },
+          {
+            "case_id": "school_roster/s1/r1/sample_01",
+            "complete_behavioral": true,
+            "parent": "school_roster/teacher/sample_01",
+            "rep": 1,
+            "seeds": [
+              149419605,
+              2041681887
+            ],
+            "sequence": "s1",
+            "source_sha256": "f3363481e04496544398ef2f058a591f4acdcc8ba1d6704d02b30e32eaa2513f",
+            "steps": [
+              "fail_new",
+              "not_reached"
+            ],
+            "successful_prefix": 0
+          },
+          {
+            "case_id": "school_roster/s1/r1/sample_00",
+            "complete_behavioral": true,
+            "parent": "school_roster/teacher/sample_00",
+            "rep": 1,
+            "seeds": [
+              149419605,
+              2041681887
+            ],
+            "sequence": "s1",
+            "source_sha256": "2fc8dd75563de3bd7379b451ac58ee65871c4df2041ed53581746672a0fe94cd",
+            "steps": [
+              "fail_new",
+              "not_reached"
+            ],
+            "successful_prefix": 0
+          }
+        ]
+      },
+      "training_label": null,
+      "writer_counts": {
+        "passed": 4
+      }
+    },
+    "stock_portfolio": {
+      "abstention_reason": "incomplete_behavioral_outcomes",
+      "phases": {
+        "confirmation": null,
+        "discovery": [
+          {
+            "case_id": "stock_portfolio/s1/r0/sample_00",
+            "complete_behavioral": false,
+            "parent": "stock_portfolio/teacher/sample_00",
+            "rep": 0,
+            "seeds": [
+              1488301415,
+              1091865526
+            ],
+            "sequence": "s1",
+            "source_sha256": "9b92eb1031b863b7f0f77bb8b86a2ed754b1ab86c3d2d354237653ec8a895824",
+            "steps": [
+              "success",
+              "budget_exhausted"
+            ],
+            "successful_prefix": 1
+          },
+          {
+            "case_id": "stock_portfolio/s1/r0/sample_03",
+            "complete_behavioral": true,
+            "parent": "stock_portfolio/teacher/sample_03",
+            "rep": 0,
+            "seeds": [
+              1488301415,
+              1091865526
+            ],
+            "sequence": "s1",
+            "source_sha256": "33913d93ea192334fd45177a9f01fc6534d203c1ea0c5738c7cf47d5b57f9fc1",
+            "steps": [
+              "fail_new",
+              "not_reached"
+            ],
+            "successful_prefix": 0
+          },
+          {
+            "case_id": "stock_portfolio/s2/r0/sample_03",
+            "complete_behavioral": true,
+            "parent": "stock_portfolio/teacher/sample_03",
+            "rep": 0,
+            "seeds": [
+              1227546600,
+              1614033393
+            ],
+            "sequence": "s2",
+            "source_sha256": "33913d93ea192334fd45177a9f01fc6534d203c1ea0c5738c7cf47d5b57f9fc1",
+            "steps": [
+              "fail_new",
+              "not_reached"
+            ],
+            "successful_prefix": 0
+          },
+          {
+            "case_id": "stock_portfolio/s2/r0/sample_00",
+            "complete_behavioral": true,
+            "parent": "stock_portfolio/teacher/sample_00",
+            "rep": 0,
+            "seeds": [
+              1227546600,
+              1614033393
+            ],
+            "sequence": "s2",
+            "source_sha256": "9b92eb1031b863b7f0f77bb8b86a2ed754b1ab86c3d2d354237653ec8a895824",
+            "steps": [
+              "success",
+              "success"
+            ],
+            "successful_prefix": 2
+          },
+          {
+            "case_id": "stock_portfolio/s2/r1/sample_00",
+            "complete_behavioral": true,
+            "parent": "stock_portfolio/teacher/sample_00",
+            "rep": 1,
+            "seeds": [
+              1665914794,
+              433175427
+            ],
+            "sequence": "s2",
+            "source_sha256": "9b92eb1031b863b7f0f77bb8b86a2ed754b1ab86c3d2d354237653ec8a895824",
+            "steps": [
+              "success",
+              "success"
+            ],
+            "successful_prefix": 2
+          },
+          {
+            "case_id": "stock_portfolio/s2/r1/sample_03",
+            "complete_behavioral": true,
+            "parent": "stock_portfolio/teacher/sample_03",
+            "rep": 1,
+            "seeds": [
+              1665914794,
+              433175427
+            ],
+            "sequence": "s2",
+            "source_sha256": "33913d93ea192334fd45177a9f01fc6534d203c1ea0c5738c7cf47d5b57f9fc1",
+            "steps": [
+              "fail_new",
+              "not_reached"
+            ],
+            "successful_prefix": 0
+          },
+          {
+            "case_id": "stock_portfolio/s1/r1/sample_03",
+            "complete_behavioral": true,
+            "parent": "stock_portfolio/teacher/sample_03",
+            "rep": 1,
+            "seeds": [
+              272915560,
+              1788589751
+            ],
+            "sequence": "s1",
+            "source_sha256": "33913d93ea192334fd45177a9f01fc6534d203c1ea0c5738c7cf47d5b57f9fc1",
+            "steps": [
+              "success",
+              "fail_new"
+            ],
+            "successful_prefix": 1
+          },
+          {
+            "case_id": "stock_portfolio/s1/r1/sample_00",
+            "complete_behavioral": true,
+            "parent": "stock_portfolio/teacher/sample_00",
+            "rep": 1,
+            "seeds": [
+              272915560,
+              1788589751
+            ],
+            "sequence": "s1",
+            "source_sha256": "9b92eb1031b863b7f0f77bb8b86a2ed754b1ab86c3d2d354237653ec8a895824",
+            "steps": [
+              "success",
+              "fail_new"
+            ],
+            "successful_prefix": 1
+          }
+        ]
+      },
+      "training_label": null,
+      "writer_counts": {
+        "passed": 4
+      }
+    }
+  },
+  "family_count": 6,
+  "validated_family_count": 0
+}

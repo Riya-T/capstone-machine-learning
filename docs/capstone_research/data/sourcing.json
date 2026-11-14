@@ -1,0 +1,931 @@
+{
+  "matched_teacher": {
+    "all_disagreements_reproduced": true,
+    "all_outcomes_valid": true,
+    "families": {
+      "calendar_events": {
+        "hosted_full": 4,
+        "hosted_private": 4,
+        "local_full": 0,
+        "local_private": 0,
+        "scheduled": 4
+      },
+      "document_store": {
+        "hosted_full": 4,
+        "hosted_private": 4,
+        "local_full": 1,
+        "local_private": 1,
+        "scheduled": 4
+      },
+      "event_bus": {
+        "hosted_full": 4,
+        "hosted_private": 4,
+        "local_full": 4,
+        "local_private": 4,
+        "scheduled": 4
+      },
+      "feature_flags": {
+        "hosted_full": 4,
+        "hosted_private": 4,
+        "local_full": 0,
+        "local_private": 0,
+        "scheduled": 4
+      },
+      "party_inventory": {
+        "hosted_full": 4,
+        "hosted_private": 4,
+        "local_full": 3,
+        "local_private": 3,
+        "scheduled": 4
+      },
+      "warehouse_stock": {
+        "hosted_full": 4,
+        "hosted_private": 4,
+        "local_full": 0,
+        "local_private": 0,
+        "scheduled": 4
+      }
+    },
+    "rows": [
+      {
+        "case_id": "calendar_events/teacher/sample_00",
+        "family": "calendar_events",
+        "hosted": "passed",
+        "hosted_private": true,
+        "local": "failed",
+        "local_private": false
+      },
+      {
+        "case_id": "document_store/teacher/sample_00",
+        "family": "document_store",
+        "hosted": "passed",
+        "hosted_private": true,
+        "local": "failed",
+        "local_private": false
+      },
+      {
+        "case_id": "event_bus/teacher/sample_00",
+        "family": "event_bus",
+        "hosted": "passed",
+        "hosted_private": true,
+        "local": "passed",
+        "local_private": true
+      },
+      {
+        "case_id": "feature_flags/teacher/sample_00",
+        "family": "feature_flags",
+        "hosted": "passed",
+        "hosted_private": true,
+        "local": "failed",
+        "local_private": false
+      },
+      {
+        "case_id": "party_inventory/teacher/sample_00",
+        "family": "party_inventory",
+        "hosted": "passed",
+        "hosted_private": true,
+        "local": "passed",
+        "local_private": true
+      },
+      {
+        "case_id": "warehouse_stock/teacher/sample_00",
+        "family": "warehouse_stock",
+        "hosted": "passed",
+        "hosted_private": true,
+        "local": "failed",
+        "local_private": false
+      },
+      {
+        "case_id": "calendar_events/teacher/sample_01",
+        "family": "calendar_events",
+        "hosted": "passed",
+        "hosted_private": true,
+        "local": "failed",
+        "local_private": false
+      },
+      {
+        "case_id": "document_store/teacher/sample_01",
+        "family": "document_store",
+        "hosted": "passed",
+        "hosted_private": true,
+        "local": "failed",
+        "local_private": false
+      },
+      {
+        "case_id": "event_bus/teacher/sample_01",
+        "family": "event_bus",
+        "hosted": "passed",
+        "hosted_private": true,
+        "local": "passed",
+        "local_private": true
+      },
+      {
+        "case_id": "feature_flags/teacher/sample_01",
+        "family": "feature_flags",
+        "hosted": "passed",
+        "hosted_private": true,
+        "local": "failed",
+        "local_private": false
+      },
+      {
+        "case_id": "party_inventory/teacher/sample_01",
+        "family": "party_inventory",
+        "hosted": "passed",
+        "hosted_private": true,
+        "local": "passed",
+        "local_private": true
+      },
+      {
+        "case_id": "warehouse_stock/teacher/sample_01",
+        "family": "warehouse_stock",
+        "hosted": "passed",
+        "hosted_private": true,
+        "local": "failed",
+        "local_private": false
+      },
+      {
+        "case_id": "calendar_events/teacher/sample_02",
+        "family": "calendar_events",
+        "hosted": "passed",
+        "hosted_private": true,
+        "local": "failed",
+        "local_private": false
+      },
+      {
+        "case_id": "document_store/teacher/sample_02",
+        "family": "document_store",
+        "hosted": "passed",
+        "hosted_private": true,
+        "local": "failed",
+        "local_private": false
+      },
+      {
+        "case_id": "event_bus/teacher/sample_02",
+        "family": "event_bus",
+        "hosted": "passed",
+        "hosted_private": true,
+        "local": "passed",
+        "local_private": true
+      },
+      {
+        "case_id": "feature_flags/teacher/sample_02",
+        "family": "feature_flags",
+        "hosted": "passed",
+        "hosted_private": true,
+        "local": "failed",
+        "local_private": false
+      },
+      {
+        "case_id": "party_inventory/teacher/sample_02",
+        "family": "party_inventory",
+        "hosted": "passed",
+        "hosted_private": true,
+        "local": "passed",
+        "local_private": true
+      },
+      {
+        "case_id": "warehouse_stock/teacher/sample_02",
+        "family": "warehouse_stock",
+        "hosted": "passed",
+        "hosted_private": true,
+        "local": "failed",
+        "local_private": false
+      },
+      {
+        "case_id": "calendar_events/teacher/sample_03",
+        "family": "calendar_events",
+        "hosted": "passed",
+        "hosted_private": true,
+        "local": "failed",
+        "local_private": false
+      },
+      {
+        "case_id": "document_store/teacher/sample_03",
+        "family": "document_store",
+        "hosted": "passed",
+        "hosted_private": true,
+        "local": "passed",
+        "local_private": true
+      },
+      {
+        "case_id": "event_bus/teacher/sample_03",
+        "family": "event_bus",
+        "hosted": "passed",
+        "hosted_private": true,
+        "local": "passed",
+        "local_private": true
+      },
+      {
+        "case_id": "feature_flags/teacher/sample_03",
+        "family": "feature_flags",
+        "hosted": "passed",
+        "hosted_private": true,
+        "local": "failed",
+        "local_private": false
+      },
+      {
+        "case_id": "party_inventory/teacher/sample_03",
+        "family": "party_inventory",
+        "hosted": "passed",
+        "hosted_private": true,
+        "local": "failed",
+        "local_private": false
+      },
+      {
+        "case_id": "warehouse_stock/teacher/sample_03",
+        "family": "warehouse_stock",
+        "hosted": "passed",
+        "hosted_private": true,
+        "local": "failed",
+        "local_private": false
+      }
+    ]
+  },
+  "neutral": {
+    "confirmed_pair_count": 0,
+    "families": {
+      "repair_queue": {
+        "abstention_reason": "fewer_than_two_distinct_correct_parents",
+        "groups": [
+          [
+            "repair_queue/teacher/sample_00",
+            "repair_queue/teacher/sample_01",
+            "repair_queue/teacher/sample_02",
+            "repair_queue/teacher/sample_03"
+          ]
+        ],
+        "training_label": null,
+        "writer_counts": {
+          "passed": 4
+        }
+      },
+      "reward_wallet": {
+        "abstention_reason": "direction_gate",
+        "groups": [
+          [
+            "reward_wallet/teacher/sample_00",
+            "reward_wallet/teacher/sample_03"
+          ],
+          [
+            "reward_wallet/teacher/sample_01",
+            "reward_wallet/teacher/sample_02"
+          ]
+        ],
+        "training_label": null,
+        "writer_counts": {
+          "passed": 4
+        }
+      }
+    }
+  },
+  "public_check_selection": {
+    "staff_directory": {
+      "blocks": [
+        {
+          "block": 0,
+          "control": "staff_directory/block_00/sample_00",
+          "control_correct": false,
+          "control_private_pass": false,
+          "drafts": [
+            [
+              "sample_00",
+              "failed"
+            ],
+            [
+              "sample_01",
+              "failed"
+            ],
+            [
+              "sample_02",
+              "passed"
+            ]
+          ],
+          "public_verified": "staff_directory/block_00/sample_01",
+          "public_verified_correct": false,
+          "public_verified_private_pass": false
+        },
+        {
+          "block": 1,
+          "control": "staff_directory/block_01/sample_00",
+          "control_correct": false,
+          "control_private_pass": false,
+          "drafts": [
+            [
+              "sample_00",
+              "failed"
+            ],
+            [
+              "sample_01",
+              "failed"
+            ],
+            [
+              "sample_02",
+              "failed"
+            ]
+          ],
+          "public_verified": "staff_directory/block_01/sample_01",
+          "public_verified_correct": false,
+          "public_verified_private_pass": false
+        },
+        {
+          "block": 2,
+          "control": "staff_directory/block_02/sample_00",
+          "control_correct": false,
+          "control_private_pass": false,
+          "drafts": [
+            [
+              "sample_00",
+              "failed"
+            ],
+            [
+              "sample_01",
+              "failed"
+            ],
+            [
+              "sample_02",
+              "failed"
+            ]
+          ],
+          "public_verified": "staff_directory/block_02/sample_00",
+          "public_verified_correct": false,
+          "public_verified_private_pass": false
+        },
+        {
+          "block": 3,
+          "control": "staff_directory/block_03/sample_00",
+          "control_correct": true,
+          "control_private_pass": true,
+          "drafts": [
+            [
+              "sample_00",
+              "passed"
+            ],
+            [
+              "sample_01",
+              "failed"
+            ],
+            [
+              "sample_02",
+              "failed"
+            ]
+          ],
+          "public_verified": "staff_directory/block_03/sample_00",
+          "public_verified_correct": true,
+          "public_verified_private_pass": true
+        }
+      ],
+      "counts": {
+        "completed_blocks": 4,
+        "control_correct": 1,
+        "correct_drafts": 2,
+        "generated": 12,
+        "private_only_net_wins": 0,
+        "public_false_positives": 7,
+        "public_passing_drafts": 9,
+        "public_verified_correct": 1,
+        "selection_changed": 2,
+        "ties": 4
+      }
+    },
+    "thermostat_zones": {
+      "blocks": [
+        {
+          "block": 0,
+          "control": "thermostat_zones/block_00/sample_00",
+          "control_correct": false,
+          "control_private_pass": false,
+          "drafts": [
+            [
+              "sample_00",
+              "failed"
+            ],
+            [
+              "sample_01",
+              "failed"
+            ],
+            [
+              "sample_02",
+              "passed"
+            ]
+          ],
+          "public_verified": "thermostat_zones/block_00/sample_02",
+          "public_verified_correct": true,
+          "public_verified_private_pass": true
+        },
+        {
+          "block": 1,
+          "control": "thermostat_zones/block_01/sample_00",
+          "control_correct": true,
+          "control_private_pass": true,
+          "drafts": [
+            [
+              "sample_00",
+              "passed"
+            ],
+            [
+              "sample_01",
+              "failed"
+            ],
+            [
+              "sample_02",
+              "passed"
+            ]
+          ],
+          "public_verified": "thermostat_zones/block_01/sample_00",
+          "public_verified_correct": true,
+          "public_verified_private_pass": true
+        },
+        {
+          "block": 2,
+          "control": "thermostat_zones/block_02/sample_00",
+          "control_correct": true,
+          "control_private_pass": true,
+          "drafts": [
+            [
+              "sample_00",
+              "passed"
+            ],
+            [
+              "sample_01",
+              "passed"
+            ],
+            [
+              "sample_02",
+              "failed"
+            ]
+          ],
+          "public_verified": "thermostat_zones/block_02/sample_00",
+          "public_verified_correct": true,
+          "public_verified_private_pass": true
+        },
+        {
+          "block": 3,
+          "control": "thermostat_zones/block_03/sample_00",
+          "control_correct": true,
+          "control_private_pass": true,
+          "drafts": [
+            [
+              "sample_00",
+              "passed"
+            ],
+            [
+              "sample_01",
+              "failed"
+            ],
+            [
+              "sample_02",
+              "failed"
+            ]
+          ],
+          "public_verified": "thermostat_zones/block_03/sample_00",
+          "public_verified_correct": true,
+          "public_verified_private_pass": true
+        }
+      ],
+      "counts": {
+        "completed_blocks": 4,
+        "control_correct": 3,
+        "correct_drafts": 6,
+        "generated": 12,
+        "private_only_net_wins": 1,
+        "public_false_positives": 0,
+        "public_passing_drafts": 6,
+        "public_verified_correct": 4,
+        "selection_changed": 1,
+        "ties": 3
+      }
+    },
+    "ticket_desk": {
+      "blocks": [
+        {
+          "block": 0,
+          "control": "ticket_desk/block_00/sample_00",
+          "control_correct": false,
+          "control_private_pass": false,
+          "drafts": [
+            [
+              "sample_00",
+              "failed"
+            ],
+            [
+              "sample_01",
+              "failed"
+            ],
+            [
+              "sample_02",
+              "failed"
+            ]
+          ],
+          "public_verified": "ticket_desk/block_00/sample_00",
+          "public_verified_correct": false,
+          "public_verified_private_pass": false
+        },
+        {
+          "block": 1,
+          "control": "ticket_desk/block_01/sample_00",
+          "control_correct": false,
+          "control_private_pass": false,
+          "drafts": [
+            [
+              "sample_00",
+              "failed"
+            ],
+            [
+              "sample_01",
+              "failed"
+            ],
+            [
+              "sample_02",
+              "passed"
+            ]
+          ],
+          "public_verified": "ticket_desk/block_01/sample_02",
+          "public_verified_correct": true,
+          "public_verified_private_pass": true
+        },
+        {
+          "block": 2,
+          "control": "ticket_desk/block_02/sample_00",
+          "control_correct": false,
+          "control_private_pass": false,
+          "drafts": [
+            [
+              "sample_00",
+              "failed"
+            ],
+            [
+              "sample_01",
+              "failed"
+            ],
+            [
+              "sample_02",
+              "failed"
+            ]
+          ],
+          "public_verified": "ticket_desk/block_02/sample_01",
+          "public_verified_correct": false,
+          "public_verified_private_pass": false
+        },
+        {
+          "block": 3,
+          "control": "ticket_desk/block_03/sample_00",
+          "control_correct": true,
+          "control_private_pass": true,
+          "drafts": [
+            [
+              "sample_00",
+              "passed"
+            ],
+            [
+              "sample_01",
+              "passed"
+            ],
+            [
+              "sample_02",
+              "passed"
+            ]
+          ],
+          "public_verified": "ticket_desk/block_03/sample_00",
+          "public_verified_correct": true,
+          "public_verified_private_pass": true
+        }
+      ],
+      "counts": {
+        "completed_blocks": 4,
+        "control_correct": 1,
+        "correct_drafts": 4,
+        "generated": 12,
+        "private_only_net_wins": 1,
+        "public_false_positives": 1,
+        "public_passing_drafts": 5,
+        "public_verified_correct": 2,
+        "selection_changed": 2,
+        "ties": 3
+      }
+    },
+    "token_bucket": {
+      "blocks": [
+        {
+          "block": 0,
+          "control": "token_bucket/block_00/sample_00",
+          "control_correct": false,
+          "control_private_pass": false,
+          "drafts": [
+            [
+              "sample_00",
+              "failed"
+            ],
+            [
+              "sample_01",
+              "failed"
+            ],
+            [
+              "sample_02",
+              "failed"
+            ]
+          ],
+          "public_verified": "token_bucket/block_00/sample_00",
+          "public_verified_correct": false,
+          "public_verified_private_pass": false
+        },
+        {
+          "block": 1,
+          "control": "token_bucket/block_01/sample_00",
+          "control_correct": false,
+          "control_private_pass": false,
+          "drafts": [
+            [
+              "sample_00",
+              "failed"
+            ],
+            [
+              "sample_01",
+              "malformed"
+            ],
+            [
+              "sample_02",
+              "failed"
+            ]
+          ],
+          "public_verified": "token_bucket/block_01/sample_00",
+          "public_verified_correct": false,
+          "public_verified_private_pass": false
+        },
+        {
+          "block": 2,
+          "control": "token_bucket/block_02/sample_00",
+          "control_correct": false,
+          "control_private_pass": false,
+          "drafts": [
+            [
+              "sample_00",
+              "failed"
+            ],
+            [
+              "sample_01",
+              "failed"
+            ],
+            [
+              "sample_02",
+              "malformed"
+            ]
+          ],
+          "public_verified": "token_bucket/block_02/sample_00",
+          "public_verified_correct": false,
+          "public_verified_private_pass": false
+        },
+        {
+          "block": 3,
+          "control": "token_bucket/block_03/sample_00",
+          "control_correct": false,
+          "control_private_pass": false,
+          "drafts": [
+            [
+              "sample_00",
+              "failed"
+            ],
+            [
+              "sample_01",
+              "malformed"
+            ],
+            [
+              "sample_02",
+              "failed"
+            ]
+          ],
+          "public_verified": "token_bucket/block_03/sample_00",
+          "public_verified_correct": false,
+          "public_verified_private_pass": false
+        }
+      ],
+      "counts": {
+        "completed_blocks": 4,
+        "control_correct": 0,
+        "correct_drafts": 0,
+        "generated": 12,
+        "private_only_net_wins": 0,
+        "public_false_positives": 0,
+        "public_passing_drafts": 0,
+        "public_verified_correct": 0,
+        "selection_changed": 0,
+        "ties": 4
+      }
+    },
+    "url_shortener": {
+      "blocks": [
+        {
+          "block": 0,
+          "control": "url_shortener/block_00/sample_00",
+          "control_correct": true,
+          "control_private_pass": true,
+          "drafts": [
+            [
+              "sample_00",
+              "passed"
+            ],
+            [
+              "sample_01",
+              "failed"
+            ],
+            [
+              "sample_02",
+              "failed"
+            ]
+          ],
+          "public_verified": "url_shortener/block_00/sample_00",
+          "public_verified_correct": true,
+          "public_verified_private_pass": true
+        },
+        {
+          "block": 1,
+          "control": "url_shortener/block_01/sample_00",
+          "control_correct": true,
+          "control_private_pass": true,
+          "drafts": [
+            [
+              "sample_00",
+              "passed"
+            ],
+            [
+              "sample_01",
+              "passed"
+            ],
+            [
+              "sample_02",
+              "failed"
+            ]
+          ],
+          "public_verified": "url_shortener/block_01/sample_00",
+          "public_verified_correct": true,
+          "public_verified_private_pass": true
+        },
+        {
+          "block": 2,
+          "control": "url_shortener/block_02/sample_00",
+          "control_correct": false,
+          "control_private_pass": false,
+          "drafts": [
+            [
+              "sample_00",
+              "failed"
+            ],
+            [
+              "sample_01",
+              "failed"
+            ],
+            [
+              "sample_02",
+              "failed"
+            ]
+          ],
+          "public_verified": "url_shortener/block_02/sample_00",
+          "public_verified_correct": false,
+          "public_verified_private_pass": false
+        },
+        {
+          "block": 3,
+          "control": "url_shortener/block_03/sample_00",
+          "control_correct": false,
+          "control_private_pass": false,
+          "drafts": [
+            [
+              "sample_00",
+              "failed"
+            ],
+            [
+              "sample_01",
+              "failed"
+            ],
+            [
+              "sample_02",
+              "failed"
+            ]
+          ],
+          "public_verified": "url_shortener/block_03/sample_01",
+          "public_verified_correct": false,
+          "public_verified_private_pass": false
+        }
+      ],
+      "counts": {
+        "completed_blocks": 4,
+        "control_correct": 2,
+        "correct_drafts": 3,
+        "generated": 12,
+        "private_only_net_wins": 0,
+        "public_false_positives": 2,
+        "public_passing_drafts": 5,
+        "public_verified_correct": 2,
+        "selection_changed": 1,
+        "ties": 4
+      }
+    },
+    "vending_machine": {
+      "blocks": [
+        {
+          "block": 0,
+          "control": "vending_machine/block_00/sample_00",
+          "control_correct": false,
+          "control_private_pass": false,
+          "drafts": [
+            [
+              "sample_00",
+              "failed"
+            ],
+            [
+              "sample_01",
+              "failed"
+            ],
+            [
+              "sample_02",
+              "failed"
+            ]
+          ],
+          "public_verified": "vending_machine/block_00/sample_00",
+          "public_verified_correct": false,
+          "public_verified_private_pass": false
+        },
+        {
+          "block": 1,
+          "control": "vending_machine/block_01/sample_00",
+          "control_correct": false,
+          "control_private_pass": false,
+          "drafts": [
+            [
+              "sample_00",
+              "failed"
+            ],
+            [
+              "sample_01",
+              "passed"
+            ],
+            [
+              "sample_02",
+              "failed"
+            ]
+          ],
+          "public_verified": "vending_machine/block_01/sample_01",
+          "public_verified_correct": true,
+          "public_verified_private_pass": true
+        },
+        {
+          "block": 2,
+          "control": "vending_machine/block_02/sample_00",
+          "control_correct": true,
+          "control_private_pass": true,
+          "drafts": [
+            [
+              "sample_00",
+              "passed"
+            ],
+            [
+              "sample_01",
+              "failed"
+            ],
+            [
+              "sample_02",
+              "failed"
+            ]
+          ],
+          "public_verified": "vending_machine/block_02/sample_00",
+          "public_verified_correct": true,
+          "public_verified_private_pass": true
+        },
+        {
+          "block": 3,
+          "control": "vending_machine/block_03/sample_00",
+          "control_correct": false,
+          "control_private_pass": false,
+          "drafts": [
+            [
+              "sample_00",
+              "failed"
+            ],
+            [
+              "sample_01",
+              "failed"
+            ],
+            [
+              "sample_02",
+              "failed"
+            ]
+          ],
+          "public_verified": "vending_machine/block_03/sample_00",
+          "public_verified_correct": false,
+          "public_verified_private_pass": false
+        }
+      ],
+      "counts": {
+        "completed_blocks": 4,
+        "control_correct": 1,
+        "correct_drafts": 2,
+        "generated": 12,
+        "private_only_net_wins": 1,
+        "public_false_positives": 3,
+        "public_passing_drafts": 5,
+        "public_verified_correct": 2,
+        "selection_changed": 1,
+        "ties": 3
+      }
+    }
+  }
+}

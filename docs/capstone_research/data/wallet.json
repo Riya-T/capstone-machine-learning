@@ -1,0 +1,747 @@
+{
+  "controlled": {
+    "all_original_replays_matched": true,
+    "historical_diagnostic": [
+      {
+        "case": "reverse/r0/ledger",
+        "diagnostic_status": "fail_new",
+        "original_status": "fail_new"
+      },
+      {
+        "case": "reverse/r0/materialized",
+        "diagnostic_status": "success",
+        "original_status": "success"
+      },
+      {
+        "case": "revise/r0/materialized",
+        "diagnostic_status": "fail_new",
+        "original_status": "fail_new"
+      },
+      {
+        "case": "revise/r0/ledger",
+        "diagnostic_status": "fail_new",
+        "original_status": "fail_new"
+      },
+      {
+        "case": "revise/r1/ledger",
+        "diagnostic_status": "fail_new",
+        "original_status": "fail_new"
+      },
+      {
+        "case": "revise/r1/materialized",
+        "diagnostic_status": "fail_new",
+        "original_status": "fail_new"
+      },
+      {
+        "case": "reverse/r1/materialized",
+        "diagnostic_status": "success",
+        "original_status": "success"
+      },
+      {
+        "case": "reverse/r1/ledger",
+        "diagnostic_status": "fail_new",
+        "original_status": "fail_new"
+      },
+      {
+        "case": "reverse/r2/ledger",
+        "diagnostic_status": "fail_new",
+        "original_status": "fail_new"
+      },
+      {
+        "case": "reverse/r2/materialized",
+        "diagnostic_status": "fail_new",
+        "original_status": "fail_new"
+      },
+      {
+        "case": "revise/r2/materialized",
+        "diagnostic_status": "fail_new",
+        "original_status": "fail_new"
+      },
+      {
+        "case": "revise/r2/ledger",
+        "diagnostic_status": "fail_new",
+        "original_status": "fail_new"
+      },
+      {
+        "case": "revise/r3/ledger",
+        "diagnostic_status": "fail_new",
+        "original_status": "fail_new"
+      },
+      {
+        "case": "revise/r3/materialized",
+        "diagnostic_status": "fail_new",
+        "original_status": "fail_new"
+      },
+      {
+        "case": "reverse/r3/materialized",
+        "diagnostic_status": "success",
+        "original_status": "success"
+      },
+      {
+        "case": "reverse/r3/ledger",
+        "diagnostic_status": "success",
+        "original_status": "success"
+      },
+      {
+        "case": "reverse/r4/ledger",
+        "diagnostic_status": "fail_new",
+        "original_status": "fail_new"
+      },
+      {
+        "case": "reverse/r4/materialized",
+        "diagnostic_status": "fail_new",
+        "original_status": "fail_new"
+      },
+      {
+        "case": "revise/r4/materialized",
+        "diagnostic_status": "fail_new",
+        "original_status": "success"
+      },
+      {
+        "case": "revise/r4/ledger",
+        "diagnostic_status": "fail_new",
+        "original_status": "fail_new"
+      },
+      {
+        "case": "revise/r5/ledger",
+        "diagnostic_status": "fail_new",
+        "original_status": "fail_new"
+      },
+      {
+        "case": "revise/r5/materialized",
+        "diagnostic_status": "fail_new",
+        "original_status": "fail_new"
+      },
+      {
+        "case": "reverse/r5/materialized",
+        "diagnostic_status": "success",
+        "original_status": "success"
+      },
+      {
+        "case": "reverse/r5/ledger",
+        "diagnostic_status": "fail_new",
+        "original_status": "fail_new"
+      }
+    ],
+    "intermediate_revision": {
+      "distinct": 21,
+      "passed_both_suites": 0
+    },
+    "observed_successes": {
+      "ledger": {
+        "reverse": 1,
+        "revise": 0
+      },
+      "materialized": {
+        "reverse": 4,
+        "revise": 1
+      }
+    },
+    "rows": [
+      {
+        "block": 0,
+        "case_id": "reverse/r0/ledger",
+        "parent": "ledger",
+        "reason": "done",
+        "request": "reverse",
+        "seeds": [
+          980521049
+        ],
+        "status": "fail_new"
+      },
+      {
+        "block": 0,
+        "case_id": "reverse/r0/materialized",
+        "parent": "materialized",
+        "reason": "retained_public_pass",
+        "request": "reverse",
+        "seeds": [
+          980521049
+        ],
+        "status": "success"
+      },
+      {
+        "block": 0,
+        "case_id": "revise/r0/materialized",
+        "parent": "materialized",
+        "reason": "done",
+        "request": "revise",
+        "seeds": [
+          1852109459
+        ],
+        "status": "fail_new"
+      },
+      {
+        "block": 0,
+        "case_id": "revise/r0/ledger",
+        "parent": "ledger",
+        "reason": "done",
+        "request": "revise",
+        "seeds": [
+          1852109459
+        ],
+        "status": "fail_new"
+      },
+      {
+        "block": 1,
+        "case_id": "revise/r1/ledger",
+        "parent": "ledger",
+        "reason": "done",
+        "request": "revise",
+        "seeds": [
+          77251300
+        ],
+        "status": "fail_new"
+      },
+      {
+        "block": 1,
+        "case_id": "revise/r1/materialized",
+        "parent": "materialized",
+        "reason": "done",
+        "request": "revise",
+        "seeds": [
+          77251300
+        ],
+        "status": "fail_new"
+      },
+      {
+        "block": 1,
+        "case_id": "reverse/r1/materialized",
+        "parent": "materialized",
+        "reason": "retained_public_pass",
+        "request": "reverse",
+        "seeds": [
+          256227186
+        ],
+        "status": "success"
+      },
+      {
+        "block": 1,
+        "case_id": "reverse/r1/ledger",
+        "parent": "ledger",
+        "reason": "done",
+        "request": "reverse",
+        "seeds": [
+          256227186
+        ],
+        "status": "fail_new"
+      },
+      {
+        "block": 2,
+        "case_id": "reverse/r2/ledger",
+        "parent": "ledger",
+        "reason": "done",
+        "request": "reverse",
+        "seeds": [
+          1598606487
+        ],
+        "status": "fail_new"
+      },
+      {
+        "block": 2,
+        "case_id": "reverse/r2/materialized",
+        "parent": "materialized",
+        "reason": "retained_public_pass",
+        "request": "reverse",
+        "seeds": [
+          1598606487
+        ],
+        "status": "fail_new"
+      },
+      {
+        "block": 2,
+        "case_id": "revise/r2/materialized",
+        "parent": "materialized",
+        "reason": "retained_public_pass",
+        "request": "revise",
+        "seeds": [
+          1962367679
+        ],
+        "status": "fail_new"
+      },
+      {
+        "block": 2,
+        "case_id": "revise/r2/ledger",
+        "parent": "ledger",
+        "reason": "done",
+        "request": "revise",
+        "seeds": [
+          1962367679
+        ],
+        "status": "fail_new"
+      },
+      {
+        "block": 3,
+        "case_id": "revise/r3/ledger",
+        "parent": "ledger",
+        "reason": "done",
+        "request": "revise",
+        "seeds": [
+          859971280
+        ],
+        "status": "fail_new"
+      },
+      {
+        "block": 3,
+        "case_id": "revise/r3/materialized",
+        "parent": "materialized",
+        "reason": "done",
+        "request": "revise",
+        "seeds": [
+          859971280
+        ],
+        "status": "fail_new"
+      },
+      {
+        "block": 3,
+        "case_id": "reverse/r3/materialized",
+        "parent": "materialized",
+        "reason": "done",
+        "request": "reverse",
+        "seeds": [
+          811833005
+        ],
+        "status": "success"
+      },
+      {
+        "block": 3,
+        "case_id": "reverse/r3/ledger",
+        "parent": "ledger",
+        "reason": "done",
+        "request": "reverse",
+        "seeds": [
+          811833005
+        ],
+        "status": "success"
+      },
+      {
+        "block": 4,
+        "case_id": "reverse/r4/ledger",
+        "parent": "ledger",
+        "reason": "retained_public_pass",
+        "request": "reverse",
+        "seeds": [
+          127230695
+        ],
+        "status": "fail_new"
+      },
+      {
+        "block": 4,
+        "case_id": "reverse/r4/materialized",
+        "parent": "materialized",
+        "reason": "done",
+        "request": "reverse",
+        "seeds": [
+          127230695
+        ],
+        "status": "fail_new"
+      },
+      {
+        "block": 4,
+        "case_id": "revise/r4/materialized",
+        "parent": "materialized",
+        "reason": "done",
+        "request": "revise",
+        "seeds": [
+          1285301557
+        ],
+        "status": "success"
+      },
+      {
+        "block": 4,
+        "case_id": "revise/r4/ledger",
+        "parent": "ledger",
+        "reason": "done",
+        "request": "revise",
+        "seeds": [
+          1285301557
+        ],
+        "status": "fail_new"
+      },
+      {
+        "block": 5,
+        "case_id": "revise/r5/ledger",
+        "parent": "ledger",
+        "reason": "done",
+        "request": "revise",
+        "seeds": [
+          1887074215
+        ],
+        "status": "fail_new"
+      },
+      {
+        "block": 5,
+        "case_id": "revise/r5/materialized",
+        "parent": "materialized",
+        "reason": "done",
+        "request": "revise",
+        "seeds": [
+          1887074215
+        ],
+        "status": "fail_new"
+      },
+      {
+        "block": 5,
+        "case_id": "reverse/r5/materialized",
+        "parent": "materialized",
+        "reason": "retained_public_pass",
+        "request": "reverse",
+        "seeds": [
+          1699457161
+        ],
+        "status": "success"
+      },
+      {
+        "block": 5,
+        "case_id": "reverse/r5/ledger",
+        "parent": "ledger",
+        "reason": "done",
+        "request": "reverse",
+        "seeds": [
+          1699457161
+        ],
+        "status": "fail_new"
+      }
+    ],
+    "terminal_outcomes": {
+      "fail_new": 18,
+      "success": 6
+    },
+    "training_label": null
+  },
+  "followup": {
+    "original_replay_matches": 16,
+    "rows": [
+      {
+        "block": 0,
+        "case": "reverse/r0/ledger",
+        "handoff": "done",
+        "parent": "ledger",
+        "replayed": true,
+        "request": "reverse",
+        "seed": 1094497342,
+        "status": "success"
+      },
+      {
+        "block": 0,
+        "case": "reverse/r0/materialized",
+        "handoff": "done",
+        "parent": "materialized",
+        "replayed": true,
+        "request": "reverse",
+        "seed": 1094497342,
+        "status": "success"
+      },
+      {
+        "block": 0,
+        "case": "revise/r0/materialized",
+        "handoff": "done",
+        "parent": "materialized",
+        "replayed": true,
+        "request": "revise",
+        "seed": 1369963760,
+        "status": "success"
+      },
+      {
+        "block": 0,
+        "case": "revise/r0/ledger",
+        "handoff": "retained_public_pass",
+        "parent": "ledger",
+        "replayed": true,
+        "request": "revise",
+        "seed": 1369963760,
+        "status": "success"
+      },
+      {
+        "block": 1,
+        "case": "revise/r1/ledger",
+        "handoff": "retained_public_pass",
+        "parent": "ledger",
+        "replayed": true,
+        "request": "revise",
+        "seed": 1200734808,
+        "status": "success"
+      },
+      {
+        "block": 1,
+        "case": "revise/r1/materialized",
+        "handoff": "retained_public_pass",
+        "parent": "materialized",
+        "replayed": true,
+        "request": "revise",
+        "seed": 1200734808,
+        "status": "success"
+      },
+      {
+        "block": 1,
+        "case": "reverse/r1/materialized",
+        "handoff": "done",
+        "parent": "materialized",
+        "replayed": true,
+        "request": "reverse",
+        "seed": 56751088,
+        "status": "fail_new"
+      },
+      {
+        "block": 1,
+        "case": "reverse/r1/ledger",
+        "handoff": "done",
+        "parent": "ledger",
+        "replayed": true,
+        "request": "reverse",
+        "seed": 56751088,
+        "status": "fail_new"
+      },
+      {
+        "block": 2,
+        "case": "reverse/r2/ledger",
+        "handoff": "done",
+        "parent": "ledger",
+        "replayed": true,
+        "request": "reverse",
+        "seed": 1212306286,
+        "status": "fail_new"
+      },
+      {
+        "block": 2,
+        "case": "reverse/r2/materialized",
+        "handoff": "done",
+        "parent": "materialized",
+        "replayed": true,
+        "request": "reverse",
+        "seed": 1212306286,
+        "status": "fail_new"
+      },
+      {
+        "block": 2,
+        "case": "revise/r2/materialized",
+        "handoff": "done",
+        "parent": "materialized",
+        "replayed": true,
+        "request": "revise",
+        "seed": 41874599,
+        "status": "success"
+      },
+      {
+        "block": 2,
+        "case": "revise/r2/ledger",
+        "handoff": "done",
+        "parent": "ledger",
+        "replayed": true,
+        "request": "revise",
+        "seed": 41874599,
+        "status": "success"
+      },
+      {
+        "block": 3,
+        "case": "revise/r3/ledger",
+        "handoff": "done",
+        "parent": "ledger",
+        "replayed": true,
+        "request": "revise",
+        "seed": 1651034041,
+        "status": "success"
+      },
+      {
+        "block": 3,
+        "case": "revise/r3/materialized",
+        "handoff": "done",
+        "parent": "materialized",
+        "replayed": true,
+        "request": "revise",
+        "seed": 1651034041,
+        "status": "success"
+      },
+      {
+        "block": 3,
+        "case": "reverse/r3/materialized",
+        "handoff": "done",
+        "parent": "materialized",
+        "replayed": true,
+        "request": "reverse",
+        "seed": 828234739,
+        "status": "success"
+      },
+      {
+        "block": 3,
+        "case": "reverse/r3/ledger",
+        "handoff": "done",
+        "parent": "ledger",
+        "replayed": true,
+        "request": "reverse",
+        "seed": 828234739,
+        "status": "fail_new"
+      }
+    ],
+    "training_label": null
+  },
+  "neutral": {
+    "gates": {
+      "reward_wallet": {
+        "block_gaps_first_minus_second": [
+          1,
+          -2,
+          1
+        ],
+        "budget_assignments": 1,
+        "category_gaps_first_minus_second": {
+          "atomic": 0,
+          "correction": 0
+        },
+        "directions": {
+          "reward_wallet/teacher/sample_00": {
+            "observed_gate": false,
+            "qualifies_under": 0
+          },
+          "reward_wallet/teacher/sample_01": {
+            "observed_gate": false,
+            "qualifies_under": 0
+          }
+        },
+        "preferred": null,
+        "reason": "direction_gate"
+      }
+    },
+    "replays_match": {
+      "reward_wallet": true
+    },
+    "rows": [
+      {
+        "block": 0,
+        "case_id": "reward_wallet/atomic/r0/sample_00",
+        "category": "atomic",
+        "parent": "reward_wallet/teacher/sample_00",
+        "seeds": [
+          740083880
+        ],
+        "status": "success",
+        "submission_reason": "done"
+      },
+      {
+        "block": 0,
+        "case_id": "reward_wallet/atomic/r0/sample_01",
+        "category": "atomic",
+        "parent": "reward_wallet/teacher/sample_01",
+        "seeds": [
+          740083880
+        ],
+        "status": "fail_new",
+        "submission_reason": "done"
+      },
+      {
+        "block": 0,
+        "case_id": "reward_wallet/correction/r0/sample_01",
+        "category": "correction",
+        "parent": "reward_wallet/teacher/sample_01",
+        "seeds": [
+          1882305380
+        ],
+        "status": "fail_new",
+        "submission_reason": "done"
+      },
+      {
+        "block": 0,
+        "case_id": "reward_wallet/correction/r0/sample_00",
+        "category": "correction",
+        "parent": "reward_wallet/teacher/sample_00",
+        "seeds": [
+          1882305380
+        ],
+        "status": "fail_new",
+        "submission_reason": "done"
+      },
+      {
+        "block": 1,
+        "case_id": "reward_wallet/atomic/r1/sample_01",
+        "category": "atomic",
+        "parent": "reward_wallet/teacher/sample_01",
+        "seeds": [
+          497350131
+        ],
+        "status": "success",
+        "submission_reason": "done"
+      },
+      {
+        "block": 1,
+        "case_id": "reward_wallet/atomic/r1/sample_00",
+        "category": "atomic",
+        "parent": "reward_wallet/teacher/sample_00",
+        "seeds": [
+          497350131
+        ],
+        "status": "fail_new",
+        "submission_reason": "retained_public_pass"
+      },
+      {
+        "block": 1,
+        "case_id": "reward_wallet/correction/r1/sample_00",
+        "category": "correction",
+        "parent": "reward_wallet/teacher/sample_00",
+        "seeds": [
+          860780797
+        ],
+        "status": "fail_new",
+        "submission_reason": "retained_public_pass"
+      },
+      {
+        "block": 1,
+        "case_id": "reward_wallet/correction/r1/sample_01",
+        "category": "correction",
+        "parent": "reward_wallet/teacher/sample_01",
+        "seeds": [
+          860780797
+        ],
+        "status": "success",
+        "submission_reason": "done"
+      },
+      {
+        "block": 2,
+        "case_id": "reward_wallet/atomic/r2/sample_00",
+        "category": "atomic",
+        "parent": "reward_wallet/teacher/sample_00",
+        "seeds": [
+          496148673
+        ],
+        "status": "fail_new",
+        "submission_reason": "done"
+      },
+      {
+        "block": 2,
+        "case_id": "reward_wallet/atomic/r2/sample_01",
+        "category": "atomic",
+        "parent": "reward_wallet/teacher/sample_01",
+        "seeds": [
+          496148673
+        ],
+        "status": "fail_new",
+        "submission_reason": "retained_public_pass"
+      },
+      {
+        "block": 2,
+        "case_id": "reward_wallet/correction/r2/sample_01",
+        "category": "correction",
+        "parent": "reward_wallet/teacher/sample_01",
+        "seeds": [
+          1098789049
+        ],
+        "status": "fail_new",
+        "submission_reason": "done"
+      },
+      {
+        "block": 2,
+        "case_id": "reward_wallet/correction/r2/sample_00",
+        "category": "correction",
+        "parent": "reward_wallet/teacher/sample_00",
+        "seeds": [
+          1098789049
+        ],
+        "status": "success",
+        "submission_reason": "done"
+      }
+    ],
+    "statuses": {
+      "fail_new": 8,
+      "success": 4
+    }
+  }
+}
