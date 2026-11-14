@@ -1,0 +1,777 @@
+{
+  "explicit_contract": {
+    "audit_sha256": "19a993c2392e28fe2f5ee18f02cf859a275dade80ac1bd071286745e8b374810",
+    "close_reason": "scheduled_attempts_finished",
+    "commit": "d989e19f45e4fe2f3805e710f0f9c1f33da06f26",
+    "editor": {
+      "backend": {
+        "base_url": "http://127.0.0.1:18081/v1",
+        "fixtures": null,
+        "kind": "openai_compat",
+        "max_retries": 0,
+        "max_tokens": 16384,
+        "model": "local-qwen3-8b-q8",
+        "request_timeout_s": 600.0,
+        "retry_backoff_s": 2.0,
+        "temperature": 0.6
+      },
+      "budget": {
+        "max_total_tokens": 32000,
+        "max_turns": 8,
+        "wall_time_s": 600.0
+      },
+      "history_turns": 3,
+      "max_check_output_chars": 2000,
+      "max_prompt_chars": 48000,
+      "prompt_template": "../prompts/editor_v2.md",
+      "reps": 3,
+      "request_context": "cumulative_written_v1",
+      "scaffold": "turn_loop",
+      "view_transform": "none"
+    },
+    "freeze_sha256": "44ac57abe0984d5512534614a3da8d8842bd62bdfde0479878763d4a8cc24694",
+    "name": "explicit_contract",
+    "observed_numeric_direction": null,
+    "original_replay_matches": 16,
+    "parents": {
+      "ledger": "f91fa1ac5efcb43b0448bd76ba4b024bce90ad207065d4118dbd24cce0e95e63",
+      "materialized": "c52df1878001bc7faaf4e6c2042bd3b64ec3551df0db493a8343745881668d28"
+    },
+    "private_evaluator_image": "sha256:60b49f09c8ae67c8bad54fbf5f243a3aefac62533677277c5a276ab37a1dc9b7",
+    "request_sha256": {
+      "reverse": "294e3b5930a0c8093aadac87aac462f24f1da83413b66975b59c4ce5e9351af4",
+      "revise": "c540733a0ad607bcd0098ed1ed2131f03fec35f8063f18b96d7cc0a2991db20e"
+    },
+    "resources": {
+      "complete": 54,
+      "completion_tokens": 262995,
+      "completion_tokens_observed": 54,
+      "prompt_tokens": 79636,
+      "prompt_tokens_observed": 54,
+      "request_seconds": 1895.5377957829994,
+      "started": 54
+    },
+    "results_sha256": "bf00e484b4067837129992411966fb825352144e002dfb595b4ae4b4b2a1795e",
+    "rows": [
+      {
+        "block": 0,
+        "case": "reverse/r0/ledger",
+        "failing_checks": [],
+        "handoff": "done",
+        "parent": "ledger",
+        "receipt_sha256": "a5d7585d01e7a1043f7a195a7dbf4d8b1a9b0e76972ad4ba39489e13bc257ce0",
+        "replayed": true,
+        "request": "reverse",
+        "seed": 1094497342,
+        "status": "success"
+      },
+      {
+        "block": 0,
+        "case": "reverse/r0/materialized",
+        "failing_checks": [],
+        "handoff": "done",
+        "parent": "materialized",
+        "receipt_sha256": "516850fa2e9593ae91fe28d1a32ee798001ece8763b873a863f060444331dab6",
+        "replayed": true,
+        "request": "reverse",
+        "seed": 1094497342,
+        "status": "success"
+      },
+      {
+        "block": 0,
+        "case": "revise/r0/materialized",
+        "failing_checks": [],
+        "handoff": "done",
+        "parent": "materialized",
+        "receipt_sha256": "d9fcc0b7e416e1ec277378805bbdca31583df76bf4dfcba2b396dcfe4c91da9d",
+        "replayed": true,
+        "request": "revise",
+        "seed": 1369963760,
+        "status": "success"
+      },
+      {
+        "block": 0,
+        "case": "revise/r0/ledger",
+        "failing_checks": [],
+        "handoff": "retained_public_pass",
+        "parent": "ledger",
+        "receipt_sha256": "cda6d9e187ab4e3132a9fb4f2b157678045c803473e050c7b007e5fead108081",
+        "replayed": true,
+        "request": "revise",
+        "seed": 1369963760,
+        "status": "success"
+      },
+      {
+        "block": 1,
+        "case": "revise/r1/ledger",
+        "failing_checks": [],
+        "handoff": "retained_public_pass",
+        "parent": "ledger",
+        "receipt_sha256": "d995ce6f56154a2d7d198f4cf7b2f6832019ef1dce1df4b3c5995f138450422c",
+        "replayed": true,
+        "request": "revise",
+        "seed": 1200734808,
+        "status": "success"
+      },
+      {
+        "block": 1,
+        "case": "revise/r1/materialized",
+        "failing_checks": [],
+        "handoff": "retained_public_pass",
+        "parent": "materialized",
+        "receipt_sha256": "c83ac242924c7ada66c1c19add34dd35071c84fc1481bb04476ffd5764dcc92e",
+        "replayed": true,
+        "request": "revise",
+        "seed": 1200734808,
+        "status": "success"
+      },
+      {
+        "block": 1,
+        "case": "reverse/r1/materialized",
+        "failing_checks": [
+          "test_reverse.py::test_reverse_appends_and_can_itself_be_reversed",
+          "test_behavior_reverse.py::test_reversing_the_compensation_is_allowed"
+        ],
+        "handoff": "done",
+        "parent": "materialized",
+        "receipt_sha256": "ad1facd4fc3da91407952226bd59d40e5219bf740dbea78b50d87400fe791248",
+        "replayed": true,
+        "request": "reverse",
+        "seed": 56751088,
+        "status": "fail_new"
+      },
+      {
+        "block": 1,
+        "case": "reverse/r1/ledger",
+        "failing_checks": [
+          "test_reverse.py::test_failed_reverse_consumes_neither_id_nor_opportunity",
+          "test_private_reverse.py::test_reversing_a_debit_raises_balance_and_reserves_new_id_globally",
+          "test_behavior_reverse.py::test_operation_id_owned_by_another_member_cannot_be_reused"
+        ],
+        "handoff": "done",
+        "parent": "ledger",
+        "receipt_sha256": "d744469c2fa66df59d3fc05174f90207336317eb44e87e62df4af96d944069da",
+        "replayed": true,
+        "request": "reverse",
+        "seed": 56751088,
+        "status": "fail_new"
+      },
+      {
+        "block": 2,
+        "case": "reverse/r2/ledger",
+        "failing_checks": [
+          "test_reverse.py::test_failed_reverse_consumes_neither_id_nor_opportunity"
+        ],
+        "handoff": "done",
+        "parent": "ledger",
+        "receipt_sha256": "86fe11f96c75c10b622ca626559793dfc448f619b91fe748e99211cad0f68650",
+        "replayed": true,
+        "request": "reverse",
+        "seed": 1212306286,
+        "status": "fail_new"
+      },
+      {
+        "block": 2,
+        "case": "reverse/r2/materialized",
+        "failing_checks": [
+          "test_reverse.py::test_reverse_appends_and_can_itself_be_reversed",
+          "test_behavior_reverse.py::test_reversing_the_compensation_is_allowed"
+        ],
+        "handoff": "done",
+        "parent": "materialized",
+        "receipt_sha256": "99664f699016b63689230ae4a0d6365d08cd23aabad9c49b5c3f056f876b2e4e",
+        "replayed": true,
+        "request": "reverse",
+        "seed": 1212306286,
+        "status": "fail_new"
+      },
+      {
+        "block": 2,
+        "case": "revise/r2/materialized",
+        "failing_checks": [],
+        "handoff": "done",
+        "parent": "materialized",
+        "receipt_sha256": "775cc667b8d861c972a26a8ca1df247eb05206967e7212484902ffbd6db91c54",
+        "replayed": true,
+        "request": "revise",
+        "seed": 41874599,
+        "status": "success"
+      },
+      {
+        "block": 2,
+        "case": "revise/r2/ledger",
+        "failing_checks": [],
+        "handoff": "done",
+        "parent": "ledger",
+        "receipt_sha256": "b5a1f1aac207284e08a07add2bc22942ce60aa8c6edca59726a7b3bbfee0d30f",
+        "replayed": true,
+        "request": "revise",
+        "seed": 41874599,
+        "status": "success"
+      },
+      {
+        "block": 3,
+        "case": "revise/r3/ledger",
+        "failing_checks": [],
+        "handoff": "done",
+        "parent": "ledger",
+        "receipt_sha256": "683cdbc0709300e9206099cebb2b5f39569c01c66e6fa2603e0867ff05cd8e1a",
+        "replayed": true,
+        "request": "revise",
+        "seed": 1651034041,
+        "status": "success"
+      },
+      {
+        "block": 3,
+        "case": "revise/r3/materialized",
+        "failing_checks": [],
+        "handoff": "done",
+        "parent": "materialized",
+        "receipt_sha256": "3ad73ab298e1b1e858ac09eaa0ad94cb981ef76df0b67105daeeee60b8253e24",
+        "replayed": true,
+        "request": "revise",
+        "seed": 1651034041,
+        "status": "success"
+      },
+      {
+        "block": 3,
+        "case": "reverse/r3/materialized",
+        "failing_checks": [],
+        "handoff": "done",
+        "parent": "materialized",
+        "receipt_sha256": "221ce50f83461cef56a5afac68c5a8f80e01d2eb859c4fad775de19883cb016a",
+        "replayed": true,
+        "request": "reverse",
+        "seed": 828234739,
+        "status": "success"
+      },
+      {
+        "block": 3,
+        "case": "reverse/r3/ledger",
+        "failing_checks": [
+          "test_reverse.py::test_failed_reverse_consumes_neither_id_nor_opportunity",
+          "test_private_reverse.py::test_reversing_a_debit_raises_balance_and_reserves_new_id_globally",
+          "test_behavior_reverse.py::test_operation_id_owned_by_another_member_cannot_be_reused"
+        ],
+        "handoff": "done",
+        "parent": "ledger",
+        "receipt_sha256": "91d0c9d1400fc8d93e9cdba185f9b24453cae977fc66141463bd48284847b34f",
+        "replayed": true,
+        "request": "reverse",
+        "seed": 828234739,
+        "status": "fail_new"
+      }
+    ],
+    "task_version": "36195189c2d37f5dd6979c79e91452a6665fc471cccfc9f75c49edc0b94f3c4f"
+  },
+  "historical_diagnostic": {
+    "counts": {
+      "fail_new": 19,
+      "success": 5
+    },
+    "rows": [
+      {
+        "case": "reverse/r0/ledger",
+        "diagnostic_status": "fail_new",
+        "original_status": "fail_new"
+      },
+      {
+        "case": "reverse/r0/materialized",
+        "diagnostic_status": "success",
+        "original_status": "success"
+      },
+      {
+        "case": "revise/r0/materialized",
+        "diagnostic_status": "fail_new",
+        "original_status": "fail_new"
+      },
+      {
+        "case": "revise/r0/ledger",
+        "diagnostic_status": "fail_new",
+        "original_status": "fail_new"
+      },
+      {
+        "case": "revise/r1/ledger",
+        "diagnostic_status": "fail_new",
+        "original_status": "fail_new"
+      },
+      {
+        "case": "revise/r1/materialized",
+        "diagnostic_status": "fail_new",
+        "original_status": "fail_new"
+      },
+      {
+        "case": "reverse/r1/materialized",
+        "diagnostic_status": "success",
+        "original_status": "success"
+      },
+      {
+        "case": "reverse/r1/ledger",
+        "diagnostic_status": "fail_new",
+        "original_status": "fail_new"
+      },
+      {
+        "case": "reverse/r2/ledger",
+        "diagnostic_status": "fail_new",
+        "original_status": "fail_new"
+      },
+      {
+        "case": "reverse/r2/materialized",
+        "diagnostic_status": "fail_new",
+        "original_status": "fail_new"
+      },
+      {
+        "case": "revise/r2/materialized",
+        "diagnostic_status": "fail_new",
+        "original_status": "fail_new"
+      },
+      {
+        "case": "revise/r2/ledger",
+        "diagnostic_status": "fail_new",
+        "original_status": "fail_new"
+      },
+      {
+        "case": "revise/r3/ledger",
+        "diagnostic_status": "fail_new",
+        "original_status": "fail_new"
+      },
+      {
+        "case": "revise/r3/materialized",
+        "diagnostic_status": "fail_new",
+        "original_status": "fail_new"
+      },
+      {
+        "case": "reverse/r3/materialized",
+        "diagnostic_status": "success",
+        "original_status": "success"
+      },
+      {
+        "case": "reverse/r3/ledger",
+        "diagnostic_status": "success",
+        "original_status": "success"
+      },
+      {
+        "case": "reverse/r4/ledger",
+        "diagnostic_status": "fail_new",
+        "original_status": "fail_new"
+      },
+      {
+        "case": "reverse/r4/materialized",
+        "diagnostic_status": "fail_new",
+        "original_status": "fail_new"
+      },
+      {
+        "case": "revise/r4/materialized",
+        "diagnostic_status": "fail_new",
+        "original_status": "success"
+      },
+      {
+        "case": "revise/r4/ledger",
+        "diagnostic_status": "fail_new",
+        "original_status": "fail_new"
+      },
+      {
+        "case": "revise/r5/ledger",
+        "diagnostic_status": "fail_new",
+        "original_status": "fail_new"
+      },
+      {
+        "case": "revise/r5/materialized",
+        "diagnostic_status": "fail_new",
+        "original_status": "fail_new"
+      },
+      {
+        "case": "reverse/r5/materialized",
+        "diagnostic_status": "success",
+        "original_status": "success"
+      },
+      {
+        "case": "reverse/r5/ledger",
+        "diagnostic_status": "fail_new",
+        "original_status": "fail_new"
+      }
+    ],
+    "sha256": "3f98a56afa7b41c3b82817bc0c09f85bd968cd3670a31032b6438aa4b1eaaa6e"
+  },
+  "original": {
+    "audit_sha256": "13ffc94a5b0f78392aea64ecd5861f57ce00cab9c3a2c575ddcb9052d0ed10d6",
+    "close_reason": "scheduled_attempts_finished",
+    "commit": "c0c77d94e67754fa4617136bd0d2ea862905df7e",
+    "editor": {
+      "backend": {
+        "base_url": "http://127.0.0.1:18081/v1",
+        "fixtures": null,
+        "kind": "openai_compat",
+        "max_retries": 0,
+        "max_tokens": 16384,
+        "model": "local-qwen3-8b-q8",
+        "request_timeout_s": 600.0,
+        "retry_backoff_s": 2.0,
+        "temperature": 0.6
+      },
+      "budget": {
+        "max_total_tokens": 32000,
+        "max_turns": 8,
+        "wall_time_s": 600.0
+      },
+      "history_turns": 3,
+      "max_check_output_chars": 2000,
+      "max_prompt_chars": 48000,
+      "prompt_template": "../prompts/editor_v2.md",
+      "reps": 3,
+      "request_context": "cumulative_written_v1",
+      "scaffold": "turn_loop",
+      "view_transform": "none"
+    },
+    "freeze_sha256": "1f141c6fd5775fca8f05a9f31ef7e8c94594a4338a71d1b8f9fe34051fe0d481",
+    "name": "original",
+    "observed_numeric_direction": "materialized",
+    "original_replay_matches": 24,
+    "parents": {
+      "ledger": "f91fa1ac5efcb43b0448bd76ba4b024bce90ad207065d4118dbd24cce0e95e63",
+      "materialized": "c52df1878001bc7faaf4e6c2042bd3b64ec3551df0db493a8343745881668d28"
+    },
+    "private_evaluator_image": "sha256:60b49f09c8ae67c8bad54fbf5f243a3aefac62533677277c5a276ab37a1dc9b7",
+    "request_sha256": null,
+    "resources": {
+      "complete": 88,
+      "completion_tokens": 462271,
+      "completion_tokens_observed": 88,
+      "prompt_tokens": 128637,
+      "prompt_tokens_observed": 88,
+      "request_seconds": 3347.8844746249993,
+      "started": 88
+    },
+    "results_sha256": "84a3a09243a070cbcdfa12b6c14a4f12cdbcf7681d940894bbaa531a2bbe3dc7",
+    "rows": [
+      {
+        "block": 0,
+        "case": "reverse/r0/ledger",
+        "failing_checks": [
+          "test_reverse.py::test_failed_reverse_consumes_neither_id_nor_opportunity"
+        ],
+        "handoff": "done",
+        "parent": "ledger",
+        "receipt_sha256": "cc4da49221165a3318bd57a33db4cb9f012bf3cacfba7a82011c5a3362927a31",
+        "replayed": true,
+        "request": "reverse",
+        "seed": 980521049,
+        "status": "fail_new"
+      },
+      {
+        "block": 0,
+        "case": "reverse/r0/materialized",
+        "failing_checks": [],
+        "handoff": "retained_public_pass",
+        "parent": "materialized",
+        "receipt_sha256": "481eb5c246804070ffaa480826e0538d768eaf922deff086c6d0635eb43ffbf1",
+        "replayed": true,
+        "request": "reverse",
+        "seed": 980521049,
+        "status": "success"
+      },
+      {
+        "block": 0,
+        "case": "revise/r0/materialized",
+        "failing_checks": [
+          "test_revise.py::test_revision_checks_every_prefix_and_preserves_history_position"
+        ],
+        "handoff": "done",
+        "parent": "materialized",
+        "receipt_sha256": "f5433b3d4f1ce71d953958e82e0960fd7d03cb1b456dc4eebc469cdf87dbab37",
+        "replayed": true,
+        "request": "revise",
+        "seed": 1852109459,
+        "status": "fail_new"
+      },
+      {
+        "block": 0,
+        "case": "revise/r0/ledger",
+        "failing_checks": [
+          "test_revise.py::test_revision_checks_every_prefix_and_preserves_history_position"
+        ],
+        "handoff": "done",
+        "parent": "ledger",
+        "receipt_sha256": "554cc2954190e970fffbcddb13130c2981c581e285b2812e1362746902e70471",
+        "replayed": true,
+        "request": "revise",
+        "seed": 1852109459,
+        "status": "fail_new"
+      },
+      {
+        "block": 1,
+        "case": "revise/r1/ledger",
+        "failing_checks": [
+          "test_revise.py::test_revision_checks_every_prefix_and_preserves_history_position"
+        ],
+        "handoff": "done",
+        "parent": "ledger",
+        "receipt_sha256": "b185e48d5c24dc1c2aa62957365d131694f0f8e9625ef3b81b19249b69c5b901",
+        "replayed": true,
+        "request": "revise",
+        "seed": 77251300,
+        "status": "fail_new"
+      },
+      {
+        "block": 1,
+        "case": "revise/r1/materialized",
+        "failing_checks": [
+          "test_revise.py::test_revision_checks_every_prefix_and_preserves_history_position"
+        ],
+        "handoff": "done",
+        "parent": "materialized",
+        "receipt_sha256": "4504c6677ce34186134ef127fda43ad02212cf05b91ab7ba2dbbd84b05b3e45e",
+        "replayed": true,
+        "request": "revise",
+        "seed": 77251300,
+        "status": "fail_new"
+      },
+      {
+        "block": 1,
+        "case": "reverse/r1/materialized",
+        "failing_checks": [],
+        "handoff": "retained_public_pass",
+        "parent": "materialized",
+        "receipt_sha256": "4ce5a4f603af6615f13033c0f4136333543536c297f377a0ae8a750d2a5a6abf",
+        "replayed": true,
+        "request": "reverse",
+        "seed": 256227186,
+        "status": "success"
+      },
+      {
+        "block": 1,
+        "case": "reverse/r1/ledger",
+        "failing_checks": [
+          "test_reverse.py::test_failed_reverse_consumes_neither_id_nor_opportunity"
+        ],
+        "handoff": "done",
+        "parent": "ledger",
+        "receipt_sha256": "d02698ae3cb7aa9ae2267cc70af4076f45c447929be293773cf3fd69e8fafd92",
+        "replayed": true,
+        "request": "reverse",
+        "seed": 256227186,
+        "status": "fail_new"
+      },
+      {
+        "block": 2,
+        "case": "reverse/r2/ledger",
+        "failing_checks": [
+          "test_reverse.py::test_failed_reverse_consumes_neither_id_nor_opportunity"
+        ],
+        "handoff": "done",
+        "parent": "ledger",
+        "receipt_sha256": "7497d27b1475b7884b50f0ceaaa2e753ac3e26cda530cec90869ceb759fd7d13",
+        "replayed": true,
+        "request": "reverse",
+        "seed": 1598606487,
+        "status": "fail_new"
+      },
+      {
+        "block": 2,
+        "case": "reverse/r2/materialized",
+        "failing_checks": [
+          "test_reverse.py::test_failed_reverse_consumes_neither_id_nor_opportunity"
+        ],
+        "handoff": "retained_public_pass",
+        "parent": "materialized",
+        "receipt_sha256": "2ca6f52fc89edc26285880d2090a5b216856f30b0281ebe1e094993c3d6047a2",
+        "replayed": true,
+        "request": "reverse",
+        "seed": 1598606487,
+        "status": "fail_new"
+      },
+      {
+        "block": 2,
+        "case": "revise/r2/materialized",
+        "failing_checks": [
+          "test_revise.py::test_revision_checks_every_prefix_and_preserves_history_position"
+        ],
+        "handoff": "retained_public_pass",
+        "parent": "materialized",
+        "receipt_sha256": "4b68eb30c3d5351b9f16054a8d6ceaf3fed4e1676ab54c642089778be932a318",
+        "replayed": true,
+        "request": "revise",
+        "seed": 1962367679,
+        "status": "fail_new"
+      },
+      {
+        "block": 2,
+        "case": "revise/r2/ledger",
+        "failing_checks": [
+          "test_revise.py::test_revision_checks_every_prefix_and_preserves_history_position"
+        ],
+        "handoff": "done",
+        "parent": "ledger",
+        "receipt_sha256": "232438da4b313aab53fbaa75770ffb1233a6a8eba3d1f260bebc24317c4d83ef",
+        "replayed": true,
+        "request": "revise",
+        "seed": 1962367679,
+        "status": "fail_new"
+      },
+      {
+        "block": 3,
+        "case": "revise/r3/ledger",
+        "failing_checks": [
+          "test_revise.py::test_revision_checks_every_prefix_and_preserves_history_position"
+        ],
+        "handoff": "done",
+        "parent": "ledger",
+        "receipt_sha256": "8ade92ca2d355bf000cfe24a2fcc695d223d4b6d1bc121e13d93ea1f4399a632",
+        "replayed": true,
+        "request": "revise",
+        "seed": 859971280,
+        "status": "fail_new"
+      },
+      {
+        "block": 3,
+        "case": "revise/r3/materialized",
+        "failing_checks": [
+          "test_revise.py::test_revision_checks_every_prefix_and_preserves_history_position"
+        ],
+        "handoff": "done",
+        "parent": "materialized",
+        "receipt_sha256": "c6e9805b72e12169b6418229679bd5841acb0ca1eeb96c8b61f40760c737f095",
+        "replayed": true,
+        "request": "revise",
+        "seed": 859971280,
+        "status": "fail_new"
+      },
+      {
+        "block": 3,
+        "case": "reverse/r3/materialized",
+        "failing_checks": [],
+        "handoff": "done",
+        "parent": "materialized",
+        "receipt_sha256": "1ef9a9b5f3c74733dec94b006266c975fa5095c1d505a6a10b8723ea9914c799",
+        "replayed": true,
+        "request": "reverse",
+        "seed": 811833005,
+        "status": "success"
+      },
+      {
+        "block": 3,
+        "case": "reverse/r3/ledger",
+        "failing_checks": [],
+        "handoff": "done",
+        "parent": "ledger",
+        "receipt_sha256": "5c0a7b6f97d55cd4d6fb0b681e89851d42c77e895fbcef4aa769bb89d5016178",
+        "replayed": true,
+        "request": "reverse",
+        "seed": 811833005,
+        "status": "success"
+      },
+      {
+        "block": 4,
+        "case": "reverse/r4/ledger",
+        "failing_checks": [
+          "test_reverse.py::test_failed_reverse_consumes_neither_id_nor_opportunity"
+        ],
+        "handoff": "retained_public_pass",
+        "parent": "ledger",
+        "receipt_sha256": "aca60ae79a1c4105a2a62f8b9df9b890ae93905a41e88a548d15c62f25f9f81c",
+        "replayed": true,
+        "request": "reverse",
+        "seed": 127230695,
+        "status": "fail_new"
+      },
+      {
+        "block": 4,
+        "case": "reverse/r4/materialized",
+        "failing_checks": [
+          "test_reverse.py::test_failed_reverse_consumes_neither_id_nor_opportunity"
+        ],
+        "handoff": "done",
+        "parent": "materialized",
+        "receipt_sha256": "f288c90630783d483f383f0d5ab28ddd1f84d7f320fa5c650e61d406cfe616b5",
+        "replayed": true,
+        "request": "reverse",
+        "seed": 127230695,
+        "status": "fail_new"
+      },
+      {
+        "block": 4,
+        "case": "revise/r4/materialized",
+        "failing_checks": [],
+        "handoff": "done",
+        "parent": "materialized",
+        "receipt_sha256": "db6812a3e1ab8da260466b138f276f20fd4c284a8e2320bd1772283b953d5517",
+        "replayed": true,
+        "request": "revise",
+        "seed": 1285301557,
+        "status": "success"
+      },
+      {
+        "block": 4,
+        "case": "revise/r4/ledger",
+        "failing_checks": [
+          "test_revise.py::test_revision_checks_every_prefix_and_preserves_history_position"
+        ],
+        "handoff": "done",
+        "parent": "ledger",
+        "receipt_sha256": "0d0922baadcf3986c48dca0373c79f165def225edf8bf428254efcf278ecc5b6",
+        "replayed": true,
+        "request": "revise",
+        "seed": 1285301557,
+        "status": "fail_new"
+      },
+      {
+        "block": 5,
+        "case": "revise/r5/ledger",
+        "failing_checks": [
+          "test_revise.py::test_revision_checks_every_prefix_and_preserves_history_position"
+        ],
+        "handoff": "done",
+        "parent": "ledger",
+        "receipt_sha256": "ab4553bfb2b273c26c122638ee54ecc723d7377a5b487be2bb26bf79290f80a8",
+        "replayed": true,
+        "request": "revise",
+        "seed": 1887074215,
+        "status": "fail_new"
+      },
+      {
+        "block": 5,
+        "case": "revise/r5/materialized",
+        "failing_checks": [
+          "test_revise.py::test_revision_checks_every_prefix_and_preserves_history_position"
+        ],
+        "handoff": "done",
+        "parent": "materialized",
+        "receipt_sha256": "060500d20294795df2930fd1e7d995546e2d7fecb7709b0861d3332dad477ff2",
+        "replayed": true,
+        "request": "revise",
+        "seed": 1887074215,
+        "status": "fail_new"
+      },
+      {
+        "block": 5,
+        "case": "reverse/r5/materialized",
+        "failing_checks": [],
+        "handoff": "retained_public_pass",
+        "parent": "materialized",
+        "receipt_sha256": "06bf5af9e25068572228b5f9f55a410981d35d2e4223b93a473424776368ef14",
+        "replayed": true,
+        "request": "reverse",
+        "seed": 1699457161,
+        "status": "success"
+      },
+      {
+        "block": 5,
+        "case": "reverse/r5/ledger",
+        "failing_checks": [
+          "test_reverse.py::test_reverse_appends_and_can_itself_be_reversed",
+          "test_reverse.py::test_failed_reverse_consumes_neither_id_nor_opportunity"
+        ],
+        "handoff": "done",
+        "parent": "ledger",
+        "receipt_sha256": "edc2715b3872befd4fb5b772645d475bc600c7302649636822d5cc207e63f2ec",
+        "replayed": true,
+        "request": "reverse",
+        "seed": 1699457161,
+        "status": "fail_new"
+      }
+    ],
+    "task_version": "36195189c2d37f5dd6979c79e91452a6665fc471cccfc9f75c49edc0b94f3c4f"
+  },
+  "schema_version": 1,
+  "scope": "one controlled task with independent requests from unchanged parents"
+}
