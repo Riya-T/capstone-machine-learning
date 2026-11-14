@@ -5,14 +5,19 @@ current files, the full result of its last turn, and a one-line summary of
 each of its latest few turns (editor.history_turns). The prompt never grows
 without bound, and it never contains private tests or later changes.
 
-The editor replies with complete new files and/or one command:
+The editor replies with complete new files (editor.edit_format: whole_file)
+or SEARCH/REPLACE edits of the current files (search_replace; see
+models/patch.py), and/or one command:
 - RUN_CHECKS: apply the files and run the public checks; results come next turn.
 - DONE: apply the files and finish.
 The step also finishes as soon as every public check passes.
 
 A turn is wasted (nothing new applied or run, and the editor is told why)
 when the reply is cut off, breaks the format, writes a file it may not
-touch, has no files and no command, or changes nothing. RUN_CHECKS on code
+touch, has edits none of which match the current file, has no files and no
+command, or changes nothing. Edits that match are applied even when others
+in the same reply don't; the editor is told which were skipped, and a DONE
+in that reply counts as RUN_CHECKS. RUN_CHECKS on code
 that was already checked doesn't rerun the checks; the earlier result is
 shown instead. Together with a new seed each turn, this stops the editor
 from repeating the same reply until it runs out of turns, which happened
@@ -42,6 +47,7 @@ from typing import Literal
 from ..config import EditorConfig
 from ..models.backends import Backend, BackendError
 from ..models.parser import parse_program, prose_lines, render_program
+from ..models.patch import EditError, apply_edits, split_edits
 from ..registry import Program, Step, load_template
 from ..sandbox.evaluator import CategoryResult, Evaluator
 from .view import make_view
@@ -80,6 +86,51 @@ NOT_RERUN = (
 NO_HISTORY = "None yet: this is your first turn."
 HISTORY_LINE_CHARS = 300  # each turn summary is cut to this length
 
+MAX_LISTED = 3  # skipped edits listed in the feedback
+PATCH_REMINDER = (
+    "Reply with SEARCH/REPLACE edits (the file name, a line <<<<<<< SEARCH, the exact "
+    "current lines, a line =======, the new lines, a line >>>>>>> REPLACE) and/or "
+    "RUN_CHECKS or DONE on a line by itself, outside any edit."
+)
+
+
+@dataclass(frozen=True)
+class _Text:
+    """Feedback wording that depends on editor.edit_format. Whole-file
+    wording must not change: replayed trials need byte-identical prompts."""
+
+    unit: str  # what a reply sends: "files" or "edits"
+    reminder: str
+    cut_off: str
+    applied: str
+    unchanged: str
+
+
+WHOLE_FILE_TEXT = _Text("files", REMINDER, CUT_OFF, APPLIED, UNCHANGED)
+SEARCH_REPLACE_TEXT = _Text(
+    unit="edits",
+    reminder=PATCH_REMINDER,
+    cut_off=(
+        "Your last reply was cut off at the length limit, so nothing from it was applied. "
+        "Send shorter replies: only the edits you need. " + PATCH_REMINDER
+    ),
+    applied="Your edits were applied. Send RUN_CHECKS to test them, or DONE to finish.",
+    unchanged=(
+        "Your edits left the files as they were, so nothing changed. "
+        "Change the code, or send DONE if the change is complete."
+    ),
+)
+
+
+class _Unusable(Exception):
+    """A reply from which nothing can be applied (raised), or the edits a
+    reply had skipped (returned): what to tell the editor, and the text for
+    the turn summaries."""
+
+    def __init__(self, feedback: str, note: str) -> None:
+        self.feedback = feedback
+        self.note = note
+
 
 @dataclass(frozen=True)
 class EditOutcome:
@@ -111,6 +162,7 @@ class Editor:
         self.view = make_view(cfg.view_transform)
         self.evaluator = evaluator
         self.template = load_template(cfg.prompt_template, TEMPLATE_FIELDS)
+        self.text = SEARCH_REPLACE_TEXT if cfg.edit_format == "search_replace" else WHOLE_FILE_TEXT
         self._clock = clock  # injectable so wall-time tests don't sleep
 
     def edit(self, backend: Backend, program: Program, step: Step) -> EditOutcome:
@@ -171,31 +223,40 @@ class Editor:
 
             if finish_reason == "length":
                 wasted += 1
-                feedback = CUT_OFF  # never apply a half-written file
+                feedback = self.text.cut_off  # never apply a half-written reply
                 note("reply cut off at the length limit; nothing applied")
                 continue
-            parsed = parse_program(reply, allowed, finish_reason, require_all=False)
-            if not parsed.ok:
+            try:
+                changed, commands, skipped = self.read_reply(reply, files, allowed, finish_reason)
+            except _Unusable as exc:
                 wasted += 1
-                feedback = f"Nothing was applied: {parsed.failure.detail}. {REMINDER}"
-                note(f"reply broke the format ({parsed.failure.reason}); nothing applied")
+                feedback = exc.feedback
+                note(exc.note)
                 continue
-            commands = {line for line in prose_lines(reply) if line in (RUN_CHECKS, DONE)}
-            if not parsed.files and not commands:
+            if not changed and not commands:
                 wasted += 1
-                feedback = f"Your reply had no files and no command. {REMINDER}"
-                note("reply had no files and no command; nothing applied")
+                unit = self.text.unit
+                feedback = f"Your reply had no {unit} and no command. {self.text.reminder}"
+                note(f"reply had no {unit} and no command; nothing applied")
                 continue
 
             before = dict(files)
-            files.update(parsed.files)
-            sent = describe_files(before, files, parsed.files)
+            files.update(changed)
+            sent = describe_files(before, files, changed)
+            warning = ""  # edits that were skipped (search_replace only)
+            if skipped is not None:
+                warning = skipped.feedback + "\n\n"
+                sent += f" ({skipped.note})"
+                if DONE in commands:
+                    # The editor didn't know some edits failed: check instead of
+                    # finishing, so it sees them (passing checks still finish).
+                    commands = {RUN_CHECKS}
             if DONE in commands:
                 return finish("done", "done")
             if RUN_CHECKS in commands:
                 if checked is not None and files == checked[0]:
                     wasted += 1
-                    feedback = NOT_RERUN + checked[1]
+                    feedback = warning + NOT_RERUN + checked[1]
                     note(f"{sent}, then RUN_CHECKS on unchanged code; checks not run again")
                     continue
                 result = self.evaluator.run_category(files, step.tests.public, "public")
@@ -207,16 +268,61 @@ class Editor:
                     # DONE and keeps re-checking a finished program until its
                     # turns run out. The hidden tests still decide the score.
                     return finish("done", "checks_passed")
-                feedback = self.check_feedback(result)
-                checked = (dict(files), feedback)
+                checked = (dict(files), self.check_feedback(result))
+                feedback = warning + checked[1]
                 note(f"{sent}, then RUN_CHECKS; {check_summary(result)}")
             elif files == before:
                 wasted += 1
-                feedback = UNCHANGED
+                feedback = warning + self.text.unchanged
                 note(f"{sent}; nothing changed")
             else:
-                feedback = APPLIED
+                feedback = warning + self.text.applied
                 note(f"{sent}; applied, no checks run")
+
+    def read_reply(
+        self, reply: str, files: Program, allowed: list[str], finish_reason: str | None
+    ) -> tuple[Program, set[str], _Unusable | None]:
+        """The files a reply changes (their complete new contents), the
+        commands it gives, and, for edits, the ones that were skipped; raises
+        _Unusable when nothing from it can be applied."""
+        skipped = None
+        if self.cfg.edit_format == "search_replace":
+            try:
+                edits, outside = split_edits(reply, allowed)
+            except EditError as exc:
+                raise _Unusable(
+                    f"Nothing was applied: {exc}. {PATCH_REMINDER}",
+                    f"edits could not be applied ({exc.reason}); nothing applied",
+                ) from None
+            result = apply_edits(dict(files), edits)
+            if result.failures:
+                failed = len(result.failures)
+                listed = "\n".join(f"- {error}." for _, error in result.failures[:MAX_LISTED])
+                if failed > MAX_LISTED:
+                    listed += f"\n- and {failed - MAX_LISTED} more."
+                reasons = ", ".join(sorted({error.reason for _, error in result.failures}))
+                if not result.applied:
+                    raise _Unusable(
+                        f"Nothing was applied: {failed} of {len(edits)} edits did not match "
+                        f"the current file.\n{listed}\n{PATCH_REMINDER}",
+                        f"no edit applied ({failed} did not match: {reasons}); nothing applied",
+                    )
+                skipped = _Unusable(
+                    f"{failed} of {len(edits)} edits were not applied:\n{listed}\n"
+                    "The other edits were applied; the current program above includes them.",
+                    f"{failed} of {len(edits)} edits did not match: {reasons}",
+                )
+            changed = {path: result.files[path] for path in dict.fromkeys(e.path for e in edits)}
+            prose = prose_lines("\n".join(outside))
+        else:
+            parsed = parse_program(reply, allowed, finish_reason, require_all=False)
+            if not parsed.ok:
+                raise _Unusable(
+                    f"Nothing was applied: {parsed.failure.detail}. {REMINDER}",
+                    f"reply broke the format ({parsed.failure.reason}); nothing applied",
+                )
+            changed, prose = parsed.files, prose_lines(reply)
+        return changed, {line for line in prose if line in (RUN_CHECKS, DONE)}, skipped
 
     def build_prompt(
         self,

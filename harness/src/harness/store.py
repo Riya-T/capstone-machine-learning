@@ -43,6 +43,7 @@ from typing import Any, Literal
 from .collection.editor import PROTOCOL_VERSION as EDITOR_PROTOCOL_VERSION
 from .config import ExperimentConfig, canonical
 from .models.backends import CachedCall, usage_from_dict, usage_to_dict
+from .models.patch import PROTOCOL_VERSION as PATCH_PROTOCOL_VERSION
 
 SCHEMA_VERSION = 3  # 2: checkpoints.infra_cause, candidates.call_key; 3: checkpoints.end_reason
 
@@ -122,10 +123,18 @@ def editor_cfg_hash(cfg: ExperimentConfig, image_id: str) -> str:
 
     reps is left out, like samples_per_task for the writer: rep k is the same
     trial whatever the number of reps, so adding reps keeps existing trials.
+    edit_format is left out when it has its default, whole_file: it was added
+    after results were collected, and those keep their key. With
+    search_replace, the edit rules' version (patch.PROTOCOL_VERSION) is in.
     """
+    editor = _without(canonical(cfg.editor, cfg.base_dir), "reps")
+    if editor["edit_format"] == "whole_file":
+        del editor["edit_format"]
+    else:
+        editor["patch_protocol"] = PATCH_PROTOCOL_VERSION
     return _hash_json(
         {
-            "editor": _without(canonical(cfg.editor, cfg.base_dir), "reps"),
+            "editor": editor,
             # Behavior of the editor code itself (see editor.PROTOCOL_VERSION).
             "editor_protocol": EDITOR_PROTOCOL_VERSION,
             "files": _input_file_hashes(cfg.editor, cfg.base_dir),

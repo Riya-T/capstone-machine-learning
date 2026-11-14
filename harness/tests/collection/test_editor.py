@@ -481,3 +481,89 @@ def test_editing_record_store_with_real_public_checks(tmp_path):
         assert evaluator.check_step(out.program, STEP).status == "success"
     finally:
         runner.sweep()
+
+
+# --- SEARCH/REPLACE edits (edit_format: search_replace) ---------------------
+
+FIELDS_LINE = 'FIELDS = ("name", "email", "age")\n'
+COMMENTED = 'FIELDS = ("name", "email", "age")  # in display order\n'
+
+
+def patch_cfg(**budget):
+    return dataclasses.replace(
+        editor_cfg(**budget),
+        edit_format="search_replace",
+        prompt_template=ROOT / "prompts" / "editor_patch_v1.md",
+    )
+
+
+def patch_reply(search, replace, command="RUN_CHECKS") -> str:
+    return f"records.py\n<<<<<<< SEARCH\n{search}=======\n{replace}>>>>>>> REPLACE\n\n{command}\n"
+
+
+def test_search_replace_edits_are_applied_and_checked(tmp_path):
+    evaluator = StubEvaluator()
+    backend = mock(
+        tmp_path, [(FIRST, patch_reply(FIELDS_LINE, COMMENTED)), ("Public checks:", "DONE")]
+    )
+    out = Editor(patch_cfg(), evaluator).edit(backend, V0, STEP)
+    assert (out.status, out.turns, out.wasted_turns) == ("done", 2, 0)
+    expected = V0["records.py"].replace(FIELDS_LINE.encode(), COMMENTED.encode())
+    assert expected != V0["records.py"] and out.program == {"records.py": expected}
+    assert out.diff_lines == 2
+    assert evaluator.calls[0][0] == out.program
+    assert "<<<<<<< SEARCH" in backend.prompts[0]  # the patch prompt
+    assert "sent records.py (2 lines changed), then RUN_CHECKS" in backend.prompts[1]
+
+
+@pytest.mark.parametrize(
+    ("bad_reply", "feedback", "note"),
+    [
+        (
+            patch_reply("FIELDS = ()\n", "FIELDS = (1,)\n"),
+            "the SEARCH lines are not in the current file",
+            "no edit applied (1 did not match: not_found)",
+        ),
+        (
+            files_reply(CONFLICT),
+            "whole files are not accepted",
+            "edits could not be applied (whole_file)",
+        ),
+        ("I would add a version field.", "Your reply had no edits and no command", "no edits"),
+    ],
+)
+def test_search_replace_replies_that_cannot_apply_are_wasted(tmp_path, bad_reply, feedback, note):
+    evaluator = StubEvaluator()
+    backend = mock(tmp_path, [(FIRST, bad_reply), ("", "DONE")])
+    out = Editor(patch_cfg(), evaluator).edit(backend, V0, STEP)
+    assert (out.status, out.program, out.turns, out.wasted_turns) == ("done", V0, 2, 1)
+    assert evaluator.calls == []
+    assert feedback in backend.prompts[1] and note in backend.prompts[1]
+    assert "<<<<<<< SEARCH, the exact current lines" in backend.prompts[1]  # the reminder
+
+
+def test_search_replace_skips_edits_that_do_not_match_and_checks_instead_of_done(tmp_path):
+    reply = patch_reply(FIELDS_LINE, COMMENTED, "") + patch_reply("FIELDS = ()\n", "x\n", "DONE")
+    evaluator = StubEvaluator()
+    backend = mock(tmp_path, [(FIRST, reply), ("", "DONE")])
+    out = Editor(patch_cfg(), evaluator).edit(backend, V0, STEP)
+    expected = V0["records.py"].replace(FIELDS_LINE.encode(), COMMENTED.encode())
+    assert (out.status, out.program, out.turns, out.wasted_turns) == (
+        "done",
+        {"records.py": expected},
+        2,
+        0,
+    )
+    # The DONE became a check run, and the editor was told what was skipped.
+    assert len(evaluator.calls) == 1
+    prompt = backend.prompts[1]
+    assert "1 of 2 edits were not applied:\n- edit 2 (records.py" in prompt
+    assert "Public checks: 4 of 5 passed." in prompt
+    assert "(1 of 2 edits did not match: not_found), then RUN_CHECKS" in prompt
+
+
+def test_search_replace_edits_that_change_nothing_are_wasted(tmp_path):
+    backend = mock(tmp_path, [(FIRST, patch_reply(FIELDS_LINE, FIELDS_LINE, "")), ("", "DONE")])
+    out = Editor(patch_cfg(), StubEvaluator()).edit(backend, V0, STEP)
+    assert (out.program, out.wasted_turns) == (V0, 1)
+    assert "Your edits left the files as they were" in backend.prompts[1]

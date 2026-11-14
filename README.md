@@ -163,7 +163,12 @@ The editor works in turns, up to the budget in the config (`max_turns`,
 
 The editor replies with complete new files and/or one command:
 `RUN_CHECKS` (run the public checks and see the output next turn) or `DONE`.
-The step also ends as soon as every public check passes.
+The step also ends as soon as every public check passes. With
+`editor.edit_format: search_replace` (`models/patch.py`,
+`prompts/editor_patch_v1.md`) it sends SEARCH/REPLACE edits of the current
+files instead, which apply all or nothing; an edit whose lines don't match
+exactly one place is a wasted turn. The default, `whole_file`, is what every
+result so far used, and it stays out of the editor key.
 
 Three rules keep the loop from wasting turns, a problem the pilot found
 (the editor sent the same reply 7 or 8 times in a row):
@@ -189,6 +194,7 @@ and how to use it; `docs/units.md` lists every unit with its tests.
 | Results store | `store.py` | One SQLite database plus program files stored by content hash. Writes each result as soon as it exists and never overwrites one. Logs the git commit and full config of every run. |
 | Model backends | `models/backends.py` | One interface, `generate(prompt) -> text`, for an OpenAI-compatible server or a deterministic mock. `CachedBackend` records every call, so reruns replay recorded answers. |
 | Answer parser | `models/parser.py` | Turns a model's answer into program files, or a failure with a reason. |
+| Edit parser | `models/patch.py` | Reads and applies an editor's SEARCH/REPLACE edits (`editor.edit_format: search_replace`), or says why they don't apply. |
 | Sandbox runner | `sandbox/runner.py` | Runs code in a fresh Docker container: no network, not root, read-only code, limits on memory, CPU, processes, file size and time. Always removes the container. Docker's own failures are reported as `infra_error`, never as the program's fault. |
 | Contract evaluator | `sandbox/evaluator.py` | Runs each test category (initial, public, new-feature, existing) in its own container and reads the results. Validates tasks: references must pass, planted bugs must fail as declared. |
 | Editor | `collection/editor.py` | The turn loop above. |

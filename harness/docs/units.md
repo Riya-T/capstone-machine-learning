@@ -46,6 +46,7 @@ subpackages next to `collection/`.
 |---|---|---|
 | `backends.py` | One model interface, `generate(prompt) -> text`: an OpenAI-compatible HTTP backend, a deterministic mock, a replaying call cache, and seed derivation; calls after the first in a trial get their own seed (`call_seed`). | `tests/models/test_backends.py` |
 | `parser.py` | Turns a model answer into program files; strict about labels, paths, duplicates and ambiguity, and reports truncation and malformed output separately. A subset mode and `prose_lines` serve editor replies. | `tests/models/test_parser.py` |
+| `patch.py` | SEARCH/REPLACE edits for `editor.edit_format: search_replace`: finds each edit's file (name line, fence label, or the only file), applies the edits in order and all or nothing, exact match first and then ignoring trailing whitespace, and refuses missing, ambiguous or whole-file replies with a message for the editor. | `tests/models/test_patch.py` |
 
 ## Sandbox (`src/harness/sandbox/`)
 
@@ -70,6 +71,7 @@ subpackages next to `collection/`.
 | `tests/data/tasks/record_store/` | Example task the tests run on (not a real task): spec, 3 changes, 2 sequences, 5 reference solutions, 5 planted bugs (the required 3 plus 2 extras). Its initial tests skip two spec rules (see `task.yaml`). | `tests/test_registry.py` (structure, leaks); `tests/sandbox/test_evaluator.py::test_record_store_task_is_sound` (behavior) |
 | `prompts/writer_v1.md` | Writer prompt template (`$entry_files`, `$spec`, `$public_checks`). | `tests/test_registry.py` |
 | `prompts/editor_v2.md` | Editor instructions template (`$request`, `$files`, `$history`, `$feedback`, `$allowed_files`, `$turns_left`). | `tests/collection/test_editor.py` |
+| `prompts/editor_patch_v1.md` | The same for `editor.edit_format: search_replace`: asks for SEARCH/REPLACE edits instead of whole files. | `tests/collection/test_editor.py` |
 | `docker/sandbox/Dockerfile` | Sandbox image `harness-sandbox:py3.11-v1`: Python 3.11 pinned by digest, with the pytest and Hypothesis versions from `uv.lock`. | `tests/sandbox/test_runner.py` |
 | `docker/sandbox/sandbox.def` | The same image for Apptainer (same digest and packages), built into `execution.apptainer_image`. | `tests/sandbox/test_apptainer.py` (the two files must match) |
 | `fixtures/mock/` | Mock writer and editor responses for the deterministic backend. | `tests/models/test_backends.py`, `tests/integration/test_writer_replay.py` |

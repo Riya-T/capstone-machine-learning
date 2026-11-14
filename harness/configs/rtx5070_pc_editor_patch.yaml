@@ -1,0 +1,19 @@
+# Patch-editor probe on the dev tasks: rtx5070_pc.yaml with the editor sending
+# SEARCH/REPLACE edits of the current files instead of complete new files
+# (editor.edit_format, models/patch.py, prompts/editor_patch_v1.md).
+# scripts/diagnostics.py finds that the editor's randomness is 96% of the
+# variance of a dev trial's score, and a cooler editor does not change that
+# (rtx5070_pc_editor_t02.yaml). An editor that has to work within the
+# program's structure, instead of rewriting it, might leave more of the score
+# to the program. Everything else, the temperature (0.7) included, is
+# unchanged. The writer's samples and initial checks are reused; edit_format
+# and the prompt are part of the editor key, so every trial is new.
+#
+# Usage (from harness/, inside WSL):
+#     uv run python -m harness collect --config configs/rtx5070_pc_editor_patch.yaml
+#     uv run python scripts/diagnostics.py --config configs/rtx5070_pc_editor_patch.yaml
+extends: rtx5070_pc.yaml
+name: rtx5070-pc-editor-patch
+editor:
+  edit_format: search_replace
+  prompt_template: ../prompts/editor_patch_v1.md
