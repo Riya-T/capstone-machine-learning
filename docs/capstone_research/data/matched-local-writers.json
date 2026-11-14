@@ -1,0 +1,204 @@
+{
+  "families": {
+    "high_scores": {
+      "direct_behavioral": 6,
+      "direct_failed": 1,
+      "direct_passed": 5,
+      "direct_supplied_pass": 6,
+      "planned": 6,
+      "reasoning_behavioral": 5,
+      "reasoning_failed": 1,
+      "reasoning_malformed": 1,
+      "reasoning_passed": 4,
+      "reasoning_supplied_pass": 4
+    },
+    "hotel_rooms": {
+      "direct_behavioral": 6,
+      "direct_failed": 5,
+      "direct_passed": 1,
+      "direct_supplied_pass": 1,
+      "planned": 6,
+      "reasoning_behavioral": 6,
+      "reasoning_failed": 4,
+      "reasoning_passed": 2,
+      "reasoning_supplied_pass": 3
+    },
+    "io_meter": {
+      "direct_behavioral": 6,
+      "direct_failed": 4,
+      "direct_passed": 2,
+      "direct_supplied_pass": 6,
+      "planned": 6,
+      "reasoning_behavioral": 6,
+      "reasoning_failed": 4,
+      "reasoning_passed": 2,
+      "reasoning_supplied_pass": 5
+    }
+  },
+  "paired_outcomes": {
+    "high_scores": {
+      "reasoning_failed__direct_passed": 1,
+      "reasoning_malformed__direct_passed": 1,
+      "reasoning_passed__direct_failed": 1,
+      "reasoning_passed__direct_passed": 3
+    },
+    "hotel_rooms": {
+      "reasoning_failed__direct_failed": 3,
+      "reasoning_failed__direct_passed": 1,
+      "reasoning_passed__direct_failed": 2
+    },
+    "io_meter": {
+      "reasoning_failed__direct_failed": 3,
+      "reasoning_failed__direct_passed": 1,
+      "reasoning_passed__direct_failed": 1,
+      "reasoning_passed__direct_passed": 1
+    }
+  },
+  "rows": [
+    {
+      "case_id": "high_scores/sample_00",
+      "direct": "passed",
+      "reasoning": "passed",
+      "sample_idx": 0,
+      "seed": 1998434692,
+      "task_id": "high_scores"
+    },
+    {
+      "case_id": "hotel_rooms/sample_00",
+      "direct": "failed",
+      "reasoning": "failed",
+      "sample_idx": 0,
+      "seed": 589128842,
+      "task_id": "hotel_rooms"
+    },
+    {
+      "case_id": "io_meter/sample_00",
+      "direct": "failed",
+      "reasoning": "failed",
+      "sample_idx": 0,
+      "seed": 1618911849,
+      "task_id": "io_meter"
+    },
+    {
+      "case_id": "high_scores/sample_01",
+      "direct": "passed",
+      "reasoning": "passed",
+      "sample_idx": 1,
+      "seed": 1689288572,
+      "task_id": "high_scores"
+    },
+    {
+      "case_id": "hotel_rooms/sample_01",
+      "direct": "failed",
+      "reasoning": "failed",
+      "sample_idx": 1,
+      "seed": 1660391333,
+      "task_id": "hotel_rooms"
+    },
+    {
+      "case_id": "io_meter/sample_01",
+      "direct": "failed",
+      "reasoning": "failed",
+      "sample_idx": 1,
+      "seed": 1399175928,
+      "task_id": "io_meter"
+    },
+    {
+      "case_id": "high_scores/sample_02",
+      "direct": "passed",
+      "reasoning": "passed",
+      "sample_idx": 2,
+      "seed": 484983479,
+      "task_id": "high_scores"
+    },
+    {
+      "case_id": "hotel_rooms/sample_02",
+      "direct": "failed",
+      "reasoning": "failed",
+      "sample_idx": 2,
+      "seed": 1238851275,
+      "task_id": "hotel_rooms"
+    },
+    {
+      "case_id": "io_meter/sample_02",
+      "direct": "passed",
+      "reasoning": "passed",
+      "sample_idx": 2,
+      "seed": 842032703,
+      "task_id": "io_meter"
+    },
+    {
+      "case_id": "high_scores/sample_03",
+      "direct": "passed",
+      "reasoning": "failed",
+      "sample_idx": 3,
+      "seed": 269040683,
+      "task_id": "high_scores"
+    },
+    {
+      "case_id": "hotel_rooms/sample_03",
+      "direct": "passed",
+      "reasoning": "failed",
+      "sample_idx": 3,
+      "seed": 2033577237,
+      "task_id": "hotel_rooms"
+    },
+    {
+      "case_id": "io_meter/sample_03",
+      "direct": "failed",
+      "reasoning": "failed",
+      "sample_idx": 3,
+      "seed": 1860010925,
+      "task_id": "io_meter"
+    },
+    {
+      "case_id": "high_scores/sample_04",
+      "direct": "passed",
+      "reasoning": "malformed",
+      "sample_idx": 4,
+      "seed": 1177318635,
+      "task_id": "high_scores"
+    },
+    {
+      "case_id": "hotel_rooms/sample_04",
+      "direct": "failed",
+      "reasoning": "passed",
+      "sample_idx": 4,
+      "seed": 1076377711,
+      "task_id": "hotel_rooms"
+    },
+    {
+      "case_id": "io_meter/sample_04",
+      "direct": "failed",
+      "reasoning": "passed",
+      "sample_idx": 4,
+      "seed": 756921769,
+      "task_id": "io_meter"
+    },
+    {
+      "case_id": "high_scores/sample_05",
+      "direct": "failed",
+      "reasoning": "passed",
+      "sample_idx": 5,
+      "seed": 794395009,
+      "task_id": "high_scores"
+    },
+    {
+      "case_id": "hotel_rooms/sample_05",
+      "direct": "failed",
+      "reasoning": "passed",
+      "sample_idx": 5,
+      "seed": 1774334572,
+      "task_id": "hotel_rooms"
+    },
+    {
+      "case_id": "io_meter/sample_05",
+      "direct": "passed",
+      "reasoning": "failed",
+      "sample_idx": 5,
+      "seed": 1223066792,
+      "task_id": "io_meter"
+    }
+  ],
+  "training_label": null
+}

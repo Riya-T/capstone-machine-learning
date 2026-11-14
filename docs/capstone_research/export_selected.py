@@ -65,6 +65,16 @@ FOLLOWUP = "harness/probes/wallet_contract_followthrough_20261113/"
 PARENTS = "harness/probes/controlled_wallet_20261113/parents/"
 
 
+def matched_local_writers(export):
+    data = export.load("docs/writer_same_roster_20261112/comparison.json")
+    return {
+        "families": data["families"],
+        "paired_outcomes": data["paired_outcomes"],
+        "rows": rows(data["cases"], "case_id direct reasoning sample_idx seed task_id"),
+        "training_label": data["training_label"],
+    }
+
+
 def sourcing(export):
     teacher = export.load(FRESH + "teacher_backed_writer_full_comparison.json")
     verification = export.load(FRESH + "writer_verification_summary.json")
@@ -230,6 +240,7 @@ def main():
     args = cli.parse_args()
     export = Export(args.archive_checkout, args.archive_revision, args.destination)
     for name, project in (
+        ("matched-local-writers", matched_local_writers),
         ("sourcing", sourcing),
         ("six-family-edits", collection),
         ("replication", replication),

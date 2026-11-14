@@ -1,6 +1,7 @@
 {
   "archive_revision": "c85458be78508317e21695d66212576ea131a08f",
   "export_sha256": {
+    "data/matched-local-writers.json": "bd67f92d24502bee691048ed4ed2403c322bb94dc824b59a6494f1b713af3327",
     "data/replication.json": "079e85b0b5e2abfcfff8a3c74375f0c7c7dc299b062133a36ef47fa7aa93f2d9",
     "data/six-family-edits.json": "cdadefb5b43fcdbf4a00a8163e5312d547d33a22a6b351850a68c1a1b23c93c6",
     "data/sourcing.json": "3ed2bdc69c2c5004d14c42b61f98a8eb508a248476b24350c8856211b6d674f5",
@@ -37,6 +38,7 @@
     "c85458be78508317e21695d66212576ea131a08f:docs/stock_replication_20261113/feature_flags_protocol.md": "2e2e81d663698489f9f165f9aacb8bb852fe7bd190b4180cf0d69428f781a38b",
     "c85458be78508317e21695d66212576ea131a08f:docs/stock_replication_20261113/protocol.md": "301af78b216571e5baba5b19fbabc7d25b2cabd35804ed6d0f3b8c7009696ced",
     "c85458be78508317e21695d66212576ea131a08f:docs/wallet_contract_followthrough_20261113/protocol.md": "8c30f375ec24d9e3061bc3309420a073b79bc8808d7d51780d3f3795e53b547a",
+    "c85458be78508317e21695d66212576ea131a08f:docs/writer_same_roster_20261112/comparison.json": "a308522d6c775d5c435368f98fefdd148d1e7a7bb2831dd3d3d2abc8a8a93dcb",
     "c85458be78508317e21695d66212576ea131a08f:harness/probes/controlled_wallet_20261113/parents/ledger/wallet.py": "aada4c5a4b6f82fa450faec2f5805d885e4678fea8206963c7ac1b02aedc58c7",
     "c85458be78508317e21695d66212576ea131a08f:harness/probes/controlled_wallet_20261113/parents/materialized/wallet.py": "55d05137c46122903dc2f96e49e1ddb65836a4ac32e27ab160d7484d78ee4589",
     "c85458be78508317e21695d66212576ea131a08f:harness/probes/fresh_label_validation_20261113/tasks/repair_queue/spec.md": "9596ebc96d4c9cf6a42163e667923792d8c9352acf9a5e7e53e4bcba50420d7c",

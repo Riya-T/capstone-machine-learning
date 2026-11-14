@@ -106,6 +106,27 @@ def verify_edits():
     print("Six-family collection: 24 correct starts, zero confirmed families")
 
 
+def verify_matched_local_writers():
+    data = load("matched-local-writers")
+    rows = data["rows"]
+    require(
+        len(rows) == len({(r["task_id"], r["sample_idx"]) for r in rows}) == 18,
+        "duplicate or missing matched writer slot",
+    )
+    outcomes = Counter()
+    for task, saved in data["paired_outcomes"].items():
+        task_rows = [r for r in rows if r["task_id"] == task]
+        observed = Counter(f"reasoning_{r['reasoning']}__direct_{r['direct']}" for r in task_rows)
+        require(observed == saved and len(task_rows) == 6, "matched writer roster differs")
+        outcomes.update((r["reasoning"] == "passed", r["direct"] == "passed") for r in task_rows)
+    require(
+        outcomes == {(True, True): 4, (True, False): 4, (False, True): 4, (False, False): 6}
+        and data["training_label"] is None,
+        "matched writer totals differ",
+    )
+    print("Matched local writers: both 8/18, each uniquely passed four slots")
+
+
 def verify_replication():
     replication = load("replication")
     expected = {
@@ -198,6 +219,7 @@ def verify_wallet():
 
 if __name__ == "__main__":
     verify_manifest()
+    verify_matched_local_writers()
     verify_sourcing()
     verify_edits()
     verify_replication()

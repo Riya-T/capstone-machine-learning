@@ -1,5 +1,18 @@
 # Sourcing correct starting programs
 
+## Two local writer configurations
+
+On the same 18 prompts and seeds, a direct 14B configuration and an
+8B reasoning configuration each produced eight full initial passes.
+Four slots passed for both configurations, four passed only for the
+direct configuration, four passed only for the reasoning configuration,
+and six passed for neither. One reasoning response was malformed.
+The configurations also differed in sampling, reasoning and token
+limits. The matched roster compares the workflows as operated.
+[Matched outcome rows](data/matched-local-writers.json)
+
+## Teacher and public-check sourcing
+
 The neutral teacher used `gpt-6.1-sol` at medium reasoning. Its workspace
 was isolated and it saw only the initial requirements and public
 examples. The local writer used the pinned Qwen3-8B Q8_0 setup. The
