@@ -1,0 +1,7 @@
+extends: rtx5070_train.yaml
+name: nexus-train
+runs_dir: ../runs/nexus_train
+execution:
+  sandbox_runtime: apptainer
+  apptainer_image: ../runs/images/harness-sandbox_py3.11-v1.sif
+  sandbox_workers: 6
