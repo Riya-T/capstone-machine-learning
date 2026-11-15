@@ -1,0 +1,17 @@
+# Editor-size probe on the dev tasks: rtx5070_pc.yaml with a 7B editor
+# (Qwen2.5-Coder-7B, the writer's own base model) instead of the 14B one.
+# On these 50-line programs the 14B editor manages a change whatever the
+# program's design, and fails on what it misreads: the editor's randomness
+# is 96% of the variance of a dev trial's score (results/diagnostics.md).
+# A weaker editor may leave more of the score to the program. The writer's
+# samples and initial checks are reused; the model is part of the editor
+# key and of the model-call cache key, so every trial is new.
+#
+# Usage (from harness/, inside WSL):
+#     uv run python -m harness collect --config configs/rtx5070_pc_editor_7b.yaml
+#     uv run python scripts/diagnostics.py --config configs/rtx5070_pc_editor_7b.yaml
+extends: rtx5070_pc.yaml
+name: rtx5070-pc-editor-7b
+editor:
+  backend:
+    model: qwen2.5-coder-7b-ctx8k

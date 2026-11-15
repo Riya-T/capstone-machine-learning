@@ -1,0 +1,12 @@
+# Editor-size probe on the dev tasks: rtx5070_pc.yaml with a 3B editor
+# (Qwen2.5-Coder-3B, 8k context like the others) instead of the 14B one.
+# See rtx5070_pc_editor_7b.yaml for why.
+#
+# Usage (from harness/, inside WSL):
+#     uv run python -m harness collect --config configs/rtx5070_pc_editor_3b.yaml
+#     uv run python scripts/diagnostics.py --config configs/rtx5070_pc_editor_3b.yaml
+extends: rtx5070_pc.yaml
+name: rtx5070-pc-editor-3b
+editor:
+  backend:
+    model: qwen2.5-coder-3b-ctx8k

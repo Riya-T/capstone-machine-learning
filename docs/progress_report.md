@@ -1,4 +1,4 @@
-# Progress report, 2026-11-13
+# Progress report, 2026-11-14
 
 ## The project in plain words
 
@@ -153,11 +153,20 @@ All five methods are done:
   either.** Our editor model is bad at sending small edits: it finishes
   both changes 25% of the time instead of 53%, and the program's share is
   again 1%.
+- **Tasks built for design to matter do not fix it with this editor.** We
+  built three tasks with about 90-line programs whose bulk operations can
+  either reuse the basic ones or repeat their logic, and changes that cut
+  across every operation. The editor managed the main change for nearly
+  every program, whichever way it was built, and failed undo for every
+  program; the program's share is 0%.
 
 ### What is running now
 
-Nothing. The last run, the patching editor on the 8 dev tasks, finished
-2026-11-14 at 10:06 PST.
+Two editor-size probes on the 8 dev tasks, started 2026-11-14 at 20:04 PST
+(about 5 hours): the same 51 programs edited by a 7B editor, then by a 3B
+editor, instead of the 14B one. On these small programs the 14B editor
+seems too strong for the design to matter; a weaker editor may leave more
+of the result to the program.
 
 ### Words used in the rest of this report
 
@@ -610,6 +619,26 @@ the training signal differs:
   one sequence win on the other 48% of the time, held-out headroom +0.05
   (−0.22 to +0.32).
 
+### Design-sensitive pilot (2026-11-14)
+
+- Three new dev tasks (`tasks/fuel_depot`, `tasks/herd_paddocks`,
+  `tasks/sample_freezers`): primitives plus composite operations that move
+  everything from one place to another, whose construction the spec leaves
+  open, and changes that cut across every operation (a capacity or
+  allowed-species rule, a flag that blocks every move, undo).
+  `configs/rtx5070_pilot.yaml` and `configs/rtx5070_pilot_maintain.yaml`
+  (the plain and the maintainability prompt).
+- The first version passed 0 of 96 writer samples because of spec traps
+  unrelated to design (re-adding removed ids, the order of `KeyError` and
+  `ValueError`, type checks, an inconsistent parameter name, the order of
+  moved items). After fixing them, 25 of 96 passed.
+- Editing them failed the gate: 5 of 137 steps work, program share 0%,
+  held-out headroom +0.00. The failing hidden tests are again edge rules
+  (zero-sized moves, error order). Re-graded without those, the capacity
+  and allowed-species changes work in about 85% of trials for programs
+  built either way, and undo fails for every program.
+- `scripts/diagnostics.py` no longer crashes when no task's scores vary.
+
 ## Findings so far
 
 1. **No method changes how far the editor gets.** The five methods are
@@ -685,6 +714,12 @@ the training signal differs:
     share stays at 1% (0% to 16%). Because the format failures dominate,
     this does not show whether an editor that patches well would make the
     program matter; it does rule out this editor with this format.
+15. **Tasks built for design to matter do not make the 14B editor depend
+    on the design.** On three pilot tasks with about 90-line programs whose
+    bulk operations reuse the basic ones or repeat their logic, the editor
+    applies a cross-cutting rule to every operation either way (about 85%
+    of trials once edge-case tests are set aside) and fails undo for every
+    program. Program share 0%.
 
 ## Open questions for the team
 
