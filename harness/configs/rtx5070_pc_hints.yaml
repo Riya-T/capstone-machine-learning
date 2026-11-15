@@ -1,0 +1,46 @@
+# Dev-task probe of candidates that differ in design: the writer's samples
+# are drawn with a fixed menu of design hints (writer.design_hints; sample i
+# gets hint i mod 8, sample 0 and 8 none), edited by the 14B editor with the
+# prompt that asks it to build on the program's design
+# (rtx5070_pc_editor_v3.yaml). The writer's own programs have the same
+# functions and classes in most tasks, so there is little for the editor to
+# prefer (results/diagnostics.md). Candidates and pairs keep the plain
+# prompt, so a writer trained on them would learn the preferred designs
+# without hints. The hints are generic: none names a task or a later change.
+#
+# Usage (from harness/, inside WSL):
+#     uv run python -m harness collect --config configs/rtx5070_pc_hints.yaml
+#     uv run python scripts/diagnostics.py --config configs/rtx5070_pc_hints.yaml --measures
+extends: rtx5070_pc_editor_v3.yaml
+name: rtx5070-pc-hints
+writer:
+  design_hints:
+    - ""
+    - >-
+      Record every successful operation in a history list and derive the
+      current state by replaying that history, so the state changes only by
+      applying a recorded operation.
+    - >-
+      Route every change to the stored data through one small private method
+      per kind of change, and have every public method, including the ones
+      that do several things at once, call those methods instead of touching
+      the data itself.
+    - >-
+      Put each check on the inputs or on the current state in its own small
+      private method and call it from every public method that needs it, so
+      each rule is written exactly once.
+    - >-
+      Model each kind of thing in the specification as its own small class
+      that holds its data, and keep the main class a thin coordinator over
+      them.
+    - >-
+      Keep all the state in one plain data structure; every public method
+      that changes it first builds the new state and replaces the old one
+      only once the whole operation has succeeded.
+    - >-
+      Describe the specification's rules as data (tables of limits,
+      statuses and allowed actions) that the methods look up, instead of
+      writing them into if/else chains.
+    - >-
+      Write the most direct code that meets the specification: few methods,
+      no helper classes, the logic written out inside each public method.

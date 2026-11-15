@@ -32,7 +32,15 @@ from pathlib import Path
 from ..config import ExperimentConfig
 from ..models.backends import BackendError, CachedBackend, derive_seed, make_backend
 from ..models.parser import parse_program
-from ..registry import ChangeSequence, Program, Task, build_writer_prompt, load_tasks, load_template
+from ..registry import (
+    ChangeSequence,
+    Program,
+    Task,
+    add_design_hint,
+    build_writer_prompt,
+    load_tasks,
+    load_template,
+)
 from ..registry import prompt_version as prompt_version_of
 from ..sandbox.evaluator import Evaluator
 from ..sandbox.runner import SandboxError, make_runner
@@ -205,6 +213,7 @@ def score(
 
 def _write_samples(cfg, store: Store, task: Task, prompt: str, keys: Keys, stats) -> None:
     pv = prompt_version_of(prompt)
+    hints = cfg.writer.design_hints
     for i in range(cfg.writer.samples_per_task):
         key = CandidateKey(task.id, pv, keys.writer, i)
         if store.get_candidate(key) is not None:
@@ -212,9 +221,11 @@ def _write_samples(cfg, store: Store, task: Task, prompt: str, keys: Keys, stats
         backend = CachedBackend(
             make_backend(cfg.writer.backend, derive_seed(cfg.seed, task.id, "writer", i)), store
         )
+        # Keyed by the plain prompt; a design hint changes only what is sent.
+        sent = add_design_hint(prompt, hints[i % len(hints)]) if hints else prompt
         start = time.monotonic()
         try:
-            answer = backend.generate(prompt)
+            answer = backend.generate(sent)
         except BackendError as exc:
             log.warning("%s sample %d: writer call failed (retried next run): %s", task.id, i, exc)
             stats.infra_errors += 1

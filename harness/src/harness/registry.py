@@ -246,6 +246,16 @@ def build_writer_prompt(view: WriterView, template: string.Template) -> str:
     )
 
 
+def add_design_hint(prompt: str, hint: str) -> str:
+    """The writer prompt with a "Design" section holding `hint`, before the
+    output format section if there is one (config.WriterConfig.design_hints)."""
+    if not hint.strip():
+        return prompt
+    section = f"## Design\n\n{hint.strip()}\n\n"
+    head, sep, tail = prompt.rpartition("## Output format")
+    return head + section + sep + tail if sep else f"{prompt.rstrip()}\n\n{section.rstrip()}\n"
+
+
 def prompt_version(prompt: str) -> str:
     """Keys writer samples. Hashing the rendered prompt covers the spec, the
     public checks and the template, and nothing hidden, so fixing private

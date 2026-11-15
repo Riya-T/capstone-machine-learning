@@ -134,6 +134,16 @@ def test_editor_key_leaves_out_the_default_edit_format(repo):
     assert keys(repo)[1] != before[1]
 
 
+def test_writer_key_leaves_out_empty_design_hints(repo):
+    # Samples drawn before design_hints existed keep their key.
+    before = keys(repo)
+    edit_config(repo, lambda d: d["writer"].update(design_hints=[]))
+    assert keys(repo) == before
+    edit_config(repo, lambda d: d["writer"].update(design_hints=["", "Keep a log."]))
+    assert keys(repo) == (keys(repo)[0], before[1], before[2])
+    assert keys(repo)[0] != before[0]
+
+
 def test_editor_key_changes_when_only_the_editor_template_contents_change(repo):
     writer, editor, sandbox = keys(repo)
     (repo.parent / "editor.md").write_text("$request $files $feedback $allowed_files $turns_left!")

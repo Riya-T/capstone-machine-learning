@@ -12,13 +12,20 @@ from pathlib import Path
 import pytest
 import yaml
 
-from harness.collection.collect import CollectStats, Keys, _run_trial
+from harness.collection.collect import (
+    CollectStats,
+    Keys,
+    _distinct_programs,
+    _run_trial,
+    _write_samples,
+)
 from harness.collection.editor import Editor
 from harness.config import BackendConfig, load_config
 from harness.models.parser import render_program
-from harness.registry import load_tasks
+from harness.registry import build_writer_prompt, load_tasks, load_template
+from harness.registry import prompt_version as prompt_version_of
 from harness.sandbox.evaluator import CategoryResult, StepEvaluation
-from harness.store import Store, TrialKey
+from harness.store import CandidateKey, Store, TrialKey
 
 ROOT = Path(__file__).resolve().parents[2]
 CFG = load_config(ROOT / "configs" / "mock.yaml")
@@ -77,3 +84,33 @@ def test_auto_finished_step_is_scored_by_the_hidden_tests(tmp_path, hidden, stat
     # A success moves on to the next change; a failure ends the trial there.
     assert len(steps) == (2 if hidden == "success" else 1)
     assert evaluator.step_checks == len(steps)
+
+
+def test_design_hints_change_what_is_sent_but_not_the_candidate_key(tmp_path):
+    # Sample i is sent hint i mod 2; the empty hint sends the plain prompt.
+    plain = dict(TASK.reference)
+    hinted = {path: text + b"# kept as a log\n" for path, text in plain.items()}
+    fixtures = tmp_path / "writer.yaml"
+    rules = [
+        {"match": "## Design\n\nKeep a log", "responses": [{"text": render_program(hinted)}]},
+        {"match": "", "responses": [{"text": render_program(plain)}]},
+    ]
+    fixtures.write_text(yaml.safe_dump({"rules": rules}))
+    backend = BackendConfig(
+        kind="mock", model="m", temperature=0.7, max_tokens=99, fixtures=fixtures
+    )
+    writer = dataclasses.replace(
+        CFG.writer, backend=backend, samples_per_task=4, design_hints=("", "Keep a log.")
+    )
+    cfg = dataclasses.replace(CFG, runs_dir=tmp_path / "runs", writer=writer)
+    prompt = build_writer_prompt(TASK.writer_view(), load_template(cfg.writer.prompt_template))
+    keys = Keys("w", "e", "s")
+    with Store(cfg.runs_dir) as store:
+        stats = CollectStats(run_id=store.start_run(cfg))
+        _write_samples(cfg, store, TASK, prompt, keys, stats)
+        pv = prompt_version_of(prompt)
+        ids = [
+            store.get_candidate(CandidateKey(TASK.id, pv, "w", i)).candidate_id for i in range(4)
+        ]
+        assert ids == [store.put_blob(plain), store.put_blob(hinted)] * 2
+        assert _distinct_programs(store, TASK, prompt, keys) == ids[:2]

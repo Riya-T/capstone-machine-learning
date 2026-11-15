@@ -16,6 +16,7 @@ import yaml
 from harness.config import ConfigError, SequenceLengths, TasksConfig, load_config
 from harness.registry import (
     TaskError,
+    add_design_hint,
     build_writer_prompt,
     load_task,
     load_tasks,
@@ -580,6 +581,17 @@ def test_writer_prompt_contains_only_spec_and_public_checks(committed):
                 assert line not in prompt, line
     for word in ("ConflictError", "get_version", "transaction", "casefold", "version"):
         assert word not in prompt
+
+
+def test_design_hint_goes_before_the_output_format():
+    prompt = "Write it.\n\n## Spec\n\nx\n\n## Output format\n\nCode blocks."
+    assert add_design_hint(prompt, "Keep a log.") == (
+        "Write it.\n\n## Spec\n\nx\n\n## Design\n\nKeep a log.\n\n## Output format\n\nCode blocks."
+    )
+    assert add_design_hint(prompt, "  ") == prompt
+    assert (
+        add_design_hint("Write it.\n", "Keep a log.") == "Write it.\n\n## Design\n\nKeep a log.\n"
+    )
 
 
 def test_writer_prompt_ignores_every_hidden_file(committed, tmp_path):

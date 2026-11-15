@@ -145,6 +145,13 @@ class WriterConfig:
     # The hash covers the path only; the store keys candidates by the template's
     # contents (see registry.prompt_version).
     prompt_template: InputPath
+    # Design hints for drawing candidates that differ in design: sample i is
+    # sent the prompt with hint i mod len(design_hints) added as a "Design"
+    # section (an empty hint sends the plain prompt). Candidates are still
+    # keyed, and pairs still carry, the plain prompt, so a writer trained on
+    # them learns the preferred designs without being told. Left out of the
+    # writer key when empty, so earlier samples keep their key.
+    design_hints: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         _require_positive(self.samples_per_task, "samples_per_task")
