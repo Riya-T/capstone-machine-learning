@@ -173,15 +173,24 @@ All five methods are done:
   worked 4 times in 6 for the log program and never for the other. This is
   the first case where a program's design decided whether a change worked.
   On the second task the editor broke both programs either way.
+- **On the writer's own programs the new instructions help only a little.**
+  Which program wins on one set of changes carries over to the other more
+  often (75% instead of 59%), but the program's share is 7% and the
+  held-out headroom +0.13. The writer's programs for a task all have the
+  same design, so there is little for the editor to build on.
 
 ### What is running now
 
-The 14B editor with the new instructions (`prompts/editor_v3.md`) on the
-same 51 dev-task programs as before, followed by the diagnostics
-(`configs/rtx5070_pc_editor_v3.yaml`, about 5 hours). This checks whether
-the editor now depends on the writer's own programs enough to learn from:
-a program share well above 4% and held-out headroom near 0.3. If it does,
-we rerun the training collection and the five methods with this editor.
+The writer's samples drawn with a fixed menu of 8 general design hints
+(`configs/rtx5070_pc_hints.yaml`): an operation log, one method per kind of
+change, checks written once, a class per kind of thing, building the new
+state before replacing the old one, rules kept as data, plain direct code,
+and no hint. They are edited by the 14B editor with the new instructions,
+followed by the diagnostics (about 7 hours). Training would still use the
+plain prompt, so a trained writer would have to learn on its own which
+designs the editor finds easier to change. If the program share and
+headroom pass the gate, we rerun the training collection and the five
+methods this way.
 
 ### Words used in the rest of this report
 
@@ -682,6 +691,17 @@ the training signal differs:
   (one-sided Fisher p = 0.03); 10 of its 31 undo methods for the `log`
   program are the two-line version. sample_freezers: 0 and 0. The editor
   breaks existing behavior for both programs and runs out of turns.
+- `configs/rtx5070_pc_editor_v3.yaml`: prompt v3 on the 51 dev-task
+  programs (run 20261115T145931Z-d53335, 516 steps, about 6 hours). First
+  change works 69% (v2: 72%); program share 7% (4% to 10%; v2: 4%);
+  winner on A also wins on B 75% (64% to 86%; v2: 59%); held-out headroom
+  +0.13 (+0.05 to +0.21; v2: +0.12).
+- `writer.design_hints` (`config.py`, `collection/collect.py`): sample i is
+  sent the writer prompt with hint i mod the number of hints added as a
+  "Design" section, while candidates and pairs keep the plain prompt.
+  `scripts/hint_summary.py` reports how each hint's programs fare against
+  their task's average. `configs/rtx5070_pc_hints.yaml` is the dev probe
+  with 8 hints and prompt v3.
 
 ## Findings so far
 
@@ -776,6 +796,9 @@ the training signal differs:
     design makes it use the log on herd_paddocks: undo works 4 of 6 times
     for the log program and 0 of 6 for the plain one. It is one task and 12
     trials, and on sample_freezers the editor fails both programs anyway.
+    On the writer's own dev programs the same prompt raises the program's
+    share only from 4% to 7% (headroom +0.13): those programs all share
+    one design.
 
 ## Open questions for the team
 

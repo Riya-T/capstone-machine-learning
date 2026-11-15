@@ -409,6 +409,22 @@ samples) whatever the design, and runs out of turns in 11 of 12 trials.
 This is the first setting where a program's design decides whether a change
 works. It takes an editor that is asked to use the design.
 
+On the writer's own dev programs, prompt v3 changes little
+(`configs/rtx5070_pc_editor_v3.yaml`, run 20261115T145931Z-d53335: the same
+51 programs, 516 steps, about 6 hours, 0 infrastructure errors):
+
+| Dev tasks, base writer, 14B editor | Prompt v2 | Prompt v3 |
+|---|---:|---:|
+| First change works | 72% | 69% |
+| Variance share: program | 4% (0% to 7%) | 7% (4% to 10%) |
+| Winner on A (3 repetitions) also wins on B | 59% (48% to 71%) | 75% (64% to 86%) |
+| Held-out headroom (best program on the other sequence) | +0.12 (+0.01 to +0.27) | +0.13 (+0.05 to +0.21) |
+
+Winners carry over between sequences more often, but the program's share
+is still far from the 25% the next step needs. The writer's programs for a
+task share one design, so there is little in them for the editor to build
+on.
+
 ## What this means for the next step
 
 Tuning DPO (beta, epochs, seeds) cannot help while the labels are mostly
@@ -476,6 +492,8 @@ for t in sample_freezers herd_paddocks; do                                     #
       --variant state=results/design_probe/$t/state --variant log=results/design_probe/$t/log \
       --sequence s2 --reps 6 --store /home/pc/design_probe/store
 done
+uv run python -m harness collect --config configs/rtx5070_pc_editor_v3.yaml    # GPU, ~6 h
+uv run python scripts/diagnostics.py --config configs/rtx5070_pc_editor_v3.yaml --measures
 uv run python scripts/winner_features.py --config configs/rtx5070_train.yaml \
     --pairs runs/rtx5070_pc/dpo/pairs_cap8_f23_nocosm.jsonl --base configs/rtx5070_eval.yaml \
     --writer configs/rtx5070_eval_dpo3.yaml --writer configs/rtx5070_eval_sft.yaml \
