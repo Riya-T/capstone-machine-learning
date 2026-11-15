@@ -35,7 +35,10 @@ handles SEARCH/REPLACE edits poorly (the whole sequence works 25% of the
 time instead of 53%), and the program's share is again 1% (0% to 16%).
 Nor do tasks built for design to matter (pilot below): the 14B editor
 handles programs that reuse their primitives and programs that repeat
-their logic alike, and the program's share is 0%.
+their logic alike, and the program's share is 0%. Nor does a weaker
+editor: a 7B one fails more often (the first change works 40% of the time
+instead of 72%) but not on particular programs (program share 7%, 0% to
+19%; held-out headroom +0.03), and a 3B one almost never finishes a change.
 
 ## 1. Headroom
 
@@ -316,6 +319,34 @@ The editor finds and changes every composite whatever the design, and fails
 on what it misreads. A 14B editor that sends whole files on 100-line
 programs is still too strong for these designs to matter.
 
+## Editor-size probe
+
+The same 51 dev-task programs edited by smaller editors, everything else as
+in the base run (`configs/rtx5070_pc_editor_7b.yaml`, Qwen2.5-Coder-7B,
+run 20261115T040402Z-94b9a5: 428 steps, 1,738 editor calls, about 5 hours;
+`configs/rtx5070_pc_editor_3b.yaml`, Qwen2.5-Coder-3B, run
+20261115T091404Z-24e38f: 316 steps, 2,403 calls, about 3 hours; 0
+infrastructure errors in either). On these small programs the 14B editor
+seemed too strong for the design to matter, so a weaker one might leave
+more of the result to the program.
+
+| Dev tasks, base writer | 14B editor | 7B editor | 3B editor |
+|---|---:|---:|---:|
+| First change works | 72% | 40% | 3% |
+| Variance share: program | 4% (0% to 7%) | 7% (0% to 19%) | 0% |
+| Variance share: program × sequence | 0% | 7% | 0% |
+| Variance share: trial | 96% | 86% | 100% |
+| Winner on A (3 repetitions) also wins on B | 59% (48% to 71%) | 51% (9% to 79%) | – |
+| Held-out headroom (best program on the other sequence) | +0.12 (+0.01 to +0.27) | +0.03 (−0.10 to +0.16) | +0.00 |
+
+A weaker editor fails more, but no more on some programs than on others.
+The 7B editor's failures follow the program slightly more (7%), but as
+much of that depends on which changes come (program × sequence 7%), and
+the best program on one sequence gains nothing on the other. The 3B editor
+almost never finishes a change (284 of its 316 steps run out of turns),
+so nothing is left to compare. Of the other measures, only the 7B editor's lines changed
+reaches 12%.
+
 ## What this means for the next step
 
 Tuning DPO (beta, epochs, seeds) cannot help while the labels are mostly
@@ -367,6 +398,10 @@ uv run python -m harness collect --config configs/rtx5070_pc_editor_patch.yaml  
 uv run python scripts/diagnostics.py --config configs/rtx5070_pc_editor_patch.yaml
 uv run python scripts/eval_compare.py --base configs/rtx5070_pc.yaml \
     --other configs/rtx5070_pc_editor_patch.yaml --bootstrap 20000
+uv run python -m harness collect --config configs/rtx5070_pc_editor_7b.yaml    # GPU, ~5 h
+uv run python scripts/diagnostics.py --config configs/rtx5070_pc_editor_7b.yaml --measures
+uv run python -m harness collect --config configs/rtx5070_pc_editor_3b.yaml    # GPU, ~3 h
+uv run python scripts/diagnostics.py --config configs/rtx5070_pc_editor_3b.yaml --measures
 uv run python -m harness collect --config configs/rtx5070_pilot.yaml           # GPU, ~2 h
 uv run python -m harness collect --config configs/rtx5070_pilot_maintain.yaml  # GPU, ~2 h
 uv run python scripts/diagnostics.py --config configs/rtx5070_pilot.yaml

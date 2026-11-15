@@ -159,14 +159,20 @@ All five methods are done:
   across every operation. The editor managed the main change for nearly
   every program, whichever way it was built, and failed undo for every
   program; the program's share is 0%.
+- **A weaker editor does not fix it either.** A 7B editor finishes the
+  first change 40% of the time instead of 72%, but which programs it fails
+  on still does not carry over from one set of changes to another (program
+  share 7%). A 3B editor almost never finishes a change.
 
 ### What is running now
 
-Two editor-size probes on the 8 dev tasks, started 2026-11-14 at 20:04 PST
-(about 5 hours): the same 51 programs edited by a 7B editor, then by a 3B
-editor, instead of the 14B one. On these small programs the 14B editor
-seems too strong for the design to matter; a weaker editor may leave more
-of the result to the program.
+A design probe on one pilot task: two hand-written programs for the same
+spec, one that changes its state directly and one that records every call
+in a log and rebuilds its state from it, each taken through the same
+changes 6 times by the 14B editor. Undo failed for every writer program in
+the pilot; with a log, undo is just dropping the last entry. This checks
+whether a design choice can make the editor's result depend on the program
+at all, before building anything on it.
 
 ### Words used in the rest of this report
 
@@ -639,6 +645,16 @@ the training signal differs:
   built either way, and undo fails for every program.
 - `scripts/diagnostics.py` no longer crashes when no task's scores vary.
 
+### Editor-size probe (2026-11-14 to 11-15)
+
+- `configs/rtx5070_pc_editor_7b.yaml` and `configs/rtx5070_pc_editor_3b.yaml`:
+  the same 51 dev-task programs edited by Qwen2.5-Coder-7B (run
+  20261115T040402Z-94b9a5, 428 steps, about 5 hours) and Qwen2.5-Coder-3B
+  (run 20261115T091404Z-24e38f, 316 steps, about 3 hours).
+- 7B: first change works 40% (14B: 72%); program share 7% (0% to 19%),
+  program × sequence 7%, held-out headroom +0.03 (−0.10 to +0.16).
+- 3B: first change works 3%; 284 of 316 steps run out of turns.
+
 ## Findings so far
 
 1. **No method changes how far the editor gets.** The five methods are
@@ -720,6 +736,11 @@ the training signal differs:
     applies a cross-cutting rule to every operation either way (about 85%
     of trials once edge-case tests are set aside) and fails undo for every
     program. Program share 0%.
+16. **A weaker editor fails more, but not on particular programs.** With a
+    7B editor the first change works 40% of the time instead of 72%; the
+    program share is 7% (0% to 19%), as large a share depends on which
+    changes come, and the best program on one sequence gains +0.03 on the
+    other. A 3B editor almost never finishes a change.
 
 ## Open questions for the team
 
