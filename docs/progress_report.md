@@ -1,4 +1,4 @@
-# Progress report, 2026-11-14
+# Progress report, 2026-11-15
 
 ## The project in plain words
 
@@ -163,16 +163,25 @@ All five methods are done:
   first change 40% of the time instead of 72%, but which programs it fails
   on still does not carry over from one set of changes to another (program
   share 7%). A 3B editor almost never finishes a change.
+- **The editor ignores the program's design unless asked to use it.** We
+  wrote two programs by hand for the same spec. One changes its state
+  directly. The other records every call in a log and rebuilds its state
+  from it, so undo is just dropping the last entry. With the usual
+  instructions, the editor wrote undo its own way for both, adding its own
+  history next to the log. With one added paragraph asking it to build on
+  what the program already has, it used the log: on one task, undo then
+  worked 4 times in 6 for the log program and never for the other. This is
+  the first case where a program's design decided whether a change worked.
+  On the second task the editor broke both programs either way.
 
 ### What is running now
 
-A design probe on one pilot task: two hand-written programs for the same
-spec, one that changes its state directly and one that records every call
-in a log and rebuilds its state from it, each taken through the same
-changes 6 times by the 14B editor. Undo failed for every writer program in
-the pilot; with a log, undo is just dropping the last entry. This checks
-whether a design choice can make the editor's result depend on the program
-at all, before building anything on it.
+The 14B editor with the new instructions (`prompts/editor_v3.md`) on the
+same 51 dev-task programs as before, followed by the diagnostics
+(`configs/rtx5070_pc_editor_v3.yaml`, about 5 hours). This checks whether
+the editor now depends on the writer's own programs enough to learn from:
+a program share well above 4% and held-out headroom near 0.3. If it does,
+we rerun the training collection and the five methods with this editor.
 
 ### Words used in the rest of this report
 
@@ -655,6 +664,25 @@ the training signal differs:
   program × sequence 7%, held-out headroom +0.03 (−0.10 to +0.16).
 - 3B: first change works 3%; 284 of 316 steps run out of turns.
 
+### Design probe (2026-11-15)
+
+- `scripts/design_probe.py` takes hand-written programs for a task through
+  its change sequences with the editor, in a store of its own. The programs
+  and every trial are in `harness/results/design_probe/`: a `state` and a
+  `log` program each for sample_freezers and herd_paddocks.
+- Prompt v2, both sequences, 6 reps: the `log` program passes undo in 1 of
+  6 on each task and the `state` program in 0. Of the editor's 77 undo
+  methods for the `log` programs, 35 keep a stack of their own, 42 use the
+  log but add inverse operations or copies, and none just drops the last
+  entry and rebuilds.
+- `prompts/editor_v3.md` (`configs/rtx5070_pilot_editor_v3.yaml`) adds one
+  paragraph: build the change on the program's existing design rather than
+  next to it, and keep it as small as that design allows. Undo first
+  (sequence s2), 6 reps: herd_paddocks `log` 4 of 6, `state` 0 of 6
+  (one-sided Fisher p = 0.03); 10 of its 31 undo methods for the `log`
+  program are the two-line version. sample_freezers: 0 and 0. The editor
+  breaks existing behavior for both programs and runs out of turns.
+
 ## Findings so far
 
 1. **No method changes how far the editor gets.** The five methods are
@@ -741,6 +769,13 @@ the training signal differs:
     program share is 7% (0% to 19%), as large a share depends on which
     changes come, and the best program on one sequence gains +0.03 on the
     other. A 3B editor almost never finishes a change.
+17. **The editor uses a program's design only when asked to.** With
+    hand-written programs for the same spec, the usual prompt makes the
+    14B editor write undo its own way whether or not the program keeps a
+    log of its operations. A prompt that asks it to build on the existing
+    design makes it use the log on herd_paddocks: undo works 4 of 6 times
+    for the log program and 0 of 6 for the plain one. It is one task and 12
+    trials, and on sample_freezers the editor fails both programs anyway.
 
 ## Open questions for the team
 
@@ -786,7 +821,8 @@ the training signal differs:
 | Training, export and baselines | README, "DPO training", "Serving the trained writer", "Static-ranking baseline", "Correctness-only baseline" |
 | Configs | `harness/configs/rtx5070_*.yaml` (`_pc` dev, `_train`, `_eval`, and one per writer) |
 | Summaries and comparisons | `scripts/eval_summary.py`, `scripts/eval_compare.py`, `scripts/ablation_compare.py` (comment ablation) |
-| Diagnostics | `scripts/diagnostics.py`, `scripts/implicit_reward.py`, `scripts/winner_features.py`; `harness/results/diagnostics.md` (also the editor-temperature and patch-editor probes) |
+| Diagnostics | `scripts/diagnostics.py`, `scripts/implicit_reward.py`, `scripts/winner_features.py`; `harness/results/diagnostics.md` (also the editor-temperature, patch-editor, editor-size and design probes and the pilot) |
 | Patch editor | `harness/src/harness/models/patch.py`, `harness/prompts/editor_patch_v1.md`, `harness/configs/rtx5070_pc_editor_patch.yaml` |
+| Design probe | `scripts/design_probe.py`, `harness/results/design_probe/` (hand-written programs and trials), `harness/prompts/editor_v3.md`, `harness/configs/rtx5070_pilot_editor_v3.yaml`, `harness/configs/rtx5070_pc_editor_v3.yaml` |
 | Controlled wallet pilot | `docs/wallet_pair_pilot/` |
 | Task checklist | `Task_list.md` |

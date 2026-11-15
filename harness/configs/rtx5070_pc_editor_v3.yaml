@@ -1,0 +1,17 @@
+# Dev-task probe of the editor prompt that asks the editor to work within the
+# program's design (prompts/editor_v3.md: editor_v2.md plus one paragraph).
+# In the design probe (scripts/design_probe.py) this prompt made a log-based
+# herd_paddocks program pass undo in 4 of 6 reps against 0 of 6 for the same
+# program keeping plain state; with the old prompt the editor added its own
+# undo stack to either one. This checks whether it raises the program's
+# share of a dev trial's score above the 4% of the base editor
+# (results/diagnostics.md). The writer's samples and initial checks are
+# reused; the prompt is part of the editor key, so every trial is new.
+#
+# Usage (from harness/, inside WSL):
+#     uv run python -m harness collect --config configs/rtx5070_pc_editor_v3.yaml
+#     uv run python scripts/diagnostics.py --config configs/rtx5070_pc_editor_v3.yaml --measures
+extends: rtx5070_pc.yaml
+name: rtx5070-pc-editor-v3
+editor:
+  prompt_template: ../prompts/editor_v3.md

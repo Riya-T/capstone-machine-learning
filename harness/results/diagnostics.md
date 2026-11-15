@@ -39,6 +39,11 @@ their logic alike, and the program's share is 0%. Nor does a weaker
 editor: a 7B one fails more often (the first change works 40% of the time
 instead of 72%) but not on particular programs (program share 7%, 0% to
 19%; held-out headroom +0.03), and a 3B one almost never finishes a change.
+Hand-written programs show why (design probe below). The editor writes a
+change its own way, whatever the program already offers. Asked to build on
+the program's design instead, it does: a program that keeps a log of its
+operations then passes undo in 4 of 6 trials, against 0 of 6 for the same
+program keeping plain state.
 
 ## 1. Headroom
 
@@ -347,6 +352,63 @@ almost never finishes a change (284 of its 316 steps run out of turns),
 so nothing is left to compare. Of the other measures, only the 7B editor's lines changed
 reaches 12%.
 
+## Design probe
+
+Why does the design not matter? Two hand-written programs per pilot task,
+both passing the initial checks, with no writer involved
+(`scripts/design_probe.py`; the programs and every trial are in
+`results/design_probe/`):
+
+- `state` keeps the current contents: the reference solution.
+- `log` records every successful call as an operation in `self._ops`, and
+  the contents are what replaying them gives (`_record`, `_rebuild`,
+  `_apply`). Undo is then two lines: drop the last operation and rebuild.
+  That one undo takes back a whole composite call, and a removed place
+  comes back in its old position, which are the two things the pilot's
+  undo edits got wrong.
+
+Each program ran 6 times through each sequence with the 14B editor at the
+pilot settings, in a store of its own.
+
+| Undo, the first change of sequence s2 (6 reps) | `state` works | `log` works |
+|---|---:|---:|
+| sample_freezers, editor prompt v2 (the one used so far) | 0 | 1 |
+| herd_paddocks, editor prompt v2 | 0 | 1 |
+| sample_freezers, editor prompt v3 | 0 | 0 |
+| herd_paddocks, editor prompt v3 | 0 | 4 |
+
+With sequence s1, whose first change is the capacity or allowed-species
+rule, the two designs do alike (0 and 0 of 6 on sample_freezers, 1 and 0 on
+herd_paddocks).
+
+With the usual prompt the editor does not look for what the program offers.
+It writes undo the way it always does. Of its 77 undo methods for the `log`
+programs:
+
+- 35 keep a stack of their own next to `_ops`;
+- the other 42 use `_ops` but still add inverse operations or deep copies of
+  the state;
+- none simply drops the last operation and rebuilds.
+
+Prompt v3 (`prompts/editor_v3.md`) is v2 plus one paragraph: build the
+change on what the program already has (its helper methods, its data
+structures, the way it keeps its state) rather than adding a parallel
+mechanism, and keep the change as small as that design allows. On
+herd_paddocks it changes the outcome:
+
+- 10 of its 31 undo methods for the `log` program are the two-line version,
+  and none keeps its own stack.
+- 4 of 6 reps pass undo, and 2 of those also pass the allowed-species
+  change that follows.
+- The `state` program passes undo in 0 of 6 (one-sided Fisher p = 0.03).
+
+On sample_freezers prompt v3 changes nothing. The editor rewrites the
+program, breaks behavior that was already there (the order of moved
+samples) whatever the design, and runs out of turns in 11 of 12 trials.
+
+This is the first setting where a program's design decides whether a change
+works. It takes an editor that is asked to use the design.
+
 ## What this means for the next step
 
 Tuning DPO (beta, epochs, seeds) cannot help while the labels are mostly
@@ -406,6 +468,14 @@ uv run python -m harness collect --config configs/rtx5070_pilot.yaml           #
 uv run python -m harness collect --config configs/rtx5070_pilot_maintain.yaml  # GPU, ~2 h
 uv run python scripts/diagnostics.py --config configs/rtx5070_pilot.yaml
 uv run python scripts/diagnostics.py --config configs/rtx5070_pilot_maintain.yaml
+for t in sample_freezers herd_paddocks; do                                     # GPU, ~1 h each
+  uv run python scripts/design_probe.py --config configs/rtx5070_pilot.yaml --task $t \
+      --variant state=results/design_probe/$t/state --variant log=results/design_probe/$t/log \
+      --reps 6 --store /home/pc/design_probe/store
+  uv run python scripts/design_probe.py --config configs/rtx5070_pilot_editor_v3.yaml --task $t \
+      --variant state=results/design_probe/$t/state --variant log=results/design_probe/$t/log \
+      --sequence s2 --reps 6 --store /home/pc/design_probe/store
+done
 uv run python scripts/winner_features.py --config configs/rtx5070_train.yaml \
     --pairs runs/rtx5070_pc/dpo/pairs_cap8_f23_nocosm.jsonl --base configs/rtx5070_eval.yaml \
     --writer configs/rtx5070_eval_dpo3.yaml --writer configs/rtx5070_eval_sft.yaml \

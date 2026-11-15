@@ -1,0 +1,14 @@
+# Editor prompt that asks the editor to work within the program's design
+# (prompts/editor_v3.md: editor_v2.md plus one paragraph). In the design
+# probe the 14B editor ignored a log-based program's history and added its
+# own undo stack next to it; this checks whether asking it to build on what
+# the program has makes the program's design matter.
+#
+# Usage (from harness/, inside WSL):
+#     .venv/bin/python scripts/design_probe.py --config configs/rtx5070_pilot_editor_v3.yaml \
+#         --task herd_paddocks --variant state=results/design_probe/herd_paddocks/state \
+#         --variant log=results/design_probe/herd_paddocks/log --sequence s2 --store DIR
+extends: rtx5070_pilot.yaml
+name: rtx5070-pilot-editor-v3
+editor:
+  prompt_template: ../prompts/editor_v3.md
