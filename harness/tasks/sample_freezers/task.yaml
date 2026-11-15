@@ -1,0 +1,62 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+#
+# Pilot of a design-sensitive task: primitives (store, discard, move) plus
+# composites that move many samples (move_all, remove_freezer), and changes
+# that every movement must obey (capacities, locks) or that must record every
+# movement (undo). Public checks show one or two of the affected methods;
+# hidden tests cover all of them.
+schema_version: 1
+id: sample_freezers
+family: sample_freezers
+split: dev
+entry_files: [freezers.py]
+spec: spec.md
+public_checks: [public/test_freezers_public.py]
+private_tests: [private/test_freezers_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_move_to_own_freezer, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_capacity
+    kind: validation_rule
+    request: changes/c_capacity/request.md
+    public_checks: [changes/c_capacity/public/test_capacity_public.py]
+    new_feature_tests: [changes/c_capacity/private/test_capacity_new.py]
+  - id: c_lock
+    kind: state_flag
+    request: changes/c_lock/request.md
+    public_checks: [changes/c_lock/public/test_lock_public.py]
+    new_feature_tests: [changes/c_lock/private/test_lock_new.py]
+  - id: c_undo
+    kind: undo
+    request: changes/c_undo/request.md
+    public_checks: [changes/c_undo/public/test_undo_public.py]
+    new_feature_tests: [changes/c_undo/private/test_undo_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_capacity: reference/capacity
+  c_capacity+c_lock: reference/capacity_lock
+  c_undo: reference/undo
+  c_capacity+c_undo: reference/capacity_undo
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_capacity
+      - change: c_lock
+        planted_bugs:
+          - path: bugs/lock_remove_freezer_moves_part  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_undo
+      - change: c_capacity
+        planted_bugs:
+          - path: bugs/capacity_remove_freezer_not_undoable  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]

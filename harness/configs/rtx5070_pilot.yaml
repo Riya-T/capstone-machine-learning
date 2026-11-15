@@ -1,0 +1,25 @@
+# Testbed pilot: three new dev tasks built so that the program's design, not
+# the editor's luck, decides whether a change succeeds (fuel_depot,
+# herd_paddocks, sample_freezers). Each has primitive operations plus
+# composite ones that move things between places, which a writer can build by
+# reusing the primitives or by duplicating their logic; changes that every
+# operation of a kind must obey (a capacity or allowed list on every inbound
+# movement, a flag that blocks every movement) or that cover every operation
+# (undo); every rule and error stated, so the editor never has to guess; and
+# public checks on one or two operations, hidden tests on all of them.
+#
+# The current tasks fix every method, so the writer's programs come out the
+# same, and harness/results/diagnostics.md finds only 1-4% of a trial's score
+# variance belongs to the program. The pilot goes ahead to a full testbed only
+# if scripts/diagnostics.py finds a program share well above that (25% or
+# more) and held-out headroom above 0.3. Editor, budget and writer settings
+# are those of rtx5070_pc.yaml.
+#
+# Usage (from harness/, inside WSL):
+#     uv run python -m harness collect --config configs/rtx5070_pilot.yaml --until initial
+#     uv run python -m harness collect --config configs/rtx5070_pilot.yaml
+#     uv run python scripts/diagnostics.py --config configs/rtx5070_pilot.yaml
+extends: rtx5070_pc.yaml
+name: rtx5070-pilot
+tasks:
+  include: [fuel_depot, herd_paddocks, sample_freezers]

@@ -1,0 +1,14 @@
+# The testbed pilot (rtx5070_pilot.yaml) with the maintainability prompt
+# (prompts/writer_maintainable_v1.md), as a second pool of programs with more
+# varied designs. Pooled with the base writer's programs in
+# scripts/diagnostics.py, it shows whether the pilot tasks reward some designs
+# over others when the designs do differ.
+#
+# Usage (from harness/, inside WSL):
+#     uv run python -m harness collect --config configs/rtx5070_pilot_maintain.yaml
+#     uv run python scripts/diagnostics.py --config configs/rtx5070_pilot.yaml \
+#         --config configs/rtx5070_pilot_maintain.yaml
+extends: rtx5070_pilot.yaml
+name: rtx5070-pilot-maintain
+writer:
+  prompt_template: ../prompts/writer_maintainable_v1.md

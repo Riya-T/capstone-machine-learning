@@ -1,0 +1,56 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+schema_version: 1
+id: herd_paddocks
+family: herd_paddocks
+split: dev
+entry_files: [farm.py]
+spec: spec.md
+public_checks: [public/test_farm_public.py]
+private_tests: [private/test_farm_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_unseen_species_key_error, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_allowed
+    kind: validation_rule
+    request: changes/c_allowed/request.md
+    public_checks: [changes/c_allowed/public/test_allowed_public.py]
+    new_feature_tests: [changes/c_allowed/private/test_allowed_new.py]
+  - id: c_quarantine
+    kind: state_flag
+    request: changes/c_quarantine/request.md
+    public_checks: [changes/c_quarantine/public/test_quarantine_public.py]
+    new_feature_tests: [changes/c_quarantine/private/test_quarantine_new.py]
+  - id: c_undo
+    kind: undo
+    request: changes/c_undo/request.md
+    public_checks: [changes/c_undo/public/test_undo_public.py]
+    new_feature_tests: [changes/c_undo/private/test_undo_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_allowed: reference/allowed
+  c_allowed+c_quarantine: reference/allowed_quarantine
+  c_undo: reference/undo
+  c_allowed+c_undo: reference/allowed_undo
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_allowed
+      - change: c_quarantine
+        planted_bugs:
+          - path: bugs/quarantine_move_all_moves_some  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_undo
+      - change: c_allowed
+        planted_bugs:
+          - path: bugs/allowed_move_all_not_undoable  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]

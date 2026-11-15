@@ -33,6 +33,9 @@ temperature 0.2 instead of 0.7 the program's share on the dev tasks is 1%
 editor that patches the code instead of rewriting it: the 14B editor
 handles SEARCH/REPLACE edits poorly (the whole sequence works 25% of the
 time instead of 53%), and the program's share is again 1% (0% to 16%).
+Nor do tasks built for design to matter (pilot below): the 14B editor
+handles programs that reuse their primitives and programs that repeat
+their logic alike, and the program's share is 0%.
 
 ## 1. Headroom
 
@@ -263,6 +266,56 @@ headroom. Because format failures dominate, this does not settle whether
 an editor that patches well would make structure matter. It does settle
 that this editor, given this format, does not.
 
+## Design-sensitive pilot
+
+Three new dev tasks built for design to matter
+(`tasks/fuel_depot`, `tasks/herd_paddocks`, `tasks/sample_freezers`;
+`configs/rtx5070_pilot.yaml` and `configs/rtx5070_pilot_maintain.yaml`,
+runs 20261115T000113Z-81cad4 and 20261115T015243Z-ae4b13, about 4 hours).
+Each has primitives and composite operations that move everything from one
+place to another (whose construction the spec leaves open: they may reuse
+the primitives or repeat their logic), and changes that cut across every
+operation: a capacity or allowed-species rule on every inbound move, a flag
+that blocks every move, and undo. The public checks of a change cover one
+or two operations; the hidden tests cover all of them. The programs are
+about twice the size of the old ones (77 to 95 lines).
+
+The first version's spec traps (re-adding a removed id, the order of
+`KeyError` and `ValueError`, type checks, a parameter named differently
+from the same role elsewhere, the order of moved items) let 0 of 96
+programs pass. After fixing them, 25 of 96 passed, both writer prompts
+pooled (1 + 2, 2 + 4 and 11 + 5 of 16 per task).
+
+Editing them (at most 8 per task and pool, 22 programs) failed the gate
+completely:
+
+| Per step (both pools) | Count |
+|---|---:|
+| Change works | 5 of 137 |
+| Public checks pass, hidden checks fail | 90 |
+| Ran out of turns (8) | 42 |
+
+The program's share of the variance is 0% in both pools and the held-out
+headroom is +0.00. The hidden tests that fail are again rules at the edges
+of a change, not the parts that depend on the design. Two examples:
+
+- "moving zero samples never raises Full" (26 of 31 graded capacity edits);
+- "not enough animals is reported before not allowed" (14 of 18).
+
+Re-grading every first step without the tests on zero-sized moves, error
+order, logs and capacity resets settles it:
+
+- The capacity and allowed-species changes then work in about 85% of trials,
+  for programs that reuse the primitives and programs that repeat their
+  logic alike.
+- Undo fails in every trial of every program: one undo after a composite
+  call must take back the whole call, and a removed place must come back in
+  its old position.
+
+The editor finds and changes every composite whatever the design, and fails
+on what it misreads. A 14B editor that sends whole files on 100-line
+programs is still too strong for these designs to matter.
+
 ## What this means for the next step
 
 Tuning DPO (beta, epochs, seeds) cannot help while the labels are mostly
@@ -314,6 +367,10 @@ uv run python -m harness collect --config configs/rtx5070_pc_editor_patch.yaml  
 uv run python scripts/diagnostics.py --config configs/rtx5070_pc_editor_patch.yaml
 uv run python scripts/eval_compare.py --base configs/rtx5070_pc.yaml \
     --other configs/rtx5070_pc_editor_patch.yaml --bootstrap 20000
+uv run python -m harness collect --config configs/rtx5070_pilot.yaml           # GPU, ~2 h
+uv run python -m harness collect --config configs/rtx5070_pilot_maintain.yaml  # GPU, ~2 h
+uv run python scripts/diagnostics.py --config configs/rtx5070_pilot.yaml
+uv run python scripts/diagnostics.py --config configs/rtx5070_pilot_maintain.yaml
 uv run python scripts/winner_features.py --config configs/rtx5070_train.yaml \
     --pairs runs/rtx5070_pc/dpo/pairs_cap8_f23_nocosm.jsonl --base configs/rtx5070_eval.yaml \
     --writer configs/rtx5070_eval_dpo3.yaml --writer configs/rtx5070_eval_sft.yaml \

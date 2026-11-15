@@ -267,6 +267,8 @@ def bootstrap(per_task, statistic, n, seed):
     stats = (statistic([rng.choice(values) for _ in values]) for _ in range(n))
     stats = sorted(s for s in stats if not math.isnan(s))
     m = len(stats)
+    if not m:  # undefined in every resample, e.g. no task's scores vary
+        return math.nan, math.nan
     return stats[int(0.025 * m)], stats[int(0.975 * m) - 1]
 
 
@@ -397,7 +399,9 @@ def report(scores, n, seed, pairs=None):
 
     sums = {t: variance_sums(p) for t, p in scores.items()}
     v = variance_components(sums.values())
-    if v is not None:
+    if v is not None and not v["program"] + v["program x sequence"] + v["trial"]:
+        lines += ["", "Every trial of a task got the same score: no variance to split."]
+    elif v is not None:
         total_var = v["program"] + v["program x sequence"] + v["trial"]
 
         def program_share(sample):

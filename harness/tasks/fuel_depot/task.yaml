@@ -1,0 +1,63 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+#
+# Testbed pilot task (see configs/rtx5070_pilot.yaml): primitive movements
+# (fill, drain, pump) plus composite ones (pump_down, retire_tank) that a
+# writer can build on the primitives or write out again. Each change is a
+# rule that every movement must obey (a capacity on every receiving tank, a
+# seal that blocks every movement) or that covers every call (undo); the
+# public checks try one or two methods, the hidden tests all of them.
+schema_version: 1
+id: fuel_depot
+family: fuel_depot
+split: dev
+entry_files: [depot.py]
+spec: spec.md
+public_checks: [public/test_depot_public.py]
+private_tests: [private/test_depot_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_retire_into_itself, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_capacity
+    kind: validation_rule
+    request: changes/c_capacity/request.md
+    public_checks: [changes/c_capacity/public/test_capacity_public.py]
+    new_feature_tests: [changes/c_capacity/private/test_capacity_new.py]
+  - id: c_seal
+    kind: state_flag
+    request: changes/c_seal/request.md
+    public_checks: [changes/c_seal/public/test_seal_public.py]
+    new_feature_tests: [changes/c_seal/private/test_seal_new.py]
+  - id: c_undo
+    kind: undo
+    request: changes/c_undo/request.md
+    public_checks: [changes/c_undo/public/test_undo_public.py]
+    new_feature_tests: [changes/c_undo/private/test_undo_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_capacity: reference/capacity
+  c_capacity+c_seal: reference/capacity_seal
+  c_undo: reference/undo
+  c_capacity+c_undo: reference/capacity_undo
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_capacity
+      - change: c_seal
+        planted_bugs:
+          - path: bugs/seal_drops_capacity_in_composites  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_undo
+      - change: c_capacity
+        planted_bugs:
+          - path: bugs/capacity_retire_skips_undo  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
