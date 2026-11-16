@@ -336,6 +336,9 @@ def measure_lines(per_measure):
         v = variance_components(variance_sums(p) for p in per_task.values())
         total = v["program"] + v["program x sequence"] + v["trial"]
         values = [x for p in per_task.values() for seqs in p.values() for r in seqs for x in r]
+        if total == 0:
+            lines.append(f"| {name} | {sum(values) / len(values):.2f} | – | – | – | – |")
+            continue
         lines.append(
             f"| {name} | {sum(values) / len(values):.2f} | {v['program'] / total:.0%} | "
             f"{v['program x sequence'] / total:.0%} | {v['trial'] / total:.0%} | "

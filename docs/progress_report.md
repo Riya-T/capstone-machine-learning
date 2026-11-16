@@ -212,18 +212,22 @@ All five methods are done:
   instead of 53%). The writer's programs for a task differ in readability
   far less than a program and its obscured copy, so on these tasks better
   names, comments or layout from the writer cannot show up in the score.
+- **A smaller writer is too weak to use.** A 3B writer, whose working
+  programs might differ more, passes the initial tests with only 10 of
+  its 120 dev programs (8%, against 55% for the 7B writer), and 7 of the 8
+  dev tasks have at most one working program, so there is nothing to
+  compare.
 
 ### What is running now
 
-A writer-size probe (`configs/rtx5070_pc_writer_3b.yaml`, about 5 hours,
-started 2026-11-16 11:58 PST): the dev run again with Qwen2.5-Coder-3B as
-the writer instead of the 7B one, and the same 14B editor. The 7B writer's
-passing programs for a task are nearly identical, and the readability
-control shows that how they read does not matter. A smaller writer's
-passing programs may differ in what matters more: hidden mistakes the
-initial tests miss, or code that breaks once changed. If the program's
-share and the held-out headroom pass the gate, we retrain on the 3B writer
-(train collection, our method and both trained baselines, then the eval).
+The readability control again with the weaker 7B editor
+(`configs/rtx5070_pc_editor_7b_obscure.yaml`, about 5 hours, started
+2026-11-16 13:22 PST). The 14B editor hardly notices unreadable code; a
+weaker editor may rely on names and docstrings much more. If it does
+clearly worse on obscured programs, a writer's readability could matter to
+a weaker editor, and that is the one path left to an effect on these
+tasks. If not, readability is ruled out for every editor that fits on our
+GPU.
 
 ### Words used in the rest of this report
 
@@ -295,7 +299,9 @@ them in one place.
   [Diagnostics](../harness/results/diagnostics.md).
 - **The score barely notices readability at all.** With every dev program
   obscured (no comments or docstrings, meaningless names), the editor gets
-  1.21 changes per sequence against 1.25 (−0.04, −0.17 to +0.07).
+  1.21 changes per sequence against 1.25 (−0.04, −0.17 to +0.07). A
+  smaller (3B) writer is no way out: only 8% of its dev programs pass the
+  initial tests, too few to compare.
 
 ## The five methods
 
@@ -802,7 +808,20 @@ the training signal differs:
   sequence 47% against 53% (−6 points, −11 to −2, mostly bank_ledger and
   parking_garage); program share 0% (0% to 5%), held-out headroom +0.05
   (−0.01 to +0.14).
-- `configs/rtx5070_pc_writer_3b.yaml`: the writer-size probe (running).
+- `configs/rtx5070_pc_writer_3b.yaml`: the dev run with Qwen2.5-Coder-3B
+  as the writer (run 20261116T195823Z-de1d3b, 128 samples, 118 steps, 1
+  hour 24 minutes, 1 infrastructure error). 10 of 120 distinct programs
+  pass the initial tests (shopping_cart 8, course_enrollment 1,
+  team_roster 1, the other five tasks 0), and 7 replies did not parse. The
+  failures are real mistakes (lists never created, checks in a different
+  order from the spec's). Only shopping_cart has two or more passing
+  programs, and they all score the same: 0 pairs. Fails the gate, so the
+  3B rerun was not started.
+- `configs/rtx5070_pc_editor_7b_obscure.yaml`: the readability control
+  with the 7B editor, paired trial by trial with
+  `rtx5070_pc_editor_7b.yaml` (running).
+- `scripts/diagnostics.py` no longer fails when every trial of a measure
+  gets the same score.
 
 ## Findings so far
 
@@ -925,6 +944,10 @@ the training signal differs:
     readability far less than that, so on these tasks no change to the
     writer's names, comments or layout can show up in the score. This
     agrees with the comment ablation (finding 6).
+22. **A 3B writer cannot feed the method.** It passes the initial tests
+    with 10 of 120 dev programs (8%, against 55% for the 7B writer); 7 of
+    the 8 dev tasks have at most one passing program, and the eighth
+    gives no pair.
 
 ## Open questions for the team
 
@@ -976,6 +999,7 @@ the training signal differs:
 | Design hints and edit size | `writer.design_hints`, `harness/configs/rtx5070_pc_hints.yaml`, `scripts/hint_summary.py`, `scripts/edit_carryover.py` |
 | Outline editor | `harness/src/harness/models/outline.py`, `harness/prompts/editor_outline.md`, `harness/configs/rtx5070_pc_outline.yaml` (dev probe), `rtx5070_train_outline.yaml`, `rtx5070_eval_outline.yaml` |
 | Readability control | `editor.view_transform: obscure` (`harness/src/harness/collection/view.py`), `scripts/obscure_check.py`, `harness/configs/rtx5070_pc_obscure.yaml`; results in `harness/results/diagnostics.md` |
-| Writer-size probe | `harness/configs/rtx5070_pc_writer_3b.yaml` |
+| Writer-size probe | `harness/configs/rtx5070_pc_writer_3b.yaml`; results in `harness/results/diagnostics.md` |
+| Readability control, 7B editor | `harness/configs/rtx5070_pc_editor_7b_obscure.yaml` |
 | Controlled wallet pilot | `docs/wallet_pair_pilot/` |
 | Task checklist | `Task_list.md` |

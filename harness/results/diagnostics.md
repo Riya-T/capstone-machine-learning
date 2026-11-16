@@ -59,8 +59,10 @@ renamed to `_x1`, `a1`, `v1`), the editor gets 1.21 changes done per
 sequence instead of 1.25 (−0.04, −0.17 to +0.07), and its first change
 works as often as before. A writer's programs differ in readability far
 less than that, so no change to the writer in names, comments or layout
-can show up in this score. A writer-size probe (a 3B writer, whose passing
-programs may differ more) is running.
+can show up in this score. Nor is a weaker writer an option: a 3B writer
+passes the initial tests with 8% of its dev programs, so almost no task
+has two programs to compare (writer-size probe below). The same control
+with the 7B editor is running.
 
 ## 1. Headroom
 
@@ -651,6 +653,35 @@ So on these tasks no change to the writer in names, comments or layout
 can show up as more changes done; only programs that differ in what they
 do, or in how they hold up once changed, could.
 
+## Writer-size probe
+
+A weaker writer's passing programs might differ in what the control above
+leaves: mistakes the initial tests miss, or code that breaks once changed.
+The dev run again with Qwen2.5-Coder-3B as the writer (same prompt,
+temperature 0.4, 14B editor; `configs/rtx5070_pc_writer_3b.yaml`, run
+20261116T195823Z-de1d3b: 128 samples, 118 steps, 1 hour 24 minutes, 1
+infrastructure error):
+
+| Dev task | Distinct programs | Pass the initial tests |
+|---|---:|---:|
+| bank_ledger | 16 | 0 |
+| course_enrollment | 15 | 1 |
+| football_season | 13 | 0 |
+| library_catalog | 16 | 0 |
+| lru_cache | 15 | 0 |
+| parking_garage | 15 | 0 |
+| shopping_cart | 15 | 8 |
+| team_roster | 15 | 1 |
+
+10 of 120 programs pass (8%, against 55% of the 7B writer's samples), and
+7 replies did not parse. The failures are real mistakes, not format: in
+bank_ledger, for example, a history kept per account whose lists are never
+created, or checks raised in a different order from the spec's. Only
+shopping_cart has more than one passing program, and there every trial of
+a sequence gets the same score, so there is no variance to split and no
+pair. On the train tasks a 3B writer would leave almost no task with two
+programs to compare, so it cannot feed the method.
+
 ## Reproduce
 
 From `harness/`, inside WSL:
@@ -708,6 +739,8 @@ uv run python scripts/eval_compare.py --base configs/rtx5070_pc.yaml \
     --other configs/rtx5070_pc_obscure.yaml --bootstrap 20000
 uv run python scripts/ablation_compare.py configs/rtx5070_pc.yaml \
     configs/rtx5070_pc_obscure.yaml --bootstrap 20000
+uv run python -m harness collect --config configs/rtx5070_pc_writer_3b.yaml    # GPU, ~1.5 h
+uv run python scripts/diagnostics.py --config configs/rtx5070_pc_writer_3b.yaml --measures
 uv run python scripts/winner_features.py --config configs/rtx5070_train.yaml \
     --pairs runs/rtx5070_pc/dpo/pairs_cap8_f23_nocosm.jsonl --base configs/rtx5070_eval.yaml \
     --writer configs/rtx5070_eval_dpo3.yaml --writer configs/rtx5070_eval_sft.yaml \

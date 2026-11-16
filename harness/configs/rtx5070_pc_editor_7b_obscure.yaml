@@ -1,0 +1,18 @@
+# Readability control for the weaker editor: rtx5070_pc_editor_7b.yaml (the
+# base writer's dev programs, a 7B editor) with the editor seeing every
+# program obscured (editor.view_transform: obscure, collection/view.py), as
+# rtx5070_pc_obscure.yaml does for the 14B editor. The 14B editor hardly
+# notices (1.21 changes per sequence against 1.25; results/diagnostics.md).
+# A weaker editor may lean on names and docstrings more; if it does, a
+# writer's readability could matter to it. The editor's seeds depend only
+# on the task, program, sequence and repetition, so every trial is paired
+# with the same trial of rtx5070_pc_editor_7b.yaml.
+#
+# Usage (from harness/, inside WSL):
+#     uv run python -m harness collect --config configs/rtx5070_pc_editor_7b_obscure.yaml
+#     uv run python scripts/ablation_compare.py configs/rtx5070_pc_editor_7b.yaml \
+#         configs/rtx5070_pc_editor_7b_obscure.yaml
+extends: rtx5070_pc_editor_7b.yaml
+name: rtx5070-pc-editor-7b-obscure
+editor:
+  view_transform: obscure
