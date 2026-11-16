@@ -189,9 +189,11 @@ class EditorConfig:
     max_check_output_chars: int
     # What the editor sees of the program (collection/view.py): "none", or
     # "strip_comments" for the comment ablation, which removes comments and
-    # docstrings before a sequence's first step. Being in this section puts
-    # it in the editor key, so the two never share trials.
-    view_transform: Literal["none", "strip_comments"] = "none"
+    # docstrings before a sequence's first step, or "obscure" for the
+    # readability control, which also renames private names and local
+    # variables to meaningless ones. Being in this section puts it in the
+    # editor key, so they never share trials.
+    view_transform: Literal["none", "strip_comments", "obscure"] = "none"
     # How many of the editor's latest turns are summarized in each prompt, one
     # line each (0 shows none). Bounded, so the prompt still can't grow.
     history_turns: int = 3

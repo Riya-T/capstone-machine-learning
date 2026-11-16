@@ -1,0 +1,20 @@
+# Readability control on the dev tasks: rtx5070_pc.yaml (the base writer's
+# programs, editor prompt v2, whole files) with the editor seeing every
+# program obscured (editor.view_transform: obscure, collection/view.py):
+# no comments, docstrings or blank lines, and private names, data attributes
+# and local variables renamed to _x1, a1, v1 and so on. The program does the
+# same thing (scripts/obscure_check.py: all 51 pass the initial checks), so
+# only how readable it is changes. The writer's samples and initial checks
+# are reused, and the editor's seeds depend only on the task, program,
+# sequence and repetition, so every trial is paired with the same trial of
+# rtx5070_pc.yaml. If the editor does no worse on obscured programs, how far
+# it gets cannot tell a readable program from an unreadable one here.
+#
+# Usage (from harness/, inside WSL):
+#     uv run python -m harness collect --config configs/rtx5070_pc_obscure.yaml
+#     uv run python scripts/eval_compare.py --base configs/rtx5070_pc.yaml \
+#         --other configs/rtx5070_pc_obscure.yaml
+extends: rtx5070_pc.yaml
+name: rtx5070-pc-obscure
+editor:
+  view_transform: obscure

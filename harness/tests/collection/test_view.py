@@ -2,12 +2,15 @@
 and docstrings go, that the rest of the code is untouched, that every task's
 reference and planted-bug programs strip cleanly, that the editor sees the
 stripped program for the whole sequence, and that the ablation gets its own
-editor key.
+editor key. Then the readability control ("obscure"): which names change,
+that a program does the same afterwards, and that every task program keeps
+its public interface.
 
 Usage:
     uv run pytest tests/collection/test_view.py
 """
 
+import ast
 import dataclasses
 from pathlib import Path
 
@@ -16,7 +19,7 @@ import yaml
 
 from harness.collection.collect import CollectStats, Keys, _run_trial
 from harness.collection.editor import Editor
-from harness.collection.view import make_view, strip_comments, strip_source
+from harness.collection.view import make_view, obscure, strip_comments, strip_source
 from harness.config import BackendConfig, load_config
 from harness.evaluation.source import describe_source
 from harness.models.parser import render_program
@@ -233,3 +236,194 @@ def test_the_ablation_has_its_own_editor_key_and_shares_the_writer_key():
 
     assert editor_cfg_hash(ablation, "img") != editor_cfg_hash(CFG, "img")
     assert writer_cfg_hash(ablation) == writer_cfg_hash(CFG)
+
+
+_INVENTORY = (
+    '"""Inventory."""\n'
+    "import math\n"
+    "\n"
+    "LIMIT = 10  # most per item\n"
+    "_UNIT = 2\n"
+    "\n"
+    "\n"
+    "class Inventory:\n"
+    "    def __init__(self, name):\n"
+    "        self.name = name\n"
+    "        self._counts = {}\n"
+    "        self.history = []\n"
+    "\n"
+    "    def add(self, item, quantity=1):\n"
+    '        """Add some."""\n'
+    "        self._check(quantity)\n"
+    "        total = self._counts.get(item, 0) + quantity\n"
+    "        if total > LIMIT:\n"
+    "            raise ValueError(f'too many {item}: {total}')\n"
+    "        self._counts[item] = total\n"
+    "        self.history.append((item, quantity))\n"
+    "        return total\n"
+    "\n"
+    "    def _check(self, quantity):\n"
+    "        if quantity <= 0:\n"
+    "            raise ValueError('quantity must be positive')\n"
+    "\n"
+    "    def report(self):\n"
+    "        lines = [f'{key}={count * _UNIT}' for key, count in sorted(self._counts.items())]\n"
+    "        try:\n"
+    "            first = lines[0]\n"
+    "        except IndexError as error:\n"
+    "            first = str(math.floor(0)) + type(error).__name__\n"
+    "        return first, len(lines), len(self.history)\n"
+)
+
+
+def _use_inventory(code: str) -> list:
+    namespace = {}
+    exec(compile(code, "inventory.py", "exec"), namespace)
+    inventory = namespace["Inventory"]("shop")
+    out = [inventory.report(), inventory.add("b", 3), inventory.add(item="a", quantity=2)]
+    out += [inventory.report(), inventory.name]
+    for bad in ({"item": "a", "quantity": 0}, {"item": "a", "quantity": 9}):
+        with pytest.raises(ValueError) as caught:
+            inventory.add(**bad)
+        out.append(str(caught.value))
+    return out
+
+
+def test_obscure_renames_private_names_attributes_and_locals_and_keeps_the_behavior():
+    shown = obscure({"inventory.py": _INVENTORY.encode(), "notes.txt": b"_counts\n"})
+    code = shown["inventory.py"].decode()
+
+    gone = ["_counts", "_check", "_UNIT", "history", "total", "lines", "first", "error", "key"]
+    assert [name for name in gone if name in code] == []
+    assert "count" not in code.replace("ValueError", "")
+    assert '"""' not in code and "#" not in code
+    kept = ["Inventory", "add", "report", "self.name = name", "item", "quantity", "LIMIT", "math"]
+    assert [name for name in kept if name not in code] == []
+    assert shown["notes.txt"] == b"_counts\n"
+    assert _use_inventory(code) == _use_inventory(_INVENTORY)
+
+
+def test_obscure_renames_a_private_name_alike_in_every_file_and_keeps_imported_ones():
+    program = {
+        "store.py": b"def _load(path):\n    return path\n\ndef _keep(x):\n    return x\n",
+        "app.py": b"import store\nfrom store import _keep\n\ndef run(p):\n"
+        b"    return store._load(p) + _keep(p)\n",
+    }
+
+    shown = {path: data.decode() for path, data in obscure(program).items()}
+
+    assert "_load" not in shown["store.py"] + shown["app.py"]
+    assert "def _x1(path)" in shown["store.py"] and "store._x1(p)" in shown["app.py"]
+    assert "def _keep(x)" in shown["store.py"] and "from store import _keep" in shown["app.py"]
+
+
+def test_obscure_leaves_a_function_that_defines_a_class_its_names():
+    source = (
+        "def make(n):\n    size = n * 2\n    class Box:\n        width = size\n    return Box\n"
+    )
+
+    code = obscure({"m.py": source.encode()})["m.py"].decode()
+
+    assert "size = n * 2" in code and "width = size" in code
+
+
+def _signatures(program):
+    """(path, qualified name, parameters) of every public function, class
+    and method at module or class level."""
+    out = set()
+    for path, data in program.items():
+        for node in ast.parse(data).body:
+            members = node.body if isinstance(node, ast.ClassDef) else [node]
+            prefix = f"{node.name}." if isinstance(node, ast.ClassDef) else ""
+            if isinstance(node, ast.ClassDef):
+                out.add((path, node.name, ()))
+            for sub in members:
+                if isinstance(sub, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                    params = tuple(a.arg for a in sub.args.args + sub.args.kwonlyargs)
+                    out.add((path, prefix + sub.name, params))
+    return {
+        s
+        for s in out
+        if not any(part.startswith("_") and not part.startswith("__") for part in s[1].split("."))
+    }
+
+
+@pytest.mark.parametrize("program", list(_task_programs()))
+def test_every_task_program_obscures_to_python_with_the_same_public_interface(program):
+    shown = obscure(program)
+
+    for data in shown.values():
+        compile(data, "shown.py", "exec")
+    assert _signatures(shown) == _signatures(program)
+    assert describe_source(shown)["python_documentation_lines"] == 0
+
+
+def test_the_readability_control_has_its_own_editor_key():
+    control = dataclasses.replace(
+        CFG, editor=dataclasses.replace(CFG.editor, view_transform="obscure")
+    )
+
+    assert make_view("obscure") is obscure
+    assert editor_cfg_hash(control, "img") != editor_cfg_hash(CFG, "img")
+    assert writer_cfg_hash(control) == writer_cfg_hash(CFG)
+
+
+def test_obscure_renames_a_private_slot_and_keeps_attributes_a_library_type_or_module_has():
+    source = (
+        "import time\n"
+        "\n"
+        "class Clock:\n"
+        '    __slots__ = ("_ticks", "label", "items", "time", "speed")\n'
+        "\n"
+        "    def __init__(self, label):\n"
+        "        self._ticks = 0\n"
+        "        self.label = label\n"
+        "        self.items = {}\n"
+        "        self.time = time.time()\n"
+        "        self.speed = 1\n"
+        "\n"
+        "    def tick(self, other):\n"
+        "        self._ticks += self.speed\n"
+        "        return list(self.items.items()), other.speed\n"
+    )
+
+    code = obscure({"clock.py": source.encode()})["clock.py"].decode()
+
+    assert "'_x1'" in code and "self._x1 += self.speed" in code
+    assert "self.items = {}" in code and "self.items.items()" in code
+    assert "self.time = time.time()" in code and "other.speed" in code
+
+
+def test_obscure_renames_a_data_attribute_on_every_object_and_keeps_methods_and_fields():
+    source = (
+        "from dataclasses import dataclass\n"
+        "\n"
+        "@dataclass\n"
+        "class Point:\n"
+        "    x: int\n"
+        "\n"
+        "class Path:\n"
+        "    unit = 'm'\n"
+        "\n"
+        "    def __init__(self):\n"
+        "        self.points = []\n"
+        "\n"
+        "    @property\n"
+        "    def length(self):\n"
+        "        return len(self.points)\n"
+        "\n"
+        "    def join(self, other):\n"
+        "        self.points = self.points + other.points + [Point(x=self.length)]\n"
+        "        self.unit = other.unit\n"
+        "        return self\n"
+    )
+
+    code = obscure({"path.py": source.encode()})["path.py"].decode()
+
+    assert "points" not in code
+    assert "self.a1 = self.a1 + other.a1 + [Point(x=self.length)]" in code
+    assert "self.unit = other.unit" in code and "x: int" in code
+    namespace = {}
+    exec(compile(code, "path.py", "exec"), namespace)
+    joined = namespace["Path"]().join(namespace["Path"]().join(namespace["Path"]()))
+    assert joined.length == 2 and joined.unit == "m"
