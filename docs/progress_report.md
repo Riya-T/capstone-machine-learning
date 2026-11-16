@@ -1,4 +1,4 @@
-# Progress report, 2026-11-15
+# Progress report, 2026-11-16
 
 ## The project in plain words
 
@@ -191,23 +191,32 @@ All five methods are done:
   editor's replies carries over a little, because it sends the whole file
   back, so shorter programs cost fewer words. That rewards short code, not
   better design.
+- **An editor that has to work within the program does not fix it
+  either.** Instead of the whole program, this editor sees an outline
+  (every function's name, parameters and description, with the code
+  hidden), asks for the code it needs, and sends back whole functions,
+  which are put in place by name. Real maintainers of large codebases work
+  like this. On the same 44 design-hinted programs it gets fewer changes
+  done (0.94 per sequence instead of 1.23; the whole sequence works 32% of
+  the time instead of 51%), and which programs it fails on is again luck:
+  the program's share is 0% (0% to 4%), and the best program on one set of
+  changes does no better on the other.
 
 ### What is running now
 
-An editor that has to work within the program
-(`configs/rtx5070_pc_outline.yaml`). Instead of the whole program, it sees
-an outline: every function's name, parameters and description, with the
-code hidden. It asks to see the code it needs, and it sends back whole
-functions, which are put in place by name; it cannot change a function it
-has not looked at. Real maintainers of real codebases work like this,
-because nobody reads all of a large program before each change. Here a
-program's names, descriptions and structure decide what the editor knows,
-so they can matter. In a smoke test on one task the editor finished 7 of 8
-changes, about as often as with whole files, but it needs about 6.5 calls
-per change instead of 2.4. The dev probe runs on the same 44 design-hinted
-programs (about 10 to 12 hours). If the program share and the held-out
-headroom pass the gate, we rerun the training collection and the methods
-with this editor (configs drafted; about 5 days of GPU time).
+A readability control (`configs/rtx5070_pc_obscure.yaml`, about 5 hours).
+Every check so far says the editor does about as well on any of the
+writer's programs. To find out whether this measure could notice a
+hard-to-read program at all, the editor gets the same 51 dev programs as
+in the first dev run, made as unreadable as possible without changing what
+they do: no comments or docstrings, no blank lines, and private names,
+data attributes and local variables renamed to `_x1`, `a1`, `v1` and so on
+(`editor.view_transform: obscure`). All 51 still pass their initial tests,
+and every trial uses the same random seed as in the first run, so the two
+can be compared trial by trial. If the editor does clearly worse, the
+measure can see code quality but the writer's programs do not differ
+enough in it; if not, no change to the writer can show up in it on these
+tasks.
 
 ### Words used in the rest of this report
 
@@ -750,8 +759,31 @@ the training signal differs:
   rewrote whole classes from the outline and ran out of turns; with it, 7
   of 8 steps work (2 programs × 2 sequences), at 6.5 calls per step.
 - `configs/rtx5070_pc_outline.yaml`: the dev probe on the hints run's
-  programs, 10 turns per step (running). `configs/rtx5070_train_outline.yaml`
-  and `configs/rtx5070_eval_outline.yaml` are drafted for the rerun.
+  programs, 10 turns per step (run 20261116T031616Z-73eee1, 440 steps,
+  2,650 editor calls, about 10 hours, 0 infrastructure errors). Against
+  the whole-file editor on the same programs: 0.94 changes per sequence
+  against 1.23 (−0.29, −0.49 to −0.10), whole sequence 32% against 51%;
+  program share 0% (0% to 4%), program × sequence 14%, winners agree
+  across sequences 49%, held-out headroom −0.01 (−0.14 to +0.10). Fails
+  the gate, so `configs/rtx5070_train_outline.yaml` and
+  `configs/rtx5070_eval_outline.yaml` (drafted for a rerun) were not run.
+
+### Readability control (2026-11-16)
+
+- `editor.view_transform: obscure` (`collection/view.py`): before a
+  sequence's first step, comments, docstrings and blank lines go, and
+  private names, data attributes (names only ever set as `self.x = ...`)
+  and local variables are renamed to `_x1`, `a1`, `v1`. Public functions,
+  classes and methods, parameters, keywords, imports, class attributes and
+  attribute names of builtin types stay. Tests: a program behaves the same
+  before and after, and every task's reference and planted-bug programs
+  keep their public interface.
+- `scripts/obscure_check.py`: all 51 of the first dev run's programs pass
+  their initial tests once obscured (on average 0.4 private names, 1.7
+  data attributes and 0.8 local variables renamed per program).
+- `configs/rtx5070_pc_obscure.yaml`: the same programs, editor and seeds as
+  `rtx5070_pc.yaml`, with the obscured view (run 20261116T133752Z-e9bd81,
+  running).
 
 ## Findings so far
 
@@ -860,6 +892,12 @@ the training signal differs:
     program on the other sequence). The tokens the editor writes carry over
     by about 5%, because it sends whole files back: that rewards short
     programs, not design.
+20. **An editor that works within the program's structure does not make
+    the program matter.** Shown an outline and made to open code before
+    changing it, the 14B editor gets fewer changes done on the same
+    design-hinted programs (0.94 per sequence against 1.23) and fails as
+    evenly across programs: program share 0% (0% to 4%), held-out headroom
+    −0.01.
 
 ## Open questions for the team
 
@@ -910,5 +948,6 @@ the training signal differs:
 | Design probe | `scripts/design_probe.py`, `harness/results/design_probe/` (hand-written programs and trials), `harness/prompts/editor_v3.md`, `harness/configs/rtx5070_pilot_editor_v3.yaml`, `harness/configs/rtx5070_pc_editor_v3.yaml` |
 | Design hints and edit size | `writer.design_hints`, `harness/configs/rtx5070_pc_hints.yaml`, `scripts/hint_summary.py`, `scripts/edit_carryover.py` |
 | Outline editor | `harness/src/harness/models/outline.py`, `harness/prompts/editor_outline.md`, `harness/configs/rtx5070_pc_outline.yaml` (dev probe), `rtx5070_train_outline.yaml`, `rtx5070_eval_outline.yaml` |
+| Readability control | `editor.view_transform: obscure` (`harness/src/harness/collection/view.py`), `scripts/obscure_check.py`, `harness/configs/rtx5070_pc_obscure.yaml` |
 | Controlled wallet pilot | `docs/wallet_pair_pilot/` |
 | Task checklist | `Task_list.md` |

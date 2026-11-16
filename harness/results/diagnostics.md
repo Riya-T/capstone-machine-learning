@@ -48,8 +48,12 @@ enough: writer samples drawn with 8 design hints, edited with that prompt,
 give a program share of 2% (0% to 7%) and no held-out headroom, and no
 hint's programs beat their task's average. Nor is edit size a label: how
 many lines or functions a successful change touches does not carry over
-between sequences. An editor that sees only an outline and opens the code
-it needs, so that it has to work within the program, is being probed.
+between sequences. Nor does an editor that sees only an outline and has
+to open the code it needs, so that it works within the program: on the
+same design-hinted programs it gets fewer changes done (0.94 per sequence
+against 1.23), and the program's share is 0% (0% to 4%), with no held-out
+headroom. A readability control (the same programs with meaningless names
+and no comments) is running.
 
 ## 1. Headroom
 
@@ -554,10 +558,42 @@ structure, so those can matter.
 On one dev task (bank_ledger, 2 programs, both sequences, 1 repetition) 7
 of 8 steps work, about as often as with whole files, at about 6.5 editor
 calls per step instead of 2.4: opening code takes turns, and the first
-reply usually adds new methods and tries to rewrite unopened ones. The dev
-probe (`configs/rtx5070_pc_outline.yaml`: the 44 design-hinted programs
-above, the 8 dev tasks, 2 sequences × 3 repetitions, 10 turns per step) is
-running.
+reply usually adds new methods and tries to rewrite unopened ones.
+
+The dev probe (`configs/rtx5070_pc_outline.yaml`, run
+20261116T031616Z-73eee1: the 44 design-hinted programs above, the 8 dev
+tasks, 2 sequences × 3 repetitions, 10 turns per step; 440 steps, 2,650
+editor calls, about 10 hours, 0 infrastructure errors) fails the gate:
+
+| Dev tasks, design-hinted samples, 14B editor | Whole files (prompt v3) | Outline |
+|---|---:|---:|
+| Changes done per sequence | 1.23 | 0.94 (−0.29, −0.49 to −0.10) |
+| Whole sequence works | 51% | 32% (−19 points, −31 to −6) |
+| Steps that ran out of turns | 59 of 459 | 72 of 440 |
+| Variance share: program | 2% (0% to 7%) | 0% (0% to 4%) |
+| Variance share: program × sequence | 0% | 14% |
+| Winner on A (3 repetitions) also wins on B | 53% (36% to 69%) | 49% (40% to 56%) |
+| Held-out headroom (best program on the other sequence) | +0.02 (−0.16 to +0.16) | −0.01 (−0.14 to +0.10) |
+
+The first two rows are `scripts/eval_compare.py` over all trials, paired
+by task; the rest are `scripts/diagnostics.py`.
+
+The editor manages fewer changes when it has to find its way through an
+outline, and it fails as evenly across programs as before. What a program
+gains or loses depends on which changes come (program × sequence 14%), not
+on the program. The hints look as they did with whole files: a class per
+kind of thing is again the best (+0.26 against its task's mean, +0.00 to
++0.73, 3 programs; +0.24 with whole files), and one plain structure and
+checks in their own methods are slightly below their tasks' means (−0.11
+and −0.10, intervals clear of 0), but with 2 to 11 programs per hint and
+no program share overall, none of this is a label
+(`scripts/hint_summary.py`). The lines changed by the first change reach a
+22% program share, as with whole files (17%), but on successful steps
+they do not carry over between sequences (−0.013 log units, −0.062 to
++0.031; `scripts/edit_carryover.py`, 6 tasks).
+
+So an editor that works within the program's structure does not make the
+program matter on these tasks either.
 
 ## Reproduce
 
@@ -603,6 +639,12 @@ uv run python scripts/hint_summary.py --config configs/rtx5070_pc_hints.yaml
 for c in rtx5070_train rtx5070_pc rtx5070_pc_editor_v3 rtx5070_pc_hints; do
   uv run python scripts/edit_carryover.py --config configs/$c.yaml
 done
+uv run python -m harness collect --config configs/rtx5070_pc_outline.yaml      # GPU, ~10 h
+uv run python scripts/diagnostics.py --config configs/rtx5070_pc_outline.yaml --measures
+uv run python scripts/hint_summary.py --config configs/rtx5070_pc_outline.yaml
+uv run python scripts/edit_carryover.py --config configs/rtx5070_pc_outline.yaml
+uv run python scripts/eval_compare.py --base configs/rtx5070_pc_hints.yaml \
+    --other configs/rtx5070_pc_outline.yaml --bootstrap 20000
 uv run python scripts/winner_features.py --config configs/rtx5070_train.yaml \
     --pairs runs/rtx5070_pc/dpo/pairs_cap8_f23_nocosm.jsonl --base configs/rtx5070_eval.yaml \
     --writer configs/rtx5070_eval_dpo3.yaml --writer configs/rtx5070_eval_sft.yaml \
