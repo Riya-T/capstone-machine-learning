@@ -1,0 +1,27 @@
+# Dev-task probe of an editor that has to work within the program: it sees
+# each file as an outline (signatures and docstrings, function bodies
+# hidden), opens the bodies it needs with SHOW, and sends complete functions
+# and methods, which are spliced in by name (editor.edit_format: functions;
+# models/outline.py, prompts/editor_outline.md). With whole files, the 14B
+# editor rewrites a 50-line program however it likes, so neither the
+# program's design nor its names matter, and every measure of editing is
+# 90-98% the editor's randomness (results/diagnostics.md). Large codebases,
+# where maintainability counts, are read selectively; this editor is made
+# to read selectively.
+#
+# Same writer samples as rtx5070_pc_hints.yaml (8 design hints, so the
+# programs differ in design), same tasks; only the editor changes. Two
+# more turns than the usual 8, since opening code takes turns.
+#
+# Usage (from harness/, inside WSL):
+#     uv run python -m harness collect --config configs/rtx5070_pc_outline.yaml
+#     uv run python scripts/diagnostics.py --config configs/rtx5070_pc_outline.yaml --measures
+#     uv run python scripts/hint_summary.py --config configs/rtx5070_pc_outline.yaml
+extends: rtx5070_pc_hints.yaml
+name: rtx5070-pc-outline
+editor:
+  edit_format: functions
+  prompt_template: ../prompts/editor_outline.md
+  budget:
+    max_turns: 10
+    max_total_tokens: 40000

@@ -5,9 +5,11 @@ current files, the full result of its last turn, and a one-line summary of
 each of its latest few turns (editor.history_turns). The prompt never grows
 without bound, and it never contains private tests or later changes.
 
-The editor replies with complete new files (editor.edit_format: whole_file)
-or SEARCH/REPLACE edits of the current files (search_replace; see
-models/patch.py), and/or one command:
+The editor replies with complete new files (editor.edit_format: whole_file),
+SEARCH/REPLACE edits of the current files (search_replace; see
+models/patch.py) or complete functions and methods spliced in by name
+(functions: the program is shown as an outline with function bodies hidden
+until a SHOW line opens them; see models/outline.py), and/or one command:
 - RUN_CHECKS: apply the files and run the public checks; results come next turn.
 - DONE: apply the files and finish.
 The step also finishes as soon as every public check passes.
@@ -46,7 +48,15 @@ from typing import Literal
 
 from ..config import EditorConfig
 from ..models.backends import Backend, BackendError
-from ..models.parser import parse_program, prose_lines, render_program
+from ..models.outline import (
+    FunctionEditError,
+    apply_blocks,
+    outline_program,
+    resolve_names,
+    show_requests,
+    without_show_lines,
+)
+from ..models.parser import code_blocks, parse_program, prose_lines, render_program
 from ..models.patch import EditError, apply_edits, split_edits
 from ..registry import Program, Step, load_template
 from ..sandbox.evaluator import CategoryResult, Evaluator
@@ -92,6 +102,11 @@ PATCH_REMINDER = (
     "current lines, a line =======, the new lines, a line >>>>>>> REPLACE) and/or "
     "RUN_CHECKS or DONE on a line by itself, outside any edit."
 )
+FUNCTIONS_REMINDER = (
+    "Reply with complete definitions of only the functions, methods and classes you change "
+    "or add, in ```python file=<path> blocks (a method inside its class), and/or SHOW "
+    "<names>, RUN_CHECKS or DONE on a line by itself, outside any code block."
+)
 
 
 @dataclass(frozen=True)
@@ -117,6 +132,19 @@ SEARCH_REPLACE_TEXT = _Text(
     applied="Your edits were applied. Send RUN_CHECKS to test them, or DONE to finish.",
     unchanged=(
         "Your edits left the files as they were, so nothing changed. "
+        "Change the code, or send DONE if the change is complete."
+    ),
+)
+FUNCTIONS_TEXT = _Text(
+    unit="code",
+    reminder=FUNCTIONS_REMINDER,
+    cut_off=(
+        "Your last reply was cut off at the length limit, so nothing from it was applied. "
+        "Send shorter replies: only the functions you change. " + FUNCTIONS_REMINDER
+    ),
+    applied="Your code was applied. Send RUN_CHECKS to test it, or DONE to finish.",
+    unchanged=(
+        "Your code left the program as it was, so nothing changed. "
         "Change the code, or send DONE if the change is complete."
     ),
 )
@@ -162,7 +190,10 @@ class Editor:
         self.view = make_view(cfg.view_transform)
         self.evaluator = evaluator
         self.template = load_template(cfg.prompt_template, TEMPLATE_FIELDS)
-        self.text = SEARCH_REPLACE_TEXT if cfg.edit_format == "search_replace" else WHOLE_FILE_TEXT
+        self.functions = cfg.edit_format == "functions"
+        self.text = {"search_replace": SEARCH_REPLACE_TEXT, "functions": FUNCTIONS_TEXT}.get(
+            cfg.edit_format, WHOLE_FILE_TEXT
+        )
         self._clock = clock  # injectable so wall-time tests don't sleep
 
     def edit(self, backend: Backend, program: Program, step: Step) -> EditOutcome:
@@ -175,6 +206,7 @@ class Editor:
         feedback = FIRST_FEEDBACK
         history: list[str] = []  # one summary line per turn
         checked: tuple[Program, str] | None = None  # files at the last check run, its feedback
+        opened: set[str] = set()  # functions shown in full (edit_format functions)
         turns = wasted = calls = tokens_in = tokens_out = 0
 
         def note(text: str) -> None:
@@ -206,7 +238,7 @@ class Editor:
                 return finish("budget_exhausted", "wall_time")
 
             prompt = self.build_prompt(
-                step, files, feedback, history, allowed, budget.max_turns - turns
+                step, files, feedback, history, allowed, budget.max_turns - turns, opened
             )
             if len(prompt) > self.cfg.max_prompt_chars:
                 return finish("budget_exhausted", "prompt_too_large")
@@ -226,26 +258,52 @@ class Editor:
                 feedback = self.text.cut_off  # never apply a half-written reply
                 note("reply cut off at the length limit; nothing applied")
                 continue
+            shown, newly = "", []  # what SHOW lines opened (functions only)
+            seen = set(opened)  # code may replace only what was open before this reply
+            if self.functions:
+                found, unknown = resolve_names(files, show_requests(reply.split("\n")))
+                newly = [n for n in found if n not in opened]
+                opened.update(found)
+                shown = show_feedback(newly, found, unknown)
             try:
-                changed, commands, skipped = self.read_reply(reply, files, allowed, finish_reason)
+                changed, commands, skipped, names = self.read_reply(
+                    reply, files, allowed, finish_reason, seen
+                )
             except _Unusable as exc:
+                if newly:  # the SHOW still counts
+                    feedback = f"{exc.feedback}\n\n{shown}"
+                    note(f"{exc.note}; opened {', '.join(newly)}")
+                    continue
                 wasted += 1
-                feedback = exc.feedback
+                feedback = f"{exc.feedback}\n\n{shown}" if shown else exc.feedback
                 note(exc.note)
                 continue
             if not changed and not commands:
+                if newly:
+                    feedback = shown
+                    note(f"opened {', '.join(newly)}")
+                    continue
                 wasted += 1
                 unit = self.text.unit
-                feedback = f"Your reply had no {unit} and no command. {self.text.reminder}"
-                note(f"reply had no {unit} and no command; nothing applied")
+                if shown:
+                    feedback = f"{shown} {self.text.reminder}"
+                    note("SHOW opened nothing new; nothing applied")
+                else:
+                    feedback = f"Your reply had no {unit} and no command. {self.text.reminder}"
+                    note(f"reply had no {unit} and no command; nothing applied")
                 continue
 
             before = dict(files)
             files.update(changed)
+            opened.update(names)
             sent = describe_files(before, files, changed)
-            warning = ""  # edits that were skipped (search_replace only)
-            if skipped is not None:
-                warning = skipped.feedback + "\n\n"
+            if names:
+                sent = f"sent {', '.join(names)} in {sent.removeprefix('sent ')}"
+            if newly:
+                sent += f"; opened {', '.join(newly)}"
+            warning = f"{shown}\n\n" if shown else ""  # SHOW results (functions only)
+            if skipped is not None:  # edits or code that were skipped
+                warning += skipped.feedback + "\n\n"
                 sent += f" ({skipped.note})"
                 if DONE in commands:
                     # The editor didn't know some edits failed: check instead of
@@ -280,13 +338,45 @@ class Editor:
                 note(f"{sent}; applied, no checks run")
 
     def read_reply(
-        self, reply: str, files: Program, allowed: list[str], finish_reason: str | None
-    ) -> tuple[Program, set[str], _Unusable | None]:
+        self,
+        reply: str,
+        files: Program,
+        allowed: list[str],
+        finish_reason: str | None,
+        opened: set[str] | None = None,
+    ) -> tuple[Program, set[str], _Unusable | None, list[str]]:
         """The files a reply changes (their complete new contents), the
-        commands it gives, and, for edits, the ones that were skipped; raises
-        _Unusable when nothing from it can be applied."""
+        commands it gives, for edits or functions the ones that were skipped,
+        and for functions the qualified names it changed or added (an
+        existing function counts only once `opened`); raises _Unusable when
+        nothing from it can be applied."""
         skipped = None
-        if self.cfg.edit_format == "search_replace":
+        names: list[str] = []
+        if self.functions:
+            try:
+                blocks = [(i, without_show_lines(c)) for i, c in code_blocks(reply)]
+                blocks = [(i, c) for i, c in blocks if c]
+                new, names, dropped = apply_blocks(dict(files), blocks, allowed, opened)
+            except (ValueError, FunctionEditError) as exc:
+                raise _Unusable(
+                    f"Nothing was applied: {exc}. {FUNCTIONS_REMINDER}",
+                    f"code could not be applied ({_cut(str(exc), 80)}); nothing applied",
+                ) from None
+            if dropped:
+                listed = "\n".join(f"- {d}." for d in dropped[:MAX_LISTED])
+                if len(dropped) > MAX_LISTED:
+                    listed += f"\n- and {len(dropped) - MAX_LISTED} more."
+                skipped = _Unusable(
+                    f"Part of your code was not applied:\n{listed}\nThe rest was applied; the "
+                    "program above includes it. Open a function with SHOW before changing it, "
+                    "and send its complete body.",
+                    f"{len(dropped)} skipped",
+                )
+            changed = {path: data for path, data in new.items() if data != files.get(path)}
+            if blocks and not changed:
+                changed = {allowed[0]: files[allowed[0]]}  # sent code, changed nothing
+            prose = prose_lines(reply)
+        elif self.cfg.edit_format == "search_replace":
             try:
                 edits, outside = split_edits(reply, allowed)
             except EditError as exc:
@@ -322,7 +412,7 @@ class Editor:
                     f"reply broke the format ({parsed.failure.reason}); nothing applied",
                 )
             changed, prose = parsed.files, prose_lines(reply)
-        return changed, {line for line in prose if line in (RUN_CHECKS, DONE)}, skipped
+        return changed, {line for line in prose if line in (RUN_CHECKS, DONE)}, skipped, names
 
     def build_prompt(
         self,
@@ -332,15 +422,22 @@ class Editor:
         history: list[str],
         allowed: list[str],
         turns_left: int,
+        opened: set[str] | None = None,
     ) -> str:
         """The whole prompt for one turn. Its inputs are the current change's
-        request, the current files, the last feedback and the turn summaries;
-        nothing about private tests or later changes is passed in."""
+        request, the current files (an outline for edit_format functions,
+        with the `opened` functions in full), the last feedback and the turn
+        summaries; nothing about private tests or later changes is passed
+        in."""
         n = self.cfg.history_turns
         recent = history[-n:] if n else []
         return self.template.substitute(
             request=step.change.request.strip(),
-            files=render_program(dict(files)).strip(),
+            files=(
+                outline_program(dict(files), opened or set())
+                if self.functions
+                else render_program(dict(files))
+            ).strip(),
             feedback=feedback,
             history="\n".join(f"- {line}" for line in recent) if recent else NO_HISTORY,
             allowed_files=", ".join(allowed),
@@ -361,6 +458,20 @@ class Editor:
         output = normalize_output(result.output.strip())
         text = "\n".join([head, *failing, "", "pytest output:", output])
         return _truncate_middle(text, self.cfg.max_check_output_chars)
+
+
+def show_feedback(newly: list[str], found: list[str], unknown: list[str]) -> str:
+    """What a reply's SHOW lines did, for the next prompt ("" without any)."""
+    parts = []
+    if newly:
+        parts.append(f"Opened {', '.join(newly)}: the program above shows the full code.")
+    elif found:
+        parts.append(f"{', '.join(found)}: already shown in full.")
+    if unknown:
+        parts.append(
+            f"No function or method is named {', '.join(unknown)}; the outline above lists them."
+        )
+    return " ".join(parts)
 
 
 def check_summary(result: CategoryResult) -> str:

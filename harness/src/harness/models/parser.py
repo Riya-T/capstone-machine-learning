@@ -142,6 +142,15 @@ def prose_lines(text: str) -> list[str]:
     return [line.strip() for line in prose]
 
 
+def code_blocks(text: str) -> list[tuple[str, str]]:
+    """(info string, content) of every fenced block; raises ValueError for a
+    block that is never closed."""
+    try:
+        return [(info, content) for _, info, content in _blocks(text)]
+    except _Failure as exc:
+        raise ValueError(exc.detail) from None
+
+
 def _blocks(text: str, prose: list[str] | None = None) -> list[tuple[int, str, str]]:
     """(line number, info string, content) for every fenced block; lines
     outside blocks are appended to `prose` if given.

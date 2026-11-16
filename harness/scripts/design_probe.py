@@ -97,8 +97,10 @@ def main() -> None:
             program = read_program(Path(path))
             initial = evaluator.check_initial(program, task)
             if not initial.passed:
-                print(f"{name}: fails the initial checks:",
-                      failed_tests(initial.public) + failed_tests(initial.initial))
+                print(
+                    f"{name}: fails the initial checks:",
+                    failed_tests(initial.public) + failed_tests(initial.initial),
+                )
                 continue
             for sequence in sequences:
                 done = []
@@ -108,18 +110,32 @@ def main() -> None:
                     steps = run_trial(editor, evaluator, backend, program, sequence)
                     score = sum(s["status"] == "success" for s in steps)
                     done.append(score)
-                    print(f"{name} {sequence.id} rep {rep}: {score} | "
-                          + " ; ".join(f"{s['change']} {s['status']} {s.get('new', '')}"
-                                       f" {','.join(s.get('failed', [])[:4])}" for s in steps),
-                          flush=True)
+                    print(
+                        f"{name} {sequence.id} rep {rep}: {score} | "
+                        + " ; ".join(
+                            f"{s['change']} {s['status']} {s.get('new', '')}"
+                            f" {','.join(s.get('failed', [])[:4])}"
+                            for s in steps
+                        ),
+                        flush=True,
+                    )
                     if out:
-                        row = {"task": task.id, "variant": name, "sequence": sequence.id,
-                               "rep": rep, "score": score, "steps": steps}
+                        row = {
+                            "task": task.id,
+                            "variant": name,
+                            "sequence": sequence.id,
+                            "rep": rep,
+                            "score": score,
+                            "steps": steps,
+                        }
                         out.write(json.dumps(row) + "\n")
                         out.flush()
                 if done:
-                    print(f"== {name} {sequence.id}: mean {sum(done) / len(done):.2f} "
-                          f"changes, {dict(sorted(Counter(done).items()))}", flush=True)
+                    print(
+                        f"== {name} {sequence.id}: mean {sum(done) / len(done):.2f} "
+                        f"changes, {dict(sorted(Counter(done).items()))}",
+                        flush=True,
+                    )
 
 
 if __name__ == "__main__":

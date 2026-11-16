@@ -567,3 +567,105 @@ def test_search_replace_edits_that_change_nothing_are_wasted(tmp_path):
     out = Editor(patch_cfg(), StubEvaluator()).edit(backend, V0, STEP)
     assert (out.program, out.wasted_turns) == (V0, 1)
     assert "Your edits left the files as they were" in backend.prompts[1]
+
+
+# --- complete functions on an outline (edit_format: functions) --------------
+
+OLD_LIST_IDS = "return sorted(self._records)\n"
+NEW_LIST_IDS = "return sorted(self._records, reverse=False)\n"
+LIST_IDS = f"class RecordStore:\n    def list_ids(self):\n        {NEW_LIST_IDS}"
+
+
+def functions_cfg(**budget):
+    return dataclasses.replace(
+        editor_cfg(**budget),
+        edit_format="functions",
+        prompt_template=ROOT / "prompts" / "editor_outline.md",
+    )
+
+
+def code_reply(code, command="RUN_CHECKS") -> str:
+    return f"```python file=records.py\n{code}```\n{command}\n"
+
+
+def test_functions_show_opens_a_body_and_sent_methods_are_spliced_in(tmp_path):
+    evaluator = StubEvaluator()
+    backend = mock(
+        tmp_path,
+        [
+            (FIRST, "Let me look.\nSHOW RecordStore.list_ids\n"),
+            ("Opened RecordStore.list_ids", code_reply(LIST_IDS)),
+            ("Public checks:", "DONE"),
+        ],
+    )
+    out = Editor(functions_cfg(), evaluator).edit(backend, V0, STEP)
+    assert (out.status, out.turns, out.wasted_turns) == ("done", 3, 0)
+    expected = V0["records.py"].replace(OLD_LIST_IDS.encode(), NEW_LIST_IDS.encode())
+    assert expected != V0["records.py"] and out.program == {"records.py": expected}
+    assert evaluator.calls[0][0] == out.program
+    first, second, third = backend.prompts
+    assert "(SHOW RecordStore.add)" in first and OLD_LIST_IDS not in first
+    assert OLD_LIST_IDS in second and "Turn 1: opened RecordStore.list_ids" in second
+    assert "(SHOW RecordStore.add)" in second  # still hidden
+    assert NEW_LIST_IDS in third  # what it sent stays open
+    assert "sent RecordStore.list_ids in records.py (2 lines changed), then RUN_CHECKS" in third
+
+
+def test_functions_placeholder_and_unopened_bodies_are_skipped_and_done_becomes_a_check(
+    tmp_path,
+):
+    code = (
+        "class RecordStore:\n    def add(self, record):\n        ...\n\n"
+        "    def get(self, record_id):\n        return None\n\n" + LIST_IDS[19:]
+    )
+    evaluator = StubEvaluator()
+    backend = mock(
+        tmp_path,
+        [
+            (FIRST, "SHOW RecordStore.list_ids"),
+            ("Opened", code_reply(code, "DONE")),
+            ("Public checks:", "DONE"),
+        ],
+    )
+    out = Editor(functions_cfg(), evaluator).edit(backend, V0, STEP)
+    expected = V0["records.py"].replace(OLD_LIST_IDS.encode(), NEW_LIST_IDS.encode())
+    assert (out.status, out.program, out.turns) == ("done", {"records.py": expected}, 3)
+    assert len(evaluator.calls) == 1  # the DONE became a check run
+    prompt = backend.prompts[2]
+    assert "- RecordStore.add (its body was only `...`)." in prompt
+    assert "- RecordStore.get (not opened yet: send SHOW RecordStore.get, then change it)." in (
+        prompt
+    )
+    assert "Public checks: 4 of 5 passed." in prompt
+
+
+def test_functions_show_in_a_code_block_counts_but_code_waits_for_the_next_turn(tmp_path):
+    # The 14B editor often fences its SHOW line and rewrites in the same reply.
+    reply = "```python\nSHOW RecordStore.list_ids\n```\n\n" + code_reply(LIST_IDS)
+    evaluator = StubEvaluator()
+    backend = mock(
+        tmp_path,
+        [(FIRST, reply), ("Opened", code_reply(LIST_IDS)), ("Public checks:", "DONE")],
+    )
+    out = Editor(functions_cfg(), evaluator).edit(backend, V0, STEP)
+    expected = V0["records.py"].replace(OLD_LIST_IDS.encode(), NEW_LIST_IDS.encode())
+    assert (out.status, out.program, out.turns) == ("done", {"records.py": expected}, 3)
+    assert [call[0] for call in evaluator.calls] == [V0, out.program]
+    second = backend.prompts[1]
+    assert "Opened RecordStore.list_ids" in second and OLD_LIST_IDS in second
+    assert "- RecordStore.list_ids (not opened yet" in second
+
+
+@pytest.mark.parametrize(
+    ("reply", "feedback"),
+    [
+        ("SHOW RecordStore.nope", "No function or method is named RecordStore.nope"),
+        (code_reply("def broken(:\n    pass\n"), "a code block is not valid Python"),
+        ("I would add a version field.", "Your reply had no code and no command"),
+    ],
+)
+def test_functions_replies_that_do_nothing_are_wasted(tmp_path, reply, feedback):
+    backend = mock(tmp_path, [(FIRST, reply), ("", "DONE")])
+    out = Editor(functions_cfg(), StubEvaluator()).edit(backend, V0, STEP)
+    assert (out.status, out.program, out.turns, out.wasted_turns) == ("done", V0, 2, 1)
+    assert feedback in backend.prompts[1]

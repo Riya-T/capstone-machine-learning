@@ -131,7 +131,10 @@ def test_editor_key_leaves_out_the_default_edit_format(repo):
     assert keys(repo) == before
     edit_config(repo, lambda d: d["editor"].update(edit_format="search_replace"))
     assert keys(repo) == (before[0], keys(repo)[1], before[2])
-    assert keys(repo)[1] != before[1]
+    patch = keys(repo)[1]
+    assert patch != before[1]
+    edit_config(repo, lambda d: d["editor"].update(edit_format="functions"))
+    assert keys(repo)[1] not in (before[1], patch)
 
 
 def test_writer_key_leaves_out_empty_design_hints(repo):

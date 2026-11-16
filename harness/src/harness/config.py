@@ -196,12 +196,15 @@ class EditorConfig:
     # line each (0 shows none). Bounded, so the prompt still can't grow.
     history_turns: int = 3
     # How the editor sends its changes (collection/editor.py): "whole_file",
-    # complete new file contents (prompts/editor_v2.md), or "search_replace",
+    # complete new file contents (prompts/editor_v2.md), "search_replace",
     # SEARCH/REPLACE edits of the current files (models/patch.py,
-    # prompts/editor_patch_v1.md). The prompt template must match. The
-    # default is left out of the editor key, so results collected before
-    # this setting existed keep their key.
-    edit_format: Literal["whole_file", "search_replace"] = "whole_file"
+    # prompts/editor_patch_v1.md), or "functions", complete functions and
+    # methods spliced in by name, with the program shown as an outline whose
+    # function bodies stay hidden until the editor opens them
+    # (models/outline.py, prompts/editor_outline.md). The prompt template
+    # must match. The default is left out of the editor key, so results
+    # collected before this setting existed keep their key.
+    edit_format: Literal["whole_file", "search_replace", "functions"] = "whole_file"
 
     def __post_init__(self) -> None:
         _require_positive(self.reps, "reps")
