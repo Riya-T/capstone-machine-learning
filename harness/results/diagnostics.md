@@ -52,8 +52,15 @@ between sequences. Nor does an editor that sees only an outline and has
 to open the code it needs, so that it works within the program: on the
 same design-hinted programs it gets fewer changes done (0.94 per sequence
 against 1.23), and the program's share is 0% (0% to 4%), with no held-out
-headroom. A readability control (the same programs with meaningless names
-and no comments) is running.
+headroom. And the measure barely notices how readable a program is at all
+(readability control below): with every program obscured (no comments,
+docstrings or blank lines; private names, data attributes and locals
+renamed to `_x1`, `a1`, `v1`), the editor gets 1.21 changes done per
+sequence instead of 1.25 (−0.04, −0.17 to +0.07), and its first change
+works as often as before. A writer's programs differ in readability far
+less than that, so no change to the writer in names, comments or layout
+can show up in this score. A writer-size probe (a 3B writer, whose passing
+programs may differ more) is running.
 
 ## 1. Headroom
 
@@ -595,6 +602,55 @@ they do not carry over between sequences (−0.013 log units, −0.062 to
 So an editor that works within the program's structure does not make the
 program matter on these tasks either.
 
+## Readability control
+
+Every probe so far finds the editor doing about as well on any of the
+writer's programs. This control asks whether the measure could notice a
+hard-to-read program at all. With `editor.view_transform: obscure`
+(`collection/view.py`) the editor sees each program with its comments,
+docstrings and blank lines removed, private names renamed to `_x1`, `_x2`
+and so on, data attributes (`self.accounts = …`) to `a1`, `a2` and local
+variables to `v1`, `v2`, printed back with `ast.unparse`. The program does
+the same thing: all 51 of the base writer's dev programs pass their
+initial tests once obscured (`scripts/obscure_check.py`), and no change
+test reads a data attribute (the dev tests read only `.value`). On average
+this removes 7% of the bytes and renames 0.4 private names, 1.7 data
+attributes and 0.8 local variables per program. The editor's seeds depend
+only on the task, program, sequence and repetition, so every trial is
+paired with the same trial of the base run (`configs/rtx5070_pc_obscure.yaml`,
+run 20261116T133752Z-e9bd81: 306 trials, 536 steps, 1,134 editor calls,
+6 hours 20 minutes, 0 infrastructure errors).
+
+| Dev tasks, base writer, 14B editor | Readable | Obscured |
+|---|---:|---:|
+| Changes done before the first failure (of 2) | 1.25 | 1.21 (−0.04, −0.17 to +0.07) |
+| First change works | 72% | 73% (+1 point, −7 to +9) |
+| Whole sequence works | 53% | 47% (−6 points, −11 to −2) |
+| Variance share: program | 4% (0% to 7%) | 0% (0% to 5%) |
+| Winner on A (3 repetitions) also wins on B | 59% (48% to 71%) | 50% (32% to 61%) |
+| Held-out headroom (best program on the other sequence) | +0.12 (+0.01 to +0.27) | +0.05 (−0.01 to +0.14) |
+
+The first three rows are `scripts/eval_compare.py` (and
+`scripts/ablation_compare.py`, trial by trial: the same −0.04); the rest
+are `scripts/diagnostics.py`.
+
+Making every program much harder to read costs the editor almost nothing.
+The first change works as often as before; only the second fails a little
+more often, mostly on bank_ledger (the whole sequence works 73% of the
+time instead of 94%; 1.50 changes instead of 1.90) and parking_garage
+(0.38 instead of 0.62), while library_catalog gains (1.61 instead of
+1.39). The interval rules out a cost above 0.17 changes per sequence. The
+writer's samples for a task differ in readability far less than a program
+and its obscured copy, so readability differences between them can move
+this score by much less than that, below the 0.15 the headroom check asks
+for. At 50 lines the editor reads the whole program and changes it
+whatever it is called, which is also why removing comments changed
+nothing (`results/nocomments_eval.md`).
+
+So on these tasks no change to the writer in names, comments or layout
+can show up as more changes done; only programs that differ in what they
+do, or in how they hold up once changed, could.
+
 ## Reproduce
 
 From `harness/`, inside WSL:
@@ -645,6 +701,13 @@ uv run python scripts/hint_summary.py --config configs/rtx5070_pc_outline.yaml
 uv run python scripts/edit_carryover.py --config configs/rtx5070_pc_outline.yaml
 uv run python scripts/eval_compare.py --base configs/rtx5070_pc_hints.yaml \
     --other configs/rtx5070_pc_outline.yaml --bootstrap 20000
+uv run python scripts/obscure_check.py --config configs/rtx5070_pc.yaml
+uv run python -m harness collect --config configs/rtx5070_pc_obscure.yaml      # GPU, ~6.5 h
+uv run python scripts/diagnostics.py --config configs/rtx5070_pc_obscure.yaml --measures
+uv run python scripts/eval_compare.py --base configs/rtx5070_pc.yaml \
+    --other configs/rtx5070_pc_obscure.yaml --bootstrap 20000
+uv run python scripts/ablation_compare.py configs/rtx5070_pc.yaml \
+    configs/rtx5070_pc_obscure.yaml --bootstrap 20000
 uv run python scripts/winner_features.py --config configs/rtx5070_train.yaml \
     --pairs runs/rtx5070_pc/dpo/pairs_cap8_f23_nocosm.jsonl --base configs/rtx5070_eval.yaml \
     --writer configs/rtx5070_eval_dpo3.yaml --writer configs/rtx5070_eval_sft.yaml \

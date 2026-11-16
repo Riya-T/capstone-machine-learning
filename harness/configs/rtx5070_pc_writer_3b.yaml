@@ -1,0 +1,19 @@
+# Writer-size probe on the dev tasks: rtx5070_pc.yaml with a 3B writer
+# (Qwen2.5-Coder-3B, 8k context like the others) instead of the 7B one; the
+# 14B editor, its prompt and everything else as in rtx5070_pc.yaml.
+#
+# The 7B writer's passing programs for a task are nearly identical in
+# design, so how far the editor gets cannot depend on them
+# (results/diagnostics.md). A smaller writer's passing programs may differ
+# more, in how readable they are or in how well they hold up once changed.
+# If the program's share of the variance and the held-out headroom pass the
+# gate, the rerun trains the 3B writer.
+#
+# Usage (from harness/, inside WSL):
+#     uv run python -m harness collect --config configs/rtx5070_pc_writer_3b.yaml
+#     uv run python scripts/diagnostics.py --config configs/rtx5070_pc_writer_3b.yaml --measures
+extends: rtx5070_pc.yaml
+name: rtx5070-pc-writer-3b
+writer:
+  backend:
+    model: qwen2.5-coder-3b-ctx8k

@@ -201,22 +201,29 @@ All five methods are done:
   the time instead of 51%), and which programs it fails on is again luck:
   the program's share is 0% (0% to 4%), and the best program on one set of
   changes does no better on the other.
+- **The editor hardly notices how readable a program is.** We gave it the
+  same 51 dev programs as in the first dev run, made as unreadable as
+  possible without changing what they do: no comments or docstrings, no
+  blank lines, and private names, data attributes and local variables
+  renamed to `_x1`, `a1`, `v1` and so on. Every trial used the same random
+  seed as in the first run. The editor got 1.21 changes done per sequence
+  instead of 1.25 (−0.04, −0.17 to +0.07), and the first change worked as
+  often as before; only the whole sequence worked a little less often (47%
+  instead of 53%). The writer's programs for a task differ in readability
+  far less than a program and its obscured copy, so on these tasks better
+  names, comments or layout from the writer cannot show up in the score.
 
 ### What is running now
 
-A readability control (`configs/rtx5070_pc_obscure.yaml`, about 5 hours).
-Every check so far says the editor does about as well on any of the
-writer's programs. To find out whether this measure could notice a
-hard-to-read program at all, the editor gets the same 51 dev programs as
-in the first dev run, made as unreadable as possible without changing what
-they do: no comments or docstrings, no blank lines, and private names,
-data attributes and local variables renamed to `_x1`, `a1`, `v1` and so on
-(`editor.view_transform: obscure`). All 51 still pass their initial tests,
-and every trial uses the same random seed as in the first run, so the two
-can be compared trial by trial. If the editor does clearly worse, the
-measure can see code quality but the writer's programs do not differ
-enough in it; if not, no change to the writer can show up in it on these
-tasks.
+A writer-size probe (`configs/rtx5070_pc_writer_3b.yaml`, about 5 hours,
+started 2026-11-16 11:58 PST): the dev run again with Qwen2.5-Coder-3B as
+the writer instead of the 7B one, and the same 14B editor. The 7B writer's
+passing programs for a task are nearly identical, and the readability
+control shows that how they read does not matter. A smaller writer's
+passing programs may differ in what matters more: hidden mistakes the
+initial tests miss, or code that breaks once changed. If the program's
+share and the held-out headroom pass the gate, we retrain on the 3B writer
+(train collection, our method and both trained baselines, then the eval).
 
 ### Words used in the rest of this report
 
@@ -286,6 +293,9 @@ them in one place.
   format poorly (whole sequence 25% against 53%, −43 to −13 points), and
   the program share is again 1% (0% to 16%).
   [Diagnostics](../harness/results/diagnostics.md).
+- **The score barely notices readability at all.** With every dev program
+  obscured (no comments or docstrings, meaningless names), the editor gets
+  1.21 changes per sequence against 1.25 (−0.04, −0.17 to +0.07).
 
 ## The five methods
 
@@ -783,7 +793,16 @@ the training signal differs:
   data attributes and 0.8 local variables renamed per program).
 - `configs/rtx5070_pc_obscure.yaml`: the same programs, editor and seeds as
   `rtx5070_pc.yaml`, with the obscured view (run 20261116T133752Z-e9bd81,
-  running).
+  306 trials, 536 steps, 1,134 editor calls, 6 hours 20 minutes, 0
+  infrastructure errors). On average 7% of each program's bytes go. The
+  dev tasks' change tests read no data attribute, so the renaming cannot
+  fail them by itself. Against the readable programs: 1.21 changes per
+  sequence against 1.25 (−0.04, −0.17 to +0.07; the same trial by trial,
+  `scripts/ablation_compare.py`), first change 73% against 72%, whole
+  sequence 47% against 53% (−6 points, −11 to −2, mostly bank_ledger and
+  parking_garage); program share 0% (0% to 5%), held-out headroom +0.05
+  (−0.01 to +0.14).
+- `configs/rtx5070_pc_writer_3b.yaml`: the writer-size probe (running).
 
 ## Findings so far
 
@@ -898,6 +917,14 @@ the training signal differs:
     design-hinted programs (0.94 per sequence against 1.23) and fails as
     evenly across programs: program share 0% (0% to 4%), held-out headroom
     −0.01.
+21. **The score barely depends on how readable a program is.** With every
+    dev program obscured (no comments, docstrings or blank lines; private
+    names, data attributes and locals renamed), the 14B editor gets 1.21
+    changes per sequence against 1.25 (−0.04, −0.17 to +0.07), and the
+    first change works as often. The writer's programs differ in
+    readability far less than that, so on these tasks no change to the
+    writer's names, comments or layout can show up in the score. This
+    agrees with the comment ablation (finding 6).
 
 ## Open questions for the team
 
@@ -948,6 +975,7 @@ the training signal differs:
 | Design probe | `scripts/design_probe.py`, `harness/results/design_probe/` (hand-written programs and trials), `harness/prompts/editor_v3.md`, `harness/configs/rtx5070_pilot_editor_v3.yaml`, `harness/configs/rtx5070_pc_editor_v3.yaml` |
 | Design hints and edit size | `writer.design_hints`, `harness/configs/rtx5070_pc_hints.yaml`, `scripts/hint_summary.py`, `scripts/edit_carryover.py` |
 | Outline editor | `harness/src/harness/models/outline.py`, `harness/prompts/editor_outline.md`, `harness/configs/rtx5070_pc_outline.yaml` (dev probe), `rtx5070_train_outline.yaml`, `rtx5070_eval_outline.yaml` |
-| Readability control | `editor.view_transform: obscure` (`harness/src/harness/collection/view.py`), `scripts/obscure_check.py`, `harness/configs/rtx5070_pc_obscure.yaml` |
+| Readability control | `editor.view_transform: obscure` (`harness/src/harness/collection/view.py`), `scripts/obscure_check.py`, `harness/configs/rtx5070_pc_obscure.yaml`; results in `harness/results/diagnostics.md` |
+| Writer-size probe | `harness/configs/rtx5070_pc_writer_3b.yaml` |
 | Controlled wallet pilot | `docs/wallet_pair_pilot/` |
 | Task checklist | `Task_list.md` |
