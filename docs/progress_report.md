@@ -178,19 +178,36 @@ All five methods are done:
   often (75% instead of 59%), but the program's share is 7% and the
   held-out headroom +0.13. The writer's programs for a task all have the
   same design, so there is little for the editor to build on.
+- **Programs built in different ways do not fix it either.** We had the
+  writer draw its samples with a menu of 8 general design hints (an
+  operation log, one method per kind of change, checks written once, a
+  class per kind of thing, and so on). The programs did come out
+  different, but the editor, with the new instructions, did about as well
+  on all of them: the program's share is 2%, and no design did better than
+  its task's average by more than chance.
+- **How big the editor's edits are is not a usable label.** A program
+  whose changes needed few lines or few functions on one set of changes
+  needs as many as the others on the other set. Only the length of the
+  editor's replies carries over a little, because it sends the whole file
+  back, so shorter programs cost fewer words. That rewards short code, not
+  better design.
 
 ### What is running now
 
-The writer's samples drawn with a fixed menu of 8 general design hints
-(`configs/rtx5070_pc_hints.yaml`): an operation log, one method per kind of
-change, checks written once, a class per kind of thing, building the new
-state before replacing the old one, rules kept as data, plain direct code,
-and no hint. They are edited by the 14B editor with the new instructions,
-followed by the diagnostics (about 7 hours). Training would still use the
-plain prompt, so a trained writer would have to learn on its own which
-designs the editor finds easier to change. If the program share and
-headroom pass the gate, we rerun the training collection and the five
-methods this way.
+An editor that has to work within the program
+(`configs/rtx5070_pc_outline.yaml`). Instead of the whole program, it sees
+an outline: every function's name, parameters and description, with the
+code hidden. It asks to see the code it needs, and it sends back whole
+functions, which are put in place by name; it cannot change a function it
+has not looked at. Real maintainers of real codebases work like this,
+because nobody reads all of a large program before each change. Here a
+program's names, descriptions and structure decide what the editor knows,
+so they can matter. In a smoke test on one task the editor finished 7 of 8
+changes, about as often as with whole files, but it needs about 6.5 calls
+per change instead of 2.4. The dev probe runs on the same 44 design-hinted
+programs (about 10 to 12 hours). If the program share and the held-out
+headroom pass the gate, we rerun the training collection and the methods
+with this editor (configs drafted; about 5 days of GPU time).
 
 ### Words used in the rest of this report
 
@@ -701,7 +718,40 @@ the training signal differs:
   "Design" section, while candidates and pairs keep the plain prompt.
   `scripts/hint_summary.py` reports how each hint's programs fare against
   their task's average. `configs/rtx5070_pc_hints.yaml` is the dev probe
-  with 8 hints and prompt v3.
+  with 8 hints and prompt v3 (run 20261115T211638Z-3f73df, 335 steps, about
+  5 hours): 52 of 124 distinct programs pass the initial checks (3 to 8 of
+  16 samples per hint, 11 without one), 44 edited. First change works 74%;
+  program share 2% (0% to 7%); winner on A also wins on B 53% (36% to 69%);
+  held-out headroom +0.02 (−0.16 to +0.16). Against the task mean, the
+  best hints are a class per kind of thing (+0.24, +0.00 to +0.69, 3
+  programs) and rules as data (+0.09, −0.11 to +0.39).
+- `scripts/edit_carryover.py`: whether the lines changed, tokens written
+  and existing functions modified by successful steps carry over between
+  sequences. On the train tasks the program with the smallest edits on one
+  sequence is at −0.005 log lines (−0.025 to +0.015), −0.055 log tokens
+  (−0.114 to +0.004) and −0.06 functions (−0.12 to +0.01) on the other;
+  the dev configs are alike (`harness/results/diagnostics.md`).
+- Programs with a public method that changes data and calls another (what
+  breaks a snapshot-per-method undo): 13 of 353 train programs, all
+  robot_fleet; none of the dev programs. So a general undo change was not
+  built.
+
+### Outline editor (2026-11-15)
+
+- `editor.edit_format: functions` (`models/outline.py`,
+  `prompts/editor_outline.md`, `collection/editor.py`): the program is
+  shown as an outline with function bodies hidden; `SHOW <names>` opens
+  them; complete functions, methods and classes are spliced in by name. A
+  def that would replace a hidden one not opened in an earlier turn, or
+  whose body is only `...`, is skipped with a message; SHOW lines count
+  inside code blocks too. Whole-file and SEARCH/REPLACE keys are unchanged;
+  the format adds its own protocol version to the editor key.
+- Smoke tests on bank_ledger: without the opened-first rule the editor
+  rewrote whole classes from the outline and ran out of turns; with it, 7
+  of 8 steps work (2 programs × 2 sequences), at 6.5 calls per step.
+- `configs/rtx5070_pc_outline.yaml`: the dev probe on the hints run's
+  programs, 10 turns per step (running). `configs/rtx5070_train_outline.yaml`
+  and `configs/rtx5070_eval_outline.yaml` are drafted for the rerun.
 
 ## Findings so far
 
@@ -799,6 +849,17 @@ the training signal differs:
     On the writer's own dev programs the same prompt raises the program's
     share only from 4% to 7% (headroom +0.13): those programs all share
     one design.
+18. **Programs that differ in design do not make the 14B editor depend on
+    the program either.** Writer samples drawn with 8 design hints and
+    edited with the same prompt give a program share of 2% (0% to 7%) and
+    held-out headroom +0.02; no hint's programs beat their task's average
+    with an interval clear of 0.
+19. **Edit size is not a label.** The lines changed and the functions
+    modified by a successful change do not carry over between sequences
+    (train tasks: −0.005 log lines, −0.06 functions for the most economical
+    program on the other sequence). The tokens the editor writes carry over
+    by about 5%, because it sends whole files back: that rewards short
+    programs, not design.
 
 ## Open questions for the team
 
@@ -847,5 +908,7 @@ the training signal differs:
 | Diagnostics | `scripts/diagnostics.py`, `scripts/implicit_reward.py`, `scripts/winner_features.py`; `harness/results/diagnostics.md` (also the editor-temperature, patch-editor, editor-size and design probes and the pilot) |
 | Patch editor | `harness/src/harness/models/patch.py`, `harness/prompts/editor_patch_v1.md`, `harness/configs/rtx5070_pc_editor_patch.yaml` |
 | Design probe | `scripts/design_probe.py`, `harness/results/design_probe/` (hand-written programs and trials), `harness/prompts/editor_v3.md`, `harness/configs/rtx5070_pilot_editor_v3.yaml`, `harness/configs/rtx5070_pc_editor_v3.yaml` |
+| Design hints and edit size | `writer.design_hints`, `harness/configs/rtx5070_pc_hints.yaml`, `scripts/hint_summary.py`, `scripts/edit_carryover.py` |
+| Outline editor | `harness/src/harness/models/outline.py`, `harness/prompts/editor_outline.md`, `harness/configs/rtx5070_pc_outline.yaml` (dev probe), `rtx5070_train_outline.yaml`, `rtx5070_eval_outline.yaml` |
 | Controlled wallet pilot | `docs/wallet_pair_pilot/` |
 | Task checklist | `Task_list.md` |

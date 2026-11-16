@@ -43,7 +43,13 @@ Hand-written programs show why (design probe below). The editor writes a
 change its own way, whatever the program already offers. Asked to build on
 the program's design instead, it does: a program that keeps a log of its
 operations then passes undo in 4 of 6 trials, against 0 of 6 for the same
-program keeping plain state.
+program keeping plain state. But programs that differ in design are not
+enough: writer samples drawn with 8 design hints, edited with that prompt,
+give a program share of 2% (0% to 7%) and no held-out headroom, and no
+hint's programs beat their task's average. Nor is edit size a label: how
+many lines or functions a successful change touches does not carry over
+between sequences. An editor that sees only an outline and opens the code
+it needs, so that it has to work within the program, is being probed.
 
 ## 1. Headroom
 
@@ -425,6 +431,65 @@ is still far from the 25% the next step needs. The writer's programs for a
 task share one design, so there is little in them for the editor to build
 on.
 
+So the next probe gave the editor programs that differ in design. The
+writer drew its 16 samples per task with a menu of 8 generic design hints
+(`writer.design_hints`; sample i gets hint i mod 8, samples 0 and 8 none):
+an operation log replayed into the state, one private method per kind of
+change, each check in its own method, a class per kind of thing, one plain
+structure replaced only on success, rules as data tables, and the most
+direct code. None names a task or a later change. Candidates and pairs keep
+the plain prompt, so a writer trained on them would learn the preferred
+designs without hints. The editor used prompt v3
+(`configs/rtx5070_pc_hints.yaml`, run 20261115T211638Z-3f73df: 128
+samples, 52 of 124 distinct programs pass the initial checks, 44 edited,
+335 steps, about 5 hours, 0 infrastructure errors).
+
+| Dev tasks, 14B editor, prompt v3 | Writer's own designs | Design-hinted samples |
+|---|---:|---:|
+| First change works | 69% | 74% |
+| Variance share: program | 7% (4% to 10%) | 2% (0% to 7%) |
+| Winner on A (3 repetitions) also wins on B | 75% (64% to 86%) | 53% (36% to 69%) |
+| Held-out headroom (best program on the other sequence) | +0.13 (+0.05 to +0.21) | +0.02 (−0.16 to +0.16) |
+
+The designs differ, and the editor still does about as well on all of
+them. Against their task's mean score, no hint's programs do better with an
+interval clear of 0: the closest are a class per kind of thing (+0.24,
++0.00 to +0.69, only 3 programs) and rules as data (+0.09, −0.11 to
++0.39); the programs drawn without a hint are at −0.02
+(`scripts/hint_summary.py`). Hinted prompts also pass the initial checks
+less often (3 to 8 of 16 samples per hint, against 11 without one).
+
+## Edit size does not carry over either
+
+With design-hinted programs, the lines changed by the first change reach a
+17% program share and the tokens the editor writes 13% (prompt v3 run
+above, `--measures`). Those measures include failed changes, though, and a
+share says nothing about whether a program's edits stay small on new
+changes. `scripts/edit_carryover.py` takes each successful step's lines
+changed, tokens written and existing functions modified, relative to the
+other programs' trials of the same step, and asks whether the program with
+the smallest edits on one sequence also has them on the other:
+
+| Programs | Lines changed (log) | Tokens written (log) | Functions modified |
+|---|---:|---:|---:|
+| Train, base writer (30 tasks) | −0.005 (−0.025 to +0.015) | −0.055 (−0.114 to +0.004) | −0.06 (−0.12 to +0.01) |
+| Dev, base writer, prompt v2 (7 tasks) | −0.008 (−0.041 to +0.028) | −0.087 (−0.153 to −0.026) | +0.04 (−0.04 to +0.12) |
+| Dev, base writer, prompt v3 | −0.016 (−0.059 to +0.029) | −0.032 (−0.123 to +0.053) | +0.05 (−0.06 to +0.16) |
+| Dev, design-hinted samples, prompt v3 | +0.014 (−0.028 to +0.045) | −0.051 (−0.156 to +0.041) | +0.07 (−0.10 to +0.31) |
+
+A successful change touches 2.2 (train) to 2.7 (dev) existing functions,
+and the most local program on one sequence is no more local on the other.
+The lines changed do not carry over at all (×0.98 to ×1.01). Only the
+tokens written do, by about 5%, and those follow the program's length,
+because the editor sends whole files back: concision, not design.
+
+The program does decide some single changes: on stock_portfolio's undo
+change, 4 of 8 programs fail in all 3 repetitions and the other 4 pass in
+all 3. The losers miss one or two of its 11 hidden tests every time, an
+edge of that change rather than their design, and which programs a change
+favours differs from change to change, which is why nothing carries over
+between sequences.
+
 ## What this means for the next step
 
 Tuning DPO (beta, epochs, seeds) cannot help while the labels are mostly
@@ -455,6 +520,44 @@ whose winner led on both requests, and proposes concrete checks for the
 next testbed: failure rules stated in each change, a public example per
 change, and private tests certified against a reference and a broken
 implementation before scoring.
+
+Two shortcuts were ruled out before spending GPU time on them:
+
+- **A general undo change** ("take back the last successful call, all of
+  it"), the one change where a design decided the outcome in the design
+  probe. The editor writes undo as a snapshot at the start of each public
+  method, which only breaks when one public method that changes data calls
+  another. Writer programs almost never do (13 of 353 train programs, all
+  robot_fleet; none of the 61 base or 52 design-hinted dev programs), so
+  undo would not separate them.
+- **A cap on how many functions an edit may touch.** Locality does not
+  carry over (table above), so a cap would fail programs alike.
+
+## Outline-editor probe
+
+Point 2 above, built on the existing tasks. With `editor.edit_format:
+functions` (`models/outline.py`, `prompts/editor_outline.md`) the editor
+sees each file as an outline: imports, constants and class attributes in
+full, every function and method as its signature and docstring with the
+body hidden. A `SHOW Ledger.withdraw` line opens a body; the editor sends
+complete functions, methods and classes, which are spliced in by name. A
+sent def that would replace a hidden one the editor never opened, or whose
+body is only the outline's `...`, is skipped and the editor is told why.
+The first smoke test showed why that rule is needed: without it the editor
+rewrote whole classes from the outline, guessing every hidden body.
+
+Large codebases, where maintainability counts, are read selectively; a
+50-line program in a prompt is not. Here the editor has to find its way by
+the program's names, docstrings and decomposition and change it within its
+structure, so those can matter.
+
+On one dev task (bank_ledger, 2 programs, both sequences, 1 repetition) 7
+of 8 steps work, about as often as with whole files, at about 6.5 editor
+calls per step instead of 2.4: opening code takes turns, and the first
+reply usually adds new methods and tries to rewrite unopened ones. The dev
+probe (`configs/rtx5070_pc_outline.yaml`: the 44 design-hinted programs
+above, the 8 dev tasks, 2 sequences × 3 repetitions, 10 turns per step) is
+running.
 
 ## Reproduce
 
@@ -494,6 +597,12 @@ for t in sample_freezers herd_paddocks; do                                     #
 done
 uv run python -m harness collect --config configs/rtx5070_pc_editor_v3.yaml    # GPU, ~6 h
 uv run python scripts/diagnostics.py --config configs/rtx5070_pc_editor_v3.yaml --measures
+uv run python -m harness collect --config configs/rtx5070_pc_hints.yaml        # GPU, ~5 h
+uv run python scripts/diagnostics.py --config configs/rtx5070_pc_hints.yaml --measures
+uv run python scripts/hint_summary.py --config configs/rtx5070_pc_hints.yaml
+for c in rtx5070_train rtx5070_pc rtx5070_pc_editor_v3 rtx5070_pc_hints; do
+  uv run python scripts/edit_carryover.py --config configs/$c.yaml
+done
 uv run python scripts/winner_features.py --config configs/rtx5070_train.yaml \
     --pairs runs/rtx5070_pc/dpo/pairs_cap8_f23_nocosm.jsonl --base configs/rtx5070_eval.yaml \
     --writer configs/rtx5070_eval_dpo3.yaml --writer configs/rtx5070_eval_sft.yaml \

@@ -1,0 +1,23 @@
+# Train collection for the outline editor: the 36 train tasks with the
+# settings of the dev probe rtx5070_pc_outline.yaml (writer samples drawn
+# with the 8 design hints, so the candidates differ in design; the editor
+# sees an outline and sends complete functions). Candidates and pairs keep
+# the plain writer prompt, so a writer trained on the pairs learns the
+# preferred programs without hints.
+#
+# Usage (from harness/, inside WSL):
+#     uv run python -m harness collect --config configs/rtx5070_train_outline.yaml
+#     uv run python scripts/diagnostics.py --config configs/rtx5070_train_outline.yaml
+extends: rtx5070_pc_outline.yaml
+name: rtx5070-train-outline
+tasks:
+  include: [
+    access_control, budget_envelopes, calendar_events, chat_rooms, clinic_appointments,
+    document_store, event_bus, feature_flags, gradebook, gym_memberships,
+    hangman_games, high_scores, hotel_rooms, io_meter, iou_tracker,
+    job_board, job_queue, login_sessions, movie_bookings, order_workflow,
+    pantry_inventory, party_inventory, playlist_manager, recipe_box, restaurant_orders,
+    ring_buffer, robot_fleet, school_roster, staff_directory, stock_portfolio,
+    thermostat_zones, ticket_desk, token_bucket, url_shortener, vending_machine,
+    warehouse_stock,
+  ]

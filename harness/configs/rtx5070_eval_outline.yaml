@@ -1,0 +1,15 @@
+# Evaluation with the outline editor (the editor of rtx5070_pc_outline.yaml:
+# an outline with function bodies hidden until opened, complete functions
+# spliced in by name). The writer gets its plain prompt, as in
+# rtx5070_eval.yaml; the variants below change only the writer.
+#
+# Usage (from harness/, inside WSL):
+#     uv run python -m harness collect --config configs/rtx5070_eval_outline.yaml
+extends: rtx5070_eval.yaml
+name: rtx5070-eval-outline
+editor:
+  edit_format: functions
+  prompt_template: ../prompts/editor_outline.md
+  budget:
+    max_turns: 10
+    max_total_tokens: 40000
