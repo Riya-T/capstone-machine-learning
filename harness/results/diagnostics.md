@@ -59,10 +59,11 @@ renamed to `_x1`, `a1`, `v1`), the editor gets 1.21 changes done per
 sequence instead of 1.25 (−0.04, −0.17 to +0.07), and its first change
 works as often as before. A writer's programs differ in readability far
 less than that, so no change to the writer in names, comments or layout
-can show up in this score. Nor is a weaker writer an option: a 3B writer
-passes the initial tests with 8% of its dev programs, so almost no task
-has two programs to compare (writer-size probe below). The same control
-with the 7B editor is running.
+can show up in this score. The 7B editor does not notice either (+0.03,
+−0.06 to +0.12), so a weaker editor does not lean on readable code. Nor is
+a weaker writer an option: a 3B writer passes the initial tests with 8% of
+its dev programs, so almost no task has two programs to compare
+(writer-size probe below).
 
 ## 1. Headroom
 
@@ -503,6 +504,34 @@ edge of that change rather than their design, and which programs a change
 favours differs from change to change, which is why nothing carries over
 between sequences.
 
+## Which single changes the program decides
+
+`scripts/step_effects.py` takes one change at a time: the first step of
+each (task, sequence), which every trial attempts, with each program's
+working repetitions and a one-way program share.
+
+| First changes (tasks with 2 or more programs) | Train | Dev | Eval |
+|---|---:|---:|---:|
+| All | 72 | 16 | 32 |
+| No variance: every program passes all 3 repetitions, or none does | 20 (18 and 2) | 6 (5 and 1) | 4 (3 and 1) |
+| Program share 0 | 23 | 4 | 16 |
+| Program share above 0 and below 25% | 20 | 4 | 6 |
+| Program share 25% or more | 9 | 2 | 6 |
+| Program share 50% or more | 3 | 2 | 3 |
+
+A few changes are decided by the program: on stock_portfolio's undo, 4
+programs pass in all 3 repetitions and 4 fail in all 3 (share 100%); on
+eval, race_telemetry's lap-time correction fails every time for one
+program and works every time for three. Most are not: in 43 of the 72
+train changes every program does the same, or the program explains
+nothing. And
+where a change does pick out programs, the task's other change usually
+picks others or none: stock_portfolio's first change on its other
+sequence (sectors) fails for nearly every program, and of the 4 programs
+that always pass undo, one gets it once in 3. So a pair's label comes from
+the one change that happened to tell its programs apart, and a writer
+trained on it learns that change's edge, not a design to prefer.
+
 ## What this means for the next step
 
 Tuning DPO (beta, epochs, seeds) cannot help while the labels are mostly
@@ -623,18 +652,22 @@ paired with the same trial of the base run (`configs/rtx5070_pc_obscure.yaml`,
 run 20261116T133752Z-e9bd81: 306 trials, 536 steps, 1,134 editor calls,
 6 hours 20 minutes, 0 infrastructure errors).
 
-| Dev tasks, base writer, 14B editor | Readable | Obscured |
-|---|---:|---:|
-| Changes done before the first failure (of 2) | 1.25 | 1.21 (−0.04, −0.17 to +0.07) |
-| First change works | 72% | 73% (+1 point, −7 to +9) |
-| Whole sequence works | 53% | 47% (−6 points, −11 to −2) |
-| Variance share: program | 4% (0% to 7%) | 0% (0% to 5%) |
-| Winner on A (3 repetitions) also wins on B | 59% (48% to 71%) | 50% (32% to 61%) |
-| Held-out headroom (best program on the other sequence) | +0.12 (+0.01 to +0.27) | +0.05 (−0.01 to +0.14) |
+| Dev tasks, base writer | 14B readable | 14B obscured | 7B readable | 7B obscured |
+|---|---:|---:|---:|---:|
+| Changes done before the first failure (of 2) | 1.25 | 1.21 (−0.04, −0.17 to +0.07) | 0.50 | 0.53 (+0.03, −0.06 to +0.12) |
+| First change works | 72% | 73% (+1 point, −7 to +9) | 38% | 41% (+3 points, −2 to +7) |
+| Whole sequence works | 53% | 47% (−6 points, −11 to −2) | 11% | 12% (+1 point, −4 to +6) |
+| Variance share: program | 4% (0% to 7%) | 0% (0% to 5%) | 7% (0% to 19%) | 0% (0% to 1%) |
+| Winner on A (3 repetitions) also wins on B | 59% (48% to 71%) | 50% (32% to 61%) | 51% (9% to 79%) | 36% (16% to 59%) |
+| Held-out headroom (best program on the other sequence) | +0.12 (+0.01 to +0.27) | +0.05 (−0.01 to +0.14) | +0.03 (−0.10 to +0.16) | −0.06 (−0.14 to −0.01) |
 
 The first three rows are `scripts/eval_compare.py` (and
-`scripts/ablation_compare.py`, trial by trial: the same −0.04); the rest
-are `scripts/diagnostics.py`.
+`scripts/ablation_compare.py`, trial by trial: the same −0.04 and +0.03);
+the rest are `scripts/diagnostics.py`. The 7B columns are
+`configs/rtx5070_pc_editor_7b.yaml` and
+`configs/rtx5070_pc_editor_7b_obscure.yaml` (run 20261116T212312Z-963d55:
+306 trials, 435 steps, 1,819 editor calls, 5 hours 32 minutes, 0
+infrastructure errors), paired trial by trial the same way.
 
 Making every program much harder to read costs the editor almost nothing.
 The first change works as often as before; only the second fails a little
@@ -649,9 +682,18 @@ for. At 50 lines the editor reads the whole program and changes it
 whatever it is called, which is also why removing comments changed
 nothing (`results/nocomments_eval.md`).
 
+A weaker editor might lean on names and docstrings far more. The 7B
+editor does not: on obscured programs it gets 0.53 changes per sequence
+against 0.50 on readable ones (+0.03, −0.06 to +0.12), and its first change
+works 41% of the time against 38%. Its interval rules out a cost above
+0.06 changes. What it gets right depends on the program no more than
+before (program share 0%, 0% to 1%), and the best program on one sequence
+does slightly worse than average on the other.
+
 So on these tasks no change to the writer in names, comments or layout
-can show up as more changes done; only programs that differ in what they
-do, or in how they hold up once changed, could.
+can show up as more changes done, with either editor that fits on our
+GPU; only programs that differ in what they do, or in how they hold up
+once changed, could.
 
 ## Writer-size probe
 
@@ -726,6 +768,9 @@ uv run python scripts/hint_summary.py --config configs/rtx5070_pc_hints.yaml
 for c in rtx5070_train rtx5070_pc rtx5070_pc_editor_v3 rtx5070_pc_hints; do
   uv run python scripts/edit_carryover.py --config configs/$c.yaml
 done
+for c in rtx5070_train rtx5070_pc rtx5070_eval; do
+  uv run python scripts/step_effects.py --config configs/$c.yaml
+done
 uv run python -m harness collect --config configs/rtx5070_pc_outline.yaml      # GPU, ~10 h
 uv run python scripts/diagnostics.py --config configs/rtx5070_pc_outline.yaml --measures
 uv run python scripts/hint_summary.py --config configs/rtx5070_pc_outline.yaml
@@ -739,6 +784,12 @@ uv run python scripts/eval_compare.py --base configs/rtx5070_pc.yaml \
     --other configs/rtx5070_pc_obscure.yaml --bootstrap 20000
 uv run python scripts/ablation_compare.py configs/rtx5070_pc.yaml \
     configs/rtx5070_pc_obscure.yaml --bootstrap 20000
+uv run python -m harness collect --config configs/rtx5070_pc_editor_7b_obscure.yaml  # GPU, ~5.5 h
+uv run python scripts/diagnostics.py --config configs/rtx5070_pc_editor_7b_obscure.yaml --measures
+uv run python scripts/eval_compare.py --base configs/rtx5070_pc_editor_7b.yaml \
+    --other configs/rtx5070_pc_editor_7b_obscure.yaml --bootstrap 20000
+uv run python scripts/ablation_compare.py configs/rtx5070_pc_editor_7b.yaml \
+    configs/rtx5070_pc_editor_7b_obscure.yaml --bootstrap 20000
 uv run python -m harness collect --config configs/rtx5070_pc_writer_3b.yaml    # GPU, ~1.5 h
 uv run python scripts/diagnostics.py --config configs/rtx5070_pc_writer_3b.yaml --measures
 uv run python scripts/winner_features.py --config configs/rtx5070_train.yaml \

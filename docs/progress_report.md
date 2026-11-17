@@ -212,6 +212,17 @@ All five methods are done:
   instead of 53%). The writer's programs for a task differ in readability
   far less than a program and its obscured copy, so on these tasks better
   names, comments or layout from the writer cannot show up in the score.
+- **A weaker editor does not rely on readable code either.** The same test
+  with the 7B editor: 0.53 changes per sequence on the obscured programs
+  against 0.50 on the readable ones (+0.03, −0.06 to +0.12). So readability
+  is ruled out for both editors that fit on our GPU.
+- **The program decides a few single changes, but a different few each
+  time.** Taking one change at a time, on stock_portfolio's undo 4 programs
+  always pass and 4 always fail. But in 43 of the 72 first changes on the
+  train tasks every program does the same or the program explains nothing,
+  and where a change does pick out programs, the task's other change picks
+  others or none. So a pair's label comes from one change's edge case, not
+  from a design the writer could learn to prefer.
 - **A smaller writer is too weak to use.** A 3B writer, whose working
   programs might differ more, passes the initial tests with only 10 of
   its 120 dev programs (8%, against 55% for the 7B writer), and 7 of the 8
@@ -220,14 +231,18 @@ All five methods are done:
 
 ### What is running now
 
-The readability control again with the weaker 7B editor
-(`configs/rtx5070_pc_editor_7b_obscure.yaml`, about 5 hours, started
-2026-11-16 13:22 PST). The 14B editor hardly notices unreadable code; a
-weaker editor may rely on names and docstrings much more. If it does
-clearly worse on obscured programs, a writer's readability could matter to
-a weaker editor, and that is the one path left to an effect on these
-tasks. If not, readability is ruled out for every editor that fits on our
-GPU.
+A label-noise control (`/home/pc/run_noise.sh`, about 6 hours, started
+2026-11-16 19:07 PST). The Radon writer is the one trained writer whose
+code moved the way its labels asked, and its labels are always consistent.
+We train it again with 15%, 30% and 50% of its 160 pairs swapped
+(`scripts/flip_pairs.py`), and measure how often each trained writer
+prefers the higher-MI program in pairs from tasks it never saw (60 dev and
+114 eval pairs, `scripts/implicit_reward.py`). The editing labels agree
+with themselves between change sequences 58% of the time, about what 30%
+swapped labels give. If the 30% writer still learns the preference, label
+noise alone does not explain why our writer learned nothing, and the
+answer is that the editing labels point to no common design (finding 23).
+If it does not, 160 pairs this noisy are too few for any preference.
 
 ### Words used in the rest of this report
 
@@ -299,9 +314,10 @@ them in one place.
   [Diagnostics](../harness/results/diagnostics.md).
 - **The score barely notices readability at all.** With every dev program
   obscured (no comments or docstrings, meaningless names), the editor gets
-  1.21 changes per sequence against 1.25 (−0.04, −0.17 to +0.07). A
-  smaller (3B) writer is no way out: only 8% of its dev programs pass the
-  initial tests, too few to compare.
+  1.21 changes per sequence against 1.25 (−0.04, −0.17 to +0.07), and the
+  7B editor no more (+0.03, −0.06 to +0.12). A smaller (3B) writer is no
+  way out: only 8% of its dev programs pass the initial tests, too few to
+  compare.
 
 ## The five methods
 
@@ -819,7 +835,23 @@ the training signal differs:
   3B rerun was not started.
 - `configs/rtx5070_pc_editor_7b_obscure.yaml`: the readability control
   with the 7B editor, paired trial by trial with
-  `rtx5070_pc_editor_7b.yaml` (running).
+  `rtx5070_pc_editor_7b.yaml` (run 20261116T212312Z-963d55, 306 trials,
+  435 steps, 1,819 editor calls, 5 hours 32 minutes, 0 infrastructure
+  errors). 0.53 changes per sequence against 0.50 (+0.03, −0.06 to +0.12;
+  the same trial by trial), first change 41% against 38%, whole sequence
+  12% against 11%; program share 0% (0% to 1%), winners agree across
+  sequences 36%, held-out headroom −0.06 (−0.14 to −0.01).
+- `scripts/step_effects.py`: each first change on its own, with each
+  program's working repetitions and a one-way program share. Train: of 72
+  first changes, 20 have no variance (18 every program passes, 2 none
+  does), 23 a share of 0, 20 below 25%, 9 of 25% or more (3 of 50% or
+  more); dev 6, 4, 4, 2 of 16; eval 4, 16, 6, 6 of 32.
+- `scripts/flip_pairs.py` and `/home/pc/run_noise.sh`: the label-noise
+  control (running). 24, 48 and 80 of the 160 matched Radon pairs swapped
+  (seed 20261116), each trained with dpo3's settings
+  (`/home/pc/models/dpo/radon_f15`, `radon_f30`, `radon_f50`); held-out
+  Radon pairs from `scripts/static_ranking.py` on the base writer's dev
+  (60) and eval (114) programs.
 - `scripts/diagnostics.py` no longer fails when every trial of a measure
   gets the same score.
 
@@ -948,6 +980,14 @@ the training signal differs:
     with 10 of 120 dev programs (8%, against 55% for the 7B writer); 7 of
     the 8 dev tasks have at most one passing program, and the eighth
     gives no pair.
+23. **Readability does not matter to the 7B editor either, and the
+    program decides only single changes.** On obscured programs the 7B
+    editor gets 0.53 changes per sequence against 0.50 (+0.03, −0.06 to
+    +0.12). Taken one change at a time, 9 of the 72 first changes on the
+    train tasks have a program share of 25% or more (stock_portfolio's undo
+    100%: 4 programs always pass, 4 always fail), but 43 have none or no
+    variance at all, and a task's other change rarely favours the same
+    programs. A pair's label therefore reflects one change's edge case.
 
 ## Open questions for the team
 
@@ -1000,6 +1040,8 @@ the training signal differs:
 | Outline editor | `harness/src/harness/models/outline.py`, `harness/prompts/editor_outline.md`, `harness/configs/rtx5070_pc_outline.yaml` (dev probe), `rtx5070_train_outline.yaml`, `rtx5070_eval_outline.yaml` |
 | Readability control | `editor.view_transform: obscure` (`harness/src/harness/collection/view.py`), `scripts/obscure_check.py`, `harness/configs/rtx5070_pc_obscure.yaml`; results in `harness/results/diagnostics.md` |
 | Writer-size probe | `harness/configs/rtx5070_pc_writer_3b.yaml`; results in `harness/results/diagnostics.md` |
-| Readability control, 7B editor | `harness/configs/rtx5070_pc_editor_7b_obscure.yaml` |
+| Readability control, 7B editor | `harness/configs/rtx5070_pc_editor_7b_obscure.yaml`; results in `harness/results/diagnostics.md` |
+| Single-change program effects | `scripts/step_effects.py`; results in `harness/results/diagnostics.md` |
+| Label-noise control | `scripts/flip_pairs.py`, `/home/pc/run_noise.sh` (running) |
 | Controlled wallet pilot | `docs/wallet_pair_pilot/` |
 | Task checklist | `Task_list.md` |
