@@ -161,11 +161,13 @@ This is a  rough list of tasks we need to complete and is definitely subject to 
   types, and on new task families.
 - [ ] **Error analysis** — Sort failed changes by cause: task too hard, bug in
   the first program, editor mistake, unclear test, or infrastructure.
-- [ ] **Plots** — PNG/SVG export is implemented; produce and interpret figures from
-  the actual held-out results.
+- [x] **Plots** — `scripts/report_figures.py` draws the five methods, the
+  variance split, the label-noise control and the held-out editing pairs
+  into `harness/results/figures/` (PNG and SVG).
 - [ ] **Reproduction instructions** — README commands to rerun every result.
 - [x] **CI** — Run the CPU tests automatically on GitHub
   (`.github/workflows/tests.yml`).
 - [ ] **Release the adapters** — Publish the trained writer's adapters.
 - [ ] **Final report** — Research question, methods, results and limitations.
+  Draft: `docs/final_report.md` (pending: dpo_all's eval and the seeds).
 - [ ] **Final presentation**
