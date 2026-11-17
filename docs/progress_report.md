@@ -234,33 +234,29 @@ All five methods are done:
   higher 79% of the time. Trained again with 15% of its 160 pairs swapped
   at random, it still does (75%). With 30% swapped, which makes the labels
   disagree with themselves about as often as our editing labels do, it no
-  longer does (56%, 39% to 73%), and with 50% it is at chance. So the
-  noise in our labels alone is enough to explain why our writer learned
-  nothing that carries over.
+  longer does (56%, 39% to 73%), and with 50% it is at chance. Its own
+  programs say the same: with 15% swapped they score almost as much
+  higher on the formula as the clean writer's (+0.39 against +0.43
+  standard deviations), with 30% they do not move (+0.06). So the noise in
+  our labels alone is enough to explain why our writer learned nothing
+  that carries over.
 
 ### What is running now
 
-Two jobs, one after the other on the GPU, both finished by about 7 a.m.
-PST on 2026-11-17:
-
-1. **Do the noisy writers' programs change?** (`/home/pc/run_noise_gen.sh`,
-   started 21:32.) The 15%, 30% and 50% writers each write programs for the
-   16 eval tasks, and `scripts/winner_features.py` compares their Radon
-   scores with the original writer's, as for the Radon writer (+0.43 SD).
-2. **Noise like ours, not random swaps.** (`/home/pc/run_scorenoise.sh`.)
-   Random swaps contradict each other (A over B, B over C, C over A), so
-   training cannot fit them. Our editing labels come from one noisy score
-   per program, so they never contradict each other, and training fits
-   them as well as true labels. This control ranks programs by the formula
-   plus random noise per program
-   (`scripts/static_ranking.py --score-noise`), at the reliability of our
-   editing scores (0.18, two seeds), at 0.47 (what 8 change sequences per
-   task instead of 2 would give) and at 0.80, with dpo3's 160 pairs, and
-   at 0.18 with all 627 pairs. 22% to 26% of the 0.18 pairs prefer the
-   lower-scoring program, 11% at 0.47. If the 0.18 writers do not carry
-   the preference over and the 0.47 one does, the method needs about four
-   times the editing per program; if none does, more editing would not
-   help on these tasks either.
+**Noise like ours, not random swaps** (`/home/pc/run_scorenoise.sh`,
+started 2026-11-17 00:33 PST, done by about 7 a.m.). Random swaps
+contradict each other (A over B, B over C, C over A), so training cannot
+fit them. Our editing labels come from one noisy score per program, so
+they never contradict each other, and training fits them as well as true
+labels. This control ranks programs by the formula plus random noise per
+program (`scripts/static_ranking.py --score-noise`), at the reliability
+of our editing scores (0.18, two seeds), at 0.47 (what 8 change sequences
+per task instead of 2 would give) and at 0.80, with dpo3's 160 pairs, and
+at 0.18 with all 627 pairs. 22% to 26% of the 0.18 pairs prefer the
+lower-scoring program, 11% at 0.47. If the 0.18 writers do not carry the
+preference over and the 0.47 one does, the method needs about four times
+the editing per program; if none does, more editing would not help on
+these tasks either.
 
 ### Words used in the rest of this report
 
@@ -340,7 +336,8 @@ them in one place.
   with 30% of its 160 pairs swapped at random, about as noisy as our
   editing labels, the Radon writer no longer prefers the higher-MI program
   on eval-task pairs (56%, 39% to 73%, against 79% with true labels and
-  75% with 15% swapped).
+  75% with 15% swapped), and its eval programs no longer score higher on
+  the formula (+0.06 SD, against +0.43 and +0.39).
 
 ## The five methods
 
@@ -879,6 +876,13 @@ the training signal differs:
   89%), radon_f15 75% (61% to 86%), radon_f30 56% (39% to 73%), radon_f50
   40% (26% to 55%), dpo3 46%, sft 46%. The dev-task pairs (8 tasks) cannot
   tell them apart (57% to 68%, intervals about 40 points wide).
+- `configs/rtx5070_eval_radon_f15.yaml`, `_f30`, `_f50`: the three noisy
+  writers, served like the others, sampled on the 16 eval tasks with
+  `--until initial` (runs 20261117T054842Z-813093, 20261117T064853Z-e6acef,
+  20261117T074816Z-271d39; 256 samples each, 0 infrastructure errors).
+  `scripts/winner_features.py`: Radon MI of passing programs +0.39 (+0.07
+  to +0.83), +0.06 (−0.08 to +0.20), +0.14 (−0.09 to +0.52) base SDs;
+  radon +0.43. Initial pass 57%, 65%, 60% (base 58%, radon 50%).
 - `scripts/static_ranking.py --score-noise R` and `--no-cap`: rank by MI
   standardized within each task times √R plus Gaussian noise times
   √(1 − R), per program; pairs record both programs' MI. Running with R =
@@ -1027,7 +1031,12 @@ the training signal differs:
     swapped at random, 75%; with 30%, as often as needed for labels to
     disagree with themselves as much as the editing labels do, 56% (39% to
     73%); with 50%, 40%. dpo3 gets 46% and the correctness-only writer 46%.
-    The 8 dev tasks are too few to separate any of them.
+    The 8 dev tasks are too few to separate any of them. The writers'
+    eval programs agree: Radon MI +0.43 base SDs (clean), +0.39 (15%),
+    +0.06 (30%, −0.08 to +0.20) and +0.14 (50%, −0.09 to +0.52). The 30%
+    writer passes the initial tests more often than the base (65% against
+    58%, −0 to +14 points), like the writers trained on passing programs
+    without a usable preference (finding 4).
 
 ## Open questions for the team
 

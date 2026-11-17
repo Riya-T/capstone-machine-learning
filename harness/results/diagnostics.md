@@ -67,8 +67,9 @@ its dev programs, so almost no task has two programs to compare
 to hide a preference DPO otherwise learns: with 30% of the Radon writer's
 160 pairs swapped at random, about as often as the editing labels disagree
 with themselves, it no longer prefers the higher-MI program on the eval
-tasks (56%, 39% to 73%, against 79% with true labels; label-noise control
-below).
+tasks (56%, 39% to 73%, against 79% with true labels), and its programs
+no longer move up Radon MI (+0.06 base SDs, against +0.43; label-noise
+control below).
 
 ## 1. Headroom
 
@@ -771,6 +772,33 @@ new tasks with true labels no longer shows. Noise is enough to explain
 why dpo3 carries nothing over (46% on these pairs, as sft), whatever the
 editing labels point to.
 
+The writers' own code says the same. Each noisy writer, built and served
+like the others (README, "Serving the trained writer"), wrote 16 samples
+for each of the 16 eval tasks, without editing
+(`configs/rtx5070_eval_radon_f15.yaml`, `_f30`, `_f50` with `--until
+initial`; runs 20261117T054842Z-813093, 20261117T064853Z-e6acef and
+20261117T074816Z-271d39, 256 samples each, 0 infrastructure errors).
+`scripts/winner_features.py` compares their passing programs with the base
+writer's, as in check 4, and the pass rates are paired by task:
+
+| Writer | Pairs swapped | Radon MI of passing eval programs (base SDs) | Samples passing the initial checks |
+|---|---:|---:|---:|
+| base | – | – | 58% |
+| radon | 0% | +0.43 (+0.04 to +0.88) | 50% (−8 points, −18 to +1) |
+| radon_f15 | 15% | +0.39 (+0.07 to +0.83) | 57% (−0 points, −11 to +9) |
+| radon_f30 | 30% | +0.06 (−0.08 to +0.20) | 65% (+7 points, −0 to +14) |
+| radon_f50 | 50% | +0.14 (−0.09 to +0.52) | 60% (+2 points, −4 to +8) |
+
+With 15% swapped, the writer's programs move up Radon MI almost as far as
+the clean writer's; with 30% they do not move. The clean writer's lower
+pass rate does not come back at 15%, and the 30% writer passes more often
+than the base, as dpo3 and the correctness-only writer do: trained on
+passing programs without a preference it can use, it writes passing
+programs more often. (The store reuses editing trials for programs that
+are byte for byte ones already edited in another run, so
+`scripts/eval_compare.py` shows editing results on some tasks for these
+writers. They cover only those repeated programs and are not used.)
+
 One difference matters. Random swaps make pairs contradict each other (A
 over B, B over C, C over A), so DPO cannot fit them: the 30% writer ends at
 a loss of 0.67. The editing labels come from one noisy score per program,
@@ -882,6 +910,14 @@ uv run python scripts/static_ranking.py --config configs/rtx5070_eval.yaml \
     --pairs runs/rtx5070_pc/dpo/radon_matched.jsonl --pairs runs/rtx5070_pc/dpo/radon_dev.jsonl \
     --pairs runs/rtx5070_pc/dpo/radon_evaltasks.jsonl \
     --out runs/rtx5070_pc/dpo/implicit_reward_noise.jsonl                     # GPU, ~2 h
+# serve radon_f15, radon_f30 and radon_f50 as in README, "Serving the trained writer", then
+for r in 15 30 50; do                                                          # GPU, ~1 h each
+  uv run python -m harness collect --config configs/rtx5070_eval_radon_f$r.yaml --until initial
+done
+uv run python scripts/winner_features.py --config configs/rtx5070_eval.yaml \
+    --base configs/rtx5070_eval.yaml --writer configs/rtx5070_eval_radon.yaml \
+    --writer configs/rtx5070_eval_radon_f15.yaml --writer configs/rtx5070_eval_radon_f30.yaml \
+    --writer configs/rtx5070_eval_radon_f50.yaml
 ```
 
 `scripts/implicit_reward.py` needs the training extras and the GPU (about
