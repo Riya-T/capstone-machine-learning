@@ -5,11 +5,13 @@ Usage:
 """
 
 import json
+import random
 from dataclasses import replace
 from pathlib import Path
 
 from scripts.static_ranking import (
     RankedProgram,
+    add_score_noise,
     build_preferences,
     maintainability_score,
     make_preferences,
@@ -80,6 +82,32 @@ def test_make_preferences_drops_tied_scores():
 
     assert pairs == []
     assert stats["ties"] == 1
+
+
+def test_score_noise_keeps_mi_and_drops_equal_mi_pairs():
+    programs = [
+        program("low", 20.0, "x = 0\n"),
+        program("high", 80.0, "x = 1\n"),
+        program("middle", 50.0, "x = 2\n"),
+        program("middle_copy", 50.0, "x = 3\n"),
+    ]
+
+    exact = add_score_noise(programs, 1.0, random.Random(0))
+    assert [p.mi for p in exact] == [20.0, 80.0, 50.0, 50.0]
+    assert exact[1].score > exact[2].score == exact[3].score > exact[0].score
+
+    noisy = add_score_noise(programs, 0.18, random.Random(0))
+    assert noisy == add_score_noise(programs, 0.18, random.Random(0))
+    pairs, stats = make_preferences("example", "write code", noisy, per_task_cap=None)
+    assert stats["ties"] == 1 and len(pairs) == 5
+    assert {pair["rule"] for pair in pairs} == {"radon_mi_noisy"}
+    by_id = {p.candidate_id: p for p in noisy}
+    for pair in pairs:
+        assert by_id[pair["chosen_id"]].score > by_id[pair["rejected_id"]].score
+        assert (pair["chosen_mi"], pair["rejected_mi"]) == (
+            by_id[pair["chosen_id"]].mi,
+            by_id[pair["rejected_id"]].mi,
+        )
 
 
 def test_build_preferences_reads_only_initially_passing_store_programs(tmp_path):

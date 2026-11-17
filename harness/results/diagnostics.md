@@ -63,7 +63,12 @@ can show up in this score. The 7B editor does not notice either (+0.03,
 −0.06 to +0.12), so a weaker editor does not lean on readable code. Nor is
 a weaker writer an option: a 3B writer passes the initial tests with 8% of
 its dev programs, so almost no task has two programs to compare
-(writer-size probe below).
+(writer-size probe below). And noise like the editing labels' is enough
+to hide a preference DPO otherwise learns: with 30% of the Radon writer's
+160 pairs swapped at random, about as often as the editing labels disagree
+with themselves, it no longer prefers the higher-MI program on the eval
+tasks (56%, 39% to 73%, against 79% with true labels; label-noise control
+below).
 
 ## 1. Headroom
 
@@ -724,6 +729,59 @@ a sequence gets the same score, so there is no variance to split and no
 pair. On the train tasks a 3B writer would leave almost no task with two
 programs to compare, so it cannot feed the method.
 
+## Label-noise control
+
+The Radon writer is the one trained writer whose code moved the way its
+labels asked (Radon MI +0.43 SD on held-out code, check 4), and its labels
+never disagree with each other. The editing labels do: a pair's winner on
+one change sequence wins on the other only 58% of the time (check 2), as
+often as two labels that are each swapped at random 30% of the time agree
+(0.7² + 0.3² = 0.58). This control asks whether noise like that alone
+would stop DPO from learning a preference that carries over. The Radon
+writer's 160 matched pairs are trained again with 15%, 30% and 50% of them
+swapped (`scripts/flip_pairs.py`, seed 20261116: 24, 48 and 80 pairs),
+each with dpo3's settings. Each writer's implicit reward
+(`scripts/implicit_reward.py`) then ranks Radon pairs from tasks none of
+them trained on: the base writer's programs on the 16 eval tasks (114
+pairs) and the 8 dev tasks (60 pairs).
+
+| Writer | Pairs swapped | Final training loss | Its 160 training pairs, true labels | Eval-task pairs (114, 16 tasks) | Dev-task pairs (60, 8 tasks) |
+|---|---:|---:|---:|---:|---:|
+| radon | 0% | 0.54 | 99% (98% to 100%) | 79% (67% to 89%) | 60% (42% to 80%) |
+| radon_f15 | 15% | 0.59 | 92% (83% to 98%) | 75% (61% to 86%) | 57% (36% to 79%) |
+| radon_f30 | 30% | 0.67 | 70% (54% to 84%) | 56% (39% to 73%) | 68% (44% to 88%) |
+| radon_f50 | 50% | 0.67 | 46% (31% to 61%) | 40% (26% to 55%) | 67% (56% to 80%) |
+| dpo3 (editing labels) | – | 0.55 | 61% (48% to 73%) | 46% (32% to 59%) | 58% (51% to 67%) |
+| sft (no preferences) | – | – | 42% (30% to 55%) | 46% (35% to 58%) | 57% (41% to 73%) |
+
+The implicit reward is the trained writer's log-probability of a program
+minus the base model's, so it shows what training added. For comparison,
+on the eval-task pairs the higher-MI program is also the shorter one in
+73% of pairs (60% to 85%), and the base model's own log-probability ranks
+64% of them (47% to 80%).
+
+The dev-task pairs cannot tell the writers apart: with 8 tasks even the
+clean writer's 60% has an interval from 42% to 80%, and the 50% writer
+gets 67%. On the 16 eval tasks the result is a clean dose-response. 15%
+swapped costs little (75% against 79%); at 30% the preference can no
+longer be told from chance (56%, 39% to 73%); at 50% it is gone. So with
+160 pairs swapped about as often as the editing labels disagree with
+themselves, a preference that DPO learns easily and that carries over to
+new tasks with true labels no longer shows. Noise is enough to explain
+why dpo3 carries nothing over (46% on these pairs, as sft), whatever the
+editing labels point to.
+
+One difference matters. Random swaps make pairs contradict each other (A
+over B, B over C, C over A), so DPO cannot fit them: the 30% writer ends at
+a loss of 0.67. The editing labels come from one noisy score per program,
+so they never contradict each other, and DPO fits them as completely as
+true labels (dpo3 ends at 0.55 and ranks 97% of its training pairs right,
+check 3). Noise of
+that kind is harder to see in training, and more pairs among the same
+programs cannot average it out. A second control, ranking programs by MI
+plus noise per program at the editing scores' reliability (0.18), is
+running.
+
 ## Reproduce
 
 From `harness/`, inside WSL:
@@ -805,6 +863,25 @@ uv run python scripts/winner_features.py --config configs/rtx5070_eval.yaml \
     --pairs runs/rtx5070_pc/dpo/pairs_cap8_f23_nocosm.jsonl \
     --config configs/rtx5070_pc.yaml --config configs/rtx5070_eval.yaml \
     --out runs/rtx5070_pc/dpo/implicit_reward.jsonl
+for r in 15 30 50; do                                                          # GPU, ~25 min each
+  .venv/bin/python scripts/flip_pairs.py runs/rtx5070_pc/dpo/radon_matched.jsonl \
+      runs/rtx5070_pc/dpo/radon_f$r.jsonl --rate 0.$r
+  .venv/bin/python -m harness.train_dpo runs/rtx5070_pc/dpo/radon_f$r.jsonl \
+      --model /home/pc/models/hf/Qwen2.5-Coder-7B-Instruct \
+      --output-dir /home/pc/models/dpo/radon_f$r --learning-rate 2e-5 --max-length 3200
+done
+uv run python scripts/static_ranking.py --config configs/rtx5070_pc.yaml \
+    --out runs/rtx5070_pc/dpo/radon_dev.jsonl
+uv run python scripts/static_ranking.py --config configs/rtx5070_eval.yaml \
+    --out runs/rtx5070_pc/dpo/radon_evaltasks.jsonl
+.venv/bin/python scripts/implicit_reward.py --model /home/pc/models/hf/Qwen2.5-Coder-7B-Instruct \
+    --adapter radon=/home/pc/models/dpo/radon --adapter radon_f15=/home/pc/models/dpo/radon_f15 \
+    --adapter radon_f30=/home/pc/models/dpo/radon_f30 \
+    --adapter radon_f50=/home/pc/models/dpo/radon_f50 \
+    --adapter dpo3=/home/pc/models/dpo/dpo3 --adapter sft=/home/pc/models/dpo/sft \
+    --pairs runs/rtx5070_pc/dpo/radon_matched.jsonl --pairs runs/rtx5070_pc/dpo/radon_dev.jsonl \
+    --pairs runs/rtx5070_pc/dpo/radon_evaltasks.jsonl \
+    --out runs/rtx5070_pc/dpo/implicit_reward_noise.jsonl                     # GPU, ~2 h
 ```
 
 `scripts/implicit_reward.py` needs the training extras and the GPU (about

@@ -228,21 +228,39 @@ All five methods are done:
   its 120 dev programs (8%, against 55% for the 7B writer), and 7 of the 8
   dev tasks have at most one working program, so there is nothing to
   compare.
+- **Labels as noisy as ours would hide even a preference that works.**
+  The Radon writer learns its formula's preference, and it carries over:
+  on pairs from the eval tasks it prefers the program the formula rates
+  higher 79% of the time. Trained again with 15% of its 160 pairs swapped
+  at random, it still does (75%). With 30% swapped, which makes the labels
+  disagree with themselves about as often as our editing labels do, it no
+  longer does (56%, 39% to 73%), and with 50% it is at chance. So the
+  noise in our labels alone is enough to explain why our writer learned
+  nothing that carries over.
 
 ### What is running now
 
-A label-noise control (`/home/pc/run_noise.sh`, about 6 hours, started
-2026-11-16 19:07 PST). The Radon writer is the one trained writer whose
-code moved the way its labels asked, and its labels are always consistent.
-We train it again with 15%, 30% and 50% of its 160 pairs swapped
-(`scripts/flip_pairs.py`), and measure how often each trained writer
-prefers the higher-MI program in pairs from tasks it never saw (60 dev and
-114 eval pairs, `scripts/implicit_reward.py`). The editing labels agree
-with themselves between change sequences 58% of the time, about what 30%
-swapped labels give. If the 30% writer still learns the preference, label
-noise alone does not explain why our writer learned nothing, and the
-answer is that the editing labels point to no common design (finding 23).
-If it does not, 160 pairs this noisy are too few for any preference.
+Two jobs, one after the other on the GPU, both finished by about 7 a.m.
+PST on 2026-11-17:
+
+1. **Do the noisy writers' programs change?** (`/home/pc/run_noise_gen.sh`,
+   started 21:32.) The 15%, 30% and 50% writers each write programs for the
+   16 eval tasks, and `scripts/winner_features.py` compares their Radon
+   scores with the original writer's, as for the Radon writer (+0.43 SD).
+2. **Noise like ours, not random swaps.** (`/home/pc/run_scorenoise.sh`.)
+   Random swaps contradict each other (A over B, B over C, C over A), so
+   training cannot fit them. Our editing labels come from one noisy score
+   per program, so they never contradict each other, and training fits
+   them as well as true labels. This control ranks programs by the formula
+   plus random noise per program
+   (`scripts/static_ranking.py --score-noise`), at the reliability of our
+   editing scores (0.18, two seeds), at 0.47 (what 8 change sequences per
+   task instead of 2 would give) and at 0.80, with dpo3's 160 pairs, and
+   at 0.18 with all 627 pairs. 22% to 26% of the 0.18 pairs prefer the
+   lower-scoring program, 11% at 0.47. If the 0.18 writers do not carry
+   the preference over and the 0.47 one does, the method needs about four
+   times the editing per program; if none does, more editing would not
+   help on these tasks either.
 
 ### Words used in the rest of this report
 
@@ -318,6 +336,11 @@ them in one place.
   7B editor no more (+0.03, −0.06 to +0.12). A smaller (3B) writer is no
   way out: only 8% of its dev programs pass the initial tests, too few to
   compare.
+- **Noise like ours would hide even a preference that works.** Trained
+  with 30% of its 160 pairs swapped at random, about as noisy as our
+  editing labels, the Radon writer no longer prefers the higher-MI program
+  on eval-task pairs (56%, 39% to 73%, against 79% with true labels and
+  75% with 15% swapped).
 
 ## The five methods
 
@@ -846,12 +869,22 @@ the training signal differs:
   first changes, 20 have no variance (18 every program passes, 2 none
   does), 23 a share of 0, 20 below 25%, 9 of 25% or more (3 of 50% or
   more); dev 6, 4, 4, 2 of 16; eval 4, 16, 6, 6 of 32.
-- `scripts/flip_pairs.py` and `/home/pc/run_noise.sh`: the label-noise
-  control (running). 24, 48 and 80 of the 160 matched Radon pairs swapped
-  (seed 20261116), each trained with dpo3's settings
-  (`/home/pc/models/dpo/radon_f15`, `radon_f30`, `radon_f50`); held-out
-  Radon pairs from `scripts/static_ranking.py` on the base writer's dev
-  (60) and eval (114) programs.
+- `scripts/flip_pairs.py`: the label-noise control. 24, 48 and 80 of the
+  160 matched Radon pairs swapped (seed 20261116), each trained with
+  dpo3's settings (`/home/pc/models/dpo/radon_f15`, `radon_f30`,
+  `radon_f50`; final loss 0.59, 0.67, 0.67, against 0.54 for radon and
+  0.55 for dpo3). Held-out Radon pairs from `scripts/static_ranking.py` on
+  the base writer's dev (60) and eval (114) programs. Implicit reward on
+  the eval-task pairs (`scripts/implicit_reward.py`): radon 79% (67% to
+  89%), radon_f15 75% (61% to 86%), radon_f30 56% (39% to 73%), radon_f50
+  40% (26% to 55%), dpo3 46%, sft 46%. The dev-task pairs (8 tasks) cannot
+  tell them apart (57% to 68%, intervals about 40 points wide).
+- `scripts/static_ranking.py --score-noise R` and `--no-cap`: rank by MI
+  standardized within each task times √R plus Gaussian noise times
+  √(1 − R), per program; pairs record both programs' MI. Running with R =
+  0.18 (seeds 20261116 and 2), 0.47 and 0.80, matched to dpo3's 160 pairs
+  (119, 125, 143 and 159 of them prefer the higher-MI program), and 0.18
+  uncapped (627 pairs, 433).
 - `scripts/diagnostics.py` no longer fails when every trial of a measure
   gets the same score.
 
@@ -988,6 +1021,13 @@ the training signal differs:
     100%: 4 programs always pass, 4 always fail), but 43 have none or no
     variance at all, and a task's other change rarely favours the same
     programs. A pair's label therefore reflects one change's edge case.
+24. **Label noise like ours hides a preference DPO otherwise learns.** The
+    Radon writer, trained on its 160 pairs, prefers the higher-MI program
+    in 79% (67% to 89%) of pairs from the eval tasks. With 15% of its pairs
+    swapped at random, 75%; with 30%, as often as needed for labels to
+    disagree with themselves as much as the editing labels do, 56% (39% to
+    73%); with 50%, 40%. dpo3 gets 46% and the correctness-only writer 46%.
+    The 8 dev tasks are too few to separate any of them.
 
 ## Open questions for the team
 
@@ -1043,6 +1083,6 @@ the training signal differs:
 | Writer-size probe | `harness/configs/rtx5070_pc_writer_3b.yaml`; results in `harness/results/diagnostics.md` |
 | Readability control, 7B editor | `harness/configs/rtx5070_pc_editor_7b_obscure.yaml`; results in `harness/results/diagnostics.md` |
 | Single-change program effects | `scripts/step_effects.py`; results in `harness/results/diagnostics.md` |
-| Label-noise control | `scripts/flip_pairs.py`, `/home/pc/run_noise.sh` (running) |
+| Label-noise control | `scripts/flip_pairs.py`, `scripts/static_ranking.py --score-noise`, `scripts/implicit_reward.py`; results in `harness/results/diagnostics.md` |
 | Controlled wallet pilot | `docs/wallet_pair_pilot/` |
 | Task checklist | `Task_list.md` |
