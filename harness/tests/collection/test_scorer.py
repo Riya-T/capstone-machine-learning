@@ -20,6 +20,7 @@ from harness.collection.scorer import (
     CandidateRecord,
     Scorer,
     TaskRecord,
+    aggregate,
     candidate_stats,
     load_task_record,
     strict,
@@ -70,19 +71,21 @@ def test_unknown_status_is_an_error():
 
 
 @pytest.mark.parametrize(
-    ("a", "b", "strict_verdict", "weak_verdict"),
+    ("a", "b", "strict_verdict", "weak_verdict", "aggregate_verdict"),
     [
-        ((F(2), F(2)), (F(1), F(1)), "a", "a"),  # higher in every sequence
-        ((F(2), F(1)), (F(1), F(1)), "tie", "a"),  # higher, equal: rules differ
-        ((F(1), F(1)), (F(1), F(2)), "tie", "b"),
-        ((F(2), F(0)), (F(1), F(1)), "inconsistent", "inconsistent"),  # sign flip
-        ((F(1), F(1)), (F(1), F(1)), "tie", "tie"),
-        ((F(5, 3), F(2)), (F(5, 3), F(2)), "tie", "tie"),  # exact fractions: equal
+        ((F(2), F(2)), (F(1), F(1)), "a", "a", "a"),  # higher in every sequence
+        ((F(2), F(1)), (F(1), F(1)), "tie", "a", "a"),  # higher, equal: rules differ
+        ((F(1), F(1)), (F(1), F(2)), "tie", "b", "b"),
+        ((F(2), F(0)), (F(1), F(1)), "inconsistent", "inconsistent", "tie"),  # sign flip
+        ((F(3), F(0)), (F(1), F(1)), "inconsistent", "inconsistent", "a"),  # higher mean
+        ((F(1), F(1)), (F(1), F(1)), "tie", "tie", "tie"),
+        ((F(5, 3), F(2)), (F(5, 3), F(2)), "tie", "tie", "tie"),  # exact fractions: equal
     ],
 )
-def test_rules(a, b, strict_verdict, weak_verdict):
+def test_rules(a, b, strict_verdict, weak_verdict, aggregate_verdict):
     assert strict(a, b) == strict_verdict
     assert weak_dominance(a, b) == weak_verdict
+    assert aggregate(a, b) == aggregate_verdict
 
 
 means = st.lists(st.fractions(0, 3, max_denominator=3), min_size=2, max_size=2)

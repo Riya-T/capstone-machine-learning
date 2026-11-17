@@ -1,0 +1,16 @@
+# Score-noise control on the 16 eval tasks, writer side only: the Radon
+# writer retrained on all 627 pairs of Radon MI plus per-program noise at
+# our editing scores' reliability (scripts/static_ranking.py --score-noise
+# 0.18 --no-cap), with dpo3's settings, served as writer-radon_rel18_all-ctx8k.
+# Only the writer's samples and the initial checks are run (--until
+# initial); scripts/winner_features.py then compares the code against the
+# base writer's (rtx5070_eval.yaml), as for rtx5070_eval_radon_f15.yaml.
+#
+# Usage (from harness/, inside WSL):
+#     uv run python -m harness collect --config configs/rtx5070_eval_radon_rel18_all.yaml \
+#         --until initial
+extends: rtx5070_eval.yaml
+name: rtx5070-eval-radon-rel18-all
+writer:
+  backend:
+    model: writer-radon_rel18_all-ctx8k

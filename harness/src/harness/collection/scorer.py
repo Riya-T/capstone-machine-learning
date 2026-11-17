@@ -6,11 +6,13 @@ budget). Its score for a sequence is the mean over repetitions.
 
 Two programs from the same task are compared over their sequence scores:
 - strict: better in every sequence;
-- weak_dominance: at least as good in every sequence, better in one.
-Ties, and comparisons that are better in one sequence but worse in another,
-give no pair. Neither does a win by fewer than scorer.min_step_gap changes
-in total over all sequences and reps: with 3 reps, a one-change gap is one
-trial going differently, which is often noise.
+- weak_dominance: at least as good in every sequence, better in one;
+- aggregate: a higher mean over the sequences, whatever each one says.
+Ties, and under the first two rules comparisons that are better in one
+sequence but worse in another, give no pair. Neither does a win by fewer
+than scorer.min_step_gap changes in total over all sequences and reps:
+with 3 reps, a one-change gap is one trial going differently, which is
+often noise.
 
 Pairing modes: all_pairs (every comparison) or best_vs_worst (the best
 program against the worst, per task). A per-task cap keeps the pairs with
@@ -81,11 +83,21 @@ def weak_dominance(a: Sequence[Fraction], b: Sequence[Fraction]) -> Verdict:
     return "tie"
 
 
+def aggregate(a: Sequence[Fraction], b: Sequence[Fraction]) -> Verdict:
+    """The higher mean over sequences wins, even if one sequence disagrees:
+    one noisy score per program, so a task's pairs never contradict."""
+    total_a, total_b = sum(a, Fraction(0)), sum(b, Fraction(0))
+    if total_a == total_b:
+        return "tie"
+    return "a" if total_a > total_b else "b"
+
+
 # The extension point: a rule maps two candidates' per-sequence means to a
-# verdict. Pooled-margin or tiebreaker rules would be added here.
+# verdict. Tiebreaker rules would be added here.
 RULES: dict[str, Callable[[Sequence[Fraction], Sequence[Fraction]], Verdict]] = {
     "strict": strict,
     "weak_dominance": weak_dominance,
+    "aggregate": aggregate,
 }
 
 

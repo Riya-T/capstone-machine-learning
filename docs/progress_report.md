@@ -237,26 +237,34 @@ All five methods are done:
   longer does (56%, 39% to 73%), and with 50% it is at chance. Its own
   programs say the same: with 15% swapped they score almost as much
   higher on the formula as the clean writer's (+0.39 against +0.43
-  standard deviations), with 30% they do not move (+0.06). So the noise in
-  our labels alone is enough to explain why our writer learned nothing
-  that carries over.
+  standard deviations), with 30% they do not move (+0.06).
+- **But noise of our labels' kind does not stop training if it gets every
+  pair.** Random swaps contradict each other (A over B, B over C, C over
+  A). Our editing labels come from one noisy score per program, so they
+  never do. A second control ranks programs by the formula plus noise
+  drawn once per program, as unreliable as our editing scores (0.18).
+  With dpo3's 160 pairs it is luck: one random seed carries the
+  preference over (71%), another does not (58%). With every pair, 627,
+  the writer prefers the higher-MI program 81% of the time, as with true
+  labels, although 31% of its pairs point the wrong way. So our noise
+  explains why 160 pairs were not enough to be sure; it does not show that
+  our labels point nowhere.
 
 ### What is running now
 
-**Noise like ours, not random swaps** (`/home/pc/run_scorenoise.sh`,
-started 2026-11-17 00:33 PST, done by about 7 a.m.). Random swaps
-contradict each other (A over B, B over C, C over A), so training cannot
-fit them. Our editing labels come from one noisy score per program, so
-they never contradict each other, and training fits them as well as true
-labels. This control ranks programs by the formula plus random noise per
-program (`scripts/static_ranking.py --score-noise`), at the reliability
-of our editing scores (0.18, two seeds), at 0.47 (what 8 change sequences
-per task instead of 2 would give) and at 0.80, with dpo3's 160 pairs, and
-at 0.18 with all 627 pairs. 22% to 26% of the 0.18 pairs prefer the
-lower-scoring program, 11% at 0.47. If the 0.18 writers do not carry the
-preference over and the 0.47 one does, the method needs about four times
-the editing per program; if none does, more editing would not help on
-these tasks either.
+**Our editing labels, every pair** (`/home/pc/run_dpoall.sh`, started
+2026-11-17 05:00 PST). The same training as the control's 627-pair
+writer, on our editing labels: one mean editing score per program and
+every pair whose scores differ (scorer rule `aggregate`, no cap), 634
+pairs from 36 train tasks. Training takes about 95 minutes. Then the
+writer's implicit reward on the base writer's dev and eval editing pairs
+(98 and 298 pairs, same pairing; a perfect ranker of the programs' real
+quality could get only about 64% on labels this noisy), the full eval
+collection with the editor (about 22 hours, done around 5 a.m. on Nov 18)
+and its comparison with the base writer and dpo3, and last the control's
+627-pair writer's own code (about an hour). If the editing labels have a
+direction in common across tasks, this writer should find it the way the
+control found the formula's.
 
 ### Words used in the rest of this report
 
@@ -332,12 +340,16 @@ them in one place.
   7B editor no more (+0.03, −0.06 to +0.12). A smaller (3B) writer is no
   way out: only 8% of its dev programs pass the initial tests, too few to
   compare.
-- **Noise like ours would hide even a preference that works.** Trained
-  with 30% of its 160 pairs swapped at random, about as noisy as our
-  editing labels, the Radon writer no longer prefers the higher-MI program
-  on eval-task pairs (56%, 39% to 73%, against 79% with true labels and
-  75% with 15% swapped), and its eval programs no longer score higher on
-  the formula (+0.06 SD, against +0.43 and +0.39).
+- **Noise like ours hides a preference in 160 pairs, but not in all of
+  them.** Trained with 30% of its 160 pairs swapped at random, the Radon
+  writer no longer prefers the higher-MI program on eval-task pairs (56%,
+  39% to 73%, against 79% with true labels), and its eval programs no
+  longer score higher on the formula (+0.06 SD, against +0.43). With noise
+  of our labels' kind and size instead (one noisy score per program,
+  reliability 0.18), 160 pairs give 58% or 71% depending on the random
+  seed, and all 627 pairs give 81%, as good as true labels. dpo3 trained
+  on 160. The same all-pairs training on our editing labels (634 pairs) is
+  running.
 
 ## The five methods
 
@@ -885,12 +897,39 @@ the training signal differs:
   radon +0.43. Initial pass 57%, 65%, 60% (base 58%, radon 50%).
 - `scripts/static_ranking.py --score-noise R` and `--no-cap`: rank by MI
   standardized within each task times √R plus Gaussian noise times
-  √(1 − R), per program; pairs record both programs' MI. Running with R =
-  0.18 (seeds 20261116 and 2), 0.47 and 0.80, matched to dpo3's 160 pairs
-  (119, 125, 143 and 159 of them prefer the higher-MI program), and 0.18
-  uncapped (627 pairs, 433).
+  √(1 − R), per program; pairs record both programs' MI. R = 0.18 (seeds
+  20261116 and 2), 0.47 and 0.80, matched to dpo3's 160 pairs (119, 125,
+  143 and 159 of them prefer the higher-MI program), and 0.18 uncapped
+  (627 pairs, 433), each trained with dpo3's settings
+  (`/home/pc/models/dpo/radon_rel18`, `radon_rel18s2`, `radon_rel47`,
+  `radon_rel80`, `radon_rel18_all`; final loss 0.55, 0.55, 0.54, 0.52,
+  0.59; 2026-11-17 00:33 to 04:21 PST). Implicit reward on the eval-task
+  Radon pairs (`runs/rtx5070_pc/dpo/implicit_reward_scorenoise.jsonl`):
+  58% (42% to 73%), 71% (54% to 86%), 74% (57% to 87%), 81% (68% to 92%),
+  81% (66% to 92%); radon 79%, radon_f30 56%. Dev-task pairs 47% to 68%,
+  no separation.
 - `scripts/diagnostics.py` no longer fails when every trial of a measure
   gets the same score.
+
+### All-pairs editing writer (2026-11-17)
+
+- Scorer rule `aggregate` (`collection/scorer.py`): the higher mean score
+  over sequences wins even if one sequence disagrees, so each program has
+  one score and a task's pairs never contradict each other.
+  `configs/rtx5070_train_aggregate.yaml` (rule `aggregate`, no per-task
+  cap, min step gap 1) rebuilds the train collection's pairs from the
+  store: 634 pairs from 36 tasks, against 627 for the control's all-pairs
+  writer. `configs/rtx5070_dev_aggregate.yaml` and
+  `rtx5070_eval_aggregate.yaml` give the base writer's held-out editing
+  pairs paired the same way (98 from 7 dev tasks, 298 from 16 eval tasks).
+- Running (`/home/pc/run_dpoall.sh`): dpo_all trained on the 634 pairs,
+  length-fit, with dpo3's settings; implicit reward of dpo3, dpo_all,
+  radon and radon_rel18_all on those held-out pairs and the Radon eval
+  pairs; export as writer-dpo_all-ctx8k; the full eval collection
+  (`configs/rtx5070_eval_dpo_all.yaml`) compared with the base writer and
+  dpo3; then radon_rel18_all exported and sampled on the eval tasks
+  (`configs/rtx5070_eval_radon_rel18_all.yaml`, `--until initial`) and
+  `scripts/winner_features.py` for both.
 
 ## Findings so far
 
@@ -1025,7 +1064,7 @@ the training signal differs:
     100%: 4 programs always pass, 4 always fail), but 43 have none or no
     variance at all, and a task's other change rarely favours the same
     programs. A pair's label therefore reflects one change's edge case.
-24. **Label noise like ours hides a preference DPO otherwise learns.** The
+24. **Random label noise like ours hides a preference DPO otherwise learns.** The
     Radon writer, trained on its 160 pairs, prefers the higher-MI program
     in 79% (67% to 89%) of pairs from the eval tasks. With 15% of its pairs
     swapped at random, 75%; with 30%, as often as needed for labels to
@@ -1037,8 +1076,18 @@ the training signal differs:
     writer passes the initial tests more often than the base (65% against
     58%, −0 to +14 points), like the writers trained on passing programs
     without a usable preference (finding 4).
-
-## Open questions for the team
+25. **Noise of our labels' kind does not stop DPO given every pair.**
+    Ranked by Radon MI plus noise drawn once per program, at our editing
+    scores' reliability (0.18), the Radon writer's 160 matched pairs
+    carry the preference over to the eval tasks for one seed (71%, 54% to
+    86%) and not for another (58%, 42% to 73%). At 0.47, what 8 change
+    sequences per task would give, 74%; at 0.80, 81%. With all 627 pairs at
+    0.18, 81% (66% to 92%), as with true labels, although 31% of those
+    pairs prefer the lower-MI program. Per-program noise never contradicts
+    itself, and over every pair of every program what the pairs share is
+    the signal. So 160 pairs were too few to count on, and the null result
+    of dpo3 does not yet show that the editing labels point nowhere; the
+    matching all-pairs writer on the editing labels (dpo_all) decides it.
 
 - **Testbed (the main question):** the diagnostics say the current tasks
   cannot show an effect, because the editor's randomness swamps the
@@ -1093,5 +1142,6 @@ the training signal differs:
 | Readability control, 7B editor | `harness/configs/rtx5070_pc_editor_7b_obscure.yaml`; results in `harness/results/diagnostics.md` |
 | Single-change program effects | `scripts/step_effects.py`; results in `harness/results/diagnostics.md` |
 | Label-noise control | `scripts/flip_pairs.py`, `scripts/static_ranking.py --score-noise`, `scripts/implicit_reward.py`; results in `harness/results/diagnostics.md` |
+| All-pairs editing writer | scorer rule `aggregate` (`harness/src/harness/collection/scorer.py`), `harness/configs/rtx5070_train_aggregate.yaml`, `rtx5070_dev_aggregate.yaml`, `rtx5070_eval_aggregate.yaml`, `rtx5070_eval_dpo_all.yaml`, `rtx5070_eval_radon_rel18_all.yaml` |
 | Controlled wallet pilot | `docs/wallet_pair_pilot/` |
 | Task checklist | `Task_list.md` |

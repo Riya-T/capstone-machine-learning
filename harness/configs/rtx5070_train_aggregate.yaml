@@ -1,0 +1,15 @@
+# The train collection's editing results, paired the way the score-noise
+# control pairs its noisy scores (results/diagnostics.md, "Label-noise
+# control"): one score per program, its mean over sequences and reps, and
+# every pair of programs whose scores differ, with no per-task cap. Nothing
+# is collected; only the preference file is rebuilt from the store.
+#
+# Usage (from harness/, inside WSL):
+#     uv run python -m harness report --config configs/rtx5070_train_aggregate.yaml \
+#         --out runs/rtx5070_pc/dpo/editing_all
+extends: rtx5070_train.yaml
+name: rtx5070-train-aggregate
+scorer:
+  rule: aggregate
+  per_task_cap: null
+  min_step_gap: 1

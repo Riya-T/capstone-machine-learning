@@ -63,13 +63,17 @@ can show up in this score. The 7B editor does not notice either (+0.03,
 −0.06 to +0.12), so a weaker editor does not lean on readable code. Nor is
 a weaker writer an option: a 3B writer passes the initial tests with 8% of
 its dev programs, so almost no task has two programs to compare
-(writer-size probe below). And noise like the editing labels' is enough
-to hide a preference DPO otherwise learns: with 30% of the Radon writer's
-160 pairs swapped at random, about as often as the editing labels disagree
-with themselves, it no longer prefers the higher-MI program on the eval
-tasks (56%, 39% to 73%, against 79% with true labels), and its programs
-no longer move up Radon MI (+0.06 base SDs, against +0.43; label-noise
-control below).
+(writer-size probe below). Label noise alone does not explain the null
+result, though it explains why 160 pairs were not enough to be sure. With
+30% of the Radon writer's 160 pairs swapped at random, about as often as
+the editing labels disagree with themselves, it no longer prefers the
+higher-MI program on the eval tasks (56%, 39% to 73%, against 79% with
+true labels), and its programs no longer move up Radon MI (+0.06 base SDs,
+against +0.43). With noise like the editing labels' instead, one noisy
+score per program at their reliability (0.18), 160 pairs carry the
+preference over for one seed and not for another (71% and 58%), and all
+627 pairs carry it over fully (81%; label-noise control below). The same
+all-pairs training on the editing labels is running.
 
 ## 1. Headroom
 
@@ -804,11 +808,56 @@ over B, B over C, C over A), so DPO cannot fit them: the 30% writer ends at
 a loss of 0.67. The editing labels come from one noisy score per program,
 so they never contradict each other, and DPO fits them as completely as
 true labels (dpo3 ends at 0.55 and ranks 97% of its training pairs right,
-check 3). Noise of
-that kind is harder to see in training, and more pairs among the same
-programs cannot average it out. A second control, ranking programs by MI
-plus noise per program at the editing scores' reliability (0.18), is
-running.
+check 3).
+
+So a second control copies that kind of noise. Programs are ranked by a
+noisy score instead of MI itself (`scripts/static_ranking.py
+--score-noise R`): within each task, MI standardized over the task's
+programs times √R, plus Gaussian noise times √(1 − R), drawn once per
+program, so R is the share of the score's variance that is MI. A
+program's mean editing score has a reliability of 0.18 on the train tasks
+(program variance over program variance plus the program × sequence and
+trial variance left after averaging 2 sequences × 3 repetitions, from the
+variance shares above). At R = 0.18 (two seeds), 0.47 (what 8 change
+sequences per task instead of 2 would give) and 0.80, the pairs are
+capped and matched per task to dpo3's 160 like radon's; at 0.18 a fifth
+writer gets every unequal pair, 627, length-fit. Each is trained with
+dpo3's settings and scored on the same held-out Radon pairs.
+
+| Writer | Reliability | Pairs | Pairs preferring the lower-MI program | Final training loss | Eval-task pairs (114, 16 tasks) | Dev-task pairs (60, 8 tasks) |
+|---|---:|---:|---:|---:|---:|---:|
+| radon | 1 | 160 | 0% | 0.54 | 79% (67% to 89%) | 60% (42% to 80%) |
+| radon_rel80 | 0.80 | 160 | 1% | 0.52 | 81% (68% to 92%) | 60% (40% to 81%) |
+| radon_rel47 | 0.47 | 160 | 11% | 0.54 | 74% (57% to 87%) | 52% (32% to 73%) |
+| radon_rel18 | 0.18 | 160 | 26% | 0.55 | 58% (42% to 73%) | 68% (47% to 87%) |
+| radon_rel18s2 (seed 2) | 0.18 | 160 | 22% | 0.55 | 71% (54% to 86%) | 48% (30% to 68%) |
+| radon_rel18_all | 0.18 | 627 | 31% | 0.59 | 81% (66% to 92%) | 47% (25% to 69%) |
+| radon_f30 (random swaps) | – | 160 | 30% | 0.67 | 56% (39% to 73%) | 68% (44% to 88%) |
+
+At the editing scores' reliability, 160 pairs are a coin toss: the two
+seeds give 58% and 71%, 13 points apart. At 0.47 the writer carries the
+preference over, at 0.80 as well as with clean scores. And with every pair,
+627 instead of 160, the 0.18 writer carries it over as well as the clean
+writer does (81%, against 79%), even though 31% of its pairs prefer the
+lower-MI program, more than the 30% writer's swapped pairs. Its mean
+reward margin on the eval-task pairs is +0.30, against +0.08 for radon
+(157 training steps instead of 40). Noise that belongs to the program does
+not contradict itself, and spread over every pair of every program, what
+the pairs have in common is MI. The dev-task pairs again cannot tell the
+writers apart.
+
+So noise at the editing labels' level does not by itself stop DPO from
+learning a preference that carries over: 160 pairs capped by margin are
+too few to count on, and all pairs are enough. dpo3 trained on 160. The
+matching run on the editing labels is running: every unequal pair of mean
+editing scores on the train tasks (`configs/rtx5070_train_aggregate.yaml`,
+scorer rule `aggregate`, no cap, min step gap 1: 634 pairs from 36 tasks),
+trained with dpo3's settings as dpo_all, then its implicit reward on the
+base writer's dev and eval editing pairs paired the same way
+(`configs/rtx5070_dev_aggregate.yaml`, `rtx5070_eval_aggregate.yaml`: 98
+pairs from 7 tasks, 298 from 16) and the full eval-task collection
+(`configs/rtx5070_eval_dpo_all.yaml`). If the editing labels have a common
+direction, dpo_all should find it the way radon_rel18_all found MI's.
 
 ## Reproduce
 
@@ -918,6 +967,37 @@ uv run python scripts/winner_features.py --config configs/rtx5070_eval.yaml \
     --base configs/rtx5070_eval.yaml --writer configs/rtx5070_eval_radon.yaml \
     --writer configs/rtx5070_eval_radon_f15.yaml --writer configs/rtx5070_eval_radon_f30.yaml \
     --writer configs/rtx5070_eval_radon_f50.yaml
+D=runs/rtx5070_pc/dpo TOK=/home/pc/models/hf/Qwen2.5-Coder-7B-Instruct
+for v in rel18:0.18:20261116 rel18s2:0.18:2 rel47:0.47:20261116 rel80:0.80:20261116; do
+  IFS=: read n r s <<< $v
+  uv run python scripts/static_ranking.py --config configs/rtx5070_train.yaml \
+      --score-noise $r --seed $s --out $D/radon_${n}_raw.jsonl
+  .venv/bin/python scripts/match_pairs.py $D/radon_${n}_raw.jsonl \
+      $D/pairs_cap8_f23_nocosm.jsonl $D/radon_$n.jsonl --model $TOK
+done
+uv run python scripts/static_ranking.py --config configs/rtx5070_train.yaml \
+    --score-noise 0.18 --no-cap --out $D/radon_rel18_all_raw.jsonl
+.venv/bin/python scripts/match_pairs.py $D/radon_rel18_all_raw.jsonl \
+    $D/radon_rel18_all_raw.jsonl $D/radon_rel18_all.jsonl --model $TOK
+for n in rel18 rel18s2 rel47 rel80 rel18_all; do                # GPU, ~25 min (rel18_all ~95)
+  .venv/bin/python -m harness.train_dpo $D/radon_$n.jsonl --model $TOK \
+      --output-dir /home/pc/models/dpo/radon_$n --learning-rate 2e-5 --max-length 3200
+done
+.venv/bin/python scripts/implicit_reward.py --model $TOK \
+    --adapter radon=/home/pc/models/dpo/radon --adapter radon_f30=/home/pc/models/dpo/radon_f30 \
+    --adapter radon_rel18=/home/pc/models/dpo/radon_rel18 \
+    --adapter radon_rel18s2=/home/pc/models/dpo/radon_rel18s2 \
+    --adapter radon_rel47=/home/pc/models/dpo/radon_rel47 \
+    --adapter radon_rel80=/home/pc/models/dpo/radon_rel80 \
+    --adapter radon_rel18_all=/home/pc/models/dpo/radon_rel18_all \
+    --pairs $D/radon_dev.jsonl --pairs $D/radon_evaltasks.jsonl \
+    --out $D/implicit_reward_scorenoise.jsonl                              # GPU, ~40 min
+uv run python -m harness report --config configs/rtx5070_train_aggregate.yaml \
+    --out $D/editing_all
+.venv/bin/python scripts/match_pairs.py $D/editing_all/preferences.jsonl \
+    $D/editing_all/preferences.jsonl $D/dpo_all.jsonl --model $TOK
+.venv/bin/python -m harness.train_dpo $D/dpo_all.jsonl --model $TOK \
+    --output-dir /home/pc/models/dpo/dpo_all --learning-rate 2e-5 --max-length 3200
 ```
 
 `scripts/implicit_reward.py` needs the training extras and the GPU (about

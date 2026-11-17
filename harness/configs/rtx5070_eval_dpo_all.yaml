@@ -1,0 +1,18 @@
+# The DPO writer trained on every editing pair (writer-dpo_all-ctx8k) on the
+# 16 eval tasks. Its 634 pairs come from rtx5070_train_aggregate.yaml: the
+# train collection's editing results, one mean score per program and every
+# unequal pair, as in the score-noise control, where Radon scores with our
+# editing scores' reliability (0.18) and all 627 pairs taught a writer the
+# Radon preference as well as clean scores did. Trained with dpo3's
+# settings; everything else as in rtx5070_eval.yaml, so its results compare
+# with the base writer's and dpo3's.
+#
+# Usage (from harness/, inside WSL):
+#     uv run python -m harness collect --config configs/rtx5070_eval_dpo_all.yaml
+#     uv run python scripts/eval_compare.py --base configs/rtx5070_eval.yaml \
+#         --other configs/rtx5070_eval_dpo_all.yaml
+extends: rtx5070_eval.yaml
+name: rtx5070-eval-dpo-all
+writer:
+  backend:
+    model: writer-dpo_all-ctx8k

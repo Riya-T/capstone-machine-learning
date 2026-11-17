@@ -1,0 +1,14 @@
+# The base writer's editing results on the 8 dev tasks, paired like
+# rtx5070_train_aggregate.yaml (mean score per program, every unequal pair,
+# no cap): held-out pairs for scripts/implicit_reward.py. Nothing is
+# collected.
+#
+# Usage (from harness/, inside WSL):
+#     .venv/bin/python scripts/implicit_reward.py --model ... --adapter ... \
+#         --config configs/rtx5070_dev_aggregate.yaml --out ...
+extends: rtx5070_pc.yaml
+name: rtx5070-dev-aggregate
+scorer:
+  rule: aggregate
+  per_task_cap: null
+  min_step_gap: 1

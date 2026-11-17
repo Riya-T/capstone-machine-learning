@@ -137,7 +137,11 @@ rule over their per-sequence scores:
 
 - `weak_dominance` (primary): at least as good in every sequence and
   better in at least one;
-- `strict`: better in every sequence.
+- `strict`: better in every sequence;
+- `aggregate`: a higher mean over the sequences, even if one sequence
+  disagrees (added 2026-11-17 for the all-pairs writer,
+  `harness/configs/rtx5070_train_aggregate.yaml`; see
+  `harness/results/diagnostics.md`, "Label-noise control").
 
 Ties and inconsistent comparisons (better in one sequence, worse in another)
 give no pair, and neither does a win by fewer than `min_step_gap` (2)
