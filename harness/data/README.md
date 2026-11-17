@@ -158,13 +158,14 @@ done
 
 The first 229 pairs and the files trained on them were made on Karin's PC
 (store `runs/rtx5070_pc/`, config `configs/rtx5070_train.yaml`), before
-`--dataset` existed. They are not in the repository yet. To add them, Karin
-runs on that PC:
+`--dataset` existed. They were added on 2026-11-16 with:
 
 ```bash
 .venv/bin/python -m harness.datasets add train-v1 \
     runs/rtx5070_pc/dpo/pairs_cap8_all.jsonl \
+    runs/rtx5070_pc/dpo/pairs_cap8_f23.jsonl \
     runs/rtx5070_pc/dpo/pairs_cap8_f23_nocosm.jsonl \
+    runs/rtx5070_pc/dpo/pairs_cap8_f23_nocosm_consistent.jsonl \
     runs/rtx5070_pc/dpo/radon_cap8_all.jsonl \
     runs/rtx5070_pc/dpo/radon_matched.jsonl \
     runs/rtx5070_pc/dpo/sft_programs.jsonl
@@ -176,10 +177,51 @@ ones in the table above:
 | train-v1 file | What it is | Same as, in later datasets |
 |---|---|---|
 | `pairs_cap8_all.jsonl` | all 229 scorer pairs, up to 8 per task | `pairs_unfiltered.jsonl` |
-| `pairs_cap8_f23_nocosm.jsonl` | **the 160 pairs dpo3 was trained on** (won in at least 2 of 3 reps, cosmetic pairs dropped) | `pairs.jsonl` |
-| `radon_cap8_all.jsonl` | every Radon-ranked pair | `radon_all.jsonl` |
+| `pairs_cap8_f23.jsonl` | the 182 of them won in at least 2 of 3 reps | – |
+| `pairs_cap8_f23_nocosm.jsonl` | **the 160 pairs dpo2 and dpo3 were trained on** (won in at least 2 of 3 reps, cosmetic pairs dropped) | `pairs.jsonl` |
+| `pairs_cap8_f23_nocosm_consistent.jsonl` | a stricter subset of those 160 (98 pairs), made with them and never trained on | – |
+| `radon_cap8_all.jsonl` | all 271 Radon-ranked pairs | `radon_all.jsonl` |
 | `radon_matched.jsonl` | the static-ranking baseline's 160 pairs | `radon_matched.jsonl` |
 | `sft_programs.jsonl` | the correctness-only baseline's 201 programs | `sft_programs.jsonl` |
+
+## Every collection's pairs: pairs-karin-v1
+
+The scorer's pairs of every collection on Karin's PC that gave at least
+one pair, one file per config (`<config>.jsonl` for
+`configs/<config>.yaml`). They were rebuilt from the store on 2026-11-16
+with the current code (no model calls), so every row has a `source` block:
+
+```bash
+for c in rtx5070_train rtx5070_pc rtx5070_eval ...; do
+  .venv/bin/python -m harness report --config configs/$c.yaml \
+      --out runs/rtx5070_pc/pairs_export/$c
+  cp runs/rtx5070_pc/pairs_export/$c/preferences.jsonl runs/rtx5070_pc/pairs_export/$c.jsonl
+done
+.venv/bin/python -m harness.datasets add pairs-karin-v1 runs/rtx5070_pc/pairs_export/*.jsonl
+```
+
+| Files | Pairs | What they are |
+|---|---:|---|
+| `rtx5070_train.jsonl` | 229 | the train tasks: the same 229 pairs as `train-v1/pairs_cap8_all.jsonl`, with `source` blocks |
+| `rtx5070_pc.jsonl` | 47 | the dev tasks, base writer |
+| `rtx5070_eval.jsonl`, `rtx5070_eval_maintain.jsonl`, `rtx5070_eval_dpo3.jsonl`, `rtx5070_eval_radon.jsonl`, `rtx5070_eval_sft.jsonl` | 119, 109, 100, 94, 111 | the eval tasks, one file per writer (the five methods) |
+| the same five with `_nocomments` | 114, 111, 100, 91, 111 | the comment ablation of the five |
+| `rtx5070_dev_dpo2.jsonl`, `rtx5070_dev_dpo3.jsonl` | 39, 37 | the dev tasks with the two trained writers, used to choose the learning rate |
+| `rtx5070_pc_editor_t02.jsonl`, `_editor_patch`, `_editor_7b`, `_editor_v3`, `_outline`, `_obscure`, `_editor_7b_obscure` | 40, 50, 25, 44, 29, 42, 31 | the dev-task editor probes and readability controls (`harness/results/diagnostics.md`) |
+| `rtx5070_pc_hints.jsonl` | 29 | the dev tasks with design-hinted writer samples |
+| `rtx5070_pilot_maintain.jsonl` | 1 | the design-sensitive pilot, maintainability prompt |
+
+The 3B editor, the 3B writer and the pilot with the plain prompt gave no
+pairs, so they have no file. Apart from `rtx5070_train.jsonl`, these are
+dev, eval and probe pairs: nothing was ever trained on them.
+
+## The label-noise control: label-noise-v1
+
+| File | Pairs | What it is |
+|---|---:|---|
+| `radon_f15.jsonl`, `radon_f30.jsonl`, `radon_f50.jsonl` | 160 each | `train-v1/radon_matched.jsonl` with 24, 48 and 80 pairs swapped (`scripts/flip_pairs.py --rate 0.15`, `0.3`, `0.5`, seed 20261116); every row has `"flipped"` |
+| `radon_dev.jsonl` | 60 | Radon-ranked pairs of the base writer's dev-task programs (`scripts/static_ranking.py --config configs/rtx5070_pc.yaml`), for testing on tasks no writer trained on |
+| `radon_evaltasks.jsonl` | 114 | the same for the eval-task programs (`--config configs/rtx5070_eval.yaml`) |
 
 ## The rules
 

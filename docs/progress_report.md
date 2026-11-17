@@ -1028,6 +1028,7 @@ the training signal differs:
 | What | Where |
 |---|---|
 | Results pages | `harness/results/` |
+| Every preference pair | `harness/data/`: `train-v1` (the training pairs of dpo3 and the baselines), `pairs-karin-v1` (every collection's pairs, one file per config), `label-noise-v1` (the label-noise control); see `harness/data/README.md` |
 | Task documentation and every task fix | `harness/tasks/FAMILIES.md` |
 | Decisions that differ from the proposal | README, "Changes from the proposal" |
 | Training, export and baselines | README, "DPO training", "Serving the trained writer", "Static-ranking baseline", "Correctness-only baseline" |

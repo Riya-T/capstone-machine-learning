@@ -1,0 +1,16 @@
+# Label-noise control on the 16 eval tasks, writer side only: the Radon
+# baseline (rtx5070_eval_radon.yaml) retrained with 30% of its 160 matched
+# pairs swapped (scripts/flip_pairs.py --rate 0.30, seed 20261116), with
+# dpo3's settings, and served like writer-radon-ctx8k as
+# writer-radon_f30-ctx8k. Only the writer's samples and the initial checks
+# are run (--until initial); scripts/winner_features.py then compares the
+# code against the base writer's (rtx5070_eval.yaml), as for the Radon
+# writer, whose labels are never swapped.
+#
+# Usage (from harness/, inside WSL):
+#     uv run python -m harness collect --config configs/rtx5070_eval_radon_f30.yaml --until initial
+extends: rtx5070_eval.yaml
+name: rtx5070-eval-radon-f30
+writer:
+  backend:
+    model: writer-radon_f30-ctx8k

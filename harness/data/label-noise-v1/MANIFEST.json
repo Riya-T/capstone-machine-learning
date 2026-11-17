@@ -1,0 +1,55 @@
+{
+  "dataset": "label-noise-v1",
+  "files": [
+    {
+      "name": "radon_f15.jsonl",
+      "sha256": "601c7b7c16e7b0213729c054d91ea9b112522703d74496fda4f12e1fe8d51529",
+      "bytes": 1724836,
+      "rows": 160,
+      "command": "python src/harness/datasets.py add label-noise-v1 runs/rtx5070_pc/dpo/radon_f15.jsonl runs/rtx5070_pc/dpo/radon_f30.jsonl runs/rtx5070_pc/dpo/radon_f50.jsonl runs/rtx5070_pc/dpo/radon_dev.jsonl runs/rtx5070_pc/dpo/radon_evaltasks.jsonl",
+      "git_commit": "0ebc68e3a36653afdc0b48aa7c8a079271199b5a",
+      "git_dirty": false,
+      "created": "2026-11-17T04:07:51Z"
+    },
+    {
+      "name": "radon_f30.jsonl",
+      "sha256": "02343016101e41469f728bffddb366901d4e904be663c669d0f0e062c0a4d4a9",
+      "bytes": 1724836,
+      "rows": 160,
+      "command": "python src/harness/datasets.py add label-noise-v1 runs/rtx5070_pc/dpo/radon_f15.jsonl runs/rtx5070_pc/dpo/radon_f30.jsonl runs/rtx5070_pc/dpo/radon_f50.jsonl runs/rtx5070_pc/dpo/radon_dev.jsonl runs/rtx5070_pc/dpo/radon_evaltasks.jsonl",
+      "git_commit": "0ebc68e3a36653afdc0b48aa7c8a079271199b5a",
+      "git_dirty": false,
+      "created": "2026-11-17T04:07:51Z"
+    },
+    {
+      "name": "radon_f50.jsonl",
+      "sha256": "b99329f039b032a5461f92fdd9cf1b9eb3b00ab8830fd6cdc5a3d3de130c8492",
+      "bytes": 1724836,
+      "rows": 160,
+      "command": "python src/harness/datasets.py add label-noise-v1 runs/rtx5070_pc/dpo/radon_f15.jsonl runs/rtx5070_pc/dpo/radon_f30.jsonl runs/rtx5070_pc/dpo/radon_f50.jsonl runs/rtx5070_pc/dpo/radon_dev.jsonl runs/rtx5070_pc/dpo/radon_evaltasks.jsonl",
+      "git_commit": "0ebc68e3a36653afdc0b48aa7c8a079271199b5a",
+      "git_dirty": false,
+      "created": "2026-11-17T04:07:51Z"
+    },
+    {
+      "name": "radon_dev.jsonl",
+      "sha256": "19413e2c2685541ce341c242c78640576f9cee4a35d0ea65d5dd4ecedff78824",
+      "bytes": 582308,
+      "rows": 60,
+      "command": "python src/harness/datasets.py add label-noise-v1 runs/rtx5070_pc/dpo/radon_f15.jsonl runs/rtx5070_pc/dpo/radon_f30.jsonl runs/rtx5070_pc/dpo/radon_f50.jsonl runs/rtx5070_pc/dpo/radon_dev.jsonl runs/rtx5070_pc/dpo/radon_evaltasks.jsonl",
+      "git_commit": "0ebc68e3a36653afdc0b48aa7c8a079271199b5a",
+      "git_dirty": false,
+      "created": "2026-11-17T04:07:51Z"
+    },
+    {
+      "name": "radon_evaltasks.jsonl",
+      "sha256": "4ab5a1dcaf1156bf9d033a0115a92ca829bbb1ae92cad150c0bc21a3580125d5",
+      "bytes": 1330897,
+      "rows": 114,
+      "command": "python src/harness/datasets.py add label-noise-v1 runs/rtx5070_pc/dpo/radon_f15.jsonl runs/rtx5070_pc/dpo/radon_f30.jsonl runs/rtx5070_pc/dpo/radon_f50.jsonl runs/rtx5070_pc/dpo/radon_dev.jsonl runs/rtx5070_pc/dpo/radon_evaltasks.jsonl",
+      "git_commit": "0ebc68e3a36653afdc0b48aa7c8a079271199b5a",
+      "git_dirty": false,
+      "created": "2026-11-17T04:07:51Z"
+    }
+  ]
+}

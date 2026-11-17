@@ -1,0 +1,235 @@
+{
+  "dataset": "pairs-karin-v1",
+  "files": [
+    {
+      "name": "rtx5070_dev_dpo2.jsonl",
+      "sha256": "abd1702d58af1999e0b8bcdaea48d5aed3127ebdbfea81872a4fe2ee8c22d0e6",
+      "bytes": 463219,
+      "rows": 39,
+      "command": "python src/harness/datasets.py add pairs-karin-v1 runs/rtx5070_pc/pairs_export/rtx5070_dev_dpo2.jsonl runs/rtx5070_pc/pairs_export/rtx5070_dev_dpo3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_dpo3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_dpo3_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_maintain.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_maintain_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_radon.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_radon_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_sft.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_sft_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_7b.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_7b_obscure.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_patch.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_t02.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_v3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_hints.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_obscure.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_outline.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pilot_maintain.jsonl runs/rtx5070_pc/pairs_export/rtx5070_train.jsonl",
+      "git_commit": "0ebc68e3a36653afdc0b48aa7c8a079271199b5a",
+      "git_dirty": false,
+      "created": "2026-11-17T04:07:52Z"
+    },
+    {
+      "name": "rtx5070_dev_dpo3.jsonl",
+      "sha256": "3206f4d064dcde5c251937d8d3934144a66af5cc486255b54697e87422080aa7",
+      "bytes": 455883,
+      "rows": 37,
+      "command": "python src/harness/datasets.py add pairs-karin-v1 runs/rtx5070_pc/pairs_export/rtx5070_dev_dpo2.jsonl runs/rtx5070_pc/pairs_export/rtx5070_dev_dpo3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_dpo3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_dpo3_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_maintain.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_maintain_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_radon.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_radon_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_sft.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_sft_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_7b.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_7b_obscure.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_patch.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_t02.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_v3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_hints.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_obscure.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_outline.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pilot_maintain.jsonl runs/rtx5070_pc/pairs_export/rtx5070_train.jsonl",
+      "git_commit": "0ebc68e3a36653afdc0b48aa7c8a079271199b5a",
+      "git_dirty": false,
+      "created": "2026-11-17T04:07:52Z"
+    },
+    {
+      "name": "rtx5070_eval.jsonl",
+      "sha256": "ad952eb9c3323c74d09997bdb6a09458e87cf39f54b415ebe8f2cf9129758df9",
+      "bytes": 1657494,
+      "rows": 119,
+      "command": "python src/harness/datasets.py add pairs-karin-v1 runs/rtx5070_pc/pairs_export/rtx5070_dev_dpo2.jsonl runs/rtx5070_pc/pairs_export/rtx5070_dev_dpo3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_dpo3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_dpo3_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_maintain.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_maintain_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_radon.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_radon_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_sft.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_sft_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_7b.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_7b_obscure.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_patch.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_t02.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_v3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_hints.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_obscure.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_outline.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pilot_maintain.jsonl runs/rtx5070_pc/pairs_export/rtx5070_train.jsonl",
+      "git_commit": "0ebc68e3a36653afdc0b48aa7c8a079271199b5a",
+      "git_dirty": false,
+      "created": "2026-11-17T04:07:52Z"
+    },
+    {
+      "name": "rtx5070_eval_dpo3.jsonl",
+      "sha256": "114589ae9667d2aedc61f07e1210335fdb3fa05af0eada050aa74b780f165de9",
+      "bytes": 1375768,
+      "rows": 100,
+      "command": "python src/harness/datasets.py add pairs-karin-v1 runs/rtx5070_pc/pairs_export/rtx5070_dev_dpo2.jsonl runs/rtx5070_pc/pairs_export/rtx5070_dev_dpo3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_dpo3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_dpo3_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_maintain.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_maintain_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_radon.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_radon_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_sft.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_sft_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_7b.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_7b_obscure.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_patch.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_t02.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_v3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_hints.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_obscure.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_outline.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pilot_maintain.jsonl runs/rtx5070_pc/pairs_export/rtx5070_train.jsonl",
+      "git_commit": "0ebc68e3a36653afdc0b48aa7c8a079271199b5a",
+      "git_dirty": false,
+      "created": "2026-11-17T04:07:52Z"
+    },
+    {
+      "name": "rtx5070_eval_dpo3_nocomments.jsonl",
+      "sha256": "297d8c6b216a8a5eb9c06d8a7fd387f3ea72d81216e2e2cf81cb04ad3e1761d8",
+      "bytes": 1378525,
+      "rows": 100,
+      "command": "python src/harness/datasets.py add pairs-karin-v1 runs/rtx5070_pc/pairs_export/rtx5070_dev_dpo2.jsonl runs/rtx5070_pc/pairs_export/rtx5070_dev_dpo3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_dpo3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_dpo3_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_maintain.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_maintain_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_radon.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_radon_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_sft.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_sft_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_7b.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_7b_obscure.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_patch.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_t02.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_v3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_hints.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_obscure.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_outline.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pilot_maintain.jsonl runs/rtx5070_pc/pairs_export/rtx5070_train.jsonl",
+      "git_commit": "0ebc68e3a36653afdc0b48aa7c8a079271199b5a",
+      "git_dirty": false,
+      "created": "2026-11-17T04:07:52Z"
+    },
+    {
+      "name": "rtx5070_eval_maintain.jsonl",
+      "sha256": "319901bf246a7bb9711866a18932290fecded2da8238679638a632b18b5d98a3",
+      "bytes": 1539858,
+      "rows": 109,
+      "command": "python src/harness/datasets.py add pairs-karin-v1 runs/rtx5070_pc/pairs_export/rtx5070_dev_dpo2.jsonl runs/rtx5070_pc/pairs_export/rtx5070_dev_dpo3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_dpo3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_dpo3_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_maintain.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_maintain_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_radon.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_radon_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_sft.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_sft_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_7b.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_7b_obscure.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_patch.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_t02.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_v3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_hints.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_obscure.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_outline.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pilot_maintain.jsonl runs/rtx5070_pc/pairs_export/rtx5070_train.jsonl",
+      "git_commit": "0ebc68e3a36653afdc0b48aa7c8a079271199b5a",
+      "git_dirty": false,
+      "created": "2026-11-17T04:07:52Z"
+    },
+    {
+      "name": "rtx5070_eval_maintain_nocomments.jsonl",
+      "sha256": "c00260c3b4d44ec6d0ee786ee59d9346de861e2498ce88cf8756fa1696856d5a",
+      "bytes": 1580215,
+      "rows": 111,
+      "command": "python src/harness/datasets.py add pairs-karin-v1 runs/rtx5070_pc/pairs_export/rtx5070_dev_dpo2.jsonl runs/rtx5070_pc/pairs_export/rtx5070_dev_dpo3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_dpo3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_dpo3_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_maintain.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_maintain_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_radon.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_radon_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_sft.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_sft_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_7b.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_7b_obscure.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_patch.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_t02.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_v3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_hints.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_obscure.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_outline.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pilot_maintain.jsonl runs/rtx5070_pc/pairs_export/rtx5070_train.jsonl",
+      "git_commit": "0ebc68e3a36653afdc0b48aa7c8a079271199b5a",
+      "git_dirty": false,
+      "created": "2026-11-17T04:07:52Z"
+    },
+    {
+      "name": "rtx5070_eval_nocomments.jsonl",
+      "sha256": "0ba8412476208e5f98ec55a9c9d89d4a78f6451e3b93862b730fc627e802670e",
+      "bytes": 1592738,
+      "rows": 114,
+      "command": "python src/harness/datasets.py add pairs-karin-v1 runs/rtx5070_pc/pairs_export/rtx5070_dev_dpo2.jsonl runs/rtx5070_pc/pairs_export/rtx5070_dev_dpo3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_dpo3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_dpo3_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_maintain.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_maintain_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_radon.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_radon_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_sft.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_sft_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_7b.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_7b_obscure.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_patch.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_t02.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_v3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_hints.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_obscure.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_outline.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pilot_maintain.jsonl runs/rtx5070_pc/pairs_export/rtx5070_train.jsonl",
+      "git_commit": "0ebc68e3a36653afdc0b48aa7c8a079271199b5a",
+      "git_dirty": false,
+      "created": "2026-11-17T04:07:52Z"
+    },
+    {
+      "name": "rtx5070_eval_radon.jsonl",
+      "sha256": "f964d0e648026e3e9525b7ffac14a0273bf7a038936b91a8b3716caad471fb14",
+      "bytes": 1301337,
+      "rows": 94,
+      "command": "python src/harness/datasets.py add pairs-karin-v1 runs/rtx5070_pc/pairs_export/rtx5070_dev_dpo2.jsonl runs/rtx5070_pc/pairs_export/rtx5070_dev_dpo3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_dpo3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_dpo3_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_maintain.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_maintain_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_radon.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_radon_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_sft.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_sft_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_7b.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_7b_obscure.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_patch.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_t02.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_v3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_hints.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_obscure.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_outline.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pilot_maintain.jsonl runs/rtx5070_pc/pairs_export/rtx5070_train.jsonl",
+      "git_commit": "0ebc68e3a36653afdc0b48aa7c8a079271199b5a",
+      "git_dirty": false,
+      "created": "2026-11-17T04:07:52Z"
+    },
+    {
+      "name": "rtx5070_eval_radon_nocomments.jsonl",
+      "sha256": "74eb81ba8b536cb5522c63cce5066d941035a2765bb8c7527062e451562c07ac",
+      "bytes": 1255528,
+      "rows": 91,
+      "command": "python src/harness/datasets.py add pairs-karin-v1 runs/rtx5070_pc/pairs_export/rtx5070_dev_dpo2.jsonl runs/rtx5070_pc/pairs_export/rtx5070_dev_dpo3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_dpo3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_dpo3_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_maintain.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_maintain_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_radon.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_radon_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_sft.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_sft_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_7b.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_7b_obscure.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_patch.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_t02.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_v3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_hints.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_obscure.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_outline.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pilot_maintain.jsonl runs/rtx5070_pc/pairs_export/rtx5070_train.jsonl",
+      "git_commit": "0ebc68e3a36653afdc0b48aa7c8a079271199b5a",
+      "git_dirty": false,
+      "created": "2026-11-17T04:07:52Z"
+    },
+    {
+      "name": "rtx5070_eval_sft.jsonl",
+      "sha256": "87336aa67b77090993c54955d4647571280357d230d3475e99046c7ab713ea61",
+      "bytes": 1504963,
+      "rows": 111,
+      "command": "python src/harness/datasets.py add pairs-karin-v1 runs/rtx5070_pc/pairs_export/rtx5070_dev_dpo2.jsonl runs/rtx5070_pc/pairs_export/rtx5070_dev_dpo3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_dpo3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_dpo3_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_maintain.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_maintain_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_radon.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_radon_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_sft.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_sft_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_7b.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_7b_obscure.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_patch.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_t02.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_v3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_hints.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_obscure.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_outline.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pilot_maintain.jsonl runs/rtx5070_pc/pairs_export/rtx5070_train.jsonl",
+      "git_commit": "0ebc68e3a36653afdc0b48aa7c8a079271199b5a",
+      "git_dirty": false,
+      "created": "2026-11-17T04:07:52Z"
+    },
+    {
+      "name": "rtx5070_eval_sft_nocomments.jsonl",
+      "sha256": "34814922af653c8dbf0e77432fd3f82fb5c26aeff01c828b232ceabf5ee6796b",
+      "bytes": 1507372,
+      "rows": 111,
+      "command": "python src/harness/datasets.py add pairs-karin-v1 runs/rtx5070_pc/pairs_export/rtx5070_dev_dpo2.jsonl runs/rtx5070_pc/pairs_export/rtx5070_dev_dpo3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_dpo3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_dpo3_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_maintain.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_maintain_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_radon.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_radon_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_sft.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_sft_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_7b.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_7b_obscure.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_patch.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_t02.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_v3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_hints.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_obscure.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_outline.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pilot_maintain.jsonl runs/rtx5070_pc/pairs_export/rtx5070_train.jsonl",
+      "git_commit": "0ebc68e3a36653afdc0b48aa7c8a079271199b5a",
+      "git_dirty": false,
+      "created": "2026-11-17T04:07:52Z"
+    },
+    {
+      "name": "rtx5070_pc.jsonl",
+      "sha256": "37bdf3c4805e1b2641fe1d56557cff8729e72438882f7f1c9dd828e9e74be1df",
+      "bytes": 571715,
+      "rows": 47,
+      "command": "python src/harness/datasets.py add pairs-karin-v1 runs/rtx5070_pc/pairs_export/rtx5070_dev_dpo2.jsonl runs/rtx5070_pc/pairs_export/rtx5070_dev_dpo3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_dpo3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_dpo3_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_maintain.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_maintain_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_radon.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_radon_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_sft.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_sft_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_7b.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_7b_obscure.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_patch.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_t02.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_v3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_hints.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_obscure.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_outline.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pilot_maintain.jsonl runs/rtx5070_pc/pairs_export/rtx5070_train.jsonl",
+      "git_commit": "0ebc68e3a36653afdc0b48aa7c8a079271199b5a",
+      "git_dirty": false,
+      "created": "2026-11-17T04:07:52Z"
+    },
+    {
+      "name": "rtx5070_pc_editor_7b.jsonl",
+      "sha256": "d06cdeb17ff951d86799a3469fbdb60dfbe213f00818adedda72569767851843",
+      "bytes": 287469,
+      "rows": 25,
+      "command": "python src/harness/datasets.py add pairs-karin-v1 runs/rtx5070_pc/pairs_export/rtx5070_dev_dpo2.jsonl runs/rtx5070_pc/pairs_export/rtx5070_dev_dpo3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_dpo3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_dpo3_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_maintain.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_maintain_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_radon.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_radon_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_sft.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_sft_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_7b.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_7b_obscure.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_patch.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_t02.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_v3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_hints.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_obscure.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_outline.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pilot_maintain.jsonl runs/rtx5070_pc/pairs_export/rtx5070_train.jsonl",
+      "git_commit": "0ebc68e3a36653afdc0b48aa7c8a079271199b5a",
+      "git_dirty": false,
+      "created": "2026-11-17T04:07:52Z"
+    },
+    {
+      "name": "rtx5070_pc_editor_7b_obscure.jsonl",
+      "sha256": "2d7ba064c3df25359bc2384b3f00807acccc81f17340e577aa41a237ca2a2aed",
+      "bytes": 386515,
+      "rows": 31,
+      "command": "python src/harness/datasets.py add pairs-karin-v1 runs/rtx5070_pc/pairs_export/rtx5070_dev_dpo2.jsonl runs/rtx5070_pc/pairs_export/rtx5070_dev_dpo3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_dpo3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_dpo3_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_maintain.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_maintain_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_radon.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_radon_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_sft.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_sft_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_7b.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_7b_obscure.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_patch.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_t02.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_v3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_hints.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_obscure.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_outline.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pilot_maintain.jsonl runs/rtx5070_pc/pairs_export/rtx5070_train.jsonl",
+      "git_commit": "0ebc68e3a36653afdc0b48aa7c8a079271199b5a",
+      "git_dirty": false,
+      "created": "2026-11-17T04:07:52Z"
+    },
+    {
+      "name": "rtx5070_pc_editor_patch.jsonl",
+      "sha256": "59e1736e60057ce83149572a5ea652587f855bcb9f329fee8a769ee9c9948c2c",
+      "bytes": 611464,
+      "rows": 50,
+      "command": "python src/harness/datasets.py add pairs-karin-v1 runs/rtx5070_pc/pairs_export/rtx5070_dev_dpo2.jsonl runs/rtx5070_pc/pairs_export/rtx5070_dev_dpo3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_dpo3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_dpo3_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_maintain.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_maintain_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_radon.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_radon_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_sft.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_sft_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_7b.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_7b_obscure.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_patch.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_t02.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_v3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_hints.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_obscure.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_outline.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pilot_maintain.jsonl runs/rtx5070_pc/pairs_export/rtx5070_train.jsonl",
+      "git_commit": "0ebc68e3a36653afdc0b48aa7c8a079271199b5a",
+      "git_dirty": false,
+      "created": "2026-11-17T04:07:52Z"
+    },
+    {
+      "name": "rtx5070_pc_editor_t02.jsonl",
+      "sha256": "1f9bad018b0bf5d480fa9c473b6ed30384d870ca5878333f1a48b90a03d298a7",
+      "bytes": 482707,
+      "rows": 40,
+      "command": "python src/harness/datasets.py add pairs-karin-v1 runs/rtx5070_pc/pairs_export/rtx5070_dev_dpo2.jsonl runs/rtx5070_pc/pairs_export/rtx5070_dev_dpo3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_dpo3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_dpo3_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_maintain.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_maintain_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_radon.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_radon_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_sft.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_sft_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_7b.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_7b_obscure.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_patch.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_t02.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_v3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_hints.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_obscure.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_outline.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pilot_maintain.jsonl runs/rtx5070_pc/pairs_export/rtx5070_train.jsonl",
+      "git_commit": "0ebc68e3a36653afdc0b48aa7c8a079271199b5a",
+      "git_dirty": false,
+      "created": "2026-11-17T04:07:52Z"
+    },
+    {
+      "name": "rtx5070_pc_editor_v3.jsonl",
+      "sha256": "44940657e81c020e72623f9a5b9549b1e13d7fd5a4b1c69ed169bae07f772f57",
+      "bytes": 530143,
+      "rows": 44,
+      "command": "python src/harness/datasets.py add pairs-karin-v1 runs/rtx5070_pc/pairs_export/rtx5070_dev_dpo2.jsonl runs/rtx5070_pc/pairs_export/rtx5070_dev_dpo3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_dpo3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_dpo3_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_maintain.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_maintain_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_radon.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_radon_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_sft.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_sft_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_7b.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_7b_obscure.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_patch.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_t02.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_v3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_hints.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_obscure.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_outline.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pilot_maintain.jsonl runs/rtx5070_pc/pairs_export/rtx5070_train.jsonl",
+      "git_commit": "0ebc68e3a36653afdc0b48aa7c8a079271199b5a",
+      "git_dirty": false,
+      "created": "2026-11-17T04:07:52Z"
+    },
+    {
+      "name": "rtx5070_pc_hints.jsonl",
+      "sha256": "37d21bcdce55361658dff65632cc3453f3c46e76250b50972fc4f934d55a84e3",
+      "bytes": 347073,
+      "rows": 29,
+      "command": "python src/harness/datasets.py add pairs-karin-v1 runs/rtx5070_pc/pairs_export/rtx5070_dev_dpo2.jsonl runs/rtx5070_pc/pairs_export/rtx5070_dev_dpo3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_dpo3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_dpo3_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_maintain.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_maintain_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_radon.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_radon_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_sft.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_sft_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_7b.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_7b_obscure.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_patch.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_t02.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_v3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_hints.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_obscure.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_outline.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pilot_maintain.jsonl runs/rtx5070_pc/pairs_export/rtx5070_train.jsonl",
+      "git_commit": "0ebc68e3a36653afdc0b48aa7c8a079271199b5a",
+      "git_dirty": false,
+      "created": "2026-11-17T04:07:52Z"
+    },
+    {
+      "name": "rtx5070_pc_obscure.jsonl",
+      "sha256": "d5e6b145064c169c6f9236a5ae6dbaff32a361a06e09cf00cc1adaa88cbd5c91",
+      "bytes": 507598,
+      "rows": 42,
+      "command": "python src/harness/datasets.py add pairs-karin-v1 runs/rtx5070_pc/pairs_export/rtx5070_dev_dpo2.jsonl runs/rtx5070_pc/pairs_export/rtx5070_dev_dpo3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_dpo3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_dpo3_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_maintain.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_maintain_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_radon.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_radon_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_sft.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_sft_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_7b.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_7b_obscure.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_patch.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_t02.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_v3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_hints.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_obscure.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_outline.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pilot_maintain.jsonl runs/rtx5070_pc/pairs_export/rtx5070_train.jsonl",
+      "git_commit": "0ebc68e3a36653afdc0b48aa7c8a079271199b5a",
+      "git_dirty": false,
+      "created": "2026-11-17T04:07:52Z"
+    },
+    {
+      "name": "rtx5070_pc_outline.jsonl",
+      "sha256": "dbb17463ecbb2ce54bb30f5ca807f05e1dfcbaac8dd989b264f8b1bf1996377c",
+      "bytes": 343568,
+      "rows": 29,
+      "command": "python src/harness/datasets.py add pairs-karin-v1 runs/rtx5070_pc/pairs_export/rtx5070_dev_dpo2.jsonl runs/rtx5070_pc/pairs_export/rtx5070_dev_dpo3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_dpo3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_dpo3_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_maintain.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_maintain_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_radon.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_radon_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_sft.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_sft_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_7b.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_7b_obscure.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_patch.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_t02.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_v3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_hints.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_obscure.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_outline.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pilot_maintain.jsonl runs/rtx5070_pc/pairs_export/rtx5070_train.jsonl",
+      "git_commit": "0ebc68e3a36653afdc0b48aa7c8a079271199b5a",
+      "git_dirty": false,
+      "created": "2026-11-17T04:07:52Z"
+    },
+    {
+      "name": "rtx5070_pilot_maintain.jsonl",
+      "sha256": "0ced19b18aa063722d5ca70fc22eff0c8189ec7c90911fb3a1f27c318ad81963",
+      "bytes": 17346,
+      "rows": 1,
+      "command": "python src/harness/datasets.py add pairs-karin-v1 runs/rtx5070_pc/pairs_export/rtx5070_dev_dpo2.jsonl runs/rtx5070_pc/pairs_export/rtx5070_dev_dpo3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_dpo3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_dpo3_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_maintain.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_maintain_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_radon.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_radon_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_sft.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_sft_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_7b.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_7b_obscure.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_patch.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_t02.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_v3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_hints.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_obscure.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_outline.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pilot_maintain.jsonl runs/rtx5070_pc/pairs_export/rtx5070_train.jsonl",
+      "git_commit": "0ebc68e3a36653afdc0b48aa7c8a079271199b5a",
+      "git_dirty": false,
+      "created": "2026-11-17T04:07:52Z"
+    },
+    {
+      "name": "rtx5070_train.jsonl",
+      "sha256": "dc25cefc8a3dbb15e2d3cc9f2880e84795106b15ac6e17aefc84269d0dd42d0d",
+      "bytes": 2915500,
+      "rows": 229,
+      "command": "python src/harness/datasets.py add pairs-karin-v1 runs/rtx5070_pc/pairs_export/rtx5070_dev_dpo2.jsonl runs/rtx5070_pc/pairs_export/rtx5070_dev_dpo3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_dpo3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_dpo3_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_maintain.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_maintain_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_radon.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_radon_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_sft.jsonl runs/rtx5070_pc/pairs_export/rtx5070_eval_sft_nocomments.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_7b.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_7b_obscure.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_patch.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_t02.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_editor_v3.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_hints.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_obscure.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pc_outline.jsonl runs/rtx5070_pc/pairs_export/rtx5070_pilot_maintain.jsonl runs/rtx5070_pc/pairs_export/rtx5070_train.jsonl",
+      "git_commit": "0ebc68e3a36653afdc0b48aa7c8a079271199b5a",
+      "git_dirty": false,
+      "created": "2026-11-17T04:07:52Z"
+    }
+  ]
+}

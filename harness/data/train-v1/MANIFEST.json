@@ -1,0 +1,75 @@
+{
+  "dataset": "train-v1",
+  "files": [
+    {
+      "name": "pairs_cap8_all.jsonl",
+      "sha256": "7803365fef2345560b91e9c92cefa71529b12f3cad9b9a73f988e655de7d5f1d",
+      "bytes": 2443760,
+      "rows": 229,
+      "command": "python src/harness/datasets.py add train-v1 runs/rtx5070_pc/dpo/pairs_cap8_all.jsonl runs/rtx5070_pc/dpo/pairs_cap8_f23.jsonl runs/rtx5070_pc/dpo/pairs_cap8_f23_nocosm.jsonl runs/rtx5070_pc/dpo/pairs_cap8_f23_nocosm_consistent.jsonl runs/rtx5070_pc/dpo/radon_cap8_all.jsonl runs/rtx5070_pc/dpo/radon_matched.jsonl runs/rtx5070_pc/dpo/sft_programs.jsonl",
+      "git_commit": "0ebc68e3a36653afdc0b48aa7c8a079271199b5a",
+      "git_dirty": false,
+      "created": "2026-11-17T04:07:51Z"
+    },
+    {
+      "name": "pairs_cap8_f23.jsonl",
+      "sha256": "cfbef6ba84db1d4aab4b1e616c7b5d81514af0c46dc54c835142b6c31a4ac3ec",
+      "bytes": 1948014,
+      "rows": 182,
+      "command": "python src/harness/datasets.py add train-v1 runs/rtx5070_pc/dpo/pairs_cap8_all.jsonl runs/rtx5070_pc/dpo/pairs_cap8_f23.jsonl runs/rtx5070_pc/dpo/pairs_cap8_f23_nocosm.jsonl runs/rtx5070_pc/dpo/pairs_cap8_f23_nocosm_consistent.jsonl runs/rtx5070_pc/dpo/radon_cap8_all.jsonl runs/rtx5070_pc/dpo/radon_matched.jsonl runs/rtx5070_pc/dpo/sft_programs.jsonl",
+      "git_commit": "0ebc68e3a36653afdc0b48aa7c8a079271199b5a",
+      "git_dirty": false,
+      "created": "2026-11-17T04:07:51Z"
+    },
+    {
+      "name": "pairs_cap8_f23_nocosm.jsonl",
+      "sha256": "4df6db824e786637269481f3bd13abf1c6670d160cd413d23c19203b84cf5654",
+      "bytes": 1732052,
+      "rows": 160,
+      "command": "python src/harness/datasets.py add train-v1 runs/rtx5070_pc/dpo/pairs_cap8_all.jsonl runs/rtx5070_pc/dpo/pairs_cap8_f23.jsonl runs/rtx5070_pc/dpo/pairs_cap8_f23_nocosm.jsonl runs/rtx5070_pc/dpo/pairs_cap8_f23_nocosm_consistent.jsonl runs/rtx5070_pc/dpo/radon_cap8_all.jsonl runs/rtx5070_pc/dpo/radon_matched.jsonl runs/rtx5070_pc/dpo/sft_programs.jsonl",
+      "git_commit": "0ebc68e3a36653afdc0b48aa7c8a079271199b5a",
+      "git_dirty": false,
+      "created": "2026-11-17T04:07:51Z"
+    },
+    {
+      "name": "pairs_cap8_f23_nocosm_consistent.jsonl",
+      "sha256": "dc8b0001746e159a606766ccabf60739d3ebe7bacefe5250b9b1731b414857d6",
+      "bytes": 1114214,
+      "rows": 98,
+      "command": "python src/harness/datasets.py add train-v1 runs/rtx5070_pc/dpo/pairs_cap8_all.jsonl runs/rtx5070_pc/dpo/pairs_cap8_f23.jsonl runs/rtx5070_pc/dpo/pairs_cap8_f23_nocosm.jsonl runs/rtx5070_pc/dpo/pairs_cap8_f23_nocosm_consistent.jsonl runs/rtx5070_pc/dpo/radon_cap8_all.jsonl runs/rtx5070_pc/dpo/radon_matched.jsonl runs/rtx5070_pc/dpo/sft_programs.jsonl",
+      "git_commit": "0ebc68e3a36653afdc0b48aa7c8a079271199b5a",
+      "git_dirty": false,
+      "created": "2026-11-17T04:07:51Z"
+    },
+    {
+      "name": "radon_cap8_all.jsonl",
+      "sha256": "f2673f1a02758f2f0af2e28f7016187f1ad5734e24fad6ee9e1de9ffd463233a",
+      "bytes": 2854536,
+      "rows": 271,
+      "command": "python src/harness/datasets.py add train-v1 runs/rtx5070_pc/dpo/pairs_cap8_all.jsonl runs/rtx5070_pc/dpo/pairs_cap8_f23.jsonl runs/rtx5070_pc/dpo/pairs_cap8_f23_nocosm.jsonl runs/rtx5070_pc/dpo/pairs_cap8_f23_nocosm_consistent.jsonl runs/rtx5070_pc/dpo/radon_cap8_all.jsonl runs/rtx5070_pc/dpo/radon_matched.jsonl runs/rtx5070_pc/dpo/sft_programs.jsonl",
+      "git_commit": "0ebc68e3a36653afdc0b48aa7c8a079271199b5a",
+      "git_dirty": false,
+      "created": "2026-11-17T04:07:51Z"
+    },
+    {
+      "name": "radon_matched.jsonl",
+      "sha256": "648164de38978587922b85bf53bcb085a57640f1200331bbfdf6b42acf520449",
+      "bytes": 1722148,
+      "rows": 160,
+      "command": "python src/harness/datasets.py add train-v1 runs/rtx5070_pc/dpo/pairs_cap8_all.jsonl runs/rtx5070_pc/dpo/pairs_cap8_f23.jsonl runs/rtx5070_pc/dpo/pairs_cap8_f23_nocosm.jsonl runs/rtx5070_pc/dpo/pairs_cap8_f23_nocosm_consistent.jsonl runs/rtx5070_pc/dpo/radon_cap8_all.jsonl runs/rtx5070_pc/dpo/radon_matched.jsonl runs/rtx5070_pc/dpo/sft_programs.jsonl",
+      "git_commit": "0ebc68e3a36653afdc0b48aa7c8a079271199b5a",
+      "git_dirty": false,
+      "created": "2026-11-17T04:07:51Z"
+    },
+    {
+      "name": "sft_programs.jsonl",
+      "sha256": "0ac7aa5b87d5700ff2e20e98b93002187afe890ac6d905320d8f9890aa36e13b",
+      "bytes": 1584029,
+      "rows": 201,
+      "command": "python src/harness/datasets.py add train-v1 runs/rtx5070_pc/dpo/pairs_cap8_all.jsonl runs/rtx5070_pc/dpo/pairs_cap8_f23.jsonl runs/rtx5070_pc/dpo/pairs_cap8_f23_nocosm.jsonl runs/rtx5070_pc/dpo/pairs_cap8_f23_nocosm_consistent.jsonl runs/rtx5070_pc/dpo/radon_cap8_all.jsonl runs/rtx5070_pc/dpo/radon_matched.jsonl runs/rtx5070_pc/dpo/sft_programs.jsonl",
+      "git_commit": "0ebc68e3a36653afdc0b48aa7c8a079271199b5a",
+      "git_dirty": false,
+      "created": "2026-11-17T04:07:51Z"
+    }
+  ]
+}
