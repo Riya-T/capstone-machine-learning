@@ -255,7 +255,7 @@ All five methods are done:
   dpo_all writer), fits them tightly but ranks the base writer's held-out
   eval-task pairs only 54% right (49% to 61%), no better than the base
   model alone (56%). A writer that had learned their signal as well as the
-  control learned the formula's would get about 64% on labels this noisy.
+  control learned the formula's would get about 65% on labels this noisy.
   With the same kind and amount of noise and the same number of pairs,
   training found the formula's preference and not ours. So what our
   editing scores share within a task does not point the same way across
@@ -364,7 +364,7 @@ them in one place.
   on 160. The same all-pairs training on our editing labels (634 pairs)
   carries nothing over: 54% (49% to 61%) of held-out eval-task editing
   pairs, where a writer that had learned their signal as well would get
-  about 64%. So the noise is not what stops training; our labels have no
+  about 65%. So the noise is not what stops training; our labels have no
   direction in common across tasks. Its full eval run is going.
 
 ## The five methods
@@ -389,6 +389,8 @@ paired bootstrap over the 16 tasks:
 | Ours (dpo3) | +0.02 (−0.11 to +0.19) | +4 pts (+0 to +9) | −1 pt (−6 to +5) | +6 pts (+2 to +12) |
 | Static ranking | −0.08 (−0.23 to +0.08) | +0 pts (−6 to +8) | −3 pts (−8 to +1) | −8 pts (−18 to +1) |
 | Correctness-only | +0.05 (−0.09 to +0.22) | +5 pts (+1 to +10) | −1 pt (−7 to +6) | +8 pts (+1 to +15) |
+
+![Each method's difference from the original writer in changes done before the first failure and in samples passing the initial tests, with 95% intervals](../harness/results/figures/methods.png)
 
 Against ours (dpo3), same measures in the same order:
 
@@ -948,8 +950,8 @@ the training signal differs:
   log-probability 56%, 57%; dpo3 52%, 37%.
 - `scripts/noise_ceiling.py`: what a writer that learned a signal would
   score on held-out labels this noisy. radon_rel18_all over every pair of
-  the 106 Radon eval programs: 71% against MI, 64% (57% to 71%) against MI
-  plus per-program noise at reliability 0.42, 60% (52% to 68%) at 0.18.
+  the 106 Radon eval programs: 71% against MI, 65% (58% to 71%) against MI
+  plus per-program noise at reliability 0.42, 60% (51% to 67%) at 0.18.
 - Running: dpo_all exported as writer-dpo_all-ctx8k and the full eval
   collection (`configs/rtx5070_eval_dpo_all.yaml`) compared with the base
   writer and dpo3; then radon_rel18_all exported and sampled on the eval
@@ -1122,7 +1124,7 @@ the training signal differs:
     log-probability ranks 56% and 57%, dpo3 52% and 37%. The control's
     writer, scored on its own held-out programs against MI plus noise as
     unreliable as these labels (0.42 on eval tasks, 0.18 to 0.20 on train
-    and dev), ranks 64% (57% to 71%) and 60% (52% to 68%), so a writer that
+    and dev), ranks 65% (58% to 71%) and 60% (51% to 67%), so a writer that
     had learned the editing signal as well would show it. With matched
     noise and pair count, DPO learns the formula's preference and not the
     editing labels'.
@@ -1164,6 +1166,7 @@ the training signal differs:
 | What | Where |
 |---|---|
 | Results pages | `harness/results/` |
+| Figures | `harness/results/figures/` (PNG and SVG), made by `scripts/report_figures.py` from the store and the saved implicit-reward files: the five methods, the variance split, the label-noise control, the held-out editing pairs |
 | Every preference pair | `harness/data/`: `train-v1` (the training pairs of dpo3 and the baselines), `pairs-karin-v1` (every collection's pairs, one file per config), `label-noise-v1` (the label-noise control); see `harness/data/README.md` |
 | Task documentation and every task fix | `harness/tasks/FAMILIES.md` |
 | Decisions that differ from the proposal | README, "Changes from the proposal" |

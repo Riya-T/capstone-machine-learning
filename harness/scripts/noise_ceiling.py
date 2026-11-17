@@ -72,6 +72,17 @@ def noisy_labels(programs: dict[str, dict], reliability: float, rng: random.Rand
     return labels
 
 
+def ceiling(programs: dict[str, dict], reliability: float, draws: int, seed: int):
+    """Mean share and 95% range over `draws` draws of the noise, each
+    reliability with its own random generator."""
+    rng = random.Random(f"{seed}:{reliability}")
+    shares = sorted(
+        accuracy(programs, noisy_labels(programs, reliability, rng))[0] for _ in range(draws)
+    )
+    low, high = shares[int(0.025 * draws)], shares[int(0.975 * draws) - 1]
+    return statistics.fmean(shares), low, high
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("pairs", type=Path, help="Radon-ranked held-out pairs")
@@ -87,16 +98,11 @@ def main() -> None:
     count = sum(len(ps) for ps in programs.values())
     print(f"{args.adapter}: {count} programs, {len(programs)} tasks, {total} pairs")
     print(f"against MI: {share:.0%}")
-    rng = random.Random(args.seed)
     for reliability in args.reliability:
-        draws = sorted(
-            accuracy(programs, noisy_labels(programs, reliability, rng))[0]
-            for _ in range(args.draws)
-        )
-        low, high = draws[int(0.025 * len(draws))], draws[int(0.975 * len(draws)) - 1]
+        mean, low, high = ceiling(programs, reliability, args.draws, args.seed)
         print(
             f"against MI with per-program noise, reliability {reliability}: "
-            f"{statistics.fmean(draws):.0%} ({low:.0%} to {high:.0%} over {args.draws} draws)"
+            f"{mean:.0%} ({low:.0%} to {high:.0%} over {args.draws} draws)"
         )
 
 

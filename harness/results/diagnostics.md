@@ -75,7 +75,7 @@ preference over for one seed and not for another (71% and 58%), and all
 627 pairs carry it over fully (81%; label-noise control below). The same
 all-pairs training on the editing labels (634 pairs) carries nothing
 over: 54% (49% to 61%) of the held-out eval-task editing pairs, where a
-writer that had learned their signal as well would get about 64%, and the
+writer that had learned their signal as well would get about 65%, and the
 base model's own log-probability gets 56%. So the noise is not what stops
 DPO; the editing labels have no direction in common across tasks.
 
@@ -198,6 +198,8 @@ sequences random):
 | Dev, base writer | 4% (0% to 7%) | 0% | 96% |
 | Eval, base writer | 11% (0% to 26%) | 0% | 89% |
 | Eval, five writers pooled | 7% (1% to 15%) | 3% | 90% |
+
+![The variance of one trial's score split into program, program on that sequence and trial, for the base writer's train, dev and eval programs](figures/variance.png)
 
 So a program's mean over its 6 trials measures its own lasting part with
 a reliability of only 0.18 on train tasks (0.42 on eval tasks). More trials
@@ -838,6 +840,8 @@ dpo3's settings and scored on the same held-out Radon pairs.
 | radon_rel18_all | 0.18 | 627 | 31% | 0.59 | 81% (66% to 92%) | 47% (25% to 69%) |
 | radon_f30 (random swaps) | – | 160 | 30% | 0.67 | 56% (39% to 73%) | 68% (44% to 88%) |
 
+![Held-out Radon pairs ranked like MI by each Radon writer, by the kind and amount of noise in its training labels](figures/label_noise.png)
+
 At the editing scores' reliability, 160 pairs are a coin toss: the two
 seeds give 58% and 71%, 13 points apart. At 0.47 the writer carries the
 preference over, at 0.80 as well as with clean scores. And with every pair,
@@ -876,16 +880,18 @@ same way (`configs/rtx5070_dev_aggregate.yaml`,
 | radon | 48% (40% to 56%) | 40% (25% to 56%) | 79% |
 | radon_rel18_all | 52% (44% to 61%) | 40% (29% to 52%) | 81% |
 
+![Held-out Radon pairs and held-out editing pairs ranked like their labels by the Radon and editing writers, with the share a writer that had learned the editing signal would reach](figures/heldout.png)
+
 Held-out editing labels are noisy too, so even a writer that had learned
 the editing signal could not score near 100% on them. How far it could
 get follows from the control. Over every pair of the Radon eval
 programs (245 pairs, 106 programs), radon_rel18_all ranks 71% like MI.
 Against those programs ranked by MI plus per-program noise, as unreliable
-as the eval-task editing scores (0.42), it ranks 64% (57% to 71% over 400
-draws of the noise), and 60% (52% to 68%) at the train and dev tasks'
+as the eval-task editing scores (0.42), it ranks 65% (58% to 71% over 400
+draws of the noise), and 60% (51% to 67%) at the train and dev tasks'
 0.18 to 0.20 (`scripts/noise_ceiling.py`). So a writer that had learned
 the editing labels' signal as well as radon_rel18_all learned MI's would
-rank about 64% of the eval-task editing pairs and 60% of the dev ones.
+rank about 65% of the eval-task editing pairs and 60% of the dev ones.
 dpo_all ranks 54% and 47%, no better than the base model's own
 log-probability (56%, 57%).
 
@@ -1047,7 +1053,10 @@ uv run python -m harness report --config configs/rtx5070_train_aggregate.yaml \
 .venv/bin/python scripts/noise_ceiling.py $D/radon_evaltasks.jsonl \
     $D/implicit_reward_dpoall.jsonl --adapter radon_rel18_all \
     --reliability 0.18 --reliability 0.20 --reliability 0.42
+.venv/bin/python scripts/report_figures.py                                  # results/figures/
 ```
 
 `scripts/implicit_reward.py` needs the training extras and the GPU (about
-2.5 hours for 4 adapters on 313 pairs).
+2.5 hours for 4 adapters on 313 pairs). `scripts/report_figures.py` needs
+matplotlib (the `plots` extra; `uv pip install matplotlib==3.11.2` adds
+it without re-syncing the training packages) and takes about a minute.
