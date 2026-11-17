@@ -73,7 +73,11 @@ against +0.43). With noise like the editing labels' instead, one noisy
 score per program at their reliability (0.18), 160 pairs carry the
 preference over for one seed and not for another (71% and 58%), and all
 627 pairs carry it over fully (81%; label-noise control below). The same
-all-pairs training on the editing labels is running.
+all-pairs training on the editing labels (634 pairs) carries nothing
+over: 54% (49% to 61%) of the held-out eval-task editing pairs, where a
+writer that had learned their signal as well would get about 64%, and the
+base model's own log-probability gets 56%. So the noise is not what stops
+DPO; the editing labels have no direction in common across tasks.
 
 ## 1. Headroom
 
@@ -848,16 +852,52 @@ writers apart.
 
 So noise at the editing labels' level does not by itself stop DPO from
 learning a preference that carries over: 160 pairs capped by margin are
-too few to count on, and all pairs are enough. dpo3 trained on 160. The
-matching run on the editing labels is running: every unequal pair of mean
+too few to count on, and all pairs are enough. dpo3 trained on 160.
+
+### The editing labels, every pair
+
+The matching run on the editing labels: every unequal pair of mean
 editing scores on the train tasks (`configs/rtx5070_train_aggregate.yaml`,
-scorer rule `aggregate`, no cap, min step gap 1: 634 pairs from 36 tasks),
-trained with dpo3's settings as dpo_all, then its implicit reward on the
-base writer's dev and eval editing pairs paired the same way
-(`configs/rtx5070_dev_aggregate.yaml`, `rtx5070_eval_aggregate.yaml`: 98
-pairs from 7 tasks, 298 from 16) and the full eval-task collection
-(`configs/rtx5070_eval_dpo_all.yaml`). If the editing labels have a common
-direction, dpo_all should find it the way radon_rel18_all found MI's.
+scorer rule `aggregate`, no cap, min step gap 1: 634 pairs from 36 tasks,
+none too long to train on), trained with dpo3's settings as dpo_all. It
+fits them far more tightly than radon_rel18_all fits its 627 (final loss
+0.33 against 0.59, reward margin +1.11 against +0.46). Its implicit
+reward then ranks the base writer's held-out editing pairs, paired the
+same way (`configs/rtx5070_dev_aggregate.yaml`,
+`rtx5070_eval_aggregate.yaml`), and the Radon eval pairs
+(`runs/rtx5070_pc/dpo/implicit_reward_dpoall.jsonl`):
+
+| Ranker | Eval-task editing pairs (298, 16 tasks) | Dev-task editing pairs (98, 7 tasks) | Radon eval-task pairs (114) |
+|---|---:|---:|---:|
+| chosen is shorter | 50% (39% to 60%) | 53% (39% to 67%) | 73% |
+| base model log-probability | 56% (48% to 64%) | 57% (46% to 68%) | 64% |
+| dpo3 | 52% (48% to 57%) | 37% (28% to 47%) | 46% |
+| **dpo_all** | **54% (49% to 61%)** | **47% (29% to 66%)** | 47% |
+| radon | 48% (40% to 56%) | 40% (25% to 56%) | 79% |
+| radon_rel18_all | 52% (44% to 61%) | 40% (29% to 52%) | 81% |
+
+Held-out editing labels are noisy too, so even a writer that had learned
+the editing signal could not score near 100% on them. How far it could
+get follows from the control. Over every pair of the Radon eval
+programs (245 pairs, 106 programs), radon_rel18_all ranks 71% like MI.
+Against those programs ranked by MI plus per-program noise, as unreliable
+as the eval-task editing scores (0.42), it ranks 64% (57% to 71% over 400
+draws of the noise), and 60% (52% to 68%) at the train and dev tasks'
+0.18 to 0.20 (`scripts/noise_ceiling.py`). So a writer that had learned
+the editing labels' signal as well as radon_rel18_all learned MI's would
+rank about 64% of the eval-task editing pairs and 60% of the dev ones.
+dpo_all ranks 54% and 47%, no better than the base model's own
+log-probability (56%, 57%).
+
+With noise of the same kind and size and the same number of pairs, DPO
+learned MI's preference fully and the editing labels' not measurably. So
+the noise is not what stops it. What the editing scores share within a
+task does not point the same way across tasks, unlike MI: dpo_all fits
+its 634 pairs (loss 0.33) by learning these programs, not a design that
+carries over. That fits checks 2 and 4 and the single changes above: a
+pair's label reflects how one change's edge case met one program. The
+full eval-task collection of dpo_all (`configs/rtx5070_eval_dpo_all.yaml`)
+is running and will give the main measure.
 
 ## Reproduce
 
@@ -997,7 +1037,16 @@ uv run python -m harness report --config configs/rtx5070_train_aggregate.yaml \
 .venv/bin/python scripts/match_pairs.py $D/editing_all/preferences.jsonl \
     $D/editing_all/preferences.jsonl $D/dpo_all.jsonl --model $TOK
 .venv/bin/python -m harness.train_dpo $D/dpo_all.jsonl --model $TOK \
-    --output-dir /home/pc/models/dpo/dpo_all --learning-rate 2e-5 --max-length 3200
+    --output-dir /home/pc/models/dpo/dpo_all --learning-rate 2e-5 --max-length 3200  # GPU, ~95 min
+.venv/bin/python scripts/implicit_reward.py --model $TOK \
+    --adapter dpo3=/home/pc/models/dpo/dpo3 --adapter dpo_all=/home/pc/models/dpo/dpo_all \
+    --adapter radon=/home/pc/models/dpo/radon \
+    --adapter radon_rel18_all=/home/pc/models/dpo/radon_rel18_all \
+    --config configs/rtx5070_dev_aggregate.yaml --config configs/rtx5070_eval_aggregate.yaml \
+    --pairs $D/radon_evaltasks.jsonl --out $D/implicit_reward_dpoall.jsonl     # GPU, ~95 min
+.venv/bin/python scripts/noise_ceiling.py $D/radon_evaltasks.jsonl \
+    $D/implicit_reward_dpoall.jsonl --adapter radon_rel18_all \
+    --reliability 0.18 --reliability 0.20 --reliability 0.42
 ```
 
 `scripts/implicit_reward.py` needs the training extras and the GPU (about

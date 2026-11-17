@@ -247,24 +247,29 @@ All five methods are done:
   preference over (71%), another does not (58%). With every pair, 627,
   the writer prefers the higher-MI program 81% of the time, as with true
   labels, although 31% of its pairs point the wrong way. So our noise
-  explains why 160 pairs were not enough to be sure; it does not show that
-  our labels point nowhere.
+  explains why 160 pairs were not enough to be sure; on its own it did
+  not show that our labels point nowhere.
+- **Our editing labels, given every pair, still teach nothing that
+  carries over.** The same training on our editing labels, one mean
+  editing score per program and all 634 pairs whose scores differ (the
+  dpo_all writer), fits them tightly but ranks the base writer's held-out
+  eval-task pairs only 54% right (49% to 61%), no better than the base
+  model alone (56%). A writer that had learned their signal as well as the
+  control learned the formula's would get about 64% on labels this noisy.
+  With the same kind and amount of noise and the same number of pairs,
+  training found the formula's preference and not ours. So what our
+  editing scores share within a task does not point the same way across
+  tasks.
 
 ### What is running now
 
-**Our editing labels, every pair** (`/home/pc/run_dpoall.sh`, started
-2026-11-17 05:00 PST). The same training as the control's 627-pair
-writer, on our editing labels: one mean editing score per program and
-every pair whose scores differ (scorer rule `aggregate`, no cap), 634
-pairs from 36 train tasks. Training takes about 95 minutes. Then the
-writer's implicit reward on the base writer's dev and eval editing pairs
-(98 and 298 pairs, same pairing; a perfect ranker of the programs' real
-quality could get only about 64% on labels this noisy), the full eval
-collection with the editor (about 22 hours, done around 5 a.m. on Nov 18)
-and its comparison with the base writer and dpo3, and last the control's
-627-pair writer's own code (about an hour). If the editing labels have a
-direction in common across tasks, this writer should find it the way the
-control found the formula's.
+**The all-pairs writer on the eval tasks** (`/home/pc/run_dpoall.sh`,
+started 2026-11-17 05:00 PST; training and the held-out check done at
+07:47). The dpo_all writer is served like the others and goes through the
+full eval collection with the editor (about 22 hours, done around 6 a.m.
+on Nov 18), then is compared with the base writer and dpo3 on the main
+measure. Last, the control's 627-pair writer writes code for the eval
+tasks (about an hour), to check that its programs move up the formula.
 
 ### Words used in the rest of this report
 
@@ -348,8 +353,11 @@ them in one place.
   of our labels' kind and size instead (one noisy score per program,
   reliability 0.18), 160 pairs give 58% or 71% depending on the random
   seed, and all 627 pairs give 81%, as good as true labels. dpo3 trained
-  on 160. The same all-pairs training on our editing labels (634 pairs) is
-  running.
+  on 160. The same all-pairs training on our editing labels (634 pairs)
+  carries nothing over: 54% (49% to 61%) of held-out eval-task editing
+  pairs, where a writer that had learned their signal as well would get
+  about 64%. So the noise is not what stops training; our labels have no
+  direction in common across tasks. Its full eval run is going.
 
 ## The five methods
 
@@ -922,14 +930,23 @@ the training signal differs:
   writer. `configs/rtx5070_dev_aggregate.yaml` and
   `rtx5070_eval_aggregate.yaml` give the base writer's held-out editing
   pairs paired the same way (98 from 7 dev tasks, 298 from 16 eval tasks).
-- Running (`/home/pc/run_dpoall.sh`): dpo_all trained on the 634 pairs,
-  length-fit, with dpo3's settings; implicit reward of dpo3, dpo_all,
-  radon and radon_rel18_all on those held-out pairs and the Radon eval
-  pairs; export as writer-dpo_all-ctx8k; the full eval collection
-  (`configs/rtx5070_eval_dpo_all.yaml`) compared with the base writer and
-  dpo3; then radon_rel18_all exported and sampled on the eval tasks
-  (`configs/rtx5070_eval_radon_rel18_all.yaml`, `--until initial`) and
-  `scripts/winner_features.py` for both.
+- `/home/pc/run_dpoall.sh`: dpo_all trained on the 634 pairs (none too
+  long) with dpo3's settings (`/home/pc/models/dpo/dpo_all`, 159 steps,
+  final loss 0.33, reward margin +1.11; 05:02 to 06:37 PST). Implicit
+  reward of dpo3, dpo_all, radon and radon_rel18_all on those held-out
+  pairs and the Radon eval pairs
+  (`runs/rtx5070_pc/dpo/implicit_reward_dpoall.jsonl`, 07:47): dpo_all
+  54% (49% to 61%) eval, 47% (29% to 66%) dev, 47% Radon; base model
+  log-probability 56%, 57%; dpo3 52%, 37%.
+- `scripts/noise_ceiling.py`: what a writer that learned a signal would
+  score on held-out labels this noisy. radon_rel18_all over every pair of
+  the 106 Radon eval programs: 71% against MI, 64% (57% to 71%) against MI
+  plus per-program noise at reliability 0.42, 60% (52% to 68%) at 0.18.
+- Running: dpo_all exported as writer-dpo_all-ctx8k and the full eval
+  collection (`configs/rtx5070_eval_dpo_all.yaml`) compared with the base
+  writer and dpo3; then radon_rel18_all exported and sampled on the eval
+  tasks (`configs/rtx5070_eval_radon_rel18_all.yaml`, `--until initial`)
+  and `scripts/winner_features.py` for both.
 
 ## Findings so far
 
@@ -1086,8 +1103,21 @@ the training signal differs:
     pairs prefer the lower-MI program. Per-program noise never contradicts
     itself, and over every pair of every program what the pairs share is
     the signal. So 160 pairs were too few to count on, and the null result
-    of dpo3 does not yet show that the editing labels point nowhere; the
-    matching all-pairs writer on the editing labels (dpo_all) decides it.
+    of dpo3 did not yet show that the editing labels point nowhere.
+26. **The editing labels point nowhere that carries over, even with every
+    pair.** dpo_all, trained with dpo3's settings on all 634 unequal pairs
+    of mean editing scores on the train tasks (scorer rule `aggregate`),
+    fits them more tightly than the control's writer fits its 627 (loss
+    0.33 against 0.59). On the base writer's held-out editing pairs, paired
+    the same way, it ranks 54% (49% to 61%) of 298 eval-task pairs and 47%
+    (29% to 66%) of 98 dev-task pairs right; the base model's own
+    log-probability ranks 56% and 57%, dpo3 52% and 37%. The control's
+    writer, scored on its own held-out programs against MI plus noise as
+    unreliable as these labels (0.42 on eval tasks, 0.18 to 0.20 on train
+    and dev), ranks 64% (57% to 71%) and 60% (52% to 68%), so a writer that
+    had learned the editing signal as well would show it. With matched
+    noise and pair count, DPO learns the formula's preference and not the
+    editing labels'.
 
 - **Testbed (the main question):** the diagnostics say the current tasks
   cannot show an effect, because the editor's randomness swamps the
@@ -1142,6 +1172,6 @@ the training signal differs:
 | Readability control, 7B editor | `harness/configs/rtx5070_pc_editor_7b_obscure.yaml`; results in `harness/results/diagnostics.md` |
 | Single-change program effects | `scripts/step_effects.py`; results in `harness/results/diagnostics.md` |
 | Label-noise control | `scripts/flip_pairs.py`, `scripts/static_ranking.py --score-noise`, `scripts/implicit_reward.py`; results in `harness/results/diagnostics.md` |
-| All-pairs editing writer | scorer rule `aggregate` (`harness/src/harness/collection/scorer.py`), `harness/configs/rtx5070_train_aggregate.yaml`, `rtx5070_dev_aggregate.yaml`, `rtx5070_eval_aggregate.yaml`, `rtx5070_eval_dpo_all.yaml`, `rtx5070_eval_radon_rel18_all.yaml` |
+| All-pairs editing writer | scorer rule `aggregate` (`harness/src/harness/collection/scorer.py`), `scripts/noise_ceiling.py`, `harness/configs/rtx5070_train_aggregate.yaml`, `rtx5070_dev_aggregate.yaml`, `rtx5070_eval_aggregate.yaml`, `rtx5070_eval_dpo_all.yaml`, `rtx5070_eval_radon_rel18_all.yaml` |
 | Controlled wallet pilot | `docs/wallet_pair_pilot/` |
 | Task checklist | `Task_list.md` |
