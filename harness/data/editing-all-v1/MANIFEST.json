@@ -1,0 +1,35 @@
+{
+  "dataset": "editing-all-v1",
+  "files": [
+    {
+      "name": "dpo_all.jsonl",
+      "sha256": "e69bbb62e5fc535d0784ea83e23f9cb78059ccc488239221dcc3c967e0d5fbbb",
+      "bytes": 7951525,
+      "rows": 634,
+      "command": "python src/harness/datasets.py add editing-all-v1 runs/rtx5070_pc/dpo/dpo_all.jsonl runs/rtx5070_pc/dpo/editing_dev_all.jsonl runs/rtx5070_pc/dpo/editing_eval_all.jsonl",
+      "git_commit": "9de88241ddcc509cbb9d22bfc830154d54d6698b",
+      "git_dirty": true,
+      "created": "2026-11-17T13:04:15Z"
+    },
+    {
+      "name": "editing_dev_all.jsonl",
+      "sha256": "326ffffc2ec725af32a656476762f0d5231494e5003d4af808d87bdfe67fed63",
+      "bytes": 1185466,
+      "rows": 98,
+      "command": "python src/harness/datasets.py add editing-all-v1 runs/rtx5070_pc/dpo/dpo_all.jsonl runs/rtx5070_pc/dpo/editing_dev_all.jsonl runs/rtx5070_pc/dpo/editing_eval_all.jsonl",
+      "git_commit": "9de88241ddcc509cbb9d22bfc830154d54d6698b",
+      "git_dirty": true,
+      "created": "2026-11-17T13:04:15Z"
+    },
+    {
+      "name": "editing_eval_all.jsonl",
+      "sha256": "af892873ff6eba3ed5a2e51209d7c28e9de80ab26ae9858819e196b5a7c9ba2e",
+      "bytes": 4075875,
+      "rows": 298,
+      "command": "python src/harness/datasets.py add editing-all-v1 runs/rtx5070_pc/dpo/dpo_all.jsonl runs/rtx5070_pc/dpo/editing_dev_all.jsonl runs/rtx5070_pc/dpo/editing_eval_all.jsonl",
+      "git_commit": "9de88241ddcc509cbb9d22bfc830154d54d6698b",
+      "git_dirty": true,
+      "created": "2026-11-17T13:04:15Z"
+    }
+  ]
+}

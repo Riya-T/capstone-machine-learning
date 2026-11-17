@@ -222,6 +222,36 @@ dev, eval and probe pairs: nothing was ever trained on them.
 | `radon_f15.jsonl`, `radon_f30.jsonl`, `radon_f50.jsonl` | 160 each | `train-v1/radon_matched.jsonl` with 24, 48 and 80 pairs swapped (`scripts/flip_pairs.py --rate 0.15`, `0.3`, `0.5`, seed 20261116); every row has `"flipped"` |
 | `radon_dev.jsonl` | 60 | Radon-ranked pairs of the base writer's dev-task programs (`scripts/static_ranking.py --config configs/rtx5070_pc.yaml`), for testing on tasks no writer trained on |
 | `radon_evaltasks.jsonl` | 114 | the same for the eval-task programs (`--config configs/rtx5070_eval.yaml`) |
+| `radon_rel18.jsonl`, `radon_rel18s2.jsonl`, `radon_rel47.jsonl`, `radon_rel80.jsonl` | 160 each | the score-noise control: train programs ranked by Radon MI plus noise drawn once per program (`scripts/static_ranking.py --score-noise 0.18`, the same with `--seed 2`, `0.47`, `0.80`), capped and matched per task to `train-v1/pairs_cap8_f23_nocosm.jsonl` (`scripts/match_pairs.py`); every row has `chosen_mi` and `rejected_mi` |
+| `radon_rel18_all.jsonl` | 627 | the same at 0.18 with every unequal pair (`--no-cap`), length-fit |
+
+## Every editing pair: editing-all-v1
+
+The editing results paired the way `radon_rel18_all.jsonl` pairs its noisy
+scores: one score per program, its mean over sequences and repetitions,
+and every pair of programs whose scores differ (scorer rule `aggregate`,
+no per-task cap, min step gap 1). Added on 2026-11-17 with:
+
+```bash
+.venv/bin/python -m harness report --config configs/rtx5070_train_aggregate.yaml \
+    --out runs/rtx5070_pc/dpo/editing_all
+.venv/bin/python scripts/match_pairs.py runs/rtx5070_pc/dpo/editing_all/preferences.jsonl \
+    runs/rtx5070_pc/dpo/editing_all/preferences.jsonl runs/rtx5070_pc/dpo/dpo_all.jsonl \
+    --model /home/pc/models/hf/Qwen2.5-Coder-7B-Instruct
+for c in dev eval; do
+  .venv/bin/python -m harness report --config configs/rtx5070_${c}_aggregate.yaml \
+      --out /tmp/agg2_$c
+  cp /tmp/agg2_$c/preferences.jsonl runs/rtx5070_pc/dpo/editing_${c}_all.jsonl
+done
+.venv/bin/python -m harness.datasets add editing-all-v1 runs/rtx5070_pc/dpo/dpo_all.jsonl \
+    runs/rtx5070_pc/dpo/editing_dev_all.jsonl runs/rtx5070_pc/dpo/editing_eval_all.jsonl
+```
+
+| File | Pairs | What it is |
+|---|---:|---|
+| `dpo_all.jsonl` | 634 | **the training pairs of dpo_all**: every unequal pair on the 36 train tasks (none was too long to train on) |
+| `editing_dev_all.jsonl` | 98 | the base writer's dev-task pairs (7 tasks), for testing; never trained on |
+| `editing_eval_all.jsonl` | 298 | the base writer's eval-task pairs (16 tasks), for testing; never trained on |
 
 ## The rules
 
