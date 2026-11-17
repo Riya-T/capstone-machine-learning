@@ -1,0 +1,16 @@
+# Training seed 2 of the correctness-only writer (rtx5070_eval_sft.yaml):
+# trained again on the same 201 programs
+# (runs/rtx5070_pc/dpo/sft_programs.jsonl) with the same settings and --seed
+# 2 instead of 42, and served as writer-sft_s2-ctx8k. Everything else as in
+# rtx5070_eval.yaml. The proposal asks for three training seeds per trained
+# method.
+#
+# Usage (from harness/, inside WSL):
+#     uv run python -m harness collect --config configs/rtx5070_eval_sft_s2.yaml
+#     uv run python scripts/eval_compare.py --base configs/rtx5070_eval.yaml \
+#         --other configs/rtx5070_eval_sft_s2.yaml
+extends: rtx5070_eval.yaml
+name: rtx5070-eval-sft-s2
+writer:
+  backend:
+    model: writer-sft_s2-ctx8k

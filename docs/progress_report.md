@@ -271,6 +271,14 @@ on Nov 18), then is compared with the base writer and dpo3 on the main
 measure. Last, the control's 627-pair writer writes code for the eval
 tasks (about an hour), to check that its programs move up the formula.
 
+**Training seeds, queued after it** (`/home/pc/run_seeds.sh`). The
+proposal asks for three training seeds per trained method; only seed 42
+exists. Seeds 2 and 3 of our DPO writer (dpo3), the correctness-only
+writer and the Radon writer, each trained on the same data with the same
+settings, served like the others and put through the full eval collection
+(`configs/rtx5070_eval_dpo3_s2.yaml` and so on), about 23 hours each, in
+that order: dpo3's two seeds by about Nov 20, all six by about Nov 24.
+
 ### Words used in the rest of this report
 
 - **Change sequence:** the list of later change requests for a task.

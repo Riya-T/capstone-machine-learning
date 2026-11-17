@@ -1,0 +1,15 @@
+# Training seed 3 of our DPO writer (rtx5070_eval_dpo3.yaml): trained again
+# on the same 160 pairs (runs/rtx5070_pc/dpo/pairs_cap8_f23_nocosm.jsonl)
+# with the same settings and --seed 3 instead of 42, and served as writer-
+# dpo3_s3-ctx8k. Everything else as in rtx5070_eval.yaml. The proposal asks
+# for three training seeds per trained method.
+#
+# Usage (from harness/, inside WSL):
+#     uv run python -m harness collect --config configs/rtx5070_eval_dpo3_s3.yaml
+#     uv run python scripts/eval_compare.py --base configs/rtx5070_eval.yaml \
+#         --other configs/rtx5070_eval_dpo3_s3.yaml
+extends: rtx5070_eval.yaml
+name: rtx5070-eval-dpo3-s3
+writer:
+  backend:
+    model: writer-dpo3_s3-ctx8k

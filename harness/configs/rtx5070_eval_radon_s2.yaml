@@ -1,0 +1,16 @@
+# Training seed 2 of the static-ranking writer (rtx5070_eval_radon.yaml):
+# trained again on the same 160 pairs
+# (runs/rtx5070_pc/dpo/radon_matched.jsonl) with the same settings and
+# --seed 2 instead of 42, and served as writer-radon_s2-ctx8k. Everything
+# else as in rtx5070_eval.yaml. The proposal asks for three training seeds
+# per trained method.
+#
+# Usage (from harness/, inside WSL):
+#     uv run python -m harness collect --config configs/rtx5070_eval_radon_s2.yaml
+#     uv run python scripts/eval_compare.py --base configs/rtx5070_eval.yaml \
+#         --other configs/rtx5070_eval_radon_s2.yaml
+extends: rtx5070_eval.yaml
+name: rtx5070-eval-radon-s2
+writer:
+  backend:
+    model: writer-radon_s2-ctx8k
