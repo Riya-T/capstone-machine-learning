@@ -210,6 +210,20 @@ If no eligible setting has any, the setting with the most passing
 copy-design programs goes. The control's SFT uses the chosen setting's lr
 and epochs.
 
+| Setting | lr, epochs | Passing dev programs | Copy design among them | Chosen − ref log-prob | Rejected − ref |
+|---|---|---:|---:|---:|---:|
+| base | – | 30 | 0 | – | – |
+| plain DPO (`hist2_dpo`) | 2e-5, 2 | 21 | 0 | – | – |
+| A (`hist2_rpo`) | 2e-5, 2 | 27 | 0 | +16 | +1 |
+| D (`hist2_rpo_d`) | 3e-5, 3 | 20 | 10 | +36 | −7 |
+| C (`hist2_rpo_c`) | 5e-5, 2 | 18 | 11 | +40 | −2 |
+| B (`hist2_rpo_b`) | 5e-5, 3 | 7 | 4 | +51 | −14 |
+
+D went to the eval: it is the only eligible setting (20 ≥ two thirds of 30)
+with any passing copy-design programs. Its passing programs per dev task
+were seed_vault 13 (base 14), choir_sections 6 (8), tram_lines 0 (0) and
+photo_albums 1 (8).
+
 ### Files and checks
 
 Exactly as README.md: references for every set of changes a sequence
