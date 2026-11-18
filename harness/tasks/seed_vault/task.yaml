@@ -1,0 +1,57 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+# History suite (HISTORY_SUITE.md): U = c_undo, B = c_seal, C = c_many.
+schema_version: 1
+id: seed_vault
+family: seed_vault
+split: dev
+entry_files: [vault.py]
+spec: spec.md
+public_checks: [public/test_vault_public.py]
+private_tests: [private/test_vault_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_absent_variety_key_error, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_undo
+    kind: undo
+    request: changes/c_undo/request.md
+    public_checks: [changes/c_undo/public/test_vault_undo_public.py]
+    new_feature_tests: [changes/c_undo/private/test_vault_undo_new.py]
+  - id: c_seal
+    kind: state_flag
+    request: changes/c_seal/request.md
+    public_checks: [changes/c_seal/public/test_vault_seal_public.py]
+    new_feature_tests: [changes/c_seal/private/test_vault_seal_new.py]
+  - id: c_many
+    kind: atomic_operation
+    request: changes/c_many/request.md
+    public_checks: [changes/c_many/public/test_vault_many_public.py]
+    new_feature_tests: [changes/c_many/private/test_vault_many_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_undo: reference/undo
+  c_seal+c_undo: reference/seal_undo
+  c_many: reference/many
+  c_many+c_undo: reference/many_undo
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_undo
+      - change: c_seal
+        planted_bugs:
+          - path: bugs/seal_retire_not_undoable  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_many
+      - change: c_undo
+        planted_bugs:
+          - path: bugs/undo_failed_many_keeps_moves  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]

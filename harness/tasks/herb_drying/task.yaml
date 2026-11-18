@@ -1,0 +1,62 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+#
+# History suite (HISTORY_SUITE.md): bundle counts per herb per rack, racks
+# in the order added, and composites that move every bundle (shift_all,
+# dismantle_rack). The undo change must take back a composite call as one
+# call and bring a dismantled rack back at its old position, which a
+# recorded history or a copy of the state gets right for free.
+schema_version: 1
+id: herb_drying
+family: herb_drying
+split: train
+entry_files: [drying.py]
+spec: spec.md
+public_checks: [public/test_drying_public.py]
+private_tests: [private/test_drying_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_cannot_take_down_last_bundles, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_undo
+    kind: undo
+    request: changes/c_undo/request.md
+    public_checks: [changes/c_undo/public/test_undo_public.py]
+    new_feature_tests: [changes/c_undo/private/test_undo_new.py]
+  - id: c_capacity
+    kind: validation_rule
+    request: changes/c_capacity/request.md
+    public_checks: [changes/c_capacity/public/test_capacity_public.py]
+    new_feature_tests: [changes/c_capacity/private/test_capacity_new.py]
+  - id: c_herb_query
+    kind: query
+    request: changes/c_herb_query/request.md
+    public_checks: [changes/c_herb_query/public/test_herb_query_public.py]
+    new_feature_tests: [changes/c_herb_query/private/test_herb_query_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_undo: reference/undo
+  c_capacity+c_undo: reference/capacity_undo
+  c_herb_query: reference/herb_query
+  c_herb_query+c_undo: reference/herb_query_undo
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_undo
+      - change: c_capacity
+        planted_bugs:
+          - path: bugs/capacity_shift_all_not_undoable  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_herb_query
+      - change: c_undo
+        planted_bugs:
+          - path: bugs/undo_keeps_empty_herbs  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]

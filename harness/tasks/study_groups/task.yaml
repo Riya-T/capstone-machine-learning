@@ -1,0 +1,57 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+# History suite (see ../HISTORY_SUITE.md): undo in both sequences.
+schema_version: 1
+id: study_groups
+family: study_groups
+split: train
+entry_files: [groups.py]
+spec: spec.md
+public_checks: [public/test_groups_public.py]
+private_tests: [private/test_groups_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_swap_in_same_group, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_undo
+    kind: undo
+    request: changes/c_undo/request.md
+    public_checks: [changes/c_undo/public/test_undo_public.py]
+    new_feature_tests: [changes/c_undo/private/test_undo_new.py]
+  - id: c_lock
+    kind: state_flag
+    request: changes/c_lock/request.md
+    public_checks: [changes/c_lock/public/test_lock_public.py]
+    new_feature_tests: [changes/c_lock/private/test_lock_new.py]
+  - id: c_find
+    kind: query
+    request: changes/c_find/request.md
+    public_checks: [changes/c_find/public/test_find_public.py]
+    new_feature_tests: [changes/c_find/private/test_find_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_undo: reference/undo
+  c_lock+c_undo: reference/lock_undo
+  c_find: reference/find
+  c_find+c_undo: reference/find_undo
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_undo
+      - change: c_lock
+        planted_bugs:
+          - path: bugs/lock_swap_not_undoable  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_find
+      - change: c_undo
+        planted_bugs:
+          - path: bugs/find_positions_from_0  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]

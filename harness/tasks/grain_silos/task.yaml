@@ -1,0 +1,69 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+#
+# History suite (HISTORY_SUITE.md), eval split: composite calls and an
+# order the getters expose, so that the program's design decides whether
+# the undo change (c_undo, in both sequences) succeeds.
+schema_version: 1
+id: grain_silos
+family: grain_silos
+split: eval
+entry_files: [silos.py]
+spec: spec.md
+public_checks: [public/test_silos_public.py]
+private_tests: [private/test_silos_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_get_tonnes_key_error, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_undo
+    kind: undo
+    request: changes/c_undo/request.md
+    public_checks: [changes/c_undo/public/test_undo_public.py]
+    new_feature_tests: [changes/c_undo/private/test_undo_new.py]
+  - id: c_seal
+    kind: state_flag
+    request: changes/c_seal/request.md
+    public_checks: [changes/c_seal/public/test_seal_public.py]
+    new_feature_tests: [changes/c_seal/private/test_seal_new.py]
+  - id: c_totals
+    kind: derived_value
+    request: changes/c_totals/request.md
+    public_checks: [changes/c_totals/public/test_totals_public.py]
+    new_feature_tests: [changes/c_totals/private/test_totals_new.py]
+  - id: c_revisions
+    kind: concurrency_control
+    request: changes/c_revisions/request.md
+    public_checks: [changes/c_revisions/public/test_revisions_public.py]
+    new_feature_tests: [changes/c_revisions/private/test_revisions_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_undo: reference/undo
+  c_seal+c_undo: reference/seal_undo
+  c_revisions+c_seal+c_undo: reference/revisions_seal_undo
+  c_totals: reference/totals
+  c_totals+c_undo: reference/totals_undo
+  c_seal+c_totals+c_undo: reference/seal_totals_undo
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_undo
+      - change: c_seal
+      - change: c_revisions
+        planted_bugs:
+          - path: bugs/revisions_blend_ignores_sealed_source  # required regression bug: blend_into no longer checks a sealed from_silo (c_seal)
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_totals
+      - change: c_undo
+      - change: c_seal
+        planted_bugs:
+          - path: bugs/seal_unload_recorded_late  # required regression bug: unload is recorded after it changes the silo, so undo misses it (c_undo)
+            must_fail: [existing]
+            must_pass: [new_feature]

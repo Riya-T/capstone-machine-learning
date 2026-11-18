@@ -1,0 +1,58 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+# History suite (HISTORY_SUITE.md): U = c_undo, B = c_line_limit,
+# C = c_connections.
+schema_version: 1
+id: tram_lines
+family: tram_lines
+split: dev
+entry_files: [trams.py]
+spec: spec.md
+public_checks: [public/test_trams_public.py]
+private_tests: [private/test_trams_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_remove_missing_stop_value_error, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_undo
+    kind: undo
+    request: changes/c_undo/request.md
+    public_checks: [changes/c_undo/public/test_tram_undo_public.py]
+    new_feature_tests: [changes/c_undo/private/test_tram_undo_new.py]
+  - id: c_line_limit
+    kind: validation_rule
+    request: changes/c_line_limit/request.md
+    public_checks: [changes/c_line_limit/public/test_line_limit_public.py]
+    new_feature_tests: [changes/c_line_limit/private/test_line_limit_new.py]
+  - id: c_connections
+    kind: query
+    request: changes/c_connections/request.md
+    public_checks: [changes/c_connections/public/test_connections_public.py]
+    new_feature_tests: [changes/c_connections/private/test_connections_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_undo: reference/undo
+  c_line_limit+c_undo: reference/line_limit_undo
+  c_connections: reference/connections
+  c_connections+c_undo: reference/connections_undo
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_undo
+      - change: c_line_limit
+        planted_bugs:
+          - path: bugs/line_limit_merge_not_undoable  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_connections
+      - change: c_undo
+        planted_bugs:
+          - path: bugs/connections_lists_the_line_itself  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]

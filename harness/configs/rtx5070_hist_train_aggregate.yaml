@@ -1,0 +1,13 @@
+# History-suite train collection scored with every unequal pair of mean
+# editing scores (scorer rule `aggregate`, as for dpo_all). Same store
+# results as rtx5070_hist_train_hints.yaml; only the pairing differs.
+#
+# Usage (from harness/, inside WSL):
+#     uv run python -m harness report --config configs/rtx5070_hist_train_aggregate.yaml \
+#         --out runs/rtx5070_pc/dpo/hist_train
+extends: rtx5070_hist_train_hints.yaml
+name: rtx5070-hist-train-aggregate
+scorer:
+  rule: aggregate
+  per_task_cap: null
+  min_step_gap: 1

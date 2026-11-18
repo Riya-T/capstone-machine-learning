@@ -1,0 +1,69 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+#
+# History suite (HISTORY_SUITE.md), eval split: composite calls and an
+# order the getters expose, so that the program's design decides whether
+# the undo change (c_undo, in both sequences) succeeds.
+schema_version: 1
+id: rehearsal_setlists
+family: rehearsal_setlists
+split: eval
+entry_files: [setlists.py]
+spec: spec.md
+public_checks: [public/test_setlists_public.py]
+private_tests: [private/test_setlists_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_move_song_allows_duplicate, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_undo
+    kind: undo
+    request: changes/c_undo/request.md
+    public_checks: [changes/c_undo/public/test_undo_public.py]
+    new_feature_tests: [changes/c_undo/private/test_undo_new.py]
+  - id: c_lock
+    kind: state_flag
+    request: changes/c_lock/request.md
+    public_checks: [changes/c_lock/public/test_lock_public.py]
+    new_feature_tests: [changes/c_lock/private/test_lock_new.py]
+  - id: c_queries
+    kind: query
+    request: changes/c_queries/request.md
+    public_checks: [changes/c_queries/public/test_queries_public.py]
+    new_feature_tests: [changes/c_queries/private/test_queries_new.py]
+  - id: c_ignore_case
+    kind: configuration
+    request: changes/c_ignore_case/request.md
+    public_checks: [changes/c_ignore_case/public/test_ignore_case_public.py]
+    new_feature_tests: [changes/c_ignore_case/private/test_ignore_case_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_undo: reference/undo
+  c_lock+c_undo: reference/lock_undo
+  c_ignore_case+c_lock+c_undo: reference/ignore_case_lock_undo
+  c_queries: reference/queries
+  c_queries+c_undo: reference/queries_undo
+  c_lock+c_queries+c_undo: reference/lock_queries_undo
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_undo
+      - change: c_lock
+      - change: c_ignore_case
+        planted_bugs:
+          - path: bugs/ignore_case_drop_skips_lock  # required regression bug: drop_song_everywhere no longer checks locks (c_lock)
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_queries
+      - change: c_undo
+      - change: c_lock
+        planted_bugs:
+          - path: bugs/lock_drop_recorded_after_removal  # required regression bug: drop_song_everywhere is recorded after the removal, so undo misses it (c_undo)
+            must_fail: [existing]
+            must_pass: [new_feature]

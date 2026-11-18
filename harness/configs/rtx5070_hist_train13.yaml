@@ -1,0 +1,12 @@
+# The 13 history-suite train tasks fixed first (all but tool_crib,
+# herb_drying and quiz_rounds), so the train collection can start while
+# those three are being fixed. Same settings as rtx5070_hist_train_hints.yaml,
+# so its results are reused there.
+extends: rtx5070_hist_train_hints.yaml
+name: rtx5070-hist-train13
+tasks:
+  include: [
+    cargo_holds, study_groups, garden_beds, relay_teams, bus_routes, wine_cellar,
+    mail_bins, aquarium_tanks, seating_chart, trail_huts, blood_fridges, ferry_decks,
+    folder_tree,
+  ]

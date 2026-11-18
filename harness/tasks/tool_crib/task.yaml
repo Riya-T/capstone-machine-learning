@@ -1,0 +1,62 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+#
+# History suite (HISTORY_SUITE.md): tools in ordered bins, with composites
+# that move many tools (return_all, close_bin). The undo change must take
+# back a composite call as one call and put tools back at their old
+# positions, which a recorded history or a copy of the state gets right for
+# free.
+schema_version: 1
+id: tool_crib
+family: tool_crib
+split: train
+entry_files: [crib.py]
+spec: spec.md
+public_checks: [public/test_crib_public.py]
+private_tests: [private/test_crib_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_return_all_reversed, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_undo
+    kind: undo
+    request: changes/c_undo/request.md
+    public_checks: [changes/c_undo/public/test_undo_public.py]
+    new_feature_tests: [changes/c_undo/private/test_undo_new.py]
+  - id: c_lock
+    kind: state_flag
+    request: changes/c_lock/request.md
+    public_checks: [changes/c_lock/public/test_lock_public.py]
+    new_feature_tests: [changes/c_lock/private/test_lock_new.py]
+  - id: c_many
+    kind: atomic_operation
+    request: changes/c_many/request.md
+    public_checks: [changes/c_many/public/test_many_public.py]
+    new_feature_tests: [changes/c_many/private/test_many_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_undo: reference/undo
+  c_lock+c_undo: reference/lock_undo
+  c_many: reference/many
+  c_many+c_undo: reference/many_undo
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_undo
+      - change: c_lock
+        planted_bugs:
+          - path: bugs/lock_return_all_not_undoable  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_many
+      - change: c_undo
+        planted_bugs:
+          - path: bugs/undo_many_not_atomic  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]

@@ -1,0 +1,57 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+# History suite (../HISTORY_SUITE.md): U = c_undo, B = c_lock, C = c_lookup.
+schema_version: 1
+id: seating_chart
+family: seating_chart
+split: train
+entry_files: [seating.py]
+spec: spec.md
+public_checks: [public/test_seating_public.py]
+private_tests: [private/test_seating_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_merge_puts_guests_first, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_undo
+    kind: undo
+    request: changes/c_undo/request.md
+    public_checks: [changes/c_undo/public/test_seat_undo_public.py]
+    new_feature_tests: [changes/c_undo/private/test_seat_undo_new.py]
+  - id: c_lock
+    kind: state_flag
+    request: changes/c_lock/request.md
+    public_checks: [changes/c_lock/public/test_lock_public.py]
+    new_feature_tests: [changes/c_lock/private/test_lock_new.py]
+  - id: c_lookup
+    kind: query
+    request: changes/c_lookup/request.md
+    public_checks: [changes/c_lookup/public/test_lookup_public.py]
+    new_feature_tests: [changes/c_lookup/private/test_lookup_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_undo: reference/undo
+  c_lock+c_undo: reference/lock_undo
+  c_lookup: reference/lookup
+  c_lookup+c_undo: reference/lookup_undo
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_undo
+      - change: c_lock
+        planted_bugs:
+          - path: bugs/lock_unseat_not_undoable  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_lookup
+      - change: c_undo
+        planted_bugs:
+          - path: bugs/undo_clear_keeps_guests_seated  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]

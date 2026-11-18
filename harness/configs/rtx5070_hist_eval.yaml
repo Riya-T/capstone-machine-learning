@@ -1,0 +1,16 @@
+# History suite, the 10 held-out eval tasks, with the base writer's plain
+# prompt and editor_v3.md. Never used for training or for choosing settings.
+#
+# Usage (from harness/, inside WSL):
+#     uv run python -m harness collect --config configs/rtx5070_hist_eval.yaml
+extends: rtx5070_pc_editor_v3.yaml
+name: rtx5070-hist-eval
+tasks:
+  include: [
+    coin_vaults, rehearsal_setlists, server_racks, grain_silos, museum_galleries,
+    canal_locks, tour_itineraries, bike_docks, recipe_binder, spare_parts,
+  ]
+sandbox:
+  timeout_s: 180   # room for a loaded machine; the same for every history-suite config
+editor:
+  reps: 2          # history-suite trials take 2-5 minutes; 2 reps per sequence

@@ -1,0 +1,56 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+schema_version: 1
+id: blood_fridges
+family: blood_fridges
+split: train
+entry_files: [blood_bank.py]
+spec: spec.md
+public_checks: [public/test_bank_public.py]
+private_tests: [private/test_bank_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_unseen_type_key_error, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_undo
+    kind: undo
+    request: changes/c_undo/request.md
+    public_checks: [changes/c_undo/public/test_bank_undo_public.py]
+    new_feature_tests: [changes/c_undo/private/test_bank_undo_new.py]
+  - id: c_capacity
+    kind: validation_rule
+    request: changes/c_capacity/request.md
+    public_checks: [changes/c_capacity/public/test_bank_capacity_public.py]
+    new_feature_tests: [changes/c_capacity/private/test_bank_capacity_new.py]
+  - id: c_dispatch
+    kind: atomic_operation
+    request: changes/c_dispatch/request.md
+    public_checks: [changes/c_dispatch/public/test_bank_dispatch_public.py]
+    new_feature_tests: [changes/c_dispatch/private/test_bank_dispatch_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_undo: reference/undo
+  c_capacity+c_undo: reference/capacity_undo
+  c_dispatch: reference/dispatch
+  c_dispatch+c_undo: reference/dispatch_undo
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_undo
+      - change: c_capacity
+        planted_bugs:
+          - path: bugs/capacity_transfer_all_not_undoable  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_dispatch
+      - change: c_undo
+        planted_bugs:
+          - path: bugs/undo_dispatch_checks_tuples_alone  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]

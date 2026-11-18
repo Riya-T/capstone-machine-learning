@@ -1,0 +1,19 @@
+# History suite (tasks/HISTORY_SUITE.md), dev tasks: the gate. The writer's
+# samples are drawn with the generic design hints of rtx5070_pc_hints.yaml
+# (none names a task or a change) and edited by the 14B editor with the
+# prompt that asks it to build on the program's design (editor_v3.md). The
+# suite goes on to the train and eval collections only if
+# scripts/diagnostics.py finds the program's share of a trial's score well
+# above the 4% to 11% of the original tasks, with held-out headroom.
+#
+# Usage (from harness/, inside WSL):
+#     uv run python -m harness collect --config configs/rtx5070_hist_dev_hints.yaml
+#     uv run python scripts/diagnostics.py --config configs/rtx5070_hist_dev_hints.yaml
+extends: rtx5070_pc_hints.yaml
+name: rtx5070-hist-dev-hints
+tasks:
+  include: [seed_vault, choir_sections, tram_lines, photo_albums]
+sandbox:
+  timeout_s: 180   # room for a loaded machine; the same for every history-suite config
+editor:
+  reps: 2          # history-suite trials take 2-5 minutes; 2 reps per sequence

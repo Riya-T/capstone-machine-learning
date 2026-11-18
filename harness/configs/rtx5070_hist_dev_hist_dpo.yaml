@@ -1,0 +1,8 @@
+# History suite, dev tasks: the writer trained with DPO on the history-suite
+# train pairs (hist_dpo), served as writer-hist_dpo-ctx8k, plain prompt and
+# editor_v3.md as in rtx5070_hist_dev.yaml.
+extends: rtx5070_hist_dev.yaml
+name: rtx5070-hist-dev-hist-dpo
+writer:
+  backend:
+    model: writer-hist_dpo-ctx8k

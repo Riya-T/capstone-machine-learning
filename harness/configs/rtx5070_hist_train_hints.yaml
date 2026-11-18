@@ -1,0 +1,19 @@
+# History suite, train tasks: candidates drawn with the generic design hints
+# (rtx5070_pc_hints.yaml) and edited with editor_v3.md. Pairs keep the plain
+# prompt, so a writer trained on them learns the preferred designs without
+# hints.
+#
+# Usage (from harness/, inside WSL):
+#     uv run python -m harness collect --config configs/rtx5070_hist_train_hints.yaml
+extends: rtx5070_pc_hints.yaml
+name: rtx5070-hist-train-hints
+tasks:
+  include: [
+    cargo_holds, study_groups, garden_beds, relay_teams, bus_routes, wine_cellar,
+    mail_bins, aquarium_tanks, seating_chart, trail_huts, blood_fridges, ferry_decks,
+    folder_tree, tool_crib, herb_drying, quiz_rounds,
+  ]
+sandbox:
+  timeout_s: 180   # room for a loaded machine; the same for every history-suite config
+editor:
+  reps: 2          # history-suite trials take 2-5 minutes; 2 reps per sequence

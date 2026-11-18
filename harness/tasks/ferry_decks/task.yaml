@@ -1,0 +1,56 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+schema_version: 1
+id: ferry_decks
+family: ferry_decks
+split: train
+entry_files: [ferry.py]
+spec: spec.md
+public_checks: [public/test_ferry_public.py]
+private_tests: [private/test_ferry_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_move_deck_keeps_old_deck, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_undo
+    kind: undo
+    request: changes/c_undo/request.md
+    public_checks: [changes/c_undo/public/test_ferry_undo_public.py]
+    new_feature_tests: [changes/c_undo/private/test_ferry_undo_new.py]
+  - id: c_dangerous
+    kind: validation_rule
+    request: changes/c_dangerous/request.md
+    public_checks: [changes/c_dangerous/public/test_ferry_dangerous_public.py]
+    new_feature_tests: [changes/c_dangerous/private/test_ferry_dangerous_new.py]
+  - id: c_board_many
+    kind: atomic_operation
+    request: changes/c_board_many/request.md
+    public_checks: [changes/c_board_many/public/test_ferry_board_many_public.py]
+    new_feature_tests: [changes/c_board_many/private/test_ferry_board_many_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_undo: reference/undo
+  c_dangerous+c_undo: reference/dangerous_undo
+  c_board_many: reference/board_many
+  c_board_many+c_undo: reference/board_many_undo
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_undo
+      - change: c_dangerous
+        planted_bugs:
+          - path: bugs/dangerous_undo_copies_decks_shallowly  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_board_many
+      - change: c_undo
+        planted_bugs:
+          - path: bugs/undo_board_many_boards_some  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]

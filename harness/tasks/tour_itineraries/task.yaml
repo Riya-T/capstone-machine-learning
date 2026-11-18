@@ -1,0 +1,65 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+schema_version: 1
+id: tour_itineraries
+family: tour_itineraries
+split: eval
+entry_files: [tours.py]
+spec: spec.md
+public_checks: [public/test_tours_public.py]
+private_tests: [private/test_tours_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_remove_missing_city_ignored, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_undo
+    kind: undo
+    request: changes/c_undo/request.md
+    public_checks: [changes/c_undo/public/test_undo_public.py]
+    new_feature_tests: [changes/c_undo/private/test_undo_new.py]
+  - id: c_max_cities
+    kind: validation_rule
+    request: changes/c_max_cities/request.md
+    public_checks: [changes/c_max_cities/public/test_max_cities_public.py]
+    new_feature_tests: [changes/c_max_cities/private/test_max_cities_new.py]
+  - id: c_move_cities
+    kind: atomic_operation
+    request: changes/c_move_cities/request.md
+    public_checks: [changes/c_move_cities/public/test_move_cities_public.py]
+    new_feature_tests: [changes/c_move_cities/private/test_move_cities_new.py]
+  - id: c_max_setting
+    kind: configuration
+    request: changes/c_max_setting/request.md
+    public_checks: [changes/c_max_setting/public/test_max_setting_public.py]
+    new_feature_tests: [changes/c_max_setting/private/test_max_setting_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_undo: reference/undo
+  c_max_cities+c_undo: reference/max_cities_undo
+  c_max_cities+c_max_setting+c_undo: reference/max_cities_max_setting_undo
+  c_move_cities: reference/move_cities
+  c_move_cities+c_undo: reference/move_cities_undo
+  c_max_cities+c_move_cities+c_undo: reference/max_cities_move_cities_undo
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_undo
+      - change: c_max_cities
+      - change: c_max_setting
+        planted_bugs:
+          - path: bugs/max_setting_merge_counts_shared  # required regression bug: breaks step 2
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_move_cities
+      - change: c_undo
+      - change: c_max_cities
+        planted_bugs:
+          - path: bugs/max_cities_add_city_saves_late  # required regression bug: breaks step 2
+            must_fail: [existing]
+            must_pass: [new_feature]

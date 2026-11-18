@@ -1,0 +1,69 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+#
+# History suite (HISTORY_SUITE.md), eval split: composite calls and an
+# order the getters expose, so that the program's design decides whether
+# the undo change (c_undo, in both sequences) succeeds.
+schema_version: 1
+id: coin_vaults
+family: coin_vaults
+split: eval
+entry_files: [vaults.py]
+spec: spec.md
+public_checks: [public/test_vaults_public.py]
+private_tests: [private/test_vaults_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_withdraw_all_rejected, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_undo
+    kind: undo
+    request: changes/c_undo/request.md
+    public_checks: [changes/c_undo/public/test_undo_public.py]
+    new_feature_tests: [changes/c_undo/private/test_undo_new.py]
+  - id: c_capacity
+    kind: validation_rule
+    request: changes/c_capacity/request.md
+    public_checks: [changes/c_capacity/public/test_capacity_public.py]
+    new_feature_tests: [changes/c_capacity/private/test_capacity_new.py]
+  - id: c_transfer
+    kind: atomic_operation
+    request: changes/c_transfer/request.md
+    public_checks: [changes/c_transfer/public/test_transfer_public.py]
+    new_feature_tests: [changes/c_transfer/private/test_transfer_new.py]
+  - id: c_denominations
+    kind: configuration
+    request: changes/c_denominations/request.md
+    public_checks: [changes/c_denominations/public/test_denominations_public.py]
+    new_feature_tests: [changes/c_denominations/private/test_denominations_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_undo: reference/undo
+  c_capacity+c_undo: reference/capacity_undo
+  c_capacity+c_denominations+c_undo: reference/capacity_denominations_undo
+  c_transfer: reference/transfer
+  c_transfer+c_undo: reference/transfer_undo
+  c_capacity+c_transfer+c_undo: reference/capacity_transfer_undo
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_undo
+      - change: c_capacity
+      - change: c_denominations
+        planted_bugs:
+          - path: bugs/denominations_close_skips_capacity  # required regression bug: close_vault no longer checks the capacity (c_capacity)
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_transfer
+      - change: c_undo
+      - change: c_capacity
+        planted_bugs:
+          - path: bugs/capacity_transfer_not_atomic  # required regression bug: transfer makes the moves before a failing one (c_transfer)
+            must_fail: [existing]
+            must_pass: [new_feature]

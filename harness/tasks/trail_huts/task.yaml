@@ -1,0 +1,57 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+# History suite (../HISTORY_SUITE.md): U = c_undo, B = c_limit, C = c_route.
+schema_version: 1
+id: trail_huts
+family: trail_huts
+split: train
+entry_files: [trails.py]
+spec: spec.md
+public_checks: [public/test_trails_public.py]
+private_tests: [private/test_trails_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_remove_missing_trail_silent, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_undo
+    kind: undo
+    request: changes/c_undo/request.md
+    public_checks: [changes/c_undo/public/test_trail_undo_public.py]
+    new_feature_tests: [changes/c_undo/private/test_trail_undo_new.py]
+  - id: c_limit
+    kind: validation_rule
+    request: changes/c_limit/request.md
+    public_checks: [changes/c_limit/public/test_limit_public.py]
+    new_feature_tests: [changes/c_limit/private/test_limit_new.py]
+  - id: c_route
+    kind: atomic_operation
+    request: changes/c_route/request.md
+    public_checks: [changes/c_route/public/test_route_public.py]
+    new_feature_tests: [changes/c_route/private/test_route_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_undo: reference/undo
+  c_limit+c_undo: reference/limit_undo
+  c_route: reference/route
+  c_route+c_undo: reference/route_undo
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_undo
+      - change: c_limit
+        planted_bugs:
+          - path: bugs/limit_merge_not_undoable  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_route
+      - change: c_undo
+        planted_bugs:
+          - path: bugs/undo_route_allows_repeated_trail  # required regression bug: breaks step 1
+            must_fail: [existing]
+            must_pass: [new_feature]

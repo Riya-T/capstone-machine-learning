@@ -1,0 +1,13 @@
+# History suite, the 10 eval tasks with the writer trained with DPO on the
+# history-suite train pairs (hist_dpo, dpo3's settings), served as
+# writer-hist_dpo-ctx8k. Everything else as in rtx5070_hist_eval.yaml.
+#
+# Usage (from harness/, inside WSL):
+#     uv run python -m harness collect --config configs/rtx5070_hist_eval_hist_dpo.yaml
+#     uv run python scripts/eval_compare.py --base configs/rtx5070_hist_eval.yaml \
+#         --other configs/rtx5070_hist_eval_hist_dpo.yaml
+extends: rtx5070_hist_eval.yaml
+name: rtx5070-hist-eval-hist-dpo
+writer:
+  backend:
+    model: writer-hist_dpo-ctx8k
