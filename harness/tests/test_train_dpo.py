@@ -298,4 +298,45 @@ def test_one_log_entry_per_optimizer_step_including_a_partial_last_step(torch, l
         "reward_accuracy",
         "grad_norm",
         "learning_rate",
+        "chosen_nll",
+        "chosen_shift",
+        "rejected_shift",
     }
+
+
+def test_chosen_nll_is_the_mean_per_token_and_pushes_the_chosen_up(torch):
+    from harness.train_dpo import chosen_nll
+
+    policy_chosen = torch.tensor(-12.0, requires_grad=True)
+    nll = chosen_nll(policy_chosen, 4)
+    nll.backward()
+
+    assert nll.item() == pytest.approx(3.0)
+    assert policy_chosen.grad.item() == pytest.approx(-0.25)
+
+
+def test_nll_weight_zero_trains_exactly_as_plain_dpo(torch, lora_model):
+    from harness.train_dpo import optimizer_steps, reference_logps
+
+    reference = reference_logps(lora_model, PAIRS)
+    params = [p for p in lora_model.parameters() if p.requires_grad]
+    optimizer = torch.optim.AdamW(params, lr=1e-2, weight_decay=0.0)
+    schedule = torch.optim.lr_scheduler.LambdaLR(optimizer, lambda _: 1.0)
+    entries = list(
+        optimizer_steps(
+            lora_model,
+            PAIRS,
+            reference,
+            [0, 1, 2],
+            optimizer,
+            schedule,
+            beta=0.1,
+            accumulation=3,
+            max_grad_norm=1.0,
+            nll_weight=0.0,
+        )
+    )
+
+    assert entries[0]["loss"] == pytest.approx(math.log(2), abs=1e-4)
+    assert entries[0]["chosen_shift"] == pytest.approx(0.0, abs=1e-4)
+    assert entries[0]["chosen_nll"] > 0

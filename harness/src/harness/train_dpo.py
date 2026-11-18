@@ -97,6 +97,14 @@ def dpo_loss(policy_chosen, policy_rejected, ref_chosen, ref_rejected, beta: flo
     return -F.logsigmoid(margin), margin
 
 
+def chosen_nll(policy_chosen, length: int):
+    """Mean negative log-probability per token of the chosen completion: the
+    supervised term of DPO+NLL (RPO; Pang et al., 2024), and the same loss
+    as train_sft's. Plain DPO can widen the margin by lowering both
+    completions; this term makes it raise the chosen one."""
+    return -policy_chosen / length
+
+
 def completion_logp(model: Any, prompt: list[int], completion: list[int], chunk: int = 256):
     """Summed log-probability of `completion` after `prompt`. Runs the
     transformer on the whole sequence but the vocabulary head only on the
@@ -158,10 +166,14 @@ def optimizer_steps(
     beta: float,
     accumulation: int,
     max_grad_norm: float,
+    nll_weight: float = 0.0,
 ):
     """Train on the pairs in `order`, stepping the optimizer every
-    `accumulation` pairs and after the last one. Yields one log entry per
-    optimizer step, averaged over that step's pairs."""
+    `accumulation` pairs and after the last one. The loss is DPO's plus
+    `nll_weight` times the chosen completion's chosen_nll. Yields one log
+    entry per optimizer step, averaged over that step's pairs; "loss" is the
+    DPO term alone, and the shifts are each completion's log-probability
+    change from the reference."""
     import torch
 
     params = [p for p in model.parameters() if p.requires_grad]
@@ -174,8 +186,17 @@ def optimizer_steps(
         policy_rejected = completion_logp(model, pair["prompt"], pair["rejected"])
         ref_chosen, ref_rejected = reference[index]
         loss, margin = dpo_loss(policy_chosen, policy_rejected, ref_chosen, ref_rejected, beta)
-        (loss / accumulation).backward()
-        window.append((loss.item(), margin.item()))
+        nll = chosen_nll(policy_chosen, len(pair["chosen"]))
+        ((loss + nll_weight * nll) / accumulation).backward()
+        window.append(
+            (
+                loss.item(),
+                margin.item(),
+                nll.item(),
+                policy_chosen.item() - ref_chosen,
+                policy_rejected.item() - ref_rejected,
+            )
+        )
         if i % accumulation == 0 or i == len(order):
             grad_norm = torch.nn.utils.clip_grad_norm_(params, max_grad_norm).item()
             optimizer.step()
@@ -185,9 +206,12 @@ def optimizer_steps(
                 "step": math.ceil(i / accumulation),
                 "steps": steps,
                 "epoch": round(i / len(pairs), 3),
-                "loss": sum(x for x, _ in window) / len(window),
-                "reward_margin": sum(m for _, m in window) / len(window),
-                "reward_accuracy": sum(m > 0 for _, m in window) / len(window),
+                "loss": sum(w[0] for w in window) / len(window),
+                "reward_margin": sum(w[1] for w in window) / len(window),
+                "reward_accuracy": sum(w[1] > 0 for w in window) / len(window),
+                "chosen_nll": sum(w[2] for w in window) / len(window),
+                "chosen_shift": sum(w[3] for w in window) / len(window),
+                "rejected_shift": sum(w[4] for w in window) / len(window),
                 "grad_norm": grad_norm,
                 "learning_rate": schedule.get_last_lr()[0],
             }
@@ -274,6 +298,7 @@ def train(args: argparse.Namespace) -> None:
         beta=args.beta,
         accumulation=args.gradient_accumulation_steps,
         max_grad_norm=args.max_grad_norm,
+        nll_weight=args.nll_weight,
     ):
         entry["elapsed_s"] = round(time.monotonic() - started)
         entry["max_memory_gb"] = round(torch.cuda.max_memory_allocated() / 2**30, 2)
@@ -301,6 +326,12 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--warmup-ratio", type=float, default=0.0)
     result.add_argument("--max-grad-norm", type=float, default=1.0)
     result.add_argument("--beta", type=float, default=0.1)
+    result.add_argument(
+        "--nll-weight",
+        type=float,
+        default=0.0,
+        help="weight of the chosen completion's per-token NLL added to the DPO loss (0: plain DPO)",
+    )
     result.add_argument(
         "--max-length", type=int, default=4096, help="prompt plus completion, in tokens"
     )
