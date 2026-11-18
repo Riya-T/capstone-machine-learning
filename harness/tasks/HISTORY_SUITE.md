@@ -101,9 +101,10 @@ preferred designs without hints.
 ### Eval rule, fixed before any eval result
 
 An eval task enters the comparison of two writers only if each writer has
-at least 2 programs that pass its initial tests (a task with fewer gives no
-score to compare). This is the rule `scripts/eval_compare.py` applies by
-construction; no task is dropped for any other reason.
+at least one program that passes its initial tests (a task with none gives
+no score to compare). This is what `scripts/eval_compare.py` does: it keeps
+the tasks where both writers have trials. No task is dropped for any other
+reason.
 
 ### Writer check
 
