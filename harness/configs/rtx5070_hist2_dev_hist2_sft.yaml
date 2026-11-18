@@ -1,0 +1,6 @@
+# rtx5070_hist2_dev.yaml with the correctness-only control writer.
+extends: rtx5070_hist2_dev.yaml
+name: rtx5070-hist2-dev-hist2-sft
+writer:
+  backend:
+    model: writer-hist2_sft-ctx8k

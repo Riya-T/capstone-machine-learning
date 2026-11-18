@@ -1,0 +1,8 @@
+# rtx5070_hist2_eval.yaml with the correctness-only control: the writer
+# fine-tuned (SFT) on the first 8 passing programs of each task of the
+# hint2 train collection, both designs, with no editing outcomes.
+extends: rtx5070_hist2_eval.yaml
+name: rtx5070-hist2-eval-hist2-sft
+writer:
+  backend:
+    model: writer-hist2_sft-ctx8k
