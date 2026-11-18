@@ -182,6 +182,34 @@ to the eval. The correctness-only control (`hist2_sft`: SFT on the same
 train collection's passing programs, both designs, no editing outcomes)
 is compared with it.
 
+Here is how the two settings did on dev:
+
+- **A** kept the writer correct (27 passing dev programs) but changed no
+  design: 0 of 27. Over training, the chosen programs' log-probability rose
+  16 nats from the reference and the rejected ones' 1.
+- **B** learned the design: 34 of its 64 dev samples make their changes on
+  a deep copy. But it overfit (final DPO loss 0.001, chosen +51 nats,
+  rejected −14), and only 7 samples passed the initial checks, 4 of them
+  copy designs. Its failures are about the specification (wrong exception
+  types, lookups of names that aren't there, and even NameErrors in plain
+  programs), not about the design.
+
+The eval only scores tasks where both writers have passing programs, so a
+writer that rarely passes would drop tasks and trade correctness for
+editability. So B's eval was stopped during its first task's writer
+sampling, before any editing. Two settings in between were added:
+
+- **C:** lr 5e-5, 2 epochs.
+- **D:** lr 3e-5, 3 epochs.
+
+The rule was revised before C and D were trained. A setting is eligible
+if its passing dev programs are at least two thirds of the base writer's.
+The eligible setting with the most passing copy-design programs goes to
+the eval (ties go to the less trained setting, in the order A, D, C, B).
+If no eligible setting has any, the setting with the most passing
+copy-design programs goes. The control's SFT uses the chosen setting's lr
+and epochs.
+
 ### Files and checks
 
 Exactly as README.md: references for every set of changes a sequence

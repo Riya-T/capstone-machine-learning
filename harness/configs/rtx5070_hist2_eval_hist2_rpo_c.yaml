@@ -1,0 +1,7 @@
+# rtx5070_hist2_eval.yaml with the writer trained on the hint2 train pairs by
+# DPO+NLL (nll weight 1, lr 5e-5, 2 epochs).
+extends: rtx5070_hist2_eval.yaml
+name: rtx5070-hist2-eval-hist2-rpo-c
+writer:
+  backend:
+    model: writer-hist2_rpo_c-ctx8k
