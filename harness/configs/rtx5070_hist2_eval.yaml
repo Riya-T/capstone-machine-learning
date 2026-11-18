@@ -1,0 +1,14 @@
+# History-suite eval tasks, base writer (plain prompt), with the editor
+# settings of the hint2 train collection (rtx5070_hist_train_hints2.yaml):
+# 5 turns, one trial per sequence. The writer's samples are those of
+# rtx5070_hist_eval.yaml; the editor settings are part of the editor key,
+# so every trial is new.
+#
+# Usage (from harness/, inside WSL):
+#     uv run python -m harness collect --config configs/rtx5070_hist2_eval.yaml
+extends: rtx5070_hist_eval.yaml
+name: rtx5070-hist2-eval
+editor:
+  reps: 1
+  budget:
+    max_turns: 5

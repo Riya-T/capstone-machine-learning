@@ -1,0 +1,25 @@
+snapshot s1 rep 0: 1 | c_undo success 22/22  ; c_capacity budget_exhausted  
+snapshot s1 rep 1: 1 | c_undo success 22/22  ; c_capacity budget_exhausted  
+snapshot s1 rep 2: 0 | c_undo budget_exhausted  
+== snapshot s1: mean 0.67 changes, {0: 1, 1: 2}
+snapshot s2 rep 0: 1 | c_moves success 18/18  ; c_undo fail_new 13/22 test_one_undo_takes_back_a_whole_shift_all,test_undo_of_a_shift_all_onto_the_same_cargo_type,test_undo_of_seal_hold_brings_it_back_with_its_crates,test_undo_of_seal_hold_puts_it_back_at_its_place_in_the_list
+snapshot s2 rep 1: 1 | c_moves success 18/18  ; c_undo budget_exhausted  
+snapshot s2 rep 2: 0 | c_moves budget_exhausted  
+== snapshot s2: mean 0.67 changes, {0: 1, 1: 2}
+replay s1 rep 0: 0 | c_undo budget_exhausted  
+replay s1 rep 1: 0 | c_undo budget_exhausted  
+replay s1 rep 2: 0 | c_undo fail_new 21/22 test_failed_calls_are_not_recorded
+== replay s1: mean 0.00 changes, {0: 3}
+replay s2 rep 0: 0 | c_moves budget_exhausted  
+replay s2 rep 1: 1 | c_moves success 18/18  ; c_undo budget_exhausted  
+replay s2 rep 2: 0 | c_moves fail_new 17/18 test_the_same_hold_on_both_sides_in_a_later_move
+== replay s2: mean 0.33 changes, {0: 2, 1: 1}
+plain s1 rep 0: 0 | c_undo budget_exhausted  
+plain s1 rep 1: 0 | c_undo fail_new 13/22 test_one_undo_takes_back_a_whole_shift_all,test_undo_of_a_shift_all_onto_the_same_cargo_type,test_undo_of_seal_hold_brings_it_back_with_its_crates,test_undo_of_seal_hold_puts_it_back_at_its_place_in_the_list
+plain s1 rep 2: 0 | c_undo budget_exhausted  
+== plain s1: mean 0.00 changes, {0: 3}
+plain s2 rep 0: 1 | c_moves success 18/18  ; c_undo fail_new 9/22 test_one_undo_takes_back_a_whole_shift_all,test_undo_of_a_shift_all_onto_the_same_cargo_type,test_undo_of_seal_hold_brings_it_back_with_its_crates,test_undo_of_seal_hold_puts_it_back_at_its_place_in_the_list
+plain s2 rep 1: 0 | c_moves fail_new 14/18 test_a_move_may_use_crates_brought_in_by_an_earlier_move,test_crates_may_go_out_and_come_back,test_moves_see_the_crates_that_earlier_moves_took_away,test_a_failed_plan_leaves_the_ship_usable
+plain s2 rep 2: 1 | c_moves success 18/18  ; c_undo budget_exhausted  
+== plain s2: mean 0.67 changes, {0: 1, 1: 2}
+probe exit 0

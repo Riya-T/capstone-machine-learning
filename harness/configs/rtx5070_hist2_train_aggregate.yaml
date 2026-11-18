@@ -1,0 +1,12 @@
+# Pairs from the history-suite train collection with the code-template hint
+# (rtx5070_hist_train_hints2.yaml): every unequal pair of mean editing
+# scores per task, as rtx5070_hist_train_aggregate.yaml.
+#
+# Usage (from harness/, inside WSL):
+#     uv run python -m harness report --config configs/rtx5070_hist2_train_aggregate.yaml --out DIR
+extends: rtx5070_hist_train_hints2.yaml
+name: rtx5070-hist2-train-aggregate
+scorer:
+  rule: aggregate
+  per_task_cap: null
+  min_step_gap: 1

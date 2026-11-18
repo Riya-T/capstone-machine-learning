@@ -117,6 +117,43 @@ became unspecified and untested, and short Python notes name the crashes
 seen. The composite operations, the orders the getters expose and the
 undo change were kept.
 
+### Gate on the first three train tasks, and what changed
+
+The first collection (`configs/rtx5070_hist_train13.yaml`: the prose hints
+of `rtx5070_pc_hints.yaml`, 8 programs, 2 sequences x 2 reps, 8 editor
+turns) was checked on cargo_holds, study_groups and garden_beds before
+going on. Undo worked in 1 of 92 trials. In 57 the editor ran out of
+turns and in the rest it failed about half the hidden undo tests, for
+every program alike: the program's share of a trial's score was 0% and
+the held-out headroom 0. The editor writes undo as inverse calls to the
+program's public methods, which record themselves again, and once stuck it
+sends its file back unchanged until its turns run out. Scored by the share
+of hidden undo tests passed, the program's share is 19%, but programs that
+record their operations do no better than the others.
+
+The 7B writer had followed none of the hints that matter here: the
+"history" hint gave a list of tuples nothing reads, and the "replace the
+state" hint was ignored. A probe with hand-written cargo_holds programs
+(`results/design_probe/hist_cargo_holds/`, `scripts/design_probe.py`, 3
+reps per sequence) separates the designs: undo as the first change worked
+in 2 of 3 trials for a program that makes every change on a deep copy of
+its state and keeps the copy only when the call succeeds, and in 0 of 3
+for the same program changing its state in place (0 of 3 for one that
+rebuilds its state by replaying its operations). After another change,
+undo failed for all three. A prose hint describing the copy design was
+ignored too (2 of 35 passing programs on the three tasks made their changes
+on a deep copy), and so was a code fragment of it (1 of 24). A whole small
+example class for an unrelated specification was followed by every hinted
+sample, though its programs passed the initial checks less often.
+
+So the train collection was restarted with
+`configs/rtx5070_hist_train_hints2.yaml`: that example, which names no
+task, change or undo, given to three quarters of 16 samples per task (the
+others get no hint), 5 editor turns (2.3% of the successful steps in the
+store used more than 5 calls) and one trial per sequence. The eval configs use the same editor settings
+(`configs/rtx5070_hist2_eval.yaml`). These were set before any eval trial
+of this suite was run.
+
 ### Files and checks
 
 Exactly as README.md: references for every set of changes a sequence

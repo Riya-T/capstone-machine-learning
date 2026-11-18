@@ -1,0 +1,8 @@
+# History-suite dev tasks, base writer (plain prompt), editor settings of
+# rtx5070_hist2_eval.yaml. Used for the writer's designs (--until initial).
+extends: rtx5070_hist_dev.yaml
+name: rtx5070-hist2-dev
+editor:
+  reps: 1
+  budget:
+    max_turns: 5

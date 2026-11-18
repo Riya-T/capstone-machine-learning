@@ -1,0 +1,6 @@
+# rtx5070_hist2_eval.yaml with the writer trained on the hint2 train pairs.
+extends: rtx5070_hist2_eval.yaml
+name: rtx5070-hist2-eval-hist2-dpo
+writer:
+  backend:
+    model: writer-hist2_dpo-ctx8k

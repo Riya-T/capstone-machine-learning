@@ -1,0 +1,84 @@
+# History suite, train tasks, with a design hint written as a worked
+# example. The prose hints of rtx5070_pc_hints.yaml left the 7B writer's
+# history-suite programs almost all the same direct code, and on the first
+# three train tasks the editor's undo then failed for every program alike.
+# In a probe on cargo_holds (results/design_probe/hist_cargo_holds/) undo
+# as the first change worked in 2 of 3 trials for a program that makes
+# every change on a deep copy of its state and 0 of 3 for the same program
+# changing its state in place. Neither a prose version of that hint nor a
+# code fragment was followed (1 to 2 of 24 to 35 passing programs on three
+# tasks used a deep copy; the writer renamed its attribute, nothing more),
+# so this one shows a whole small class for an unrelated specification.
+# It names no task, change or undo. The writer follows it (all 18 hinted
+# samples on three tasks used a deep copy), but those programs pass the
+# initial checks less often (4 of 18, against 3 of 3 per task without a
+# hint), mostly in the methods that do several things at once; so it says
+# to read only the copy there and not call other public methods, and three
+# quarters of the samples get it, the rest none, so each task has passing
+# programs of both designs. Pairs keep the plain prompt, so a writer trained on them learns
+# the preferred design without hints.
+#
+# Usage (from harness/, inside WSL):
+#     uv run python -m harness collect --config configs/rtx5070_hist_train_hints2.yaml
+extends: rtx5070_hist_train_hints.yaml
+name: rtx5070-hist-train-hints2
+writer:
+  samples_per_task: 16
+  design_hints:
+    - ""
+    - &copy_example |-
+      Write the class in the style of this example, which is for a different
+      specification: all of the object's data is in one attribute,
+      self._state, and every public method that changes data first makes a
+      deep copy, does all its checks and changes on the copy, and stores the
+      copy only on its last line, so a call that raises changes nothing.
+      Inside such a method, read and change only the copy, never
+      self._state, and do not call the other public methods (each of them
+      stores its own copy, which the last line would then overwrite).
+
+      ```python
+      import copy
+
+
+      class ShelfError(Exception):
+          pass
+
+
+      class Shelves:
+          def __init__(self):
+              self._state = {"shelves": {}}  # shelf name -> books, in orde
+
+          def add_shelf(self, name):
+              new = copy.deepcopy(self._state)
+              if name in new["shelves"]:
+                  raise ShelfError(f"shelf {name!r} is already used")
+              new["shelves"][name] = []
+              self._state = new
+
+          def put(self, shelf, book):
+              new = copy.deepcopy(self._state)
+              if shelf not in new["shelves"]:
+                  raise KeyError(shelf)
+              new["shelves"][shelf].append(book)
+              self._state = new
+
+          def move_all(self, source, target):
+              new = copy.deepcopy(self._state)
+              for name in (source, target):
+                  if name not in new["shelves"]:
+                      raise KeyError(name)
+              new["shelves"][target].extend(new["shelves"][source])
+              new["shelves"][source] = []
+              self._state = new
+
+          def get_books(self, shelf):
+              if shelf not in self._state["shelves"]:
+                  raise KeyError(shelf)
+              return list(self._state["shelves"][shelf])
+      ```
+    - *copy_example
+    - *copy_example
+editor:
+  reps: 1          # one trial per sequence: 5-turn trials, design effect large
+  budget:
+    max_turns: 5   # 2.3% of successful steps in the store used more than 5 calls
