@@ -1,0 +1,69 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+#
+# History suite (HISTORY_SUITE.md), eval split: composite calls and an
+# order the getters expose, so that the program's design decides whether
+# the undo change (c_undo, in both sequences) succeeds.
+schema_version: 1
+id: server_racks
+family: server_racks
+split: eval
+entry_files: [racks.py]
+spec: spec.md
+public_checks: [public/test_racks_public.py]
+private_tests: [private/test_racks_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_install_checks_own_rack_only, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_undo
+    kind: undo
+    request: changes/c_undo/request.md
+    public_checks: [changes/c_undo/public/test_undo_public.py]
+    new_feature_tests: [changes/c_undo/private/test_undo_new.py]
+  - id: c_slots
+    kind: validation_rule
+    request: changes/c_slots/request.md
+    public_checks: [changes/c_slots/public/test_slots_public.py]
+    new_feature_tests: [changes/c_slots/private/test_slots_new.py]
+  - id: c_install_many
+    kind: atomic_operation
+    request: changes/c_install_many/request.md
+    public_checks: [changes/c_install_many/public/test_install_many_public.py]
+    new_feature_tests: [changes/c_install_many/private/test_install_many_new.py]
+  - id: c_versions
+    kind: concurrency_control
+    request: changes/c_versions/request.md
+    public_checks: [changes/c_versions/public/test_versions_public.py]
+    new_feature_tests: [changes/c_versions/private/test_versions_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_undo: reference/undo
+  c_slots+c_undo: reference/slots_undo
+  c_slots+c_undo+c_versions: reference/slots_undo_versions
+  c_install_many: reference/install_many
+  c_install_many+c_undo: reference/install_many_undo
+  c_install_many+c_slots+c_undo: reference/install_many_slots_undo
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_undo
+      - change: c_slots
+      - change: c_versions
+        planted_bugs:
+          - path: bugs/versions_decommission_recorded_late  # required regression bug: undo of decommission_rack leaves the rack empty (c_undo)
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_install_many
+      - change: c_undo
+      - change: c_slots
+        planted_bugs:
+          - path: bugs/slots_install_many_not_atomic  # required regression bug: install_many installs the servers before a bad name (c_install_many)
+            must_fail: [existing]
+            must_pass: [new_feature]

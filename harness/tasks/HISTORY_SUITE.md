@@ -98,6 +98,24 @@ preferred designs without hints.
   spec's methods and that change's own methods (never another change's),
   since the same test files run in both sequences.
 
+### Eval rule, fixed before any eval result
+
+An eval task enters the comparison of two writers only if each writer has
+at least 2 programs that pass its initial tests (a task with fewer gives no
+score to compare). This is the rule `scripts/eval_compare.py` applies by
+construction; no task is dropped for any other reason.
+
+### Writer check
+
+The first versions of these tasks set traps the 7B writer fell into on most
+samples (rules only some programs check, such as count limits on removals
+or re-adding a removed name; orders that differ from what the code
+naturally keeps; lists changed while looping over them). After a writer
+check (`collect --until initial`), each spec was simplified: such rules
+became unspecified and untested, and short Python notes name the crashes
+seen. The composite operations, the orders the getters expose and the
+undo change were kept.
+
 ### Files and checks
 
 Exactly as README.md: references for every set of changes a sequence

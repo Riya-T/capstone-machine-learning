@@ -1,0 +1,65 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+schema_version: 1
+id: museum_galleries
+family: museum_galleries
+split: eval
+entry_files: [museum.py]
+spec: spec.md
+public_checks: [public/test_museum_public.py]
+private_tests: [private/test_museum_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_move_to_own_gallery_accepted, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_undo
+    kind: undo
+    request: changes/c_undo/request.md
+    public_checks: [changes/c_undo/public/test_undo_public.py]
+    new_feature_tests: [changes/c_undo/private/test_undo_new.py]
+  - id: c_locks
+    kind: state_flag
+    request: changes/c_locks/request.md
+    public_checks: [changes/c_locks/public/test_locks_public.py]
+    new_feature_tests: [changes/c_locks/private/test_locks_new.py]
+  - id: c_move_many
+    kind: atomic_operation
+    request: changes/c_move_many/request.md
+    public_checks: [changes/c_move_many/public/test_move_many_public.py]
+    new_feature_tests: [changes/c_move_many/private/test_move_many_new.py]
+  - id: c_hang_at
+    kind: configuration
+    request: changes/c_hang_at/request.md
+    public_checks: [changes/c_hang_at/public/test_hang_at_public.py]
+    new_feature_tests: [changes/c_hang_at/private/test_hang_at_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_undo: reference/undo
+  c_locks+c_undo: reference/locks_undo
+  c_hang_at+c_locks+c_undo: reference/hang_at_locks_undo
+  c_move_many: reference/move_many
+  c_move_many+c_undo: reference/move_many_undo
+  c_locks+c_move_many+c_undo: reference/locks_move_many_undo
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_undo
+      - change: c_locks
+      - change: c_hang_at
+        planted_bugs:
+          - path: bugs/hang_at_move_skips_target_lock  # required regression bug: breaks step 2
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_move_many
+      - change: c_undo
+      - change: c_locks
+        planted_bugs:
+          - path: bugs/locks_swap_not_undoable  # required regression bug: breaks step 2
+            must_fail: [existing]
+            must_pass: [new_feature]

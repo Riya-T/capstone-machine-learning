@@ -1,0 +1,65 @@
+# Paths are relative to this directory. The writer sees only `spec` and
+# `public_checks`; everything else stays hidden from it.
+schema_version: 1
+id: recipe_binder
+family: recipe_binder
+split: eval
+entry_files: [binder.py]
+spec: spec.md
+public_checks: [public/test_binder_public.py]
+private_tests: [private/test_binder_initial.py]
+reference: reference/v0
+planted_bugs:
+  # Required: a bug only the hidden initial tests catch.
+  - {path: bugs/v0_delete_keeps_old_section_of_recipes, must_fail: [initial], must_pass: [public]}
+
+changes:
+  - id: c_undo
+    kind: undo
+    request: changes/c_undo/request.md
+    public_checks: [changes/c_undo/public/test_undo_public.py]
+    new_feature_tests: [changes/c_undo/private/test_undo_new.py]
+  - id: c_locked
+    kind: state_flag
+    request: changes/c_locked/request.md
+    public_checks: [changes/c_locked/public/test_locked_public.py]
+    new_feature_tests: [changes/c_locked/private/test_locked_new.py]
+  - id: c_queries
+    kind: query
+    request: changes/c_queries/request.md
+    public_checks: [changes/c_queries/public/test_queries_public.py]
+    new_feature_tests: [changes/c_queries/private/test_queries_new.py]
+  - id: c_recipe_order
+    kind: configuration
+    request: changes/c_recipe_order/request.md
+    public_checks: [changes/c_recipe_order/public/test_recipe_order_public.py]
+    new_feature_tests: [changes/c_recipe_order/private/test_recipe_order_new.py]
+
+# Reference solutions by the set of changes applied (sorted ids joined by "+").
+references:
+  c_undo: reference/undo
+  c_locked+c_undo: reference/locked_undo
+  c_locked+c_recipe_order+c_undo: reference/locked_recipe_order_undo
+  c_queries: reference/queries
+  c_queries+c_undo: reference/queries_undo
+  c_locked+c_queries+c_undo: reference/locked_queries_undo
+
+sequences:
+  - id: s1
+    steps:
+      - change: c_undo
+      - change: c_locked
+      - change: c_recipe_order
+        planted_bugs:
+          - path: bugs/recipe_order_delete_ignores_parent_lock  # required regression bug: breaks step 2
+            must_fail: [existing]
+            must_pass: [new_feature]
+  - id: s2
+    steps:
+      - change: c_queries
+      - change: c_undo
+      - change: c_locked
+        planted_bugs:
+          - path: bugs/locked_move_not_undoable  # required regression bug: breaks step 2
+            must_fail: [existing]
+            must_pass: [new_feature]
