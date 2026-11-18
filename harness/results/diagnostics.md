@@ -103,6 +103,26 @@ on preferences can do, would gain at most 0.06 to 0.08 there. That is
 below what 16 tasks can detect (the main measure's interval spans 0.2 to
 0.3 changes).
 
+The base writer's +0.27 does not hold for the other writers' programs,
+which are new samples edited in new trials (`scripts/selection.py`, best
+of up to 8 by one sequence's 3 repetitions, scored on the other sequence;
+`results/selection.md`):
+
+| Eval tasks | Best of 2 | Best of 4 | Best of 8 |
+|---|---:|---:|---:|
+| Base writer | +0.09 (+0.01 to +0.18) | +0.17 (+0.04 to +0.32) | +0.27 (+0.10 to +0.45) |
+| Maintainability prompt | −0.02 (−0.10 to +0.06) | −0.09 (−0.22 to +0.03) | −0.16 (−0.32 to −0.00) |
+| dpo3 | +0.05 (−0.03 to +0.13) | +0.05 (−0.08 to +0.16) | +0.03 (−0.12 to +0.18) |
+| Radon writer | +0.08 (−0.02 to +0.18) | +0.12 (−0.03 to +0.26) | +0.15 (−0.03 to +0.30) |
+| Correctness-only writer | +0.05 (−0.02 to +0.11) | +0.09 (−0.05 to +0.24) | +0.05 (−0.13 to +0.22) |
+| Mean over the 5 writers | +0.05 (+0.01 to +0.10) | +0.07 (−0.00 to +0.15) | +0.07 (−0.02 to +0.16) |
+
+Picking by the editor's results on some changes finds programs that do
+better on other changes for one writer out of five; averaged over the five,
+the best of 8 gains 0.07 changes, with an interval that includes 0. Even
+choosing among samples, the use the labels are best suited to, gains
+little on these tasks.
+
 ## 2. Do winners stay winners?
 
 For every pair of programs of a task: does the one that wins on sequence A
