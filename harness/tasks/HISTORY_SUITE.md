@@ -154,6 +154,34 @@ store used more than 5 calls) and one trial per sequence. The eval configs use t
 (`configs/rtx5070_hist2_eval.yaml`). These were set before any eval trial
 of this suite was run.
 
+### The train collection, plain DPO, and DPO+NLL
+
+Over all 16 train tasks, 38 of the 84 passing programs used the copy
+design. Their mean score was 0.76 changes per sequence against 0.40 for
+the 46 that changed their state in place, +0.16 against their task's mean
+(95% interval +0.08 to +0.26), and −0.13 (−0.22 to −0.05) for the in-place
+programs. The aggregate rule gave 83 pairs. 74 of them prefer a
+copy-design program: 49 against an in-place one, 25 against a worse copy.
+
+Plain DPO with dpo3's settings (`hist2_dpo`) didn't move the writer. On the
+dev tasks without a hint, 0 of its 21 passing programs used the copy
+design (base writer 0 of 30), and fewer of its programs passed. A
+copy-design program is very unlikely under the plain prompt, and DPO can
+widen the margin by lowering both programs. So `hist2_dpo` was stopped
+before any eval trial. The writer was trained again with DPO+NLL
+(`--nll-weight 1` in `train_dpo.py`, the chosen program's per-token NLL as
+in RPO, Pang et al. 2024, the same loss as `train_sft.py`). There are two
+settings, chosen on dev only by a rule fixed before training:
+
+- **A** (`hist2_rpo`): dpo3's settings plus the NLL term.
+- **B** (`hist2_rpo_b`): lr 5e-5 and 3 epochs. It is trained only if under
+  a quarter of A's passing dev programs use the copy design.
+
+Of A and B, the setting with more passing copy-design programs on dev goes
+to the eval. The correctness-only control (`hist2_sft`: SFT on the same
+train collection's passing programs, both designs, no editing outcomes)
+is compared with it.
+
 ### Files and checks
 
 Exactly as README.md: references for every set of changes a sequence
