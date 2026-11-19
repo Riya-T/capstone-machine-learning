@@ -4,6 +4,14 @@ Planted bug: versions work, but decommission_rack saves the state for undo after
 moving the servers, so undoing it brings the rack back empty.
 Never shown to the writer or the editor; validate-tasks checks that it
 passes every test it should.
+
+Usage:
+    from racks import Racks
+    racks = Racks()
+    racks.add_rack("r1")
+    racks.install("r1", "web-1")
+    racks.install("r1", "db-1")
+    racks.get_servers("r1")  # ["web-1", "db-1"]
 """
 
 

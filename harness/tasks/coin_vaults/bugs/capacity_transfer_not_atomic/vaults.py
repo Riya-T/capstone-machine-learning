@@ -4,6 +4,14 @@ Planted bug: the capacity works, but transfer works on the live vaults, so the m
 before a failing one stay made.
 Never shown to the writer or the editor; validate-tasks checks that it
 passes every test it should.
+
+Usage:
+    from vaults import Vaults
+    vaults = Vaults()
+    vaults.add_vault("main")
+    vaults.deposit("main", 20, 4)
+    vaults.withdraw("main", 20, 1)
+    vaults.get_count("main", 20)  # 3
 """
 
 

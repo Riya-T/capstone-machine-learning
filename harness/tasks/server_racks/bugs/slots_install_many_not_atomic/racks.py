@@ -4,6 +4,14 @@ Planted bug: slots work, but install_many checks each name while installing, so 
 servers before a bad name stay installed.
 Never shown to the writer or the editor; validate-tasks checks that it
 passes every test it should.
+
+Usage:
+    from racks import Racks
+    racks = Racks()
+    racks.add_rack("r1")
+    racks.install("r1", "web-1")
+    racks.install("r1", "db-1")
+    racks.get_servers("r1")  # ["web-1", "db-1"]
 """
 
 

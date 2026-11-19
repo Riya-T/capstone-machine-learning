@@ -6,6 +6,14 @@ up in two bins. The public checks only drop a parcel twice into the same
 bin, so only the hidden initial tests catch it.
 Never shown to the writer or the editor; validate-tasks checks that the
 tests catch it.
+
+Usage:
+    from sorting import SortingRoom
+    room = SortingRoom()
+    room.add_bin("east")
+    room.drop("east", "NY-1")
+    room.drop("east", "LA-2")
+    room.pick("east")  # "NY-1"
 """
 
 

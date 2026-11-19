@@ -7,6 +7,14 @@ checks only decommission into an empty rack, so only the hidden initial
 tests catch it.
 Never shown to the writer or the editor; validate-tasks checks that the
 tests catch it.
+
+Usage:
+    from cellar import Cellar
+    cellar = Cellar()
+    cellar.add_rack("north")
+    cellar.add_rack("south")
+    cellar.store("north", 2015, 6)
+    cellar.relocate_all("north", "south")  # 6
 """
 
 

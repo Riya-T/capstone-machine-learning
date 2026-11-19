@@ -3,6 +3,14 @@
 Planted bug: move_song does not check whether to_setlist already holds the title.
 Never shown to the writer or the editor; validate-tasks checks that it
 passes every test it should.
+
+Usage:
+    from setlists import Setlists
+    setlists = Setlists()
+    setlists.create_setlist("friday")
+    setlists.add_song("friday", "Opener")
+    setlists.add_song("friday", "Closer")
+    setlists.get_songs("friday")  # ["Opener", "Closer"]
 """
 
 

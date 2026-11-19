@@ -4,6 +4,14 @@ Planted bug: revisions work, but blend_into no longer checks whether from_silo i
 sealed.
 Never shown to the writer or the editor; validate-tasks checks that it
 passes every test it should.
+
+Usage:
+    from silos import Silos
+    silos = Silos()
+    silos.add_silo("north")
+    silos.load("north", "wheat", 40)
+    silos.unload("north", "wheat", 15)
+    silos.get_tonnes("north", "wheat")  # 25
 """
 
 

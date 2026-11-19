@@ -3,6 +3,14 @@
 Correct solution for the initial rehearsal_setlists spec.
 Never shown to the writer or the editor; validate-tasks checks that it
 passes every test it should.
+
+Usage:
+    from setlists import Setlists
+    setlists = Setlists()
+    setlists.create_setlist("friday")
+    setlists.add_song("friday", "Opener")
+    setlists.add_song("friday", "Closer")
+    setlists.get_songs("friday")  # ["Opener", "Closer"]
 """
 
 
