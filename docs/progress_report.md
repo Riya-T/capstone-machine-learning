@@ -1012,8 +1012,23 @@ results are in `harness/results/hist2_eval.md`.
   The control is SFT on the 83 passing programs with D's lr and epochs.
   Counting failing samples as 0 (after the fact): base 0.17, control 0.16,
   D 0.23 changes per sample.
-- **Running:** D with seed 43 (`hist2_rpo_d_s43`, `/home/pc/run_hist2_seed.sh`),
-  from 02:42 on 11-19.
+- **Second seed** of D (`hist2_rpo_d_s43`, seed 43, same pairs and
+  settings, `/home/pc/run_hist2_seed.sh`): trained from 02:42 on 11-19,
+  eval run 20261119T114314Z-8ac0c3 to 08:06, 205 steps, no infrastructure
+  errors. On the dev tasks, 11 of its 15 passing programs used the copy
+  design. Same 9 tasks:
+
+  | Comparison | Changes before first failure | First change works | Samples passing initial checks |
+  |---|---|---|---|
+  | Seed 43 − base | +0.43 (+0.20 to +0.66) | +15 pts (+7 to +24) | −11 pts (−28 to +7) |
+  | Seed 43 − control | +0.41 (+0.18 to +0.66) | +16 pts (+7 to +26) | +0 pts (−13 to +12) |
+  | Seed 43 − seed 42 | +0.18 (+0.04 to +0.32) | +6 pts (−2 to +12) | +11 pts (+5 to +17) |
+
+  With recipe_binder (one passing sample per writer), the planned 10-task
+  comparison against base gives +0.53 (+0.26 to +0.83). Per sample
+  (after the fact): 0.37, against base +0.19 (+0.05 to +0.36).
+- **Next:** dpo_all's eval resumed at 08:07 on 11-19 (`run_dpoall_resume.sh`),
+  then seeds 2 and 3 of dpo3, sft and radon (`run_seeds.sh`).
 
 ## Findings so far
 
@@ -1198,6 +1213,14 @@ results are in `harness/results/hist2_eval.md`.
     the base writer and −11 against the control. Per sample, counting
     failing samples as 0, D's gain is +0.05 (−0.04 to +0.15). The
     mechanism isn't the copy design as our classifier sees it.
+28. **The history-suite gain replicates with a second training seed, and
+    its size depends on the seed.** D trained with seed 43 gains +0.43
+    (+0.20 to +0.66) against the base writer and +0.41 (+0.18 to +0.66)
+    against the control on the same 9 tasks, nearly twice seed 42's gain
+    (difference +0.18, +0.04 to +0.32). Its pass rate is the control's (11
+    points below base), so seed 42's extra correctness loss was not
+    systematic. With seed 43, the per-sample gain is clear too (+0.19,
+    +0.05 to +0.36).
 
 - **Testbed (the main question):** the diagnostics say the current tasks
   cannot show an effect, because the editor's randomness swamps the
@@ -1213,9 +1236,9 @@ results are in `harness/results/hist2_eval.md`.
   wallet pilot in `docs/wallet_pair_pilot/` (two hand-written designs, no
   usable pair) proposes concrete test checks for such a pilot.
 - **Seeds and training settings:** the proposal asks for several seeds
-  for our writer; only seed 42 is done. More seeds, beta or epochs would
-  measure training on labels that are mostly noise, so they should wait
-  for the testbed decision.
+  for our writer. On the original testbed only seed 42 is done; seeds 2
+  and 3 of dpo3, sft and radon are queued after dpo_all's eval. On the
+  history suite, D has two seeds (finding 28).
 - **Protocol:** these results use the collection store's protocol: selected
   passing programs, at most 8 per task. `harness/docs/evaluation.md`
   describes a different one (one unselected first attempt per task and

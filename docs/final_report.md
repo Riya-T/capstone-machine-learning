@@ -32,13 +32,15 @@ that is shared across tasks. We then built a second testbed of 30 task
 families where the program's design decides whether undo can be added,
 and sampled training programs that differ in design. There, the same
 pipeline, with the chosen program's likelihood added to the DPO loss,
-gives a writer whose held-out programs the editor changes further. The
-gain is +0.24 changes before the first failure against the original
-writer (95% +0.10 to +0.39) and +0.22 (+0.07 to +0.40) against
-fine-tuning on the same programs without the editing outcomes, which
-itself gains nothing. The cost is 22 points of initial correctness. We
-release the pipeline, tasks, every preference pair, the diagnostics and
-the controls.
+gives a writer whose held-out programs the editor changes further, with
+both of two training seeds. On the same 9 tasks, the gain is +0.24 and
++0.43 changes before the first failure against the original writer (95%
++0.10 to +0.39 and +0.20 to +0.66). Against fine-tuning on the same
+programs without the editing outcomes, which itself gains nothing, it is
++0.22 and +0.41 (+0.07 to +0.40 and +0.18 to +0.66). The cost is 11 to 22
+points of initial correctness, at least half of it shared with that
+control. We release the pipeline, tasks, every preference pair, the
+diagnostics and the controls.
 
 ## 1. Introduction
 
@@ -76,8 +78,8 @@ Contributions:
 6. A second testbed (30 families) where the program's design decides
    later changes. On it, a writer trained with DPO plus an NLL term on
    editing outcomes beats both the original writer and a matched
-   correctness-only control on held-out tasks, at a measured cost in
-   initial correctness.
+   correctness-only control on held-out tasks, with two training seeds, at
+   a measured cost in initial correctness.
 
 ## 2. Related work
 
@@ -220,8 +222,8 @@ editor running out of turns.
 
 *Pending:* training seeds 2 and 3 of dpo3, correctness-only and Radon
 (the proposal's three seeds per trained method), and the full eval of
-dpo_all (§6.3). Both are paused while the GPU runs §7, and resume after
-it.
+dpo_all (§6.3). dpo_all's eval resumed on Nov 19 after §7, and the seeds
+run after it.
 
 ### 4.2 Comments
 
@@ -379,7 +381,7 @@ editing labels'. What the editing scores share within a task does not
 point the same way across tasks.
 
 *Pending:* dpo_all's full eval collection with the editor (main measure;
-paused at 11 of 16 tasks to free the GPU for §7), and the 627-pair Radon
+paused at 11 of 16 tasks for §7, resumed Nov 19), and the 627-pair Radon
 writer's own eval-task code (whether it moves up MI like the clean
 writer's).
 
@@ -466,47 +468,72 @@ its 29 passing programs used the copy design.
 
 ### 7.3 Results
 
-These are 9 eval tasks; recipe_binder has no edited program for at least
-one writer. Intervals come from the paired task bootstrap as before
-(`harness/results/hist2_eval.md`).
+Our writer was trained twice with setting D, with seeds 42 and 43 (same
+pairs, settings and code; the seed changes the LoRA initialisation and the
+order of the pairs). The tables use 9 eval tasks: recipe_binder has no
+edited program for the original writer or the control. Intervals come from
+the paired task bootstrap as before (`harness/results/hist2_eval.md`).
 
 | Writer | Changes before first failure (of 3) | First change works | Whole sequence works | Samples passing initial tests |
 |---|---:|---:|---:|---:|
 | Original writer | 0.31 | 31% | 0% | 64% |
 | Correctness-only (SFT) | 0.33 | 30% | 0% | 53% |
-| **Ours (DPO+NLL, D)** | **0.55** | **41%** | **6%** | **42%** |
+| **Ours (DPO+NLL, D), seed 42** | **0.55** | **41%** | **6%** | **42%** |
+| **Ours, seed 43** | **0.73** | **46%** | **11%** | **53%** |
 
 | Difference (95% interval) | Changes before first failure | First change works | Whole sequence works | Samples passing initial tests |
 |---|---|---|---|---|
 | Correctness-only − original | +0.02 (−0.03 to +0.06) | −1 pt (−6 to +4) | +0 pts | −11 pts (−21 to −1) |
-| Ours − original | +0.24 (+0.10 to +0.39) | +10 pts (+5 to +15) | +6 pts (+0 to +11) | −22 pts (−38 to −5) |
-| Ours − correctness-only | +0.22 (+0.07 to +0.40) | +10 pts (+2 to +19) | +6 pts (+0 to +11) | −11 pts (−24 to +1) |
+| Ours (seed 42) − original | +0.24 (+0.10 to +0.39) | +10 pts (+5 to +15) | +6 pts (+0 to +11) | −22 pts (−38 to −5) |
+| Ours (seed 43) − original | +0.43 (+0.20 to +0.66) | +15 pts (+7 to +24) | +11 pts (+3 to +20) | −11 pts (−28 to +7) |
+| Ours (seed 42) − correctness-only | +0.22 (+0.07 to +0.40) | +10 pts (+2 to +19) | +6 pts (+0 to +11) | −11 pts (−24 to +1) |
+| Ours (seed 43) − correctness-only | +0.41 (+0.18 to +0.66) | +16 pts (+7 to +26) | +11 pts (+3 to +20) | +0 pts (−13 to +12) |
+
+Seed 43 and the original writer both have an edited program on
+recipe_binder too. With it, their planned 10-task comparison gives +0.53
+(+0.26 to +0.83), but that task rests on one passing sample per writer.
 
 The editor completes more changes on our writer's programs than on the
-original writer's. Training on the same programs without the editing
-outcomes gains nothing, so the gain comes from the editing outcomes. It
-has a cost in correctness: 22 points fewer of our writer's samples pass
-the initial tests, half of that shared with the control. If a sample that
-fails the initial tests counts as 0 changes (a measure computed after the
-results), the original writer scores 0.17 changes per sample, the control
-0.16 and ours 0.23. That is +0.05 for ours against the original (−0.04 to
-+0.15) and +0.07 against the control (−0.01 to +0.15). So the gain is
-clear for programs that pass their tests, which are the ones an editor
-would be given. Per sample, the lost correctness offsets most of it.
+original writer's, with both training seeds. Training on the same programs
+without the editing outcomes gains nothing, so the gain comes from the
+editing outcomes. Its size depends on the training seed. On the same
+tasks, seed 43 gains nearly twice as much as seed 42 (difference +0.18,
++0.04 to +0.32), and two seeds measure that variation only roughly.
 
-The editor gets unstuck more often. On the original writer's programs, 47%
-of steps run out of turns and 23% succeed; on ours, 28% and 38%. When undo
-comes first, no original-writer program gets its first change done (0 of
-69), and 7 of our 51 do. The gain is not the copy design we trained
-toward, as far as our classifier can tell. On eval, our writer's programs
-classified as copy designs score lower than its other programs (0.38
-against 0.79), and all 7 undo-first successes are in-place programs. The
-classifier counts any deep copy in a mutating method, so it is crude. The
-property that makes our writer's programs easier to edit is not captured
-by it, nor by length, number of methods or number of classes.
+The gain has a cost in correctness:
 
-*Pending:* a second training seed of D (same pairs and settings, seed 43;
-by Nov 19).
+- **Seed 42:** 22 points fewer of its samples pass the initial tests, half
+  of that shared with the control.
+- **Seed 43:** 11 points fewer, the same as the control.
+
+If a sample that fails the initial tests counts as 0 changes (a measure
+computed after the results, all 10 tasks), the original writer scores 0.17
+changes per sample, the control 0.16, seed 42 0.23 and seed 43 0.37.
+Against the original writer that is +0.05 for seed 42 (−0.04 to +0.15) and
++0.19 for seed 43 (+0.05 to +0.36). So the gain is clear for programs that
+pass their tests, which are the ones an editor would be given. Per sample,
+it depends on the seed.
+
+The editor gets unstuck more often:
+
+- **Run out of turns:** 47% of steps on the original writer's programs; on
+  ours, 28% with seed 42 and 27% with seed 43.
+- **Succeed:** 23% on the original writer's programs; on ours, 38% and 46%.
+- **Undo first:** no original-writer program gets its first change done (0
+  of 69). On ours, 7 of 51 do with seed 42 and 14 of 64 with seed 43.
+
+The gain is not the copy design we trained toward, as far as our
+classifier can tell:
+
+- On eval, our writer's programs classified as copy designs score lower
+  than its other programs: 0.38 against 0.79 with seed 42, and 0.52
+  against 0.97 with seed 43.
+- The undo-first successes are mostly in-place programs: all 7 with seed
+  42, and 11 of 14 with seed 43.
+
+The classifier counts any deep copy in a mutating method, so it is crude.
+The property that makes our writer's programs easier to edit is not
+captured by it, nor by length, number of methods or number of classes.
 
 ## 8. Discussion
 
@@ -567,8 +594,9 @@ above 0.3.
 
 - **Scope:** one writer, one editor and one hardware budget, with small
   self-contained tasks.
-- **Seeds:** one training seed so far on the original testbed (more
-  paused) and on the history suite (a second running).
+- **Seeds:** one training seed so far on the original testbed (two more
+  queued). Two on the history suite, whose gains differ by nearly a factor
+  of two.
 - **Selection:** up to 8 passing programs per task are edited, rather
   than a single unselected attempt.
 - **Noise control:** it uses a static signal (MI), whose learnability may
@@ -579,8 +607,8 @@ above 0.3.
   - learning rate and epochs chosen on 4 dev tasks under a rule revised
     once, still on dev only;
   - a mechanism we have not identified;
-  - a 22-point loss in initial correctness that, per sample, cancels most
-    of the gain.
+  - an 11- to 22-point loss in initial correctness. Per sample, it
+    cancels most of seed 42's gain but not seed 43's.
 
 ## 9. Conclusion
 
@@ -596,10 +624,10 @@ was the testbed's signal, not the training method.
 On a testbed where the program's design decides whether undo can be
 added, and with training samples that differ in design, the same pipeline
 with an NLL term gives a writer whose held-out programs the editor
-changes further. That is +0.24 changes before the first failure against
-the original writer and +0.22 against fine-tuning on the same programs
-without the editing outcomes. The cost is 22 points of initial
-correctness.
+changes further. With two training seeds, that is +0.24 and +0.43 changes
+before the first failure against the original writer, and +0.22 and +0.41
+against fine-tuning on the same programs without the editing outcomes. The
+cost is 11 to 22 points of initial correctness.
 
 ## Reproducibility and artifacts
 

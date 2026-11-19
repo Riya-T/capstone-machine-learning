@@ -111,9 +111,78 @@ which program of a pair is preferred, which also decides the programs the
 NLL term trains on. Half of
 D's loss in pass rate is shared with the control (training on these
 programs at all costs 11 points). The other half is specific to DPO+NLL,
-and its interval reaches +1.
+and its interval reaches +1. The second seed below does not show this
+extra loss.
 
-## Open
+## Second training seed
 
-A second training seed of D (`hist2_rpo_d_s43`, same pairs and settings,
-seed 43) is being run against the same base and control.
+`hist2_rpo_d_s43` is D trained again with seed 43, which changes the LoRA
+initialisation and the order of the pairs. The pairs, settings and code are
+the same. It ran with the same eval settings, against the same base and
+control runs (`configs/rtx5070_hist2_eval_hist2_rpo_d_s43.yaml`, run
+20261119T114314Z-8ac0c3, 205 editing steps, no infrastructure errors). Its
+training curve is like seed 42's: reward accuracy 0.88 to 1.0 from step 5
+on, and the chosen NLL falls from 0.13 to 0.08. On the dev tasks, 11 of its
+15 passing programs used the copy design (seed 42: 10 of 20).
+
+| Task | Initial pass (base → seed 43) | Changes done before first failure | First change works | Whole sequence works |
+|---|---|---|---|---|
+| bike_docks | 8/16 → 5/16 | 0.00 → 0.30 | 0% → 20% | 0% → 0% |
+| canal_locks | 13/16 → 9/16 | 0.12 → 0.25 | 12% → 25% | 0% → 0% |
+| coin_vaults | 11/16 → 6/16 | 0.12 → 0.33 | 12% → 25% | 0% → 0% |
+| grain_silos | 10/16 → 8/16 | 0.50 → 0.62 | 50% → 50% | 0% → 6% |
+| museum_galleries | 7/16 → 13/16 | 0.29 → 0.25 | 29% → 25% | 0% → 0% |
+| recipe_binder | 1/16 → 1/16 | 0.00 → 1.50 | 0% → 100% | 0% → 0% |
+| rehearsal_setlists | 5/16 → 7/16 | 0.50 → 0.93 | 50% → 64% | 0% → 7% |
+| server_racks | 10/16 → 12/16 | 0.50 → 1.44 | 50% → 69% | 0% → 38% |
+| spare_parts | 14/16 → 5/16 | 0.50 → 1.30 | 50% → 70% | 0% → 20% |
+| tour_itineraries | 14/16 → 11/16 | 0.25 → 1.19 | 25% → 69% | 0% → 25% |
+
+Both writers have an edited program on all 10 tasks, so the planned
+comparison has 10:
+
+| Metric | Base | Seed 43 | Difference | 95% interval |
+|---|---:|---:|---:|---:|
+| Changes done before first failure | 0.28 | 0.81 | +0.53 | +0.26 to +0.83 |
+| First change works | 28% | 52% | +24 pts | +10 to +44 pts |
+| Whole sequence works | 0% | 10% | +10 pts | +3 to +18 pts |
+| Writer samples passing the initial checks | 58% | 48% | −10 pts | −25 to +6 pts |
+
+recipe_binder rests on one passing sample per writer, and the task
+bootstrap weighs it like the other tasks. Leaving it out gives the 9 tasks
+of seed 42's comparisons. The control and seed 42 have no edited program on
+recipe_binder, so their comparisons have these 9 tasks anyway:
+
+| Metric | Seed 43 − base | Seed 43 − control | Seed 43 − seed 42 |
+|---|---|---|---|
+| Changes done before first failure | +0.43 (+0.20 to +0.66) | +0.41 (+0.18 to +0.66) | +0.18 (+0.04 to +0.32) |
+| First change works | +15 pts (+7 to +24) | +16 pts (+7 to +26) | +6 pts (−2 to +12) |
+| Whole sequence works | +11 pts (+3 to +20) | +11 pts (+3 to +20) | +5 pts (+0 to +11) |
+| Writer samples passing the initial checks | −11 pts (−28 to +7) | +0 pts (−13 to +12) | +11 pts (+5 to +17) |
+
+- **Per sample (computed after the results, all 10 tasks):** base 0.17,
+  control 0.16, seed 42 0.23, seed 43 0.37. Seed 43 − base is +0.19 (95%
+  +0.05 to +0.36), and seed 43 − control is +0.21 (+0.08 to +0.37).
+- **How the editor's steps end:** 46% succeed, 27% fail the new tests and
+  27% run out of turns.
+- **Undo first:** on s1, the first change works for 14 of seed 43's 64
+  edited programs: 11 of 33 in-place programs and 3 of 31 copy programs.
+  The base writer gets 0 of 69 and seed 42 gets 7 of 51.
+- **Designs:** 37 of its 77 passing eval programs are classed as copy
+  designs. As with seed 42, they score lower than its other programs (0.52
+  against 0.97).
+
+So:
+
+- **The gain replicates.** With both training seeds, the editor gets
+  further on the trained writer's programs than on the base writer's or the
+  control's. Every interval of the main measure excludes 0.
+- **Its size depends on the seed.** Seed 43's gain is nearly twice seed
+  42's on the same 9 tasks, and the interval of their difference excludes
+  0. The task bootstrap doesn't include training-seed variation, and two
+  seeds measure it only roughly.
+- **No extra pass-rate cost with seed 43.** Seed 42's extra loss in pass
+  rate beyond the control's doesn't recur: seed 43 passes as often as the
+  control, 11 points below the base writer (interval −28 to +7). With seed
+  43, even the per-sample measure is clearly positive.
+- **Still not the copy design,** as far as the classifier can tell.
