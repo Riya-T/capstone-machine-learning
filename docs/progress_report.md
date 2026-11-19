@@ -952,11 +952,19 @@ the training signal differs:
   score on held-out labels this noisy. radon_rel18_all over every pair of
   the 106 Radon eval programs: 71% against MI, 65% (58% to 71%) against MI
   plus per-program noise at reliability 0.42, 60% (51% to 67%) at 0.18.
-- Running: dpo_all exported as writer-dpo_all-ctx8k and the full eval
-  collection (`configs/rtx5070_eval_dpo_all.yaml`) compared with the base
-  writer and dpo3; then radon_rel18_all exported and sampled on the eval
-  tasks (`configs/rtx5070_eval_radon_rel18_all.yaml`, `--until initial`)
-  and `scripts/winner_features.py` for both.
+- dpo_all exported as writer-dpo_all-ctx8k and run through the full eval
+  collection (`configs/rtx5070_eval_dpo_all.yaml`): run
+  20261117T160216Z-85a677, stopped at 11 of 16 tasks on 11-17 19:39 for
+  the history suite, resumed as 20261119T160709Z-54f9b9 (08:07 to 12:43
+  on 11-19). 979 editing steps, no infrastructure errors. No sample passes
+  the initial checks on rover_fleet or task_board, so 14 paired tasks:
+  against the base writer −0.00 changes before the first failure (−0.11
+  to +0.12), first change +4 pts (−1 to +8), pass rate −13 pts (−26 to
+  +0); against dpo3 −0.03 (−0.19 to +0.09), pass rate −20 pts (−32 to
+  −8).
+- Running: radon_rel18_all exported and sampled on the eval tasks
+  (`configs/rtx5070_eval_radon_rel18_all.yaml`, `--until initial`) and
+  `scripts/winner_features.py` for it and dpo_all.
 
 ### History suite and the DPO+NLL writer (2026-11-17 to 11-19)
 
@@ -1027,8 +1035,10 @@ results are in `harness/results/hist2_eval.md`.
   With recipe_binder (one passing sample per writer), the planned 10-task
   comparison against base gives +0.53 (+0.26 to +0.83). Per sample
   (after the fact): 0.37, against base +0.19 (+0.05 to +0.36).
-- **Next:** dpo_all's eval resumed at 08:07 on 11-19 (`run_dpoall_resume.sh`),
-  then seeds 2 and 3 of dpo3, sft and radon (`run_seeds.sh`).
+- **Next:** dpo_all's eval resumed at 08:07 on 11-19 and finished at 12:43
+  (`run_dpoall_resume.sh`; null, see finding 26). Then radon_rel18_all's
+  eval-task code, and seeds 2 and 3 of dpo3, sft and radon
+  (`run_seeds.sh`).
 
 ## Findings so far
 
@@ -1199,7 +1209,11 @@ results are in `harness/results/hist2_eval.md`.
     and dev), ranks 65% (58% to 71%) and 60% (51% to 67%), so a writer that
     had learned the editing signal as well would show it. With matched
     noise and pair count, DPO learns the formula's preference and not the
-    editing labels'.
+    editing labels'. The main measure agrees: on 14 eval tasks the editor
+    gets no further on dpo_all's programs than on the base writer's
+    (−0.00, −0.11 to +0.12) or dpo3's (−0.03, −0.19 to +0.09). It costs 13
+    points of pass rate against the base writer and 20 against dpo3, and
+    no sample passes on two tasks.
 27. **Where the program decides the outcome, the method works, at a cost
     in correctness.** On the history suite, built so that undo is easy for
     some designs and not others, and with training samples that differ in

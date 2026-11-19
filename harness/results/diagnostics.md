@@ -921,9 +921,27 @@ the noise is not what stops it. What the editing scores share within a
 task does not point the same way across tasks, unlike MI: dpo_all fits
 its 634 pairs (loss 0.33) by learning these programs, not a design that
 carries over. That fits checks 2 and 4 and the single changes above: a
-pair's label reflects how one change's edge case met one program. The
-full eval-task collection of dpo_all (`configs/rtx5070_eval_dpo_all.yaml`)
-is running and will give the main measure.
+pair's label reflects how one change's edge case met one program.
+
+The main measure agrees. dpo_all went through the full eval-task
+collection with the editor like the other writers
+(`configs/rtx5070_eval_dpo_all.yaml`, runs 20261117T160216Z-85a677 and,
+resumed from the store after the history suite, 20261119T160709Z-54f9b9;
+979 editing steps, no infrastructure errors). None of its samples pass
+the initial checks on rover_fleet or task_board (the base writer passes 6
+and 5 of 16 there). So the comparison has 14 tasks, with the same paired
+task bootstrap:
+
+| Metric | dpo_all − base writer (95%) | dpo_all − dpo3 (95%) |
+|---|---|---|
+| Changes done before first failure | −0.00 (−0.11 to +0.12) | −0.03 (−0.19 to +0.09) |
+| First change works | +4 pts (−1 to +8) | −0 pts (−5 to +4) |
+| Whole sequence works | −0 pts (−6 to +6) | −1 pts (−4 to +3) |
+| Writer samples passing the initial checks | −13 pts (−26 to +0) | −20 pts (−32 to −8) |
+
+Four times the pairs leave the editor's results where dpo3's 160 left
+them. Correctness drops: dpo_all is the only writer that fails every
+sample on a task.
 
 ## Reproduce
 

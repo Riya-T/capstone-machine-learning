@@ -27,7 +27,8 @@ preference on held-out tasks when every pair is used (81% of held-out
 pairs, as with clean labels). The same training on every pair of our
 editing labels (634 pairs) carries nothing over (54% of held-out editing
 pairs, where a writer that had learned their signal as well would reach
-about 65%). On this testbed the editing outcomes contain no preference
+about 65%), and the editor gets no further on that writer's programs
+(−0.00, −0.11 to +0.12). On this testbed the editing outcomes contain no preference
 that is shared across tasks. We then built a second testbed of 30 task
 families where the program's design decides whether undo can be added,
 and sampled training programs that differ in design. There, the same
@@ -221,9 +222,8 @@ failures, 12 earlier-behaviour failures, 5 both); most failures are the
 editor running out of turns.
 
 *Pending:* training seeds 2 and 3 of dpo3, correctness-only and Radon
-(the proposal's three seeds per trained method), and the full eval of
-dpo_all (§6.3). dpo_all's eval resumed on Nov 19 after §7, and the seeds
-run after it.
+(the proposal's three seeds per trained method). They run from Nov 19,
+after the last §6.3 item.
 
 ### 4.2 Comments
 
@@ -380,10 +380,17 @@ With matched noise and pair count, DPO learns MI's preference and not the
 editing labels'. What the editing scores share within a task does not
 point the same way across tasks.
 
-*Pending:* dpo_all's full eval collection with the editor (main measure;
-paused at 11 of 16 tasks for §7, resumed Nov 19), and the 627-pair Radon
-writer's own eval-task code (whether it moves up MI like the clean
-writer's).
+The main measure agrees. In the full eval collection with the editor,
+dpo_all completes −0.00 changes before the first failure against the
+original writer (−0.11 to +0.12) and −0.03 against dpo3 (−0.19 to +0.09).
+That is over 14 tasks: on rover_fleet and task_board none of its samples
+pass the initial tests. Fewer of its samples pass than the original
+writer's (−13 points, −26 to +0) or dpo3's (−20, −32 to −8). Four times
+the pairs train the writer harder on these labels and cost correctness,
+but leave the editor's results unchanged.
+
+*Pending:* the 627-pair Radon writer's own eval-task code (whether it
+moves up MI like the clean writer's).
 
 ## 7. A testbed where the program decides
 
