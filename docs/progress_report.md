@@ -958,6 +958,63 @@ the training signal differs:
   tasks (`configs/rtx5070_eval_radon_rel18_all.yaml`, `--until initial`)
   and `scripts/winner_features.py` for both.
 
+### History suite and the DPO+NLL writer (2026-11-17 to 11-19)
+
+Every decision is recorded in `harness/tasks/HISTORY_SUITE.md`, and the
+results are in `harness/results/hist2_eval.md`.
+
+- **The tasks.** There are 30 families (16 train, 4 dev, 10 eval) with
+  composite operations, getters that expose insertion order, and undo in
+  every sequence. The editor uses `editor_v3` (build on the program's
+  design).
+- **First gate.** On the first three train tasks of the first collection
+  (prose hints, 8 turns, 2 reps), undo worked in 1 of 92 trials and the
+  program share was 0%. That collection was stopped.
+- **Design probe** (`results/design_probe/hist_cargo_holds/`). Undo as the
+  first change worked in 2 of 3 trials for a deep-copy-of-state program
+  and 0 of 3 for the in-place one. The writer ignored that design in prose
+  (2 of 35) and as a code fragment (1 of 24). It followed a whole example
+  class for an unrelated spec in every hinted sample.
+- **Train collection** (`configs/rtx5070_hist_train_hints2.yaml`). The
+  example goes to 3/4 of 16 samples, with 5 turns and 1 rep. Run
+  20261118T121402Z-52abf4 took 04:14 to 09:15 PST. 84 programs passed,
+  38 of them copy designs. Against their task's mean, copy designs score
+  +0.16 (+0.08 to +0.26) and the others −0.13. The aggregate rule
+  (`rtx5070_hist2_train_aggregate.yaml`) gives 83 pairs, 74 of them
+  preferring a copy design (`runs/rtx5070_pc/dpo/hist2_dpo.jsonl`).
+- **Plain DPO** (`hist2_dpo`, dpo3's settings): on dev, 0 of 21 passing
+  programs used the copy design. It was stopped before any eval trial.
+- **`train_dpo.py --nll-weight`** adds the chosen program's per-token NLL;
+  the log now also shows the chosen and rejected log-probability shifts.
+  Dev results, with lr and epochs:
+
+  | Setting | lr, epochs | Copy-design programs of passing (base 0 of 30) | Chosen shift | Rejected shift |
+  |---|---|---|---:|---:|
+  | A (`hist2_rpo`) | 2e-5, 2 | 0 of 27 | +16 | +1 |
+  | B (`hist2_rpo_b`) | 5e-5, 3 | 4 of 7 | +51 | −14 |
+  | C (`hist2_rpo_c`) | 5e-5, 2 | 11 of 18 | +40 | −2 |
+  | D (`hist2_rpo_d`) | 3e-5, 3 | 10 of 20 | +36 | −7 |
+
+  B's eval was stopped during its first task's writer sampling, before
+  any editing. The rule fixed before C and D were trained (at least two
+  thirds of base's passing programs, then the most copy designs) chose D.
+  Scripts: `/home/pc/run_hist2_rpo.sh`, `run_hist2_rpo2.sh`.
+- **Eval** (9 paired tasks). Runs: D 20261118T220928Z-4bf8af (14:09 to
+  17:39), base 20261119T013930Z-90962e (to 21:48), control `hist2_sft`
+  20261119T063506Z-842b2f (to 02:41 on 11-19).
+
+  | Comparison | Changes before first failure | First change works | Samples passing initial checks |
+  |---|---|---|---|
+  | D − base | +0.24 (+0.10 to +0.39) | +10 pts (+5 to +15) | −22 pts (−38 to −5) |
+  | D − control | +0.22 (+0.07 to +0.40) | +10 pts (+2 to +19) | −11 pts (−24 to +1) |
+  | Control − base | +0.02 (−0.03 to +0.06) | −1 pt | −11 pts |
+
+  The control is SFT on the 83 passing programs with D's lr and epochs.
+  Counting failing samples as 0 (after the fact): base 0.17, control 0.16,
+  D 0.23 changes per sample.
+- **Running:** D with seed 43 (`hist2_rpo_d_s43`, `/home/pc/run_hist2_seed.sh`),
+  from 02:42 on 11-19.
+
 ## Findings so far
 
 1. **No method changes how far the editor gets.** The five methods are
@@ -1128,6 +1185,19 @@ the training signal differs:
     had learned the editing signal as well would show it. With matched
     noise and pair count, DPO learns the formula's preference and not the
     editing labels'.
+27. **Where the program decides the outcome, the method works, at a cost
+    in correctness.** On the history suite, built so that undo is easy for
+    some designs and not others, and with training samples that differ in
+    design, DPO+NLL on 83 editing-outcome pairs gives a writer whose
+    held-out programs the editor gets further on. The gain is +0.24
+    changes before the first failure against the base writer (+0.10 to
+    +0.39). The correctness-only control, trained on the same programs
+    with the same settings, gains nothing (+0.02), and D beats it by +0.22
+    (+0.07 to +0.40). Plain DPO didn't move the writer, and adding the NLL
+    term was needed. The cost is initial correctness: −22 points against
+    the base writer and −11 against the control. Per sample, counting
+    failing samples as 0, D's gain is +0.05 (−0.04 to +0.15). The
+    mechanism isn't the copy design as our classifier sees it.
 
 - **Testbed (the main question):** the diagnostics say the current tasks
   cannot show an effect, because the editor's randomness swamps the
@@ -1184,5 +1254,6 @@ the training signal differs:
 | Single-change program effects | `scripts/step_effects.py`; results in `harness/results/diagnostics.md` |
 | Label-noise control | `scripts/flip_pairs.py`, `scripts/static_ranking.py --score-noise`, `scripts/implicit_reward.py`; results in `harness/results/diagnostics.md` |
 | All-pairs editing writer | scorer rule `aggregate` (`harness/src/harness/collection/scorer.py`), `scripts/noise_ceiling.py`, `harness/configs/rtx5070_train_aggregate.yaml`, `rtx5070_dev_aggregate.yaml`, `rtx5070_eval_aggregate.yaml`, `rtx5070_eval_dpo_all.yaml`, `rtx5070_eval_radon_rel18_all.yaml` |
+| History suite | `harness/tasks/HISTORY_SUITE.md`, configs `rtx5070_hist*`, `train_dpo.py --nll-weight`, `scripts/design_classes.py`; results in `harness/results/hist2_eval.md` |
 | Controlled wallet pilot | `docs/wallet_pair_pilot/` |
 | Task checklist | `Task_list.md` |

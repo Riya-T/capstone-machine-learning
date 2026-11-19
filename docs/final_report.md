@@ -1,6 +1,6 @@
 # Training a Code Writer on Later-Edit Outcomes: A Controlled Study
 
-CMSC673 capstone, final report (draft of 2026-11-17). Results marked
+CMSC673 capstone, final report (draft of 2026-11-19). Results marked
 *pending* are still running; the rest are final.
 
 ## Abstract
@@ -28,8 +28,17 @@ pairs, as with clean labels). The same training on every pair of our
 editing labels (634 pairs) carries nothing over (54% of held-out editing
 pairs, where a writer that had learned their signal as well would reach
 about 65%). On this testbed the editing outcomes contain no preference
-that is shared across tasks. We release the pipeline, tasks, every
-preference pair, the diagnostics and the controls.
+that is shared across tasks. We then built a second testbed of 30 task
+families where the program's design decides whether undo can be added,
+and sampled training programs that differ in design. There, the same
+pipeline, with the chosen program's likelihood added to the DPO loss,
+gives a writer whose held-out programs the editor changes further. The
+gain is +0.24 changes before the first failure against the original
+writer (95% +0.10 to +0.39) and +0.22 (+0.07 to +0.40) against
+fine-tuning on the same programs without the editing outcomes, which
+itself gains nothing. The cost is 22 points of initial correctness. We
+release the pipeline, tasks, every preference pair, the diagnostics and
+the controls.
 
 ## 1. Introduction
 
@@ -64,6 +73,11 @@ Contributions:
 5. A label-noise control that separates "the labels are too noisy" from
    "the labels have no shared direction", using a known learnable signal
    (Radon MI) degraded to the editing labels' reliability.
+6. A second testbed (30 families) where the program's design decides
+   later changes. On it, a writer trained with DPO plus an NLL term on
+   editing outcomes beats both the original writer and a matched
+   correctness-only control on held-out tasks, at a measured cost in
+   initial correctness.
 
 ## 2. Related work
 
@@ -78,8 +92,11 @@ DPO and BoNBoN alignment for functional and non-functional quality, which
 motivates our static-ranking and correctness-only controls. CodeRhapsody
 proposes training on maintenance trajectories; our contribution is a
 controlled implementation and evaluation of that idea, including what it
-takes for such labels to be learnable. References are those of the
-proposal (`docs/Project_Proposal_473_v2.docx.pdf`).
+takes for such labels to be learnable. Our DPO+NLL loss (§7.2) follows
+Pang et al. (2024, *Iterative Reasoning Preference Optimization*), who add
+the chosen response's negative log-likelihood to DPO because plain DPO
+can lower the likelihood of both responses. The other references are
+those of the proposal (`docs/Project_Proposal_473_v2.docx.pdf`).
 
 ## 3. Setup
 
@@ -202,8 +219,9 @@ failures, 12 earlier-behaviour failures, 5 both); most failures are the
 editor running out of turns.
 
 *Pending:* training seeds 2 and 3 of dpo3, correctness-only and Radon
-(the proposal's three seeds per trained method; running, all by about Nov
-24), and the full eval of dpo_all (§6.3, by Nov 18).
+(the proposal's three seeds per trained method), and the full eval of
+dpo_all (§6.3). Both are paused while the GPU runs §7, and resume after
+it.
 
 ### 4.2 Comments
 
@@ -215,7 +233,7 @@ private names, data attributes and locals to meaningless ones and
 removing comments and blank lines costs the editor 0.04 changes per
 sequence (−0.17 to +0.07). No result depends on comments acting as hints.
 
-## 5. Why nothing shows up
+## 5. Why nothing shows up on the original testbed
 
 ### 5.1 Diagnostics
 
@@ -360,24 +378,170 @@ With matched noise and pair count, DPO learns MI's preference and not the
 editing labels'. What the editing scores share within a task does not
 point the same way across tasks.
 
-*Pending:* dpo_all's full eval collection with the editor (main measure,
-by Nov 18), and the 627-pair Radon writer's own eval-task code (whether
-it moves up MI like the clean writer's).
+*Pending:* dpo_all's full eval collection with the editor (main measure;
+paused at 11 of 16 tasks to free the GPU for §7), and the 627-pair Radon
+writer's own eval-task code (whether it moves up MI like the clean
+writer's).
 
-## 7. Discussion
+## 7. A testbed where the program decides
 
-**What the result says.** On this testbed, preferences from later-edit
-outcomes do not train a writer whose code is easier to change, and the
-reason is not a training detail: neither more pairs, nor a different
-learning rate, nor removing comments changes it. The editing outcomes of
-the writer's own programs are dominated by the editor's randomness, and
-what is left is specific to how one change's edge case meets one
-program, not a design property that recurs across tasks. Training fits
-those labels and learns nothing that transfers.
+Sections 5 and 6 put the problem in the testbed, not in the training
+method. So we built a second testbed around the one setting where design
+decided the outcome (the design probe of §5.2). We ran the method on it
+with the same writer and editor.
 
-**What it does not say.** It does not say that maintainability cannot be
-learned from downstream outcomes. Three conditions failed here, and each
-points to what a testbed would need:
+### 7.1 The history suite
+
+There are 30 new task families: 16 train, 4 dev and 10 eval
+(`harness/tasks/HISTORY_SUITE.md`). Each specification has composite
+operations (move everything from one place to another, close one place
+into another, merge) and getters that return things in the order they were
+added. It never says how to store the state. Every sequence contains an
+undo change: undo reverses the most recent successful call that changes
+the state, a composite call as a whole, and restores order and removed
+things exactly. Sequence s1 starts with undo. Sequence s2 starts with
+another change and has undo second. Eval sequences have 3 changes,
+including one of the eval-only kinds. The editor uses the prompt that asks
+it to build on the program's design, with 5 turns per change (only 2.3% of
+the successful steps in our store had needed more) and one trial per
+sequence. These settings were fixed before any eval trial.
+
+Two obstacles came up on the first three train tasks:
+
+- **Undo failed for every program alike:** 1 of 92 trials succeeded, and
+  the program's share of the score was 0%. The editor writes undo as
+  inverse calls to the program's own methods, which record themselves
+  again, and once stuck it resends its file until its turns run out. A
+  hand-written probe on one task separated the designs. Undo as the first
+  change worked in 2 of 3 trials for a program that makes each change on a
+  deep copy of its state and keeps the copy only if the call succeeds, and
+  in 0 of 3 for the same program changing its state in place.
+- **The writer never wrote that design.** It ignored it when described in
+  prose (2 of 35 passing programs) and when given as a code fragment (1 of
+  24). A complete small example class for an unrelated specification, which
+  names no task, change or undo, was followed by every sample shown it.
+
+The train collection shows that example to three quarters of the 16
+samples per task. The pairs keep the plain prompt, so the trained writer
+has to adopt the design without seeing the example. On the 16 train
+tasks, the programs with the copy design score 0.76 changes per sequence
+and the others 0.40. Measured against their task's mean, that is +0.16
+(95% interval +0.08 to +0.26) against −0.13 (−0.22 to −0.05). On the
+original testbed no hint did this (§5.2). Scoring every unequal pair of
+mean scores gives 83 pairs, and 74 of them prefer a copy-design program.
+
+### 7.2 Training
+
+Plain DPO with dpo3's settings didn't change the writer: 0 of its 21
+passing dev programs used the copy design, as for the original writer (0
+of 30). A copy-design program is very unlikely under the plain prompt, and
+DPO can widen its margin by making both programs less likely. So we add
+the chosen program's per-token negative log-likelihood to the loss, with
+weight 1. This is DPO+NLL, as in RPO (Pang et al., 2024), and the same
+loss as our correctness-only control. The learning rate and epochs were
+chosen on the dev tasks only (writer samples, no editing), by rules
+written down before each round of training:
+
+| Setting | lr, epochs | Passing dev programs | Copy design among them |
+|---|---|---:|---:|
+| Original writer | – | 30 | 0 |
+| Plain DPO | 2e-5, 2 | 21 | 0 |
+| A | 2e-5, 2 | 27 | 0 |
+| **D (ours)** | **3e-5, 3** | **20** | **10** |
+| C | 5e-5, 2 | 18 | 11 |
+| B | 5e-5, 3 | 7 | 4 |
+
+B learned the design but overfit and lost correctness. The eval only
+scores tasks where both writers have a passing program, so B would have
+dropped tasks. Its eval was stopped during writer sampling, before any
+editing. C and D were then added under a revised rule: a setting needs at
+least two thirds of the original writer's passing programs, and then the
+most passing copy-design programs wins. That rule picked D.
+
+The control is SFT on the same train collection's passing programs: 83
+programs, both designs, plain prompt, with D's lr and epochs and no
+editing outcomes. It has the same programs and the same amount of
+training, and lacks only the editor's preferences. On the dev tasks, 1 of
+its 29 passing programs used the copy design.
+
+### 7.3 Results
+
+These are 9 eval tasks; recipe_binder has no edited program for at least
+one writer. Intervals come from the paired task bootstrap as before
+(`harness/results/hist2_eval.md`).
+
+| Writer | Changes before first failure (of 3) | First change works | Whole sequence works | Samples passing initial tests |
+|---|---:|---:|---:|---:|
+| Original writer | 0.31 | 31% | 0% | 64% |
+| Correctness-only (SFT) | 0.33 | 30% | 0% | 53% |
+| **Ours (DPO+NLL, D)** | **0.55** | **41%** | **6%** | **42%** |
+
+| Difference (95% interval) | Changes before first failure | First change works | Whole sequence works | Samples passing initial tests |
+|---|---|---|---|---|
+| Correctness-only − original | +0.02 (−0.03 to +0.06) | −1 pt (−6 to +4) | +0 pts | −11 pts (−21 to −1) |
+| Ours − original | +0.24 (+0.10 to +0.39) | +10 pts (+5 to +15) | +6 pts (+0 to +11) | −22 pts (−38 to −5) |
+| Ours − correctness-only | +0.22 (+0.07 to +0.40) | +10 pts (+2 to +19) | +6 pts (+0 to +11) | −11 pts (−24 to +1) |
+
+The editor completes more changes on our writer's programs than on the
+original writer's. Training on the same programs without the editing
+outcomes gains nothing, so the gain comes from the editing outcomes. It
+has a cost in correctness: 22 points fewer of our writer's samples pass
+the initial tests, half of that shared with the control. If a sample that
+fails the initial tests counts as 0 changes (a measure computed after the
+results), the original writer scores 0.17 changes per sample, the control
+0.16 and ours 0.23. That is +0.05 for ours against the original (−0.04 to
++0.15) and +0.07 against the control (−0.01 to +0.15). So the gain is
+clear for programs that pass their tests, which are the ones an editor
+would be given. Per sample, the lost correctness offsets most of it.
+
+The editor gets unstuck more often. On the original writer's programs, 47%
+of steps run out of turns and 23% succeed; on ours, 28% and 38%. When undo
+comes first, no original-writer program gets its first change done (0 of
+69), and 7 of our 51 do. The gain is not the copy design we trained
+toward, as far as our classifier can tell. On eval, our writer's programs
+classified as copy designs score lower than its other programs (0.38
+against 0.79), and all 7 undo-first successes are in-place programs. The
+classifier counts any deep copy in a mutating method, so it is crude. The
+property that makes our writer's programs easier to edit is not captured
+by it, nor by length, number of methods or number of classes.
+
+*Pending:* a second training seed of D (same pairs and settings, seed 43;
+by Nov 19).
+
+## 8. Discussion
+
+**What the results say.** On the original testbed, preferences from
+later-edit outcomes do not train a writer whose code is easier to change.
+The reason is not a training detail: more pairs, a different learning
+rate and removing comments change nothing. The editing outcomes of the
+writer's own programs are dominated by the editor's randomness. What is
+left is specific to how one change's edge case meets one program, not a
+design property that recurs across tasks. Training fits those labels and
+learns nothing that transfers.
+
+On the history suite the method works, with a cost. Two things made the
+difference:
+
+- **Tasks where the program decides the outcome.** Undo after composite
+  operations is easy for some designs and nearly impossible for the
+  editor otherwise.
+- **Training samples that differ in design.** The worked example gave
+  them that difference.
+
+Then the editing outcomes carry a preference that transfers to held-out
+tasks, and a matched control rules out imitating the programs. Two steps
+were needed beyond the original method. Plain DPO couldn't move the writer
+toward programs it would rarely write itself, and adding the NLL term
+could. Too much training made the writer adopt the preferred programs'
+style but lose correctness. The setting chosen on dev keeps most of it,
+but not all.
+
+**What the original result does not say.** It does not say that
+maintainability cannot be learned from downstream outcomes. Three
+conditions failed there, and each points to what a testbed needs. The
+history suite meets the first two in a narrow way. Design variety comes
+from an example shown to the writer, not from larger tasks. The tasks are
+built around undo, and the editor prompt asks it to build on the design:
 
 1. **Programs that differ in design.** A 7B writer's passing programs for
    a 50-line task are nearly the same program. Larger tasks with real
@@ -399,22 +563,43 @@ recommend running them on any later-outcome testbed before collecting
 training data: a program share of at least 25% and held-out headroom
 above 0.3.
 
-**Limitations.** One writer, one editor, one hardware budget; small
-self-contained tasks; one training seed so far (more running); a
-selection of up to 8 passing programs per task rather than a single
-unselected attempt; the noise control uses a static signal (MI) whose
-learnability may differ from that of a real design signal.
+**Limitations.**
 
-## 8. Conclusion
+- **Scope:** one writer, one editor and one hardware budget, with small
+  self-contained tasks.
+- **Seeds:** one training seed so far on the original testbed (more
+  paused) and on the history suite (a second running).
+- **Selection:** up to 8 passing programs per task are edited, rather
+  than a single unselected attempt.
+- **Noise control:** it uses a static signal (MI), whose learnability may
+  differ from that of a real design signal.
+- **The history-suite result rests on:**
+  - 9 eval tasks with one trial per sequence;
+  - training data sampled with a worked example;
+  - learning rate and epochs chosen on 4 dev tasks under a rule revised
+    once, still on dev only;
+  - a mechanism we have not identified;
+  - a 22-point loss in initial correctness that, per sample, cancels most
+    of the gain.
 
-We implemented training a code writer on later-edit outcomes end to end
-and evaluated it against four matched controls on held-out tasks. None of
-the five writers changes how far a fixed editor gets. The editing labels
-are 95% editor randomness, and a label-noise control with a known
+## 9. Conclusion
+
+We implemented training a code writer on later-edit outcomes end to end.
+On the original testbed, against four matched controls on held-out tasks,
+none of the five writers changes how far a fixed editor gets. The editing
+labels there are 95% editor randomness. A label-noise control with a known
 learnable signal shows that noise of this kind and size would not by
-itself stop DPO when every pair is used; with every pair, the editing
+itself stop DPO when every pair is used, yet with every pair the editing
 labels still teach nothing that carries over to new tasks. The bottleneck
-is the testbed's signal, not the training method.
+was the testbed's signal, not the training method.
+
+On a testbed where the program's design decides whether undo can be
+added, and with training samples that differ in design, the same pipeline
+with an NLL term gives a writer whose held-out programs the editor
+changes further. That is +0.24 changes before the first failure against
+the original writer and +0.22 against fine-tuning on the same programs
+without the editing outcomes. The cost is 22 points of initial
+correctness.
 
 ## Reproducibility and artifacts
 
@@ -424,7 +609,10 @@ is the testbed's signal, not the training method.
   `label-noise-v1`, `editing-all-v1`), with manifests and provenance.
 - Results pages: `harness/results/` (one per method, the comment
   ablation, `diagnostics.md` with every probe and control and their
-  reproduce commands); figures in `harness/results/figures/`
-  (`scripts/report_figures.py`).
+  reproduce commands, `hist2_eval.md` for §7); figures in
+  `harness/results/figures/` (`scripts/report_figures.py`).
+- The history suite: tasks and the record of every decision in
+  `harness/tasks/HISTORY_SUITE.md`; its design probe in
+  `harness/results/design_probe/hist_cargo_holds/`.
 - Running log of all experiments, settings and costs:
   `docs/progress_report.md`.
