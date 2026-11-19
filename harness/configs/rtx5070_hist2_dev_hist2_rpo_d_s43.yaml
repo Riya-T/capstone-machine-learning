@@ -1,0 +1,7 @@
+# rtx5070_hist2_dev.yaml with setting D (DPO+NLL, nll weight 1, lr 3e-5, 3 epochs)
+# trained again with seed 43.
+extends: rtx5070_hist2_dev.yaml
+name: rtx5070-hist2-dev-hist2-rpo-d-s43
+writer:
+  backend:
+    model: writer-hist2_rpo_d_s43-ctx8k
