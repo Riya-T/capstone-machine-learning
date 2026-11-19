@@ -1,7 +1,4 @@
-# Training a Code Writer on Later-Edit Outcomes: A Controlled Study
-
-CMSC673 capstone, final report (draft of 2026-11-19). Results marked
-*pending* are still running; the rest are final.
+# current results 
 
 ## Abstract
 
