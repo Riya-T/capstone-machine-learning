@@ -1,0 +1,55 @@
+# Tests this additive tool separately from unrelated task-header failures.
+# The existing repository-wide workflow remains unchanged and still runs.
+name: collection-workbench
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/collection-workbench.yml'
+      - 'harness/src/harness/workbench/**'
+      - 'harness/src/harness/__main__.py'
+      - 'harness/tests/workbench/**'
+      - 'harness/examples/collection_workbench.py'
+      - 'harness/pyproject.toml'
+      - 'harness/uv.lock'
+  push:
+    paths:
+      - '.github/workflows/collection-workbench.yml'
+      - 'harness/src/harness/workbench/**'
+      - 'harness/src/harness/__main__.py'
+      - 'harness/tests/workbench/**'
+      - 'harness/examples/collection_workbench.py'
+      - 'harness/pyproject.toml'
+      - 'harness/uv.lock'
+
+permissions:
+  contents: read
+
+jobs:
+  offline-reporting:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: harness
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Install locked test dependencies
+        run: uv sync --locked --python 3.11
+      - name: Test offline exports and reports
+        run: uv run pytest tests/workbench -m "not docker" -q
+      - name: Check usage headers for this contribution
+        run: uv run pytest tests/test_headers.py -k workbench -q
+      - name: Lint this contribution
+        run: uv run ruff check src/harness/workbench tests/workbench examples/collection_workbench.py
+      - name: Build the normal sandbox on Linux
+        if: matrix.os == 'ubuntu-latest'
+        run: docker build -t harness-sandbox:py3.11-v1 docker/sandbox
+      - name: Exercise actual mock collection and private evaluation
+        if: matrix.os == 'ubuntu-latest'
+        run: uv run pytest tests/workbench/test_docker.py --slow -q -rs

@@ -17,6 +17,7 @@ from pathlib import Path
 from ..evaluation.records import EvaluationError, read_json, trajectory
 from ..evaluation.storage import check_existing
 from .analysis import METRICS, compare_collections
+from .presentation import render_report_text
 from .storage import publish_new
 
 FILES = {
@@ -325,9 +326,9 @@ Paired comparisons below use the disclosed common cohort.</p>
 <p><a href="tasks.csv">Task CSV</a> · <a href="samples.csv">Every scheduled sample</a> ·
 <a href="checkpoints.csv">Checkpoint ledger</a> ·
 <a href="resources.csv">Resources</a> · <a href="comparison.json">Full evidence JSON</a></p></main>
-<section><h2>Full report and limitations</h2><pre>"""
-        + html.escape(render_markdown(result))
-        + """</pre></section>
+<section><h2>Full report and limitations</h2>"""
+        + render_report_text(render_markdown(result))
+        + """</section>
 <script>
 const input=document.getElementById('filter');
 const rows=[...document.querySelectorAll('#tasks tbody tr')];

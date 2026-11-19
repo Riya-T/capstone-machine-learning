@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "purpose": "heldout",
+  "image_id": "sha256:REPLACE_WITH_RECORDED_SANDBOX_CONTENT_DIGEST",
+  "reference": "base",
+  "methods": [
+    {"id": "base", "config": "rtx5070_hist2_eval.yaml"},
+    {"id": "correctness_only", "config": "rtx5070_hist2_eval_hist2_sft.yaml", "training_seed": 42},
+    {"id": "dpo_nll_s42", "method_group": "dpo_nll", "training_seed": 42, "config": "rtx5070_hist2_eval_hist2_rpo_d.yaml"},
+    {"id": "dpo_nll_s43", "method_group": "dpo_nll", "training_seed": 43, "config": "rtx5070_hist2_eval_hist2_rpo_d_s43.yaml"}
+  ],
+  "analysis": {"bootstrap_samples": 20000, "bootstrap_seed": 20261119, "confidence": 0.95}
+}

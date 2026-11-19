@@ -39,6 +39,11 @@ in `harness/results/`; [docs/progress_report.md](docs/progress_report.md)
 summarizes the work, the findings and what is running. All
 paths from here on are relative to `harness/`.
 
+For existing multi-sample runs such as the history suite, the
+[collection workbench](harness/docs/collection-workbench.md) builds an offline
+comparison of correctness, selected-program editing, costs and missing work.
+It reads saved stores and changes no experimental results.
+
 ### Quick start
 
 Requirements: Python 3.11, [uv](https://docs.astral.sh/uv/), and Docker
