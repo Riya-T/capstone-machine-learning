@@ -44,13 +44,12 @@ def selection(task, cap):
         seen.add(cid)
         status = parents[cid]["initial_status"]
         if status == "pass":
-            result[cid] = (
-                "over_cap"
-                if known >= cap
-                else "unresolved"
-                if known + unknown >= cap
-                else "selected"
-            )
+            if cap is None or known + unknown < cap:
+                result[cid] = "selected"
+            elif known >= cap:
+                result[cid] = "over_cap"
+            else:
+                result[cid] = "unresolved"
             known += 1
         elif status in ("unresolved", "infra_error"):
             result[cid] = "unresolved"
@@ -82,8 +81,10 @@ def _validate(data):
         if not isinstance(data[field], str) or not HASH.fullmatch(data[field]):
             raise EvaluationError(f"Invalid {field}")
     contract = data["contract"]
-    for field in ("samples_per_task", "max_programs", "editor_reps"):
+    for field in ("samples_per_task", "editor_reps"):
         integer(contract[field], field, 1)
+    if contract["max_programs"] is not None:
+        integer(contract["max_programs"], "max_programs", 1)
     for field in ("editor_hash", "sandbox_hash"):
         if not isinstance(contract[field], str) or not HASH.fullmatch(contract[field]):
             raise EvaluationError(f"Invalid contract {field}")
@@ -126,6 +127,7 @@ def _validate(data):
                 occurrences[cid] += 1
             for field in ("tokens_in", "tokens_out", "wall_s"):
                 cost(sample["writer_cost"][field], field, integral=field != "wall_s")
+            cost(sample["writer_cost"].get("n_calls"), "writer n_calls", integral=True)
         if set(occurrences) != set(parents):
             raise EvaluationError("Unreferenced parent or missing sample")
         expected = selection(task, contract["max_programs"])

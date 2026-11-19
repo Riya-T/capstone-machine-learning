@@ -28,6 +28,7 @@ def fixture(tmp_path, *, method="base", cap=2, missing=(), infra=False):
     cfg = replace(
         cfg,
         runs_dir=tmp_path / method,
+        base_dir=tmp_path,
         writer=replace(cfg.writer, samples_per_task=6),
         tasks=replace(cfg.tasks, max_programs=cap),
         editor=replace(cfg.editor, reps=2),

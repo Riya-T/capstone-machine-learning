@@ -35,6 +35,10 @@ log = logging.getLogger("harness")
 
 def main(argv: Sequence[str] | None = None) -> int:
     arguments = list(sys.argv[1:] if argv is None else argv)
+    if arguments and arguments[0] == "collection-workbench":
+        from .workbench.cli import main as workbench_main
+
+        return workbench_main(arguments[1:])
     if arguments and arguments[0] in (
         "evaluate",
         "evaluation-report",
@@ -78,6 +82,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     commands.add_parser("evaluation-review", help="prepare/compile separate human failure reviews")
     commands.add_parser("evaluation-plots", help="export publication figures from saved results")
     commands.add_parser("evaluation-contract", help="freeze/check the planned result roster")
+    commands.add_parser(
+        "collection-workbench", help="report saved multi-sample collections offline"
+    )
     commands.add_parser("evaluation-joint-pass", help="compare aligned initially correct parents")
     commands.add_parser(
         "evaluation-size-match", help="saved-only size-matched sensitivity analysis"

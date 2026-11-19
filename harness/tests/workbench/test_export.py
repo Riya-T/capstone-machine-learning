@@ -98,3 +98,36 @@ def test_requires_a_content_image_id(tmp_path, image):
     cfg, _ = fixture(tmp_path)
     with pytest.raises(EvaluationError):
         export_collection(cfg, image, method="base", purpose="fixture")
+
+
+def test_initial_infrastructure_is_not_classified_as_incorrect_code(tmp_path):
+    cfg, _ = fixture(tmp_path)
+    with sqlite3.connect(cfg.runs_dir / "harness.sqlite") as db:
+        db.execute(
+            "UPDATE initial_checks SET passed=0, report_json=?",
+            ('{"public":{"status":"infra_error"}}',),
+        )
+    data = export_collection(cfg, IMAGE, method="base", purpose="fixture")
+    assert all(p["initial_status"] == "infra_error" for p in data["tasks"][0]["programs"])
+    assert all(not t["steps"] for p in data["tasks"][0]["programs"] for t in p["trials"])
+
+
+def test_wrong_task_version_remains_unresolved_instead_of_reusing_old_tests(tmp_path):
+    cfg, _ = fixture(tmp_path)
+    with sqlite3.connect(cfg.runs_dir / "harness.sqlite") as db:
+        db.execute("UPDATE initial_checks SET task_version=?", ("e" * 64,))
+    data = export_collection(cfg, IMAGE, method="base", purpose="fixture")
+    assert all(p["initial_status"] == "unresolved" for p in data["tasks"][0]["programs"])
+
+
+def test_source_is_described_without_running_top_level_code(tmp_path):
+    cfg, data = fixture(tmp_path)
+    marker = tmp_path / "must-not-be-created"
+    source = f"from pathlib import Path\nPath({str(marker)!r}).write_text('executed')\n".encode()
+    with Store(cfg.runs_dir) as store:
+        cid = store.put_blob({"evil.py": source})
+    with sqlite3.connect(cfg.runs_dir / "harness.sqlite") as db:
+        db.execute("UPDATE candidates SET candidate_id=? WHERE sample_idx=0", (cid,))
+    exported = export_collection(cfg, IMAGE, method="base", purpose="fixture")
+    assert exported["tasks"][0]["programs"][0]["source_metrics"]["python_syntax_valid"]
+    assert not marker.exists()

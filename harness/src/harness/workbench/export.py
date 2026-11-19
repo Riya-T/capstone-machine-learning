@@ -45,6 +45,8 @@ def _initial(check):
         if check["passed"]:
             raise EvaluationError("Passing initial check contradicts infrastructure report")
         return "infra_error"
+    if check["passed"] and any(v.get("status") == "failed" for v in categories):
+        raise EvaluationError("Passing initial check contradicts failed suite")
     return "pass" if check["passed"] else "fail"
 
 
@@ -147,10 +149,13 @@ def export_collection(
                             "Saved candidate generation seed disagrees with the requested config"
                         )
                     cid = row["candidate_id"]
+                    if cid is not None and row["parse_error"] is not None:
+                        raise EvaluationError("Candidate has both parsed source and a parse error")
                     sample.update(
                         candidate_id=cid,
                         writer_cost={k: row[k] for k in ("tokens_in", "tokens_out", "wall_s")},
                     )
+                    sample["writer_cost"]["n_calls"] = 1
                     if cid is None:
                         sample.update(
                             initial_status="parse_failure",
