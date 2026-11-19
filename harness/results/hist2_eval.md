@@ -82,8 +82,38 @@ fewer of D's samples pass the initial checks.
   method, so it includes programs that copy one list. D's programs are
   easier to edit for reasons this classifier doesn't capture. They don't
   differ from the base writer's in length, number of methods or classes.
-- **Open:** the correctness-only control (`hist2_sft`) and a second
-  training seed of D (`hist2_rpo_d_s43`) are being run. The control is SFT
-  on the same train collection's passing programs with D's lr and epochs,
-  and no editing outcomes. Until it is in, the gain can't be credited to the
-  editor's preferences rather than to imitating the hinted programs.
+## Correctness-only control
+
+The control (`hist2_sft`, `configs/rtx5070_hist2_eval_hist2_sft.yaml`, run
+20261119T063506Z-842b2f, 168 steps, no infrastructure errors) is SFT on
+the same train collection's passing programs. It uses the first 8 per task
+in sample order, 83 in all, with both designs, the plain prompt and D's lr
+and epochs. It uses no editing outcomes. So it has the same hinted programs
+and the same amount of training as D, and lacks only the editor's
+preferences. On the dev tasks, 1 of its 29 passing programs used the copy
+design. Same 9 tasks, same bootstrap:
+
+| Metric | Base | Control | Control − base (95%) | D | D − control (95%) |
+|---|---:|---:|---:|---:|---:|
+| Changes done before first failure | 0.31 | 0.33 | +0.02 (−0.03 to +0.06) | 0.55 | +0.22 (+0.07 to +0.40) |
+| First change works | 31% | 30% | −1 pts (−6 to +4) | 41% | +10 pts (+2 to +19) |
+| Whole sequence works | 0% | 0% | +0 pts (+0 to +0) | 6% | +6 pts (+0 to +11) |
+| Writer samples passing the initial checks | 64% | 53% | −11 pts (−21 to −1) | 42% | −11 pts (−24 to +1) |
+
+Counting failing samples as 0 changes (computed after the results, all 10
+tasks): base 0.17, control 0.16, D 0.23. D − control is +0.07 (95% −0.01
+to +0.15). The control's steps end in success for 25%, in failed new tests
+for 30% and in running out of turns for 44%, much like the base writer's.
+
+So training on the same programs without the editor's preferences doesn't
+make them any easier to edit. D's gain comes from the editor's outcomes:
+which program of a pair is preferred, which also decides the programs the
+NLL term trains on. Half of
+D's loss in pass rate is shared with the control (training on these
+programs at all costs 11 points). The other half is specific to DPO+NLL,
+and its interval reaches +1.
+
+## Open
+
+A second training seed of D (`hist2_rpo_d_s43`, same pairs and settings,
+seed 43) is being run against the same base and control.
