@@ -13,10 +13,10 @@ from pathlib import Path
 
 from ..config import ConfigError, load_config
 from ..evaluation.records import EvaluationError, read_json
-from ..evaluation.storage import publish_new
 from .analysis import compare_collections
 from .export import export_collection
 from .report import encoded, safe_destination, verify_report, write_report
+from .storage import publish_new
 
 
 def build(manifest_path, out):
@@ -116,6 +116,8 @@ def main(argv=None):
                 "exported_tasks": len(data["tasks"]),
                 "model_calls": 0,
                 "source_store_present": data["provenance"]["source_store_present"],
+                "lookup": data["provenance"]["lookup"],
+                "warnings": data["provenance"]["warnings"],
             }
         elif args.command == "compare":
             result = write_report(

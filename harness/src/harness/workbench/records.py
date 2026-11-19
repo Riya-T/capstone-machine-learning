@@ -80,6 +80,11 @@ def _validate(data):
     for field in ("writer_identity", "editor_identity"):
         if not isinstance(data[field], str) or not HASH.fullmatch(data[field]):
             raise EvaluationError(f"Invalid {field}")
+    provenance = data.get("provenance", {})
+    if not isinstance(provenance, dict) or not isinstance(provenance.get("warnings", []), list):
+        raise EvaluationError("Malformed source provenance")
+    for warning in provenance.get("warnings", []):
+        identifier(warning, "source lookup warning")
     contract = data["contract"]
     for field in ("samples_per_task", "editor_reps"):
         integer(contract[field], field, 1)

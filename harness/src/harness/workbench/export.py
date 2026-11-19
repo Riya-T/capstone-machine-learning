@@ -242,4 +242,24 @@ def export_collection(
                     (run_id,),
                 )
             ]
+    scheduled = sum(len(t["samples"]) for t in data["tasks"])
+    matched = sum(s["writer_cost"].get("n_calls") == 1 for t in data["tasks"] for s in t["samples"])
+    missing_checks = sum(
+        p["initial_status"] == "unresolved" for t in data["tasks"] for p in t["programs"]
+    )
+    warnings = []
+    if not data["provenance"]["source_store_present"]:
+        warnings.append("source_store_missing")
+    elif matched == 0:
+        warnings.append("no_matching_candidates_check_config_prompt_and_line_endings")
+    elif matched < scheduled:
+        warnings.append("scheduled_writer_answers_missing")
+    if missing_checks:
+        warnings.append("initial_checks_missing_check_task_version_and_image_id")
+    data["provenance"]["lookup"] = {
+        "scheduled_writer_slots": scheduled,
+        "matching_writer_answers": matched,
+        "parsed_parents_without_matching_initial_check": missing_checks,
+    }
+    data["provenance"]["warnings"] = warnings
     return validate_collection(data)

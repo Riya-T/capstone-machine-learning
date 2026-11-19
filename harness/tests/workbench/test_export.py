@@ -58,6 +58,9 @@ def test_wrong_image_and_config_do_not_adopt_other_saved_checks(tmp_path):
     cfg, _ = fixture(tmp_path)
     other = export_collection(cfg, "sha256:" + "f" * 64, method="base", purpose="fixture")
     assert all(p["initial_status"] == "unresolved" for p in other["tasks"][0]["programs"])
+    assert other["provenance"]["warnings"] == [
+        "initial_checks_missing_check_task_version_and_image_id"
+    ]
     changed = replace(
         cfg, writer=replace(cfg.writer, backend=replace(cfg.writer.backend, temperature=0.123))
     )
