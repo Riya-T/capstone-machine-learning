@@ -64,6 +64,14 @@ preregistration. This template keeps the training seeds separate; its
 intervals condition on these checkpoints and do not estimate variation
 across possible training seeds.
 
+These are additional diagnostics, not replacements for the published
+tables. Four checkpoints use their common available cohort; a comparison
+of only base and seed 43 can retain an extra task. The workbench also
+requires complete selected trajectories and uses the evaluator's
+family-weighted, interpolated bootstrap. Historical `eval_summary.py` and
+`eval_compare.py` remain the exact reproduction route for their published
+estimands and intervals. No historical score or script is modified.
+
 ## Export on one machine and report on another
 
 Export each checkpoint where its store exists:
@@ -152,6 +160,13 @@ Identical replay is allowed. Different output refuses to overwrite an
 existing bundle. Symlink/reparse-point output paths and manifest traversal
 are rejected. Verification checks checksums and recomputes the analysis
 and reports. It detects inconsistent files, not forged original outcomes.
+
+On Windows the workbench publishes a flushed sibling temporary file using
+non-overwriting `os.rename`, avoiding a hard-link permission requirement.
+POSIX uses the existing immutable publisher. This follows the documented
+[Windows destination-exists behavior](https://docs.python.org/3.11/library/os.html#os.rename).
+Neither path uses `os.replace` to overwrite evidence. The existing matched
+evaluator's publisher is unchanged.
 
 ```bash
 uv run pytest tests/workbench -m 'not docker'

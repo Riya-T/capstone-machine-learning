@@ -7,7 +7,10 @@ from harness.workbench.presentation import render_report_text
 
 
 def test_tables_lists_headings_and_inline_commands_are_rendered():
-    text = "# Report\n\n| Method | Rate |\n|---|---:|\n| base | 50% |\n\n- Missing stays missing.\n\nRun `verify` now."
+    text = (
+        "# Report\n\n| Method | Rate |\n|---|---:|\n| base | 50% |\n\n"
+        "- Missing stays missing.\n\nRun `verify` now."
+    )
     rendered = render_report_text(text)
     assert "<h1>Report</h1>" in rendered
     assert "<th>Method</th>" in rendered and "<td>50%</td>" in rendered
