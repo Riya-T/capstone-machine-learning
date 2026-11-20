@@ -8,6 +8,7 @@ No model, Docker daemon, training or network connection is used.
 from __future__ import annotations
 
 import argparse
+import csv
 from dataclasses import replace
 from pathlib import Path
 
@@ -32,7 +33,7 @@ ROOT = Path(__file__).resolve().parents[1]
 IMAGE = "sha256:" + "1" * 64
 
 
-def saved_fixture(root, method, *, interrupted=False):
+def saved_fixture(root, method, *, interrupted=False, training_seed=None):
     cfg = load_config(ROOT / "configs/mock.yaml")
     cfg = replace(
         cfg,
@@ -41,6 +42,13 @@ def saved_fixture(root, method, *, interrupted=False):
         tasks=replace(cfg.tasks, max_programs=2),
         editor=replace(cfg.editor, reps=2),
     )
+    if training_seed is not None:
+        cfg = replace(
+            cfg,
+            writer=replace(
+                cfg.writer, backend=replace(cfg.writer.backend, model="synthetic-writer-" + method)
+            ),
+        )
     task = load_tasks(cfg.tasks)["record_store"]
     pv = prompt_version(
         build_writer_prompt(task.writer_view(), load_template(cfg.writer.prompt_template))
@@ -114,16 +122,33 @@ def saved_fixture(root, method, *, interrupted=False):
                                 end_reason="SYNTHETIC_FIXTURE",
                             )
                         )
-    return export_collection(cfg, IMAGE, method=method, purpose="fixture")
+    return export_collection(
+        cfg,
+        IMAGE,
+        method=method,
+        purpose="fixture",
+        method_group="candidate" if training_seed is not None else None,
+        training_seed=training_seed,
+    )
 
 
-def run(out):
+def run(out, *, investigate=False):
     out = Path(out)
     safe_destination(out)
     if out.exists():
         raise ValueError("Use a new demonstration directory; no existing evidence is replaced")
     out.mkdir(parents=True)
-    data = [saved_fixture(out / "stores", method) for method in ("base", "candidate")]
+    data = [saved_fixture(out / "stores", "base")]
+    if investigate:
+        from harness.evaluation.records import read_json
+        from harness.evaluation.review import ANNOTATION_FIELDS
+
+        data.extend(
+            saved_fixture(out / "stores", f"candidate_s{seed}", training_seed=seed)
+            for seed in (42, 43)
+        )
+    else:
+        data.append(saved_fixture(out / "stores", "candidate"))
     for dataset in data:
         (out / (dataset["method"] + ".json")).write_bytes(encoded(dataset))
     result = compare_collections(data, reference="base", bootstrap_samples=100)
@@ -135,17 +160,67 @@ def run(out):
     )
     assert not receipt["collection_complete"]
     verify_report(out / "unfinished-report")
-    return {
+    receipt = {
         "purpose": "SYNTHETIC FIXTURE — not experimental evidence",
         "report": str(out / "report/report.html"),
         "incomplete_report": str(out / "unfinished-report/report.html"),
         "model_calls": 0,
         "training_labels_created": 0,
     }
+    if investigate:
+        from harness.workbench.checkpoints import run_summary
+        from harness.workbench.review import compile_pack, make_pack
+
+        run_summary(out / "report", out / "checkpoints", expected_seeds={"candidate": [42, 43]})
+        make_pack(
+            out / "report",
+            out / "review",
+            stores={d["method"]: out / "stores" / d["method"] for d in data},
+        )
+        compile_pack(out / "review", [out / "review/annotations.template.csv"], out / "unreviewed")
+        for directory in ("checkpoints", "review", "unreviewed"):
+            verify_report(out / directory)
+        # These explicitly hypothetical reviewers demonstrate disagreement handling.
+        case = next(
+            c
+            for c in read_json((out / "review/cases.json").read_bytes())["cases"]
+            if c["stage"] == "edit"
+        )
+        annotations = []
+        for name, category in (("demo_reviewer_a", "edit_bug"), ("demo_reviewer_b", "uncertain")):
+            path = out / (name + ".csv")
+            with path.open("w", newline="", encoding="utf8") as stream:
+                writer = csv.DictWriter(stream, fieldnames=ANNOTATION_FIELDS)
+                writer.writeheader()
+                writer.writerow(
+                    dict(
+                        case_id=case["case_id"],
+                        reviewer=name,
+                        category=category,
+                        confidence="hypothesis",
+                        evidence="",
+                        notes="Synthetic demonstration annotation, not a finding.",
+                    )
+                )
+            annotations.append(path)
+        compile_pack(out / "review", annotations, out / "disagreement-demo")
+        verify_report(out / "disagreement-demo")
+        receipt.update(
+            checkpoints=str(out / "checkpoints/report.html"),
+            review=str(out / "review/review.html"),
+            unreviewed_summary=str(out / "unreviewed/report.html"),
+            disagreement_demo=str(out / "disagreement-demo/report.html"),
+        )
+    return receipt
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out", required=True, type=Path)
+    parser.add_argument(
+        "--investigate",
+        action="store_true",
+        help="Also demonstrate synthetic checkpoint and failure-review workflows",
+    )
     args = parser.parse_args()
-    print(encoded(run(args.out)).decode(), end="")
+    print(encoded(run(args.out, investigate=args.investigate)).decode(), end="")

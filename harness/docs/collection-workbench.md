@@ -29,6 +29,107 @@ missing trials are handled. Use a new demo directory each time.
 are created solely to test the reporting flow. They are not model results,
 new training data or evidence that a writer improved.
 
+For the expanded investigation walkthrough:
+
+```bash
+uv run python examples/collection_workbench.py --out runs/investigation-demo --investigate
+```
+
+This also builds a checkpoint summary, source-linked failure pack and an
+unreviewed annotation summary. Its two checkpoint labels are authored
+fixture metadata, not real training runs. Every page says synthetic.
+
+## Investigate failures without changing their scores
+
+Prepare cases from an existing collection report:
+
+```bash
+uv run python -m harness collection-workbench review init --report runs/history-comparison --out runs/history-review
+```
+
+Each case is a recorded initial failure or the actual first terminal stop
+of an editing trajectory. Duplicate writer answers share a parent case.
+Missing answers/checks, unfinished trajectories and unselected over-cap
+programs appear separately in `missing.csv`, never as invented failures.
+
+By default no code is included. To inspect saved before/after sources,
+add one explicit mapping per checkpoint, for example
+`--store dpo_nll_s42=../runs/rtx5070_pc`. Only those roots are read. A pack
+never follows a store path embedded in someone else's report. Blob hashes
+are verified; previews are bounded, escaped and never executed. Display
+diffs require complete previews and are not patches or maintainability
+scores. Missing or truncated code is not reconstructed.
+
+Open `review.html`, download/copy `annotations.template.csv` to a separate
+file, and fill the cases you reviewed. Use a short reviewer ID, a listed
+category, and confidence `hypothesis` or `verified`. Explain your reasoning
+in notes or an evidence reference. `verified` requires a reference but is
+still **the reviewer's assertion**, not a conclusion established by the
+tool. References are not opened or executed. Leave unknown cases untouched.
+
+```bash
+uv run python -m harness collection-workbench review compile --pack runs/history-review --annotations my-review.csv --out runs/history-reviewed
+uv run python -m harness collection-workbench verify --report runs/history-reviewed
+```
+
+Multiple annotation files may be supplied together. Conflicting reviewers
+remain disagreements; there is no majority vote, score repair or preference
+label. The summary's HTML shows every review, and its JSON/CSV retain the
+original text. Duplicate reviewer/case entries, unknown case IDs and claims
+of an edit defect on an initial-only failure are rejected.
+
+Packs with source previews and compiled reviews can contain private code
+or personal notes. Review them before sharing. The original portable
+comparison still contains no source code. Source scores and prior reports
+are unchanged by review.
+
+## Compare observed training checkpoints
+
+With a report built from the four-checkpoint history manifest:
+
+```bash
+uv run python -m harness collection-workbench checkpoints --report runs/history-comparison --expect-seeds dpo_nll=42,43 --out runs/history-checkpoints
+uv run python -m harness collection-workbench verify --report runs/history-checkpoints
+```
+
+The summary retains individual seeds, shows their observed range, and
+averages checkpoints within each family before averaging families. It
+reuses the earlier evaluator's checkpoint engine. Multiple checkpoints in
+one group require distinct declared training seeds and configured writer
+identities. Those identities are not authenticated weight digests.
+
+The default population is the source report's common selected cohort.
+`--population all-planned` keeps every planned family instead; inapplicable
+or unknown metrics then remain unavailable. The population and excluded
+tasks are recorded. Seeds are never counted as extra independent tasks,
+and the family intervals do not estimate future training-seed variation.
+
+`--expect-seeds` is an optional historical coverage declaration, not proof
+of preregistration. Missing or unexpected seeds withhold the affected group
+and comparison estimates. Observed-only diagnostic estimates and every
+individual checkpoint remain saved. An expected but entirely absent group
+is reported as missing, without inventing a checkpoint. Groups not covered
+by a declaration are explicitly listed as observed-only. Without a roster,
+the tool cannot detect omitted checkpoints.
+
+An incomplete requested summary is still saved but exits `3` with
+`analysis_complete: false`. That is different from claiming that a completed
+inference run failed. No automatic winner or training label is produced.
+
+## Verify investigation bundles on another machine
+
+The same `verify` command handles comparisons, review packs, compiled
+annotations and checkpoint summaries. Derived bundles include a portable
+source snapshot and the inputs needed for recomputation. They can be
+verified without the original report directory, source store or annotation
+files. Verification recomputes case identities, source scores, checkpoint
+statistics and compiled reviews, rather than trusting rehashed claims.
+
+Checksums do not authenticate the original store or establish that a code
+preview explains a failure. Preserve the relevant original source revision
+for long-term reproduction. Historical outputs remain immutable; every
+investigation uses a separate directory.
+
 ## Build the history-suite comparison
 
 This command must run where the original `harness.sqlite` and `blobs/`

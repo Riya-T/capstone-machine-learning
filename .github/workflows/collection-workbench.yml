@@ -7,6 +7,9 @@ on:
     paths:
       - '.github/workflows/collection-workbench.yml'
       - 'harness/src/harness/workbench/**'
+      - 'harness/src/harness/evaluation/review.py'
+      - 'harness/src/harness/evaluation/seeds.py'
+      - 'harness/src/harness/evaluation/artifacts.py'
       - 'harness/src/harness/__main__.py'
       - 'harness/tests/workbench/**'
       - 'harness/examples/collection_workbench.py'
@@ -16,6 +19,9 @@ on:
     paths:
       - '.github/workflows/collection-workbench.yml'
       - 'harness/src/harness/workbench/**'
+      - 'harness/src/harness/evaluation/review.py'
+      - 'harness/src/harness/evaluation/seeds.py'
+      - 'harness/src/harness/evaluation/artifacts.py'
       - 'harness/src/harness/__main__.py'
       - 'harness/tests/workbench/**'
       - 'harness/examples/collection_workbench.py'
@@ -45,6 +51,11 @@ jobs:
         run: uv run pytest tests/workbench -m "not docker" -q
       - name: Check usage headers for this contribution
         run: uv run pytest tests/test_headers.py -k workbench -q
+      - name: Check legacy review and seed-summary compatibility on Linux
+        if: matrix.os == 'ubuntu-latest'
+        run: uv run pytest tests/evaluation/test_review.py tests/evaluation/test_seeds.py -q
+      - name: Exercise the labeled investigation walkthrough
+        run: uv run python examples/collection_workbench.py --out runs/ci-investigation-demo --investigate
       - name: Lint this contribution
         run: uv run ruff check src/harness/workbench tests/workbench examples/collection_workbench.py
       - name: Build the normal sandbox on Linux
