@@ -1,0 +1,66 @@
+# Prompted control for the history-suite eval: the base writer with the
+# worked copy design example of rtx5070_hist_train_hints2.yaml (the hint the
+# DPO+NLL writer's training samples were drawn with) on every eval sample,
+# instead of the plain prompt. If this matches the trained writer, training
+# adds nothing beyond the hint. Same tasks, editor and settings as
+# rtx5070_hist2_eval.yaml; compared with it and with the trained writers by
+# scripts/eval_compare.py.
+#
+# Usage (from harness/, inside WSL):
+#     uv run python -m harness collect --config configs/rtx5070_hist2_eval_hinted.yaml
+#     uv run python scripts/eval_compare.py --base configs/rtx5070_hist2_eval.yaml \
+#         --other configs/rtx5070_hist2_eval_hinted.yaml
+extends: rtx5070_hist2_eval.yaml
+name: rtx5070-hist2-eval-hinted
+writer:
+  design_hints:
+    - |-
+      Write the class in the style of this example, which is for a different
+      specification: all of the object's data is in one attribute,
+      self._state, and every public method that changes data first makes a
+      deep copy, does all its checks and changes on the copy, and stores the
+      copy only on its last line, so a call that raises changes nothing.
+      Inside such a method, read and change only the copy, never
+      self._state, and do not call the other public methods (each of them
+      stores its own copy, which the last line would then overwrite).
+
+      ```python
+      import copy
+
+
+      class ShelfError(Exception):
+          pass
+
+
+      class Shelves:
+          def __init__(self):
+              self._state = {"shelves": {}}  # shelf name -> books, in orde
+
+          def add_shelf(self, name):
+              new = copy.deepcopy(self._state)
+              if name in new["shelves"]:
+                  raise ShelfError(f"shelf {name!r} is already used")
+              new["shelves"][name] = []
+              self._state = new
+
+          def put(self, shelf, book):
+              new = copy.deepcopy(self._state)
+              if shelf not in new["shelves"]:
+                  raise KeyError(shelf)
+              new["shelves"][shelf].append(book)
+              self._state = new
+
+          def move_all(self, source, target):
+              new = copy.deepcopy(self._state)
+              for name in (source, target):
+                  if name not in new["shelves"]:
+                      raise KeyError(name)
+              new["shelves"][target].extend(new["shelves"][source])
+              new["shelves"][source] = []
+              self._state = new
+
+          def get_books(self, shelf):
+              if shelf not in self._state["shelves"]:
+                  raise KeyError(shelf)
+              return list(self._state["shelves"][shelf])
+      ```

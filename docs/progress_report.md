@@ -263,21 +263,19 @@ All five methods are done:
 
 ### What is running now
 
-**The all-pairs writer on the eval tasks** (`/home/pc/run_dpoall.sh`,
-started 2026-11-17 05:00 PST; training and the held-out check done at
-07:47). The dpo_all writer is served like the others and goes through the
-full eval collection with the editor (about 22 hours, done around 6 a.m.
-on Nov 18), then is compared with the base writer and dpo3 on the main
-measure. Last, the control's 627-pair writer writes code for the eval
-tasks (about an hour), to check that its programs move up the formula.
+The third training seed of D is done (finding 31), every foresight gate
+failed (finding 30), and the prompted control is done on all 10 eval tasks
+(finding 29).
 
-**Training seeds, queued after it** (`/home/pc/run_seeds.sh`). The
-proposal asks for three training seeds per trained method; only seed 42
-exists. Seeds 2 and 3 of our DPO writer (dpo3), the correctness-only
+**Training seeds of the original testbed** (`/home/pc/run_seeds.sh`, unit
+`seeds`, started 00:47 on 11-20). The proposal asks for three
+training seeds per trained method; only seed 42 exists on the original
+testbed. Seeds 2 and 3 of our DPO writer (dpo3), the correctness-only
 writer and the Radon writer, each trained on the same data with the same
 settings, served like the others and put through the full eval collection
-(`configs/rtx5070_eval_dpo3_s2.yaml` and so on), about 23 hours each, in
-that order: dpo3's two seeds by about Nov 20, all six by about Nov 24.
+(`configs/rtx5070_eval_dpo3_s2.yaml` and so on), about 23 hours each, dpo3
+first. The script skips finished work and collections resume from the
+store, so it can be paused between writers for other runs.
 
 ### Words used in the rest of this report
 
@@ -962,9 +960,16 @@ the training signal differs:
   to +0.12), first change +4 pts (−1 to +8), pass rate −13 pts (−26 to
   +0); against dpo3 −0.03 (−0.19 to +0.09), pass rate −20 pts (−32 to
   −8).
-- Running: radon_rel18_all exported and sampled on the eval tasks
-  (`configs/rtx5070_eval_radon_rel18_all.yaml`, `--until initial`) and
-  `scripts/winner_features.py` for it and dpo_all.
+- radon_rel18_all exported and sampled on the eval tasks
+  (`configs/rtx5070_eval_radon_rel18_all.yaml`, `--until initial`, run
+  20261119T210109Z-858d35, 13:01 to 13:49), then
+  `scripts/winner_features.py` (`/home/pc/dpoall_shifts.md`). Its passing
+  programs score +0.58 base standard deviations higher on MI (+0.16 to
+  +1.11; the clean radon writer +0.43, +0.04 to +0.88), and are shorter
+  (−1.11 SD lines of code, −1.11 SD duplicated lines). But only 80 of its distinct programs pass the initial checks,
+  none on 7 of the 16 tasks. dpo_all's passing programs mainly gain
+  docstrings (+3.65 SD, +1.64 to +5.85), which don't go with higher
+  editing scores (within-task correlation −0.16).
 
 ### History suite and the DPO+NLL writer (2026-11-17 to 11-19)
 
@@ -1037,8 +1042,250 @@ results are in `harness/results/hist2_eval.md`.
   (after the fact): 0.37, against base +0.19 (+0.05 to +0.36).
 - **Next:** dpo_all's eval resumed at 08:07 on 11-19 and finished at 12:43
   (`run_dpoall_resume.sh`; null, see finding 26). Then radon_rel18_all's
-  eval-task code, and seeds 2 and 3 of dpo3, sft and radon
-  (`run_seeds.sh`).
+  eval-task code. Seeds 2 and 3 of dpo3, sft and radon (`run_seeds.sh`)
+  are paused for the runs below.
+
+### Prompted control and foresight (2026-11-19, planned before any run)
+
+- **Prompted control.** D's training samples were drawn with a worked
+  example of the copy design. If the base writer shown the same example at
+  eval time does as well as D, training adds nothing beyond the hint. The
+  base, D and control evals all used the plain prompt (checked: no design
+  hints in their configs). New config `rtx5070_hist2_eval_hinted.yaml`:
+  the base writer with that example, byte for byte, on every eval sample;
+  compared with the base writer, both seeds of D and the control.
+- **Foresight.** The hint above was written by us and names the design
+  that wins. Instead, show the writer the task's own later change requests
+  while drawing training samples ("these changes will be requested later;
+  don't implement them now; make them easy to add"), and train on the plain
+  prompt, so the writer has to write that way without seeing the future
+  (context distillation; Askell et al., 2021; Snell et al., 2022). The
+  writer, not us, decides how to prepare, and the editor judges it. A
+  literature check found no prior use of this for maintainable code; the
+  closest work prompts for maintainability (MaintainCoder) or trains on
+  static quality scores (ReaL).
+  - Code: `harness/src/harness/foresight.py` (a design hint's
+    `$later_changes` is filled with the task's change requests; a program
+    "implements a later change early" when it defines a public name or
+    keyword parameter that only a later request asks for, which flags 0 of
+    500 plain programs in the store), `scripts/foresight_gate.py`.
+  - Prompts with every request stay under 3,800 tokens of the 8,192.
+- **Gate on dev tasks**, before any training collection, with rules fixed
+  now (in the configs' headers):
+  - History suite (`rtx5070_hist2_dev_foresight.yaml` against the plain
+    `rtx5070_hist2_dev.yaml`, whose programs are edited for this): train
+    foresight writers if foresight programs that don't implement a later
+    change early score at least +0.1 changes per sequence above plain
+    ones, and at least half as many foresight samples pass the initial
+    checks.
+  - Original testbed (`rtx5070_pc_foresight.yaml` against
+    `rtx5070_pc.yaml`, 2 reps per sequence): the same, or a program share
+    of the variance of at least 10% and above the plain programs' (19% with
+    2 reps on these dev tasks).
+- **If a gate passes:** a training collection with foresight on that
+  suite's train tasks, then two writers on the same samples:
+  foresight-SFT (passing programs, no editor) and foresight DPO+NLL (pairs
+  ranked by the editor). They are evaluated with the plain prompt against
+  the base writer, the correctness-only control and D. Foresight-SFT
+  against foresight DPO+NLL tells whether the editor's feedback adds
+  anything beyond knowing the future. Programs that implement a
+  later change early are left out of all training data. If the writer
+  ignores the foresight hint, the fallback is to have it write the final
+  version and delete the code the changes added.
+- Script: `/home/pc/run_foresight.sh` (unit `foresight`), queued at 13:47
+  after the dpoall unit.
+
+### Prompted control result (2026-11-19)
+
+- Run 20261119T215045Z-2661e6 (13:50 to 15:45, no infrastructure errors).
+  Details in `harness/results/hist2_eval.md` ("Prompted control").
+- **Four tasks out for now.** Commit c066f99 (11:27 PST today) added Usage
+  sections to the reference and bug files of coin_vaults, grain_silos,
+  rehearsal_setlists and server_racks, which `tests/test_headers.py`
+  requires. The models never see these files, but the task hash covers
+  every file, so the base, D and control trials (run on the earlier files)
+  don't match. The comparisons use the other 6 tasks. `/home/pc/run_hinted4.sh`
+  (unit `hinted4`) checks out the files from before c066f99 once the
+  foresight gates are done, reruns the prompted writer on those 4 tasks,
+  redoes the comparisons on all 10 and restores HEAD's files.
+- **Result on the 6 tasks:**
+  - Prompted − base: +0.46 (+0.23 to +0.68); pass rate −34 points (−58 to
+    −11).
+  - Seed 42 − prompted: −0.19 (−0.61 to +0.24); seed 43 − prompted: +0.15
+    (−0.35 to +0.65). Control − prompted: −0.45 (−0.68 to −0.23).
+  - All 31 passing prompted programs (on all 10 tasks) are copy designs.
+  - Per sample (post hoc): base 0.15, prompted 0.14, control 0.12, seed 42
+    0.19, seed 43 0.29. Seed 43 − prompted +0.15 (+0.01 to +0.39).
+  - Within tasks and design classes (post hoc,
+    `scripts/hist2_design_within.py`): D's in-place programs beat the base
+    writer's in-place programs by +0.52 (seed 42, 3 tasks) and +0.66 (seed
+    43, 6 tasks, +0.18 to +1.17); the control's don't (+0.01). D's copy
+    programs are no better than the prompted writer's.
+- **Result on all 10 tasks** (the 4-task rerun, run
+  20261120T015906Z-571021, 17:59 to 18:13, with the files from before
+  c066f99, restored afterwards):
+  - Prompted − base: +0.56 (+0.37 to +0.75); pass rate −39 points (−54 to
+    −23).
+  - Seed 42 − prompted: −0.33 (−0.62 to −0.00); seed 43 − prompted: −0.03
+    (−0.38 to +0.35). Control − prompted: −0.55 (−0.76 to −0.36). On the 4
+    added tasks the prompted writer has 1 to 3 edited programs each,
+    scoring 0.50 to 1.50.
+  - Per sample (post hoc, `/home/pc/uncond10.sh`): base 0.17, prompted
+    0.14, control 0.16, seed 42 0.23, seed 43 0.37. Prompted − base −0.03
+    (−0.08 to +0.02); seed 43 − prompted +0.23 (+0.05 to +0.43); seed 42 −
+    prompted +0.09 (−0.02 to +0.22).
+  - Within design classes (post hoc): D's in-place programs beat the base
+    writer's in-place programs by +0.47 (+0.24 to +0.70, 6 tasks) and +0.60
+    (+0.22 to +0.99, 9 tasks), and match the prompted writer's copy
+    programs (+0.04, +0.09). The control's in-place programs don't beat the
+    base writer's (−0.01). D's copy programs score below the prompted
+    writer's (−0.49, −0.74 to −0.24, for seed 42; −0.15 for seed 43).
+- **Reading:** on the planned measure, training adds nothing beyond the
+  prompt; seed 42 does worse. What it adds is getting there without the
+  prompt, fewer failing samples and in-place programs the editor handles
+  as well as the prompted copy programs. Per sample, seed 43 beats the
+  prompt. Foresight (above) is the attempt to go beyond a hint we wrote.
+
+### Foresight gate result and the fallback (2026-11-19)
+
+- **History-suite gate: fails.** Run 20261120T010451Z-fd5346 (16:40 to
+  17:51, no infrastructure errors; `/home/pc/gate_hist2.md`).
+  - Told the later changes and asked not to implement them, the writer
+    implemented them anyway: 13 of the 14 passing foresight programs define
+    a name only a later change asks for (undo, seal, transfer_many, LineFull
+    and others), and 13 of the 14 keep an operation log for undo.
+  - Passing samples: 14 of 64 with foresight against 30 of 64 plain (0.47
+    of plain's, below the half the rule asks for). On choir_sections and
+    photo_albums none pass (plain: 8 of 16 each). Most fail the hidden
+    tests on names already in use; the programs carry undo stacks, capacity
+    limits and extra error classes, and the checks the first specification
+    asks for go wrong among them (one photo_albums program looks for a
+    photo name in the list of albums' photo lists, so it never finds it).
+  - That leaves 1 foresight program that doesn't implement a change early,
+    and it was not edited, so there is no score to compare. Both parts of
+    the rule fail. So the writer doesn't ignore foresight, as we feared; it
+    can't hold back.
+- **Original-testbed gate: stopped** at 18:00, 10 minutes in. It uses the
+  same instruction, which the history suite just showed the writer doesn't
+  follow, and would have taken the GPU for 5 hours. Its samples and initial
+  checks (cheap) can still be run to see whether the writer implements
+  early there too.
+- **Fallback, as planned:** ask for the final version, with the
+  specification and every later change implemented, then send that program
+  back to the writer to delete what only the changes need, keeping the rest
+  (how it stores its data, any records it keeps). The candidate is the
+  pared-down program, keyed by the plain prompt as before; programs where a
+  later change's name survives are still left out.
+  - Code: `WriterConfig.prune_prompt` (a second writer call for each hinted
+    sample, with `$program` filled with the first answer's program;
+    `collect._write_samples`, `foresight.fill_hint`). Left out of the writer
+    key when empty, so every stored sample keeps its key (checked: the gate
+    report reads the same). Tests in `tests/collection/test_collect.py`,
+    `tests/test_foresight.py` and `tests/test_store.py`.
+  - The second prompt for the longest dev task is about 4,000 tokens.
+  - Gate `rtx5070_hist2_dev_prune.yaml`, with the same rule as above, fixed
+    before the run: pared-down programs that don't implement a change early
+    score at least +0.1 changes per sequence above the plain programs, and at
+    least half as many samples pass the initial checks.
+  - The training config `rtx5070_hist_train_foresight.yaml` (never run) now
+    uses the same two prompts on three quarters of the samples.
+  - Script: `/home/pc/run_prune.sh` (unit `prune`), after the 4-task
+    prompted rerun. If the gate passes, `/home/pc/run_hist_fs.sh` collects
+    the training samples, then trains and evaluates foresight DPO+NLL and
+    foresight-SFT.
+- **Second way to delete, by code.** The first 14 pared-down seed_vault
+  programs (looked at before any was edited) show the writer deleting the
+  history along with undo: none of the 11 we checked keeps an undo stack or
+  log, so they are plain programs again. The proposal keeps "the structure
+  that supports them (for example, the saved history)".
+  - So `foresight.prune_program` (`WriterConfig.prune_names`) does the
+    deletion instead. It cuts every function, method and class whose name
+    only a later change asks for, and every one-line guard that raises one
+    of those classes, by removing their lines; the rest stays as the writer
+    wrote it, comments and spacing included. Tests in
+    `tests/test_foresight.py` and `tests/collection/test_collect.py`.
+  - On the 16 cached seed_vault final versions it cuts undo, seal, unseal,
+    get_sealed and DrawerSealed (and transfer_many in 2), keeps the undo
+    stack in all 16 and leaves no flagged name.
+  - Gate `rtx5070_hist2_dev_prune_names.yaml`: the same first prompt, so the
+    cached final versions are reused and no writer call is made. Same rule
+    as above, fixed before the run. If both ways pass, the training
+    collection uses the one whose programs score higher on these tasks.
+  - Script: `/home/pc/run_prune2.sh` (unit `prune2`), after `prune`.
+- **Deletion by the writer: fails** (run 20261120T021447Z-7f7105 and its
+  editing run, 18:14 to 19:25, no infrastructure errors;
+  `/home/pc/gate_prune.md`).
+  - Passing samples: 15 of 64 against 30 of 64 plain, exactly the half the
+    rule allows. None implements a change early.
+  - On the 2 tasks where both have edited programs, the pared-down programs
+    score −0.06 changes per sequence against plain (−0.12 to +0.00), short
+    of the +0.1 asked for. 14 of the 15 are plain designs: the writer
+    deleted the history along with undo.
+  - photo_albums has no passing sample in any foresight variant (plain: 8
+    of 16): given the longer prompt, the writer looks for a photo name in
+    the list of the albums' photo lists, so the checks on names in use
+    fail. tram_lines, where no plain sample passes, gets 6 of 16.
+- **Deletion by code: fails** (19:25 to 20:11, no infrastructure errors;
+  `/home/pc/gate_prune_names.md`).
+  - Passing samples: 17 of 64 against 30 of 64 plain. None implements a
+    change early, and all 17 keep the undo log.
+  - On the 2 tasks where both have edited programs: −0.06 changes per
+    sequence against plain (−0.12 to +0.00). seed_vault: 0.25 against 0.38;
+    choir_sections: one program, 0.50 against 0.50. tram_lines' 6 programs
+    score 0.50, where plain has none to edit.
+  - Per sample, over the 4 tasks (post hoc): plain 0.21, code deletion
+    0.09.
+- **Verdict:** every foresight variant fails on the history suite's dev
+  tasks, so by the rules fixed beforehand no foresight writer is trained
+  there. Knowing the later changes, the 7B writer either implements them,
+  or, once they are cut out, leaves programs (with or without the history)
+  that the editor does not extend further than plain ones. Even the first
+  gate's programs that already implemented undo score only a little above
+  plain ones on seed_vault, the one task where both were edited (0.44
+  against 0.38; `/home/pc/probe/early_scores.py`). The original-testbed gate is not run: the same
+  writer and the same prompts, on tasks with less design room.
+
+### Third training seed of D (2026-11-19, planned before the run)
+
+- Setting D trained again on the same 83 pairs with seed 44
+  (`/home/pc/run_hist2_s44.sh`, unit `s44`; configs
+  `rtx5070_hist2_{dev,eval}_hist2_rpo_d_s44.yaml`), evaluated like seeds 42
+  and 43, with the 4 eval tasks' files from before c066f99. This gives the
+  three seeds the proposal asks for.
+- Comparisons, fixed now, on the 10 eval tasks with the paired task
+  bootstrap:
+  1. Against the base writer and the correctness-only control, changes
+     done before the first failure (as for seeds 42 and 43).
+  2. Against the prompted control, the same measure.
+  3. Against the prompted control, changes per writer sample (pass rate
+     times mean changes, 0 for a task without an edited program;
+     `/home/pc/uncond.py`). This was post hoc for seeds 42 and 43 (+0.09
+     and +0.23); for seed 44 it is a test.
+  4. Within tasks, D's in-place programs against the base writer's in-place
+     programs (`scripts/hist2_design_within.py`); post hoc for seeds 42 and
+     43 (+0.47 and +0.60), a test for seed 44.
+- The report states all three seeds' results, whatever seed 44 shows.
+
+### Third training seed result (2026-11-20)
+
+- Run 20261120T051632Z-c1e2ad (training 20:16 to 20:43, eval 21:16 to
+  00:47, 162 editing steps, no infrastructure errors; old task files
+  restored afterwards). Details in `harness/results/hist2_eval.md` ("Third
+  training seed").
+- No passing sample on recipe_binder (base: 1 of 16) or spare_parts (base:
+  14 of 16), so the planned comparisons use 8 tasks.
+- The four comparisons fixed beforehand:
+  1. Against base +0.45 (+0.23 to +0.69), against the control +0.41 (+0.19
+     to +0.66): **confirmed.**
+  2. Against the prompted writer −0.19 (−0.41 to −0.01): the prompt does
+     better, as with seed 42.
+  3. Per sample against the prompted writer +0.17 (−0.02 to +0.40): **not
+     confirmed.**
+  4. In-place programs against the base writer's +0.55 (+0.18 to +0.96, 7
+     tasks): **confirmed.**
+- Also: against seed 42 +0.25 (+0.06 to +0.46), against seed 43 +0.07
+  (−0.10 to +0.26). Pass rate on all 10 tasks 41% (base 58%, seed 42 38%,
+  seed 43 48%). Per sample against base +0.14 (−0.05 to +0.34).
 
 ## Findings so far
 
@@ -1235,6 +1482,35 @@ results are in `harness/results/hist2_eval.md`.
     points below base), so seed 42's extra correctness loss was not
     systematic. With seed 43, the per-sample gain is clear too (+0.19,
     +0.05 to +0.36).
+29. **The prompt the training samples were drawn with does at least as
+    well as training on programs that pass, but only through the copy
+    design and at a large cost in correctness.** On all 10 eval tasks, the
+    base writer shown the worked example at eval time gains +0.56 (+0.37 to
+    +0.75) against the plain base writer. Seed 43 of D matches it (−0.03,
+    −0.38 to +0.35) and seed 42 falls below it (−0.33, −0.62 to −0.00). But
+    every passing prompted program is a copy design, 81% of its samples
+    fail the initial checks, and per sample it gains nothing (0.14 against
+    0.17). Per sample, seed 43 beats it (+0.23, +0.05 to +0.43). D's gain
+    comes mostly from in-place programs that score above the base writer's
+    in-place programs within tasks (+0.47 and +0.60), as high as the
+    prompted copy programs; the prompt doesn't produce these.
+30. **Told about the later changes, the writer implements them at once.**
+    Asked not to implement them yet but to make them easy to add, 13 of 14
+    passing foresight programs on the history suite's dev tasks implement
+    at least one of them, and half as many samples pass the initial checks
+    as plain ones. The gate fails. Both fallbacks (final version first,
+    then pared down by the writer or by code) fail too: the pared programs
+    score −0.06 against plain, even when they keep the undo log. No
+    foresight writer is trained.
+31. **A third training seed confirms the gain and the in-place programs,
+    but not a per-sample gain over the prompt.** Seed 44, with its
+    comparisons fixed before the run, gains +0.45 (+0.23 to +0.69) against
+    the base writer and +0.41 against the control, and its in-place
+    programs score +0.55 (+0.18 to +0.96) above the base writer's. Against
+    the prompted writer it is −0.19 (−0.41 to −0.01) on programs that pass
+    and +0.17 (−0.02 to +0.40) per sample. Over three seeds: +0.24, +0.43
+    and +0.45 against base; −0.33, −0.03 and −0.19 against the prompt; per
+    sample against the prompt +0.09, +0.23 and +0.17.
 
 - **Testbed (the main question):** the diagnostics say the current tasks
   cannot show an effect, because the editor's randomness swamps the

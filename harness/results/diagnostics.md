@@ -878,6 +878,15 @@ So noise at the editing labels' level does not by itself stop DPO from
 learning a preference that carries over: 160 pairs capped by margin are
 too few to count on, and all pairs are enough. dpo3 trained on 160.
 
+The 627-pair writer's own code moves up MI too. Sampled on the eval tasks
+like the other writers (`configs/rtx5070_eval_radon_rel18_all.yaml`,
+`--until initial`, run 20261119T210109Z-858d35), its passing programs
+score +0.58 of the base writer's standard deviations higher on MI (+0.16
+to +1.11, `scripts/winner_features.py`), against +0.43 (+0.04 to +0.88)
+for radon. They are also shorter (lines of code −1.11 SD, duplicated
+lines −1.11 SD). Training this hard costs correctness: 80 of its distinct
+programs pass the initial checks, and none on 7 of the 16 tasks.
+
 ### The editing labels, every pair
 
 The matching run on the editing labels: every unequal pair of mean

@@ -1,0 +1,9 @@
+# rtx5070_hist2_eval.yaml with setting D (DPO+NLL, nll weight 1, lr 3e-5, 3 epochs)
+# trained again with seed 44, the third seed (docs/progress_report.md,
+# 2026-11-19: its comparisons with the prompted control are fixed before
+# the run).
+extends: rtx5070_hist2_eval.yaml
+name: rtx5070-hist2-eval-hist2-rpo-d-s44
+writer:
+  backend:
+    model: writer-hist2_rpo_d_s44-ctx8k

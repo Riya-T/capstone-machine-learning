@@ -34,14 +34,17 @@ families where the program's design decides whether undo can be added,
 and sampled training programs that differ in design. There, the same
 pipeline, with the chosen program's likelihood added to the DPO loss,
 gives a writer whose held-out programs the editor changes further, with
-both of two training seeds. On the same 9 tasks, the gain is +0.24 and
-+0.43 changes before the first failure against the original writer (95%
-+0.10 to +0.39 and +0.20 to +0.66). Against fine-tuning on the same
+all three training seeds. The gain is +0.24, +0.43 and +0.45 changes
+before the first failure against the original writer (95% +0.10 to +0.39,
++0.20 to +0.66 and +0.23 to +0.69). Against fine-tuning on the same
 programs without the editing outcomes, which itself gains nothing, it is
-+0.22 and +0.41 (+0.07 to +0.40 and +0.18 to +0.66). The cost is 11 to 22
-points of initial correctness, at least half of it shared with that
-control. We release the pipeline, tasks, every preference pair, the
-diagnostics and the controls.
++0.22, +0.41 and +0.41. The cost is 11 to 22 points of initial
+correctness, about half of it shared with that control. The original writer shown the worked example at eval time does at
+least as well on programs that pass, but only by turning every program
+into the copy design, and 81% of its samples fail their tests. Per sample,
+it gains nothing. Our writer's gain comes mostly from in-place programs,
+which the example doesn't produce. We release the pipeline,
+tasks, every preference pair, the diagnostics and the controls.
 
 ## 1. Introduction
 
@@ -79,8 +82,8 @@ Contributions:
 6. A second testbed (30 families) where the program's design decides
    later changes. On it, a writer trained with DPO plus an NLL term on
    editing outcomes beats both the original writer and a matched
-   correctness-only control on held-out tasks, with two training seeds, at
-   a measured cost in initial correctness.
+   correctness-only control on held-out tasks, with three training seeds,
+   at a measured cost in initial correctness.
 
 ## 2. Related work
 
@@ -222,8 +225,7 @@ failures, 12 earlier-behaviour failures, 5 both); most failures are the
 editor running out of turns.
 
 *Pending:* training seeds 2 and 3 of dpo3, correctness-only and Radon
-(the proposal's three seeds per trained method). They run from Nov 19,
-after the last §6.3 item.
+(the proposal's three seeds per trained method), queued.
 
 ### 4.2 Comments
 
@@ -389,8 +391,13 @@ writer's (−13 points, −26 to +0) or dpo3's (−20, −32 to −8). Four time
 the pairs train the writer harder on these labels and cost correctness,
 but leave the editor's results unchanged.
 
-*Pending:* the 627-pair Radon writer's own eval-task code (whether it
-moves up MI like the clean writer's).
+The 627-pair Radon writer's own eval-task code moves up MI like the clean
+writer's: +0.58 of the original writer's standard deviations (+0.16 to
++1.11), against +0.43 (+0.04 to +0.88). Its correctness collapses, though:
+on 7 of the 16 eval tasks none of its samples pass the initial tests. By
+contrast, dpo_all's code mainly gains docstrings (+3.65 standard
+deviations), which have nothing to do with editing scores (within-task
+correlation −0.16).
 
 ## 7. A testbed where the program decides
 
@@ -475,11 +482,14 @@ its 29 passing programs used the copy design.
 
 ### 7.3 Results
 
-Our writer was trained twice with setting D, with seeds 42 and 43 (same
-pairs, settings and code; the seed changes the LoRA initialisation and the
-order of the pairs). The tables use 9 eval tasks: recipe_binder has no
-edited program for the original writer or the control. Intervals come from
-the paired task bootstrap as before (`harness/results/hist2_eval.md`).
+Our writer was trained three times with setting D, with seeds 42, 43 and
+44 (same pairs, settings and code; the seed changes the LoRA
+initialisation and the order of the pairs). The tables use 9 eval tasks:
+recipe_binder has no edited program for the original writer or the
+control. Seed 44 also has no passing sample on spare_parts, so its
+comparisons use 8 tasks. Seed 44's comparisons were fixed before it was
+trained. Intervals come from the paired task bootstrap as before
+(`harness/results/hist2_eval.md`).
 
 | Writer | Changes before first failure (of 3) | First change works | Whole sequence works | Samples passing initial tests |
 |---|---:|---:|---:|---:|
@@ -487,39 +497,50 @@ the paired task bootstrap as before (`harness/results/hist2_eval.md`).
 | Correctness-only (SFT) | 0.33 | 30% | 0% | 53% |
 | **Ours (DPO+NLL, D), seed 42** | **0.55** | **41%** | **6%** | **42%** |
 | **Ours, seed 43** | **0.73** | **46%** | **11%** | **53%** |
+| **Ours, seed 44** (8 tasks) | **0.73** | **46%** | **10%** | **46%** |
 
 | Difference (95% interval) | Changes before first failure | First change works | Whole sequence works | Samples passing initial tests |
 |---|---|---|---|---|
 | Correctness-only − original | +0.02 (−0.03 to +0.06) | −1 pt (−6 to +4) | +0 pts | −11 pts (−21 to −1) |
 | Ours (seed 42) − original | +0.24 (+0.10 to +0.39) | +10 pts (+5 to +15) | +6 pts (+0 to +11) | −22 pts (−38 to −5) |
 | Ours (seed 43) − original | +0.43 (+0.20 to +0.66) | +15 pts (+7 to +24) | +11 pts (+3 to +20) | −11 pts (−28 to +7) |
+| Ours (seed 44) − original | +0.45 (+0.23 to +0.69) | +17 pts (+11 to +24) | +10 pts (+2 to +20) | −9 pts (−22 to +5) |
 | Ours (seed 42) − correctness-only | +0.22 (+0.07 to +0.40) | +10 pts (+2 to +19) | +6 pts (+0 to +11) | −11 pts (−24 to +1) |
 | Ours (seed 43) − correctness-only | +0.41 (+0.18 to +0.66) | +16 pts (+7 to +26) | +11 pts (+3 to +20) | +0 pts (−13 to +12) |
+| Ours (seed 44) − correctness-only | +0.41 (+0.19 to +0.66) | +16 pts (+10 to +21) | +10 pts (+2 to +20) | +2 pts (−5 to +9) |
 
-Seed 43 and the original writer both have an edited program on
-recipe_binder too. With it, their planned 10-task comparison gives +0.53
-(+0.26 to +0.83), but that task rests on one passing sample per writer.
+Seed 44's pass-rate differences are on its 8 tasks; on the 9, 46% of its
+samples pass against the original writer's 64%. Seed 43 and the original
+writer both have an edited program on recipe_binder too. With it, their
+planned 10-task comparison gives +0.53 (+0.26 to +0.83), but that task
+rests on one passing sample per writer.
 
 The editor completes more changes on our writer's programs than on the
-original writer's, with both training seeds. Training on the same programs
-without the editing outcomes gains nothing, so the gain comes from the
-editing outcomes. Its size depends on the training seed. On the same
-tasks, seed 43 gains nearly twice as much as seed 42 (difference +0.18,
-+0.04 to +0.32), and two seeds measure that variation only roughly.
+original writer's, with all three training seeds. Training on the same
+programs without the editing outcomes gains nothing, so the gain comes
+from the editing outcomes. Its size depends on the training seed. Seed 43
+gains nearly twice as much as seed 42 on the same tasks (difference +0.18,
++0.04 to +0.32), and seed 44 about as much as seed 43 (+0.07, −0.10 to
++0.26). The task bootstrap does not include training-seed variation, and
+three seeds measure it only roughly.
 
 The gain has a cost in correctness:
 
 - **Seed 42:** 22 points fewer of its samples pass the initial tests, half
   of that shared with the control.
 - **Seed 43:** 11 points fewer, the same as the control.
+- **Seed 44:** 18 points fewer on the 9 tasks. It has no passing sample on
+  spare_parts, where the original writer passes 14 of 16; on its 8 tasks it
+  passes as often as the control.
 
 If a sample that fails the initial tests counts as 0 changes (a measure
-computed after the results, all 10 tasks), the original writer scores 0.17
-changes per sample, the control 0.16, seed 42 0.23 and seed 43 0.37.
-Against the original writer that is +0.05 for seed 42 (−0.04 to +0.15) and
-+0.19 for seed 43 (+0.05 to +0.36). So the gain is clear for programs that
+computed after the results for seeds 42 and 43, all 10 tasks), the
+original writer scores 0.17 changes per sample, the control 0.16, seed 42
+0.23, seed 43 0.37 and seed 44 0.31. Against the original writer that is
++0.05 for seed 42 (−0.04 to +0.15), +0.19 for seed 43 (+0.05 to +0.36) and
++0.14 for seed 44 (−0.05 to +0.34). So the gain is clear for programs that
 pass their tests, which are the ones an editor would be given. Per sample,
-it depends on the seed.
+it is positive with every seed but clear with one.
 
 The editor gets unstuck more often:
 
@@ -533,14 +554,144 @@ The gain is not the copy design we trained toward, as far as our
 classifier can tell:
 
 - On eval, our writer's programs classified as copy designs score lower
-  than its other programs: 0.38 against 0.79 with seed 42, and 0.52
-  against 0.97 with seed 43.
+  than its other programs: 0.38 against 0.79 with seed 42, 0.52 against
+  0.97 with seed 43 and 0.69 against 0.81 with seed 44.
 - The undo-first successes are mostly in-place programs: all 7 with seed
   42, and 11 of 14 with seed 43.
 
 The classifier counts any deep copy in a mutating method, so it is crude.
 The property that makes our writer's programs easier to edit is not
 captured by it, nor by length, number of methods or number of classes.
+
+**Against the prompt it was trained from.** Our writer's training samples
+were drawn with the worked example in the prompt. So the original writer,
+given the same example on every eval sample, is a control that needs no
+training: if it does as well, training adds nothing beyond the prompt.
+Four eval tasks changed after the runs above (a later commit added Usage
+sections to files the models never see, but which the task hash covers),
+so the prompted writer was run on those 4 with their earlier files, like
+the other writers. The comparison uses all 10 tasks (9 for seed 42 and the
+correctness-only control, which have no edited program on one; 8 for seed
+44). The prompted control was run after seeds 42 and 43 and before seed
+44, so seed 44's comparisons with it were fixed before seed 44 was
+trained, including the two that were computed after the results for the
+other seeds.
+
+| Difference (95% interval) | Changes before first failure | First change works | Samples passing initial tests |
+|---|---|---|---|
+| Prompted − original | +0.56 (+0.37 to +0.75) | +28 pts (+15 to +38) | −39 pts (−54 to −23) |
+| Ours (seed 42) − prompted | −0.33 (−0.62 to −0.00) | −15 pts (−28 to −1) | +21 pts (−1 to +40) |
+| Ours (seed 43) − prompted | −0.03 (−0.38 to +0.35) | −4 pts (−21 to +15) | +29 pts (+9 to +44) |
+| Ours (seed 44) − prompted | −0.19 (−0.41 to −0.01) | −12 pts (−23 to +1) | +37 pts (+23 to +51) |
+| Correctness-only − prompted | −0.55 (−0.76 to −0.36) | −26 pts (−35 to −16) | +32 pts (+19 to +45) |
+
+- **On programs that pass, the prompt does at least as well as training.**
+  Seed 43 matches the prompted writer; seeds 42 and 44 fall below it.
+- **The prompt gets there only through the copy design.** All 31 passing
+  programs of the prompted writer are copy designs, against about half of
+  ours. 81% of its samples fail the initial tests (42% for the original
+  writer).
+- **Per sample, the prompt gains nothing, and our writer's gain over it is
+  not established.** Counting failing samples as 0, the original writer
+  scores 0.17 changes per sample, the prompted writer 0.14, and ours 0.23,
+  0.37 and 0.31. Against the prompted writer that is +0.09 (−0.02 to
+  +0.22), +0.23 (+0.05 to +0.43) and +0.17 (−0.02 to +0.40). The test
+  fixed for seed 44 does not exclude 0.
+- **Our writer's gain comes from a different kind of program.** Within
+  tasks, our writer's in-place programs score above the original writer's
+  in-place programs: +0.47 (+0.24 to +0.70, 6 tasks), +0.60 (+0.22 to
+  +0.99, 9 tasks) and, as the test fixed for seed 44, +0.55 (+0.18 to
+  +0.96, 7 tasks). The correctness-only control's do not (−0.01). Our
+  writer's in-place programs score about as well as the prompted writer's
+  copy programs (+0.04, +0.09 and −0.12); its copy programs score lower
+  (−0.49, −0.15 and −0.26).
+
+So on this testbed, training on the editing outcomes does not beat the
+prompt the training samples were drawn with, on the measure we planned:
+one seed matches it and two fall short. Training gets there without the
+prompt at test time, with fewer failing samples, and through in-place
+programs that the prompt does not produce and that the editor extends as
+far as the prompted copy programs. Per writer sample, it does better than
+the prompt with every seed, but clearly with only one. Whether training
+can go beyond what a prompt gives is the question of §7.4.
+
+### 7.4 Foresight instead of a hint
+
+The worked example names the design that wins, and we wrote it. A writer
+trained on samples drawn with it can at best learn what we already knew.
+Foresight replaces the example with the task's own later change requests,
+shown while the training samples are drawn: "these changes will be
+requested later; don't implement them now, but make them easy to add". The
+writer is then trained on the plain prompt, so it has to write that way
+without seeing the future. This is context distillation (Askell et al.,
+2021; Snell et al., 2022) of knowledge of the future. The writer, not we,
+decides how to prepare, and the editor judges whether it worked. To our
+knowledge, no earlier work distills future change requests into a code
+writer: the closest prompt for maintainability (MaintainCoder) or train on
+static quality scores (ReaL).
+
+A program that implements a later change early would make the next change
+trivial for the wrong reason. We flag one when it defines a public name or
+keyword parameter that only a later request asks for (0 of 500 plain
+programs are flagged) and leave such programs out of every comparison and
+all training data.
+
+Before any training collection, a gate on each testbed's dev tasks, with
+rules fixed in the configs beforehand, asks whether foresight programs that
+don't implement a change early score at least +0.1 changes per sequence
+above plain ones, with at least half the plain pass rate. On the original
+testbed, a program share of the variance above the plain programs' (19%)
+also passes. If a gate passes, two writers are trained on
+the same foresight samples, foresight-SFT (no editor) and foresight
+DPO+NLL (pairs ranked by the editor), and evaluated with the plain prompt
+against the original writer, the correctness-only control and D.
+
+**The writer cannot hold back.** On the history suite's 4 dev tasks, 13 of
+the 14 passing foresight programs implement at least one later change
+(undo in most), and 14 of 64 foresight samples pass the initial checks
+against 30 of 64 plain ones. Only one program is left once the early
+implementers are out, and it was not edited, so the gate fails on both
+counts. The fear was that the writer would ignore foresight, as it ignored
+prose design hints; instead it follows the change requests and not the
+instruction to wait. We stopped the original testbed's gate, which used the
+same instruction.
+
+**Fallback: write the final version, then pare it down.** Each foresight
+sample now asks for the final version, with the specification and every
+later change implemented, and what only the changes need is then deleted.
+The pared-down program is the candidate; programs where a later change's
+name survives are still left out. We delete in two ways, each gated on the
+same dev tasks with the same rule fixed beforehand:
+
+- **By the writer.** The program goes back to the writer, which is asked to
+  delete what only the changes need and keep the rest, including the
+  records the program keeps. In the first programs we looked at, it deleted
+  the history along with undo, which leaves a plain program.
+- **By code.** Every function, method and class whose name only a later
+  change asks for is cut out, with every one-line guard that raises one of
+  those classes; the rest stays as the writer wrote it. The history
+  survives (in all 16 seed_vault samples).
+
+| Dev gate (4 tasks) | Samples passing initial tests | Implement a change early | Changes before first failure vs plain (2 tasks) |
+|---|---|---|---|
+| Plain prompt | 30 of 64 | – | – |
+| Foresight, "don't implement them yet" | 14 of 64 | 13 of 14 | no program left to compare |
+| Final version, pared down by the writer | 15 of 64 | 0 of 15 | −0.06 (−0.12 to +0.00) |
+| Final version, pared down by code | 17 of 64 | 0 of 17 | −0.06 (−0.12 to +0.00) |
+
+All three fail the rule, so no foresight writer was trained. The
+writer-pared programs are plain again (14 of 15): the writer deleted the
+history along with undo. The code-pared programs all keep their undo log,
+yet the editor gets no further with them than with plain programs. Even
+the first gate's programs that already contained an undo (and more) score
+only a little above plain ones on seed_vault, the one task where both were
+edited (0.44 against 0.38). On these 4 dev tasks, with one trial per
+sequence, knowing the future does not give this writer programs that this
+editor finds easier to change. Our reading is that the editor needs a
+particular design (a copy of the state, or private state changed in few
+places), not just a record of the operations, and knowing the changes
+does not lead the writer to it; the worked example names it. We did not
+run the original testbed's gate, which has less design room.
 
 ## 8. Discussion
 
@@ -569,6 +720,17 @@ toward programs it would rarely write itself, and adding the NLL term
 could. Too much training made the writer adopt the preferred programs'
 style but lose correctness. The setting chosen on dev keeps most of it,
 but not all.
+
+What training adds beyond the worked example is narrower. On programs that
+pass, the original writer shown the example does at least as well (§7.3).
+Training reaches about that level without the example at test time, with
+fewer failing samples, and through in-place programs the editor handles
+better (with all three seeds, the third tested in advance), not through
+the design the example shows. Since we wrote the example, the
+method has so far learned roughly what we told it, in a different form.
+Foresight (§7.4) tried to replace what we told it with the future changes
+themselves, and failed its gate: knowing the changes did not give the
+writer programs the editor handles better.
 
 **What the original result does not say.** It does not say that
 maintainability cannot be learned from downstream outcomes. Three
@@ -602,20 +764,24 @@ above 0.3.
 - **Scope:** one writer, one editor and one hardware budget, with small
   self-contained tasks.
 - **Seeds:** one training seed so far on the original testbed (two more
-  queued). Two on the history suite, whose gains differ by nearly a factor
-  of two.
+  running). Three on the history suite, whose gains range from +0.24 to
+  +0.45.
 - **Selection:** up to 8 passing programs per task are edited, rather
   than a single unselected attempt.
 - **Noise control:** it uses a static signal (MI), whose learnability may
   differ from that of a real design signal.
 - **The history-suite result rests on:**
-  - 9 eval tasks with one trial per sequence;
+  - 8 to 10 eval tasks with one trial per sequence;
   - training data sampled with a worked example;
   - learning rate and epochs chosen on 4 dev tasks under a rule revised
     once, still on dev only;
   - a mechanism we have not identified;
-  - an 11- to 22-point loss in initial correctness. Per sample, it
-    cancels most of seed 42's gain but not seed 43's.
+  - an 11- to 22-point loss in initial correctness. Per sample, the gain
+    over the original writer is clear for one seed of three;
+  - no gain over the worked example given at eval time, on programs that
+    pass (one seed level with it, two below); per sample, a gain over it
+    for one seed of three, and not for the seed whose test was fixed in
+    advance.
 
 ## 9. Conclusion
 
@@ -631,10 +797,13 @@ was the testbed's signal, not the training method.
 On a testbed where the program's design decides whether undo can be
 added, and with training samples that differ in design, the same pipeline
 with an NLL term gives a writer whose held-out programs the editor
-changes further. With two training seeds, that is +0.24 and +0.43 changes
-before the first failure against the original writer, and +0.22 and +0.41
-against fine-tuning on the same programs without the editing outcomes. The
-cost is 11 to 22 points of initial correctness.
+changes further. With three training seeds, that is +0.24, +0.43 and
++0.45 changes before the first failure against the original writer, and
++0.22, +0.41 and +0.41 against fine-tuning on the same programs without
+the editing outcomes. The cost is 11 to 22 points of initial correctness. The worked example the
+training samples were drawn with, given at eval time instead, does at
+least as well on programs that pass, but only through one design and with
+most of its samples failing.
 
 ## Reproducibility and artifacts
 
@@ -644,10 +813,17 @@ cost is 11 to 22 points of initial correctness.
   `label-noise-v1`, `editing-all-v1`), with manifests and provenance.
 - Results pages: `harness/results/` (one per method, the comment
   ablation, `diagnostics.md` with every probe and control and their
-  reproduce commands, `hist2_eval.md` for §7); figures in
+  reproduce commands, `hist2_eval.md` for §7.1 to §7.3, `foresight.md`
+  for §7.4); figures in
   `harness/results/figures/` (`scripts/report_figures.py`).
 - The history suite: tasks and the record of every decision in
   `harness/tasks/HISTORY_SUITE.md`; its design probe in
-  `harness/results/design_probe/hist_cargo_holds/`.
+  `harness/results/design_probe/hist_cargo_holds/`. Its results were
+  collected with the files of six tasks (coin_vaults, grain_silos,
+  rehearsal_setlists, server_racks, mail_bins, wine_cellar) as they were
+  before commit c066f99, which later added Usage sections to their
+  reference and bug files. The models never see those files, but stored
+  results are keyed by a hash of every task file, so reading them back
+  needs `git checkout c066f99^ -- harness/tasks/<task>` for those six.
 - Running log of all experiments, settings and costs:
   `docs/progress_report.md`.
