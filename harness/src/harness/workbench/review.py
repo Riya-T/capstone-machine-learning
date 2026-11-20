@@ -268,7 +268,11 @@ def compiled_files(source, raw_source, cases_raw, annotation_raw):
                 ),
             ]
             rows.append(
-                "<tr>" + "".join(f"<td>{html.escape(value)}</td>" for value in values) + "</tr>"
+                '<tr><td class="digest">'
+                + html.escape(values[0])
+                + "</td>"
+                + "".join(f"<td>{html.escape(value)}</td>" for value in values[1:])
+                + "</tr>"
             )
     detail = (
         '<p><a href="annotations.csv">All annotations</a> · '
