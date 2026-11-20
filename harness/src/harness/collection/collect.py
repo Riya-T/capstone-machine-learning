@@ -24,12 +24,14 @@ Usage:
 
 from __future__ import annotations
 
+import dataclasses
 import logging
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
 from ..config import ExperimentConfig
+from ..foresight import fill_hint, prune_program
 from ..models.backends import BackendError, CachedBackend, derive_seed, make_backend
 from ..models.parser import parse_program
 from ..registry import (
@@ -222,24 +224,34 @@ def _write_samples(cfg, store: Store, task: Task, prompt: str, keys: Keys, stats
             make_backend(cfg.writer.backend, derive_seed(cfg.seed, task.id, "writer", i)), store
         )
         # Keyed by the plain prompt; a design hint changes only what is sent.
-        sent = add_design_hint(prompt, hints[i % len(hints)]) if hints else prompt
+        # A hint with $later_changes gets this task's change requests.
+        hint = fill_hint(hints[i % len(hints)], task) if hints else ""
+        sent = add_design_hint(prompt, hint)
         start = time.monotonic()
         try:
-            answer = backend.generate(sent)
+            parsed, usages = _ask(backend, sent, task), [backend.last_usage]
+            # With a prune prompt, a hinted sample's program goes back to the
+            # writer to be pared down, and the candidate is the second program.
+            if cfg.writer.prune_prompt and hint.strip() and parsed.ok:
+                again = fill_hint(cfg.writer.prune_prompt, task, parsed.files)
+                parsed = _ask(backend, add_design_hint(prompt, again), task)
+                usages.append(backend.last_usage)
+            # With prune_names, what only the later changes name is cut out.
+            if cfg.writer.prune_names and hint.strip() and parsed.ok:
+                parsed = dataclasses.replace(parsed, files=prune_program(parsed.files, task))
         except BackendError as exc:
             log.warning("%s sample %d: writer call failed (retried next run): %s", task.id, i, exc)
             stats.infra_errors += 1
             continue
         stats.model_calls += backend.model_calls
-        usage = backend.last_usage
-        parsed = parse_program(answer, task.entry_files, usage.finish_reason if usage else None)
+        usages = [u for u in usages if u]
         store.record_candidate(
             Candidate(
                 key=key,
                 candidate_id=store.put_blob(parsed.files) if parsed.ok else None,
                 parse_error=None if parsed.ok else str(parsed.failure),
-                tokens_in=usage.prompt_tokens if usage else None,
-                tokens_out=usage.completion_tokens if usage else None,
+                tokens_in=sum(u.prompt_tokens or 0 for u in usages) if usages else None,
+                tokens_out=sum(u.completion_tokens or 0 for u in usages) if usages else None,
                 wall_s=time.monotonic() - start,
                 run_id=stats.run_id,
                 call_key=backend.last_key,
@@ -247,6 +259,13 @@ def _write_samples(cfg, store: Store, task: Task, prompt: str, keys: Keys, stats
         )
         stats.samples_recorded += 1
         log.info("%s sample %d: %s", task.id, i, "parsed" if parsed.ok else parsed.failure)
+
+
+def _ask(backend: CachedBackend, sent: str, task: Task):
+    """The writer's answer to `sent`, parsed."""
+    answer = backend.generate(sent)
+    usage = backend.last_usage
+    return parse_program(answer, task.entry_files, usage.finish_reason if usage else None)
 
 
 def _distinct_programs(store: Store, task: Task, prompt: str, keys: Keys) -> list[str]:

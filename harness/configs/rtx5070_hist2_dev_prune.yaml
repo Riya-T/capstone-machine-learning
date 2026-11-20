@@ -1,0 +1,51 @@
+# Foresight's fallback, gated on the history suite's 4 dev tasks. The
+# foresight gate (rtx5070_hist2_dev_foresight.yaml) failed: told not to
+# implement the later changes, the writer implemented them anyway (13 of 14
+# passing programs) and passed the initial checks half as often. Here every
+# writer sample is asked for the final version, with the specification and
+# every later change implemented, and that program then goes back to the
+# writer, which deletes what only the changes need and keeps the rest
+# (config.WriterConfig.prune_prompt). The candidate is the pared-down
+# program, keyed by the plain prompt as before. Compared with the plain
+# programs of rtx5070_hist2_dev.yaml by scripts/foresight_gate.py, which
+# still leaves out programs that define a name only a later change asks for.
+#
+# Rule, fixed before the run (docs/progress_report.md, 2026-11-19): train
+# foresight writers on the history suite with this two-step sampling if the
+# pared-down programs that don't implement a later change early score at
+# least 0.1 changes per sequence above the plain programs on these tasks
+# (point estimate), and at least half as many of these samples as plain
+# ones pass the initial checks.
+#
+# Usage (from harness/, inside WSL):
+#     uv run python -m harness collect --config configs/rtx5070_hist2_dev_prune.yaml
+#     uv run python scripts/foresight_gate.py --plain configs/rtx5070_hist2_dev.yaml \
+#         --foresight configs/rtx5070_hist2_dev_prune.yaml
+extends: rtx5070_hist2_dev.yaml
+name: rtx5070-hist2-dev-prune
+writer:
+  design_hints:
+    - |-
+      After this first version, the changes below will be requested, one at
+      a time and in some order. Write the final version now: the
+      specification above together with every one of these changes, as if
+      all of them had already been requested.
+
+      $later_changes
+  prune_prompt: |-
+    Below is a version of this program that implements the specification
+    above together with the later changes listed after it. Those changes
+    will only be requested later, one at a time. Starting from this version,
+    write the first version: delete every method, class, argument, check and
+    behavior that only one of these changes asks for, so that the program
+    does exactly what the specification above says. Keep everything else as
+    it is, including how the program stores its data and any records it
+    keeps, so that each change will be easy to add back later.
+
+    ### Version with the later changes
+
+    $program
+
+    ### Later changes
+
+    $later_changes

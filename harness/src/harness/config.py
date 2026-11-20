@@ -150,11 +150,25 @@ class WriterConfig:
     # section (an empty hint sends the plain prompt). Candidates are still
     # keyed, and pairs still carry, the plain prompt, so a writer trained on
     # them learns the preferred designs without being told. Left out of the
-    # writer key when empty, so earlier samples keep their key.
+    # writer key when empty, so earlier samples keep their key. A hint's
+    # $later_changes is replaced by the task's change requests (foresight.py);
+    # the key covers the hint, not the requests it is filled with.
     design_hints: tuple[str, ...] = ()
+    # Foresight's fallback (foresight.py): a sample sent a non-empty hint is
+    # then sent this text as the Design section instead, with $program
+    # replaced by the program of its first answer (and $later_changes as
+    # above), and the candidate is the program of this second answer. Left
+    # out of the writer key when empty.
+    prune_prompt: str = ""
+    # The other way to pare a hinted sample's program down: delete what only
+    # the task's later changes name (foresight.prune_program), with no second
+    # call. Left out of the writer key when false.
+    prune_names: bool = False
 
     def __post_init__(self) -> None:
         _require_positive(self.samples_per_task, "samples_per_task")
+        if self.prune_prompt and self.prune_names:
+            raise ConfigError("writer: set prune_prompt or prune_names, not both")
 
 
 @dataclass(frozen=True)

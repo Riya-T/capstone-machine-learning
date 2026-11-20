@@ -6,7 +6,9 @@ worked on and the preference pairs were built from), and writes one
 {"task_id", "candidate_id", "prompt", "completion"} row per program, the
 completion rendered as in the preference pairs. With --tasks-from, only the
 tasks of that pairs file are used, so the baseline sees the same tasks and
-programs as our writer but no editing outcomes.
+programs as our writer but no editing outcomes. With --hinted-only, only
+samples that were sent a non-empty design hint count (for foresight-SFT,
+the samples that saw the task's later changes).
 
 This reads the existing collection store only; it runs no models or sandboxes.
 
@@ -40,6 +42,11 @@ def main() -> None:
         "--dataset", help="write to harness/data/DATASET/sft_programs.jsonl instead"
     )
     parser.add_argument("--tasks-from", type=Path, help="pairs JSONL whose tasks to keep")
+    parser.add_argument(
+        "--hinted-only",
+        action="store_true",
+        help="keep only samples that were sent a non-empty design hint",
+    )
     args = parser.parse_args()
     if (args.out is None) == (args.dataset is None):
         parser.error("give --out or --dataset, not both")
@@ -55,6 +62,10 @@ def main() -> None:
         wanted = {json.loads(line)["task_id"] for line in lines}
         tasks = {task_id: task for task_id, task in tasks.items() if task_id in wanted}
 
+    hints = cfg.writer.design_hints
+    if args.hinted_only and not any(hints):
+        parser.error("--hinted-only needs a config with design hints")
+
     rows = []
     with Store(cfg.runs_dir) as store:
         for task in tasks.values():
@@ -63,6 +74,9 @@ def main() -> None:
             for sample in store.candidates(task.id, prompt_version(prompt), keys.writer):
                 candidate_id = sample.candidate_id
                 if candidate_id is None or candidate_id in seen:
+                    continue
+                # Sample i was sent hint i mod n (collect._write_samples).
+                if args.hinted_only and not hints[sample.key.sample_idx % len(hints)]:
                     continue
                 seen.add(candidate_id)
                 check = store.get_initial_check(

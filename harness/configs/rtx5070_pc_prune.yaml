@@ -1,0 +1,51 @@
+# Foresight's fallback on the original testbed's 8 dev tasks: the two-step
+# sampling of rtx5070_hist2_dev_prune.yaml (final version first, then pared
+# down by the writer, keeping the structure that supports the changes),
+# with the same prompts byte for byte. It replaces rtx5070_pc_foresight.yaml,
+# whose instruction not to implement the changes the writer didn't follow
+# on the history suite; that gate was stopped. Compared with the plain
+# programs of rtx5070_pc.yaml by scripts/foresight_gate.py, 2 reps per
+# sequence.
+#
+# Rule, fixed before the run (docs/progress_report.md, 2026-11-19), as for
+# rtx5070_pc_foresight.yaml: train foresight writers on this testbed if the
+# pared-down programs that don't implement a later change early either
+# score at least 0.1 changes per sequence above the plain programs on these
+# tasks (point estimate), or have a program share of the variance of at
+# least 10% and above the plain programs'; and in either case at least half
+# as many of these samples as plain ones pass the initial checks.
+#
+# Usage (from harness/, inside WSL):
+#     uv run python -m harness collect --config configs/rtx5070_pc_prune.yaml
+#     uv run python scripts/foresight_gate.py --plain configs/rtx5070_pc.yaml \
+#         --foresight configs/rtx5070_pc_prune.yaml
+extends: rtx5070_pc.yaml
+name: rtx5070-pc-prune
+writer:
+  design_hints:
+    - |-
+      After this first version, the changes below will be requested, one at
+      a time and in some order. Write the final version now: the
+      specification above together with every one of these changes, as if
+      all of them had already been requested.
+
+      $later_changes
+  prune_prompt: |-
+    Below is a version of this program that implements the specification
+    above together with the later changes listed after it. Those changes
+    will only be requested later, one at a time. Starting from this version,
+    write the first version: delete every method, class, argument, check and
+    behavior that only one of these changes asks for, so that the program
+    does exactly what the specification above says. Keep everything else as
+    it is, including how the program stores its data and any records it
+    keeps, so that each change will be easy to add back later.
+
+    ### Version with the later changes
+
+    $program
+
+    ### Later changes
+
+    $later_changes
+editor:
+  reps: 2

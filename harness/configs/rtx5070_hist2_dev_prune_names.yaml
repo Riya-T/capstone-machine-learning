@@ -1,0 +1,38 @@
+# Foresight's fallback with the deletion done by code instead of the writer,
+# on the history suite's 4 dev tasks. Same first prompt as
+# rtx5070_hist2_dev_prune.yaml (the final version, with every later change
+# implemented; its answers are cached, so no new writer calls), but the
+# program is then pared down by foresight.prune_program: every function,
+# method and class whose name only a later change asks for is cut out, with
+# every one-line guard that raises one of those classes, and the rest stays
+# as the writer wrote it. Added because the writer's own deletion, in the
+# first pruned seed_vault programs we looked at (before any were edited),
+# took out the history along with undo, which leaves a plain program; the
+# proposal keeps the structure that supports the changes. Compared with the
+# plain programs of rtx5070_hist2_dev.yaml by scripts/foresight_gate.py,
+# which still leaves out programs where a later change's name survives.
+#
+# Rule, fixed before the run (docs/progress_report.md, 2026-11-19): the same
+# as for rtx5070_hist2_dev_prune.yaml. Pared-down programs that don't
+# implement a later change early must score at least 0.1 changes per
+# sequence above the plain programs (point estimate), and at least half as
+# many of these samples as plain ones must pass the initial checks. If both
+# fallbacks pass, the training collection uses the one whose programs score
+# higher on these tasks.
+#
+# Usage (from harness/, inside WSL):
+#     uv run python -m harness collect --config configs/rtx5070_hist2_dev_prune_names.yaml
+#     uv run python scripts/foresight_gate.py --plain configs/rtx5070_hist2_dev.yaml \
+#         --foresight configs/rtx5070_hist2_dev_prune_names.yaml
+extends: rtx5070_hist2_dev.yaml
+name: rtx5070-hist2-dev-prune-names
+writer:
+  design_hints:
+    - |-
+      After this first version, the changes below will be requested, one at
+      a time and in some order. Write the final version now: the
+      specification above together with every one of these changes, as if
+      all of them had already been requested.
+
+      $later_changes
+  prune_names: true

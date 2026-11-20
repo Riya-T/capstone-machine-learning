@@ -1,0 +1,33 @@
+# Foresight gate on the history suite's 4 dev tasks: the hint of
+# rtx5070_pc_foresight.yaml (the task's later change requests, not to be
+# implemented yet) on every writer sample, instead of the hand-written copy
+# design example of rtx5070_hist_train_hints2.yaml. Compared with the plain
+# programs of rtx5070_hist2_dev.yaml (same tasks, seeds and editor) by
+# scripts/foresight_gate.py. One rep per sequence, as in every history-suite
+# collection, so there is no program share here.
+#
+# Rule, fixed before the run (docs/progress_report.md, 2026-11-19): train
+# foresight writers on the history suite if the foresight programs that
+# don't implement a later change early score at least 0.1 changes per
+# sequence above the plain programs on these tasks (point estimate), and at
+# least half as many foresight samples as plain ones pass the initial
+# checks.
+#
+# Usage (from harness/, inside WSL):
+#     uv run python -m harness collect --config configs/rtx5070_hist2_dev.yaml
+#     uv run python -m harness collect --config configs/rtx5070_hist2_dev_foresight.yaml
+#     uv run python scripts/foresight_gate.py --plain configs/rtx5070_hist2_dev.yaml \
+#         --foresight configs/rtx5070_hist2_dev_foresight.yaml
+extends: rtx5070_hist2_dev.yaml
+name: rtx5070-hist2-dev-foresight
+writer:
+  design_hints:
+    - |-
+      Once this first version is accepted, the changes below will be
+      requested, one at a time and in some order. Do not implement any of
+      them now: write only what the specification above asks for, and add no
+      method, class, argument or behavior that only one of these changes asks
+      for. But design this first version so that each of these changes will
+      be easy to add later, without rewriting what is already there.
+
+      $later_changes

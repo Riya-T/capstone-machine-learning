@@ -1,0 +1,37 @@
+# Foresight gate on the original testbed's 8 dev tasks. Every writer sample
+# is sent its task's later change requests (harness/foresight.py) with an
+# instruction not to implement them yet but to make them easy to add. The
+# candidates keep the plain prompt's key, so a writer trained on them has to
+# write this way without seeing the future (context distillation). Compared
+# with the plain programs of rtx5070_pc.yaml (same tasks, seeds and editor)
+# by scripts/foresight_gate.py. Two reps per sequence instead of 3 keep the
+# cost near 5 GPU-hours and still give the program share of the score
+# variance; the gate reads the plain store's first 2 reps as well.
+#
+# Rule, fixed before the run (docs/progress_report.md, 2026-11-19): train
+# foresight writers on this testbed if the foresight programs that don't
+# implement a later change early (harness/foresight.py) either score at
+# least 0.1 changes per sequence above the plain programs on these tasks
+# (point estimate), or have a program share of the variance of at least 10%
+# and above the plain programs'; and in either case at least half as many
+# foresight samples as plain ones pass the initial checks.
+#
+# Usage (from harness/, inside WSL):
+#     uv run python -m harness collect --config configs/rtx5070_pc_foresight.yaml
+#     uv run python scripts/foresight_gate.py --plain configs/rtx5070_pc.yaml \
+#         --foresight configs/rtx5070_pc_foresight.yaml
+extends: rtx5070_pc.yaml
+name: rtx5070-pc-foresight
+writer:
+  design_hints:
+    - |-
+      Once this first version is accepted, the changes below will be
+      requested, one at a time and in some order. Do not implement any of
+      them now: write only what the specification above asks for, and add no
+      method, class, argument or behavior that only one of these changes asks
+      for. But design this first version so that each of these changes will
+      be easy to add later, without rewriting what is already there.
+
+      $later_changes
+editor:
+  reps: 2

@@ -1,0 +1,47 @@
+# History suite, train tasks, with foresight instead of the worked example:
+# rtx5070_hist_train_hints2.yaml (16 samples per task, 5 turns, 1 rep, three
+# quarters of the samples hinted) with the two-step sampling of
+# rtx5070_hist2_dev_prune.yaml: a hinted sample asks for the final version,
+# with every later change of the task implemented, and the writer then pares
+# that program down to the first version, keeping the structure that
+# supports the changes. The only difference from D's training collection is
+# how the hinted samples are drawn. Pairs and SFT rows keep the plain prompt,
+# so the writers trained on them (foresight DPO+NLL and foresight-SFT) have
+# to write that way without seeing the future. Programs that still implement
+# a later change early are dropped from both (scripts/drop_early.py).
+# Collected only if the history-suite fallback gate passes
+# (docs/progress_report.md, 2026-11-19).
+#
+# Usage (from harness/, inside WSL):
+#     uv run python -m harness collect --config configs/rtx5070_hist_train_foresight.yaml
+extends: rtx5070_hist_train_hints2.yaml
+name: rtx5070-hist-train-foresight
+writer:
+  design_hints:
+    - ""
+    - &final |-
+      After this first version, the changes below will be requested, one at
+      a time and in some order. Write the final version now: the
+      specification above together with every one of these changes, as if
+      all of them had already been requested.
+
+      $later_changes
+    - *final
+    - *final
+  prune_prompt: |-
+    Below is a version of this program that implements the specification
+    above together with the later changes listed after it. Those changes
+    will only be requested later, one at a time. Starting from this version,
+    write the first version: delete every method, class, argument, check and
+    behavior that only one of these changes asks for, so that the program
+    does exactly what the specification above says. Keep everything else as
+    it is, including how the program stores its data and any records it
+    keeps, so that each change will be easy to add back later.
+
+    ### Version with the later changes
+
+    $program
+
+    ### Later changes
+
+    $later_changes

@@ -7,6 +7,7 @@ Usage:
 """
 
 import dataclasses
+import re
 from pathlib import Path
 
 import pytest
@@ -21,6 +22,7 @@ from harness.collection.collect import (
 )
 from harness.collection.editor import Editor
 from harness.config import BackendConfig, load_config
+from harness.foresight import later_change_names, prune_program
 from harness.models.parser import render_program
 from harness.registry import build_writer_prompt, load_tasks, load_template
 from harness.registry import prompt_version as prompt_version_of
@@ -114,3 +116,104 @@ def test_design_hints_change_what_is_sent_but_not_the_candidate_key(tmp_path):
         ]
         assert ids == [store.put_blob(plain), store.put_blob(hinted)] * 2
         assert _distinct_programs(store, TASK, prompt, keys) == ids[:2]
+
+
+def test_a_later_changes_hint_sends_the_tasks_change_requests(tmp_path):
+    # Only the sent prompt holds the requests; the candidate keeps the plain key.
+    plain = dict(TASK.reference)
+    foresight = {path: text + b"# ready for later\n" for path, text in plain.items()}
+    request = next(iter(TASK.changes.values())).request.strip()
+    fixtures = tmp_path / "writer.yaml"
+    rules = [
+        {"match": re.escape(f"Coming:\n\n### Change 1\n\n{request}"),
+         "responses": [{"text": render_program(foresight)}]},
+        {"match": "", "responses": [{"text": render_program(plain)}]},
+    ]  # fmt: skip
+    fixtures.write_text(yaml.safe_dump({"rules": rules}))
+    backend = BackendConfig(
+        kind="mock", model="m", temperature=0.7, max_tokens=99, fixtures=fixtures
+    )
+    writer = dataclasses.replace(
+        CFG.writer, backend=backend, samples_per_task=1, design_hints=("Coming:\n\n$later_changes",)
+    )
+    cfg = dataclasses.replace(CFG, runs_dir=tmp_path / "runs", writer=writer)
+    prompt = build_writer_prompt(TASK.writer_view(), load_template(cfg.writer.prompt_template))
+    assert request not in prompt
+    with Store(cfg.runs_dir) as store:
+        stats = CollectStats(run_id=store.start_run(cfg))
+        _write_samples(cfg, store, TASK, prompt, Keys("w", "e", "s"), stats)
+        key = CandidateKey(TASK.id, prompt_version_of(prompt), "w", 0)
+        assert store.get_candidate(key).candidate_id == store.put_blob(foresight)
+
+
+def test_a_prune_prompt_sends_the_hinted_program_back_and_keeps_the_second(tmp_path):
+    # The plain sample is not pruned; the hinted one is asked for the final
+    # version, then pared down from it, and the candidate is the pared program.
+    plain = dict(TASK.reference)
+    final = {path: text + b"def undo():\n    pass\n" for path, text in plain.items()}
+    pared = {path: text + b"# history kept\n" for path, text in plain.items()}
+    fixtures = tmp_path / "writer.yaml"
+    rules = [
+        {"match": re.escape("Pare down:\n\n" + render_program(final).rstrip()),
+         "responses": [{"text": render_program(pared)}]},
+        {"match": "## Design\n\nFinal", "responses": [{"text": render_program(final)}]},
+        {"match": "", "responses": [{"text": render_program(plain)}]},
+    ]  # fmt: skip
+    fixtures.write_text(yaml.safe_dump({"rules": rules}))
+    backend = BackendConfig(
+        kind="mock", model="m", temperature=0.7, max_tokens=99, fixtures=fixtures
+    )
+    writer = dataclasses.replace(
+        CFG.writer,
+        backend=backend,
+        samples_per_task=2,
+        design_hints=("", "Final: $later_changes"),
+        prune_prompt="Pare down:\n\n$program",
+    )
+    cfg = dataclasses.replace(CFG, runs_dir=tmp_path / "runs", writer=writer)
+    prompt = build_writer_prompt(TASK.writer_view(), load_template(cfg.writer.prompt_template))
+    with Store(cfg.runs_dir) as store:
+        stats = CollectStats(run_id=store.start_run(cfg))
+        _write_samples(cfg, store, TASK, prompt, Keys("w", "e", "s"), stats)
+        pv = prompt_version_of(prompt)
+        ids = [
+            store.get_candidate(CandidateKey(TASK.id, pv, "w", i)).candidate_id for i in range(2)
+        ]
+        assert ids == [store.put_blob(plain), store.put_blob(pared)]
+        assert stats.model_calls == 3
+
+
+def test_prune_names_cuts_the_later_changes_out_of_the_hinted_program(tmp_path):
+    # No second call: the hinted sample's final version loses the function
+    # only a later change asks for.
+    plain = dict(TASK.reference)
+    later = min(later_change_names(TASK)).encode()
+    final = {path: text + b"\n\ndef " + later + b"():\n    pass\n" for path, text in plain.items()}
+    fixtures = tmp_path / "writer.yaml"
+    rules = [
+        {"match": "## Design\n\nFinal", "responses": [{"text": render_program(final)}]},
+        {"match": "", "responses": [{"text": render_program(plain)}]},
+    ]
+    fixtures.write_text(yaml.safe_dump({"rules": rules}))
+    backend = BackendConfig(
+        kind="mock", model="m", temperature=0.7, max_tokens=99, fixtures=fixtures
+    )
+    writer = dataclasses.replace(
+        CFG.writer,
+        backend=backend,
+        samples_per_task=2,
+        design_hints=("", "Final: $later_changes"),
+        prune_names=True,
+    )
+    cfg = dataclasses.replace(CFG, runs_dir=tmp_path / "runs", writer=writer)
+    prompt = build_writer_prompt(TASK.writer_view(), load_template(cfg.writer.prompt_template))
+    with Store(cfg.runs_dir) as store:
+        stats = CollectStats(run_id=store.start_run(cfg))
+        _write_samples(cfg, store, TASK, prompt, Keys("w", "e", "s"), stats)
+        pv = prompt_version_of(prompt)
+        ids = [
+            store.get_candidate(CandidateKey(TASK.id, pv, "w", i)).candidate_id for i in range(2)
+        ]
+        assert ids == [store.put_blob(plain), store.put_blob(prune_program(final, TASK))]
+        assert ids[1] != store.put_blob(final)
+        assert stats.model_calls == 2

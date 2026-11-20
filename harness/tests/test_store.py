@@ -147,6 +147,17 @@ def test_writer_key_leaves_out_empty_design_hints(repo):
     assert keys(repo)[0] != before[0]
 
 
+def test_writer_key_leaves_out_an_empty_prune_prompt_and_false_prune_names(repo):
+    before = keys(repo)
+    edit_config(repo, lambda d: d["writer"].update(prune_prompt="", prune_names=False))
+    assert keys(repo) == before
+    edit_config(repo, lambda d: d["writer"].update(prune_prompt="Pare down: $program"))
+    prompted = keys(repo)
+    assert prompted == (prompted[0], before[1], before[2]) and prompted[0] != before[0]
+    edit_config(repo, lambda d: d["writer"].update(prune_prompt="", prune_names=True))
+    assert keys(repo)[0] not in (before[0], prompted[0])
+
+
 def test_editor_key_changes_when_only_the_editor_template_contents_change(repo):
     writer, editor, sandbox = keys(repo)
     (repo.parent / "editor.md").write_text("$request $files $feedback $allowed_files $turns_left!")

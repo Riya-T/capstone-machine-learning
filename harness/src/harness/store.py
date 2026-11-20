@@ -107,12 +107,14 @@ def writer_cfg_hash(cfg: ExperimentConfig) -> str:
 
     samples_per_task is left out: sample i is the same whatever the total
     (its seed depends only on i), so raising the count keeps every sample
-    already collected and only adds new ones. design_hints is left out when
-    empty: it was added after samples were collected, and those keep their key.
+    already collected and only adds new ones. design_hints, prune_prompt and
+    prune_names are left out when empty or false: they were added after
+    samples were collected, and those keep their key.
     """
     writer = _without(canonical(cfg.writer, cfg.base_dir), "samples_per_task")
-    if not writer["design_hints"]:
-        del writer["design_hints"]
+    for name in ("design_hints", "prune_prompt", "prune_names"):
+        if not writer[name]:
+            del writer[name]
     return _hash_json({"writer": writer, "files": _input_file_hashes(cfg.writer, cfg.base_dir)})
 
 
