@@ -1,0 +1,17 @@
+# Maintainability-prompt baseline on the history suite, on the Nexus
+# cluster: the base writer on the 10 history-suite eval tasks with the
+# prompt that also asks for clean, maintainable code that will be changed
+# later (prompts/writer_maintainable_v1.md; otherwise identical to
+# writer_v1.md). Everything else is as in nexus_hist2_eval.yaml, whose base
+# writer is its reference point.
+#
+# Usage (from harness/, on the submission node):
+#     sbatch --time=24:00:00 \
+#         --export=ALL,OLLAMA_FLASH_ATTENTION=1,OLLAMA_KV_CACHE_TYPE=q8_0 \
+#         scripts/collect_nexus.sbatch configs/nexus_hist2_eval_maintain.yaml
+#     uv run python scripts/eval_compare.py --base configs/nexus_hist2_eval.yaml \
+#         --other configs/nexus_hist2_eval_maintain.yaml
+extends: nexus_hist2_eval.yaml
+name: nexus-hist2-eval-maintain
+writer:
+  prompt_template: ../prompts/writer_maintainable_v1.md

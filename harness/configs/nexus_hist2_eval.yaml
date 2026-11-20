@@ -1,0 +1,29 @@
+# History-suite eval tasks on the UMIACS Nexus cluster: the settings of
+# rtx5070_hist2_eval.yaml (10 eval tasks, editor_v3.md, 5 turns, one trial
+# per sequence, 180 s sandbox timeout), with the cluster's Ollama and the
+# Apptainer sandbox of nexus.yaml.
+#
+# Results here are not pooled with the PC's: the sandbox image id differs,
+# so every check and trial is computed afresh in its own store. Run with the
+# base writer as the cluster's own reference point, so that a history-suite
+# baseline run here (e.g. nexus_hist2_eval_maintain.yaml) is compared under
+# the same conditions.
+#
+# Ollama on the PC runs with flash attention and an 8-bit KV cache
+# (rtx5070_pc.yaml); pass the same at submission so the cluster serves the
+# models the same way.
+#
+# Usage (from harness/, on the submission node):
+#     sbatch --time=24:00:00 \
+#         --export=ALL,OLLAMA_FLASH_ATTENTION=1,OLLAMA_KV_CACHE_TYPE=q8_0 \
+#         scripts/collect_nexus.sbatch configs/nexus_hist2_eval.yaml
+extends: rtx5070_hist2_eval.yaml
+name: nexus-hist2-eval
+runs_dir: ../runs/nexus_hist   # its own store: Apptainer results never mix with the PC's
+writer:
+  backend:
+    request_timeout_s: 600     # as in nexus.yaml
+execution:
+  sandbox_runtime: apptainer
+  apptainer_image: ../runs/images/harness-sandbox_py3.11-v1.sif   # as in nexus.yaml
+  sandbox_workers: 6           # the job has 8 CPUs; Ollama and the harness need the rest
