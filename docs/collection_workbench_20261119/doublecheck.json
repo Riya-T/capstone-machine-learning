@@ -1,0 +1,118 @@
+{
+  "changed_source_sha256_lf_normalized": {
+    "harness/src/harness/workbench/cli.py": "d7ab43460a94deedbf1de4bd571f57cf451b92d622fe954016284967114f7dbc",
+    "harness/tests/workbench/test_cli.py": "0d3c55cf1ffab7389cbbaaad9369e1f0555a2b4a0131a26935f2b59599db712d"
+  },
+  "commit_history_inspection": {
+    "excluded_raw_artifact_extensions_absent": true,
+    "limitation": "A targeted inspection, not a guarantee against every possible private string; ordinary Git author identity remains.",
+    "paths": 37,
+    "searched_machine_path_and_key_markers": 0
+  },
+  "fresh_checks": {
+    "linux-final.xml": {
+      "cases": 120,
+      "failed": 0,
+      "passed": 118,
+      "sha256": "100954dc32e6c59f64b09bfd1690eb3bfdca9570bcbbdad43871524c6214f06e",
+      "skipped": 2
+    },
+    "manifest-regression.xml": {
+      "cases": 14,
+      "failed": 0,
+      "passed": 14,
+      "sha256": "13df9b6bec58bffadda0ddad383bfa7e0ebb9e71565c56a6a122f6c6a899af33",
+      "skipped": 0
+    },
+    "windows-final.xml": {
+      "cases": 98,
+      "failed": 0,
+      "passed": 97,
+      "sha256": "b4b1ed55d533e8aec6ecb84a717860e97cdaf6a9c3c4f3ed56b42855a804e9d7",
+      "skipped": 1
+    }
+  },
+  "historical_receipts_unchanged": true,
+  "lint": {
+    "passed": true,
+    "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+  },
+  "manifest_control": {
+    "fixed_code_rejects_before_config_read": true,
+    "output_not_created": true,
+    "prior_code_reproduces_boolean_version_defect": true
+  },
+  "new_experimental_model_calls": 0,
+  "only_source_changes_since_extension_receipt": [
+    "harness/src/harness/workbench/cli.py",
+    "harness/tests/workbench/test_cli.py"
+  ],
+  "prior_full_suite_not_rerun_for_cli_only_fix": true,
+  "protected_git_objects": {
+    ".github/workflows/tests.yml": "c3707c286cb46a5bf8b9ca4b1c96df69ea5b2f94",
+    "docs/collection_workbench_20261119/validation.json": "db999f0e5023aa78b633cea69372e8582c214b58",
+    "docs/final_report.md": "5e146e3c4952f75aa01d9cda8caa22be6f771423",
+    "docs/progress_report.md": "dffd005acb7e46e177b61bd8310c3ad313031334",
+    "harness/data": "b8e6ac01bb133fe21bded987609b3a598daf6484",
+    "harness/prompts": "74be222bbfa177e9981afd0433b0337ebadbc125",
+    "harness/pyproject.toml": "f7e43acdc9bcd23f4726e82c63c910243ee04d72",
+    "harness/results": "3fe095c36882d98a0a806211ada18f23fac17cd6",
+    "harness/src/harness/collection": "ff0239bf9f280333020d294a41e15538b2846fa7",
+    "harness/src/harness/config.py": "d1ce664200ae45868017436c23c1f503fbbc8aa7",
+    "harness/src/harness/models": "f3e563e589260709c45ccc3b7d9142ac65e10ad0",
+    "harness/src/harness/registry.py": "d7a04c35213d83aa159b676421f78f228ae35ff0",
+    "harness/src/harness/sandbox": "24f0d04301c782f5b45d1df954828f566dc4058c",
+    "harness/src/harness/store.py": "0399e748552a589c97af9367ee8b5f7a1ab944c3",
+    "harness/src/harness/train_dpo.py": "c0041a61ce2c1ab9ebba574d5ab523f731078ec5",
+    "harness/src/harness/train_sft.py": "5825686c58c2e0f53a0ee3930eb6e558380f00b3",
+    "harness/tasks": "9347e9cb91226624b3f82c0f4777a8a7130d0374",
+    "harness/uv.lock": "4c6ebfb34884aa2614d5eb2e2509ec71f62b7269"
+  },
+  "pushes": 0,
+  "reviewed_commit": "58989c09223f40fba55110cdb4020aa14ea32b98",
+  "saved_bundle_verification": [
+    {
+      "bundle": "collection_workbench_20261119/final-demo/report",
+      "files": 10,
+      "unchanged": true,
+      "verified": true
+    },
+    {
+      "bundle": "collection_workbench_extensions_20261119/demo-final/report",
+      "files": 10,
+      "unchanged": true,
+      "verified": true
+    },
+    {
+      "bundle": "collection_workbench_extensions_20261119/demo-final/checkpoints",
+      "files": 9,
+      "unchanged": true,
+      "verified": true
+    },
+    {
+      "bundle": "collection_workbench_extensions_20261119/demo-final/review",
+      "files": 8,
+      "unchanged": true,
+      "verified": true
+    },
+    {
+      "bundle": "collection_workbench_extensions_20261119/demo-final/unreviewed",
+      "files": 8,
+      "unchanged": true,
+      "verified": true
+    },
+    {
+      "bundle": "collection_workbench_extensions_20261119/demo-final/disagreement-demo",
+      "files": 8,
+      "unchanged": true,
+      "verified": true
+    },
+    {
+      "bundle": "collection_workbench_extensions_20261119/demo-final/unfinished-report",
+      "files": 10,
+      "unchanged": true,
+      "verified": true
+    }
+  ],
+  "training_runs": 0
+}
