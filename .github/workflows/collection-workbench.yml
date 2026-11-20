@@ -57,7 +57,10 @@ jobs:
       - name: Exercise the labeled investigation walkthrough
         run: uv run python examples/collection_workbench.py --out runs/ci-investigation-demo --investigate
       - name: Lint this contribution
-        run: uv run ruff check src/harness/workbench tests/workbench examples/collection_workbench.py
+        run: >-
+          uv run ruff check src/harness/workbench tests/workbench examples/collection_workbench.py
+          src/harness/evaluation/review.py src/harness/evaluation/seeds.py
+          src/harness/evaluation/artifacts.py
       - name: Build the normal sandbox on Linux
         if: matrix.os == 'ubuntu-latest'
         run: docker build -t harness-sandbox:py3.11-v1 docker/sandbox

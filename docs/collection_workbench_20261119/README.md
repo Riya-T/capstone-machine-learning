@@ -1,5 +1,9 @@
 # Push review: collection results workbench
 
+This records the initial version at `dad0165`. The
+[investigation extensions](extensions.md) add failure review and checkpoint
+summaries with separate validation evidence; the receipt below is historical.
+
 **A useful standalone software contribution is ready for branch review.**
 It connects the team's actual multi-sample collection runs to portable,
 auditable reporting. No new experiment, training result or preference label

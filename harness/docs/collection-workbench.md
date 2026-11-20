@@ -97,6 +97,10 @@ averages checkpoints within each family before averaging families. It
 reuses the earlier evaluator's checkpoint engine. Multiple checkpoints in
 one group require distinct declared training seeds and configured writer
 identities. Those identities are not authenticated weight digests.
+Only group checkpoints from the same training procedure. Group membership
+is declared by the caller; this tool cannot recover training hyperparameters
+or verify adapter weights from inference tags. Keep the correctness-only
+control in its own group.
 
 The default population is the source report's common selected cohort.
 `--population all-planned` keeps every planned family instead; inapplicable
@@ -114,7 +118,10 @@ the tool cannot detect omitted checkpoints.
 
 An incomplete requested summary is still saved but exits `3` with
 `analysis_complete: false`. That is different from claiming that a completed
-inference run failed. No automatic winner or training label is produced.
+inference run failed. Completeness here requires both the initial-pass and
+selected-editing comparisons, along with any declared seed coverage. Exact
+per-sample outcomes may still be unidentified because of the cap. No
+automatic winner or training label is produced.
 
 ## Verify investigation bundles on another machine
 

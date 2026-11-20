@@ -1,0 +1,247 @@
+{
+  "account_usage_observation": {
+    "rounding_and_shared_account_caveat": true,
+    "weekly_remaining_percent": 99,
+    "weekly_used_percent": 1,
+    "weekly_window_reset_epoch": 1795714843
+  },
+  "base_commit": "ebed08262e7299ba31c3893319f1fc12a15b0665",
+  "branch": "jtsno/results-workbench-20261119",
+  "checks": {
+    "final-docker.xml": {
+      "cases": 2,
+      "failed": 0,
+      "failure_ids": [],
+      "passed": 2,
+      "skipped": 0
+    },
+    "final-linux.xml": {
+      "cases": 4492,
+      "failed": 42,
+      "failure_ids": [
+        "test_file_has_a_header_with_usage[tasks/coin_vaults/bugs/capacity_transfer_not_atomic/vaults.py]",
+        "test_file_has_a_header_with_usage[tasks/coin_vaults/bugs/denominations_close_skips_capacity/vaults.py]",
+        "test_file_has_a_header_with_usage[tasks/coin_vaults/bugs/v0_withdraw_all_rejected/vaults.py]",
+        "test_file_has_a_header_with_usage[tasks/coin_vaults/reference/capacity_denominations_undo/vaults.py]",
+        "test_file_has_a_header_with_usage[tasks/coin_vaults/reference/capacity_transfer_undo/vaults.py]",
+        "test_file_has_a_header_with_usage[tasks/coin_vaults/reference/capacity_undo/vaults.py]",
+        "test_file_has_a_header_with_usage[tasks/coin_vaults/reference/transfer/vaults.py]",
+        "test_file_has_a_header_with_usage[tasks/coin_vaults/reference/transfer_undo/vaults.py]",
+        "test_file_has_a_header_with_usage[tasks/coin_vaults/reference/undo/vaults.py]",
+        "test_file_has_a_header_with_usage[tasks/coin_vaults/reference/v0/vaults.py]",
+        "test_file_has_a_header_with_usage[tasks/grain_silos/bugs/revisions_blend_ignores_sealed_source/silos.py]",
+        "test_file_has_a_header_with_usage[tasks/grain_silos/bugs/seal_unload_recorded_late/silos.py]",
+        "test_file_has_a_header_with_usage[tasks/grain_silos/bugs/v0_get_tonnes_key_error/silos.py]",
+        "test_file_has_a_header_with_usage[tasks/grain_silos/reference/revisions_seal_undo/silos.py]",
+        "test_file_has_a_header_with_usage[tasks/grain_silos/reference/seal_totals_undo/silos.py]",
+        "test_file_has_a_header_with_usage[tasks/grain_silos/reference/seal_undo/silos.py]",
+        "test_file_has_a_header_with_usage[tasks/grain_silos/reference/totals/silos.py]",
+        "test_file_has_a_header_with_usage[tasks/grain_silos/reference/totals_undo/silos.py]",
+        "test_file_has_a_header_with_usage[tasks/grain_silos/reference/undo/silos.py]",
+        "test_file_has_a_header_with_usage[tasks/grain_silos/reference/v0/silos.py]",
+        "test_file_has_a_header_with_usage[tasks/mail_bins/bugs/v0_drop_checks_only_its_own_bin/sorting.py]",
+        "test_file_has_a_header_with_usage[tasks/rehearsal_setlists/bugs/ignore_case_drop_skips_lock/setlists.py]",
+        "test_file_has_a_header_with_usage[tasks/rehearsal_setlists/bugs/lock_drop_recorded_after_removal/setlists.py]",
+        "test_file_has_a_header_with_usage[tasks/rehearsal_setlists/bugs/v0_move_song_allows_duplicate/setlists.py]",
+        "test_file_has_a_header_with_usage[tasks/rehearsal_setlists/reference/ignore_case_lock_undo/setlists.py]",
+        "test_file_has_a_header_with_usage[tasks/rehearsal_setlists/reference/lock_queries_undo/setlists.py]",
+        "test_file_has_a_header_with_usage[tasks/rehearsal_setlists/reference/lock_undo/setlists.py]",
+        "test_file_has_a_header_with_usage[tasks/rehearsal_setlists/reference/queries/setlists.py]",
+        "test_file_has_a_header_with_usage[tasks/rehearsal_setlists/reference/queries_undo/setlists.py]",
+        "test_file_has_a_header_with_usage[tasks/rehearsal_setlists/reference/undo/setlists.py]",
+        "test_file_has_a_header_with_usage[tasks/rehearsal_setlists/reference/v0/setlists.py]",
+        "test_file_has_a_header_with_usage[tasks/server_racks/bugs/slots_install_many_not_atomic/racks.py]",
+        "test_file_has_a_header_with_usage[tasks/server_racks/bugs/v0_install_checks_own_rack_only/racks.py]",
+        "test_file_has_a_header_with_usage[tasks/server_racks/bugs/versions_decommission_recorded_late/racks.py]",
+        "test_file_has_a_header_with_usage[tasks/server_racks/reference/install_many/racks.py]",
+        "test_file_has_a_header_with_usage[tasks/server_racks/reference/install_many_slots_undo/racks.py]",
+        "test_file_has_a_header_with_usage[tasks/server_racks/reference/install_many_undo/racks.py]",
+        "test_file_has_a_header_with_usage[tasks/server_racks/reference/slots_undo/racks.py]",
+        "test_file_has_a_header_with_usage[tasks/server_racks/reference/slots_undo_versions/racks.py]",
+        "test_file_has_a_header_with_usage[tasks/server_racks/reference/undo/racks.py]",
+        "test_file_has_a_header_with_usage[tasks/server_racks/reference/v0/racks.py]",
+        "test_file_has_a_header_with_usage[tasks/wine_cellar/bugs/v0_decommission_overwrites_counts/cellar.py]"
+      ],
+      "passed": 4437,
+      "skipped": 13
+    },
+    "final-presentation.xml": {
+      "cases": 37,
+      "failed": 0,
+      "failure_ids": [],
+      "passed": 37,
+      "skipped": 0
+    },
+    "final-targeted-linux.xml": {
+      "cases": 112,
+      "failed": 0,
+      "failure_ids": [],
+      "passed": 110,
+      "skipped": 2
+    },
+    "polished-windows.xml": {
+      "cases": 92,
+      "failed": 0,
+      "failure_ids": [],
+      "passed": 91,
+      "skipped": 1
+    }
+  },
+  "final_implementation_commit": "10698ab6b56b5ee98030bc550843b77acc74d585",
+  "full_suite_baseline_failure_ids_unchanged": true,
+  "initial_workbench_commit": "dad0165",
+  "known_limitations": [
+    "42 upstream missing-Usage-header failures unchanged",
+    "Native Windows symlink creation skipped without privilege",
+    "Linux skips two Windows-only controls",
+    "No actual team stores or adapters available; no replication of real training outcomes",
+    "Checkpoint provenance is declared metadata, not authenticated weight digests",
+    "Human annotations are assertions, not automatic proof of causes",
+    "Original legacy publisher still requires supported hard links; tested on Linux"
+  ],
+  "legacy_default_checkpoint_equality": true,
+  "legacy_review_byte_equality": {
+    "compared_against": "saved prior-code outputs",
+    "compiled_byte_identical": true,
+    "pack_byte_identical": true
+  },
+  "local_launch_issues": [
+    "First polished Linux launch omitted PYTHONPATH and imported old editable checkout; log preserved, intended source-path run passed",
+    "Unmodified legacy Windows publisher hit pre-existing hard-link restriction; Linux compatibility comparison passed"
+  ],
+  "new_experimental_model_calls": 0,
+  "prior_native_bundle": {
+    "file_count": 10,
+    "prior_bundle_unchanged": true,
+    "prior_bundle_verifies": true,
+    "verification": {
+      "analysis_recomputed": true,
+      "files": 9,
+      "model_calls": 0,
+      "verified": true
+    }
+  },
+  "protected_trees": {
+    ".github/workflows/tests.yml": {
+      "base": "c3707c286cb46a5bf8b9ca4b1c96df69ea5b2f94",
+      "contribution": "c3707c286cb46a5bf8b9ca4b1c96df69ea5b2f94"
+    },
+    "docs/collection_workbench_20261119/validation.json": {
+      "base": "db999f0e5023aa78b633cea69372e8582c214b58",
+      "contribution": "db999f0e5023aa78b633cea69372e8582c214b58"
+    },
+    "docs/final_report.md": {
+      "base": "5e146e3c4952f75aa01d9cda8caa22be6f771423",
+      "contribution": "5e146e3c4952f75aa01d9cda8caa22be6f771423"
+    },
+    "docs/progress_report.md": {
+      "base": "dffd005acb7e46e177b61bd8310c3ad313031334",
+      "contribution": "dffd005acb7e46e177b61bd8310c3ad313031334"
+    },
+    "harness/data": {
+      "base": "b8e6ac01bb133fe21bded987609b3a598daf6484",
+      "contribution": "b8e6ac01bb133fe21bded987609b3a598daf6484"
+    },
+    "harness/prompts": {
+      "base": "74be222bbfa177e9981afd0433b0337ebadbc125",
+      "contribution": "74be222bbfa177e9981afd0433b0337ebadbc125"
+    },
+    "harness/pyproject.toml": {
+      "base": "f7e43acdc9bcd23f4726e82c63c910243ee04d72",
+      "contribution": "f7e43acdc9bcd23f4726e82c63c910243ee04d72"
+    },
+    "harness/results": {
+      "base": "3fe095c36882d98a0a806211ada18f23fac17cd6",
+      "contribution": "3fe095c36882d98a0a806211ada18f23fac17cd6"
+    },
+    "harness/src/harness/collection": {
+      "base": "ff0239bf9f280333020d294a41e15538b2846fa7",
+      "contribution": "ff0239bf9f280333020d294a41e15538b2846fa7"
+    },
+    "harness/src/harness/config.py": {
+      "base": "d1ce664200ae45868017436c23c1f503fbbc8aa7",
+      "contribution": "d1ce664200ae45868017436c23c1f503fbbc8aa7"
+    },
+    "harness/src/harness/models": {
+      "base": "f3e563e589260709c45ccc3b7d9142ac65e10ad0",
+      "contribution": "f3e563e589260709c45ccc3b7d9142ac65e10ad0"
+    },
+    "harness/src/harness/registry.py": {
+      "base": "d7a04c35213d83aa159b676421f78f228ae35ff0",
+      "contribution": "d7a04c35213d83aa159b676421f78f228ae35ff0"
+    },
+    "harness/src/harness/sandbox": {
+      "base": "24f0d04301c782f5b45d1df954828f566dc4058c",
+      "contribution": "24f0d04301c782f5b45d1df954828f566dc4058c"
+    },
+    "harness/src/harness/store.py": {
+      "base": "0399e748552a589c97af9367ee8b5f7a1ab944c3",
+      "contribution": "0399e748552a589c97af9367ee8b5f7a1ab944c3"
+    },
+    "harness/src/harness/train_dpo.py": {
+      "base": "c0041a61ce2c1ab9ebba574d5ab523f731078ec5",
+      "contribution": "c0041a61ce2c1ab9ebba574d5ab523f731078ec5"
+    },
+    "harness/src/harness/train_sft.py": {
+      "base": "5825686c58c2e0f53a0ee3930eb6e558380f00b3",
+      "contribution": "5825686c58c2e0f53a0ee3930eb6e558380f00b3"
+    },
+    "harness/tasks": {
+      "base": "9347e9cb91226624b3f82c0f4777a8a7130d0374",
+      "contribution": "9347e9cb91226624b3f82c0f4777a8a7130d0374"
+    },
+    "harness/uv.lock": {
+      "base": "4c6ebfb34884aa2614d5eb2e2509ec71f62b7269",
+      "contribution": "4c6ebfb34884aa2614d5eb2e2509ec71f62b7269"
+    }
+  },
+  "pushes": 0,
+  "receipt_sha256": {
+    "disagreement-final.png": "25a941d40157dfb7ff846e418d06c00e47b3d0e862ac15dca4251082e4605aa6",
+    "final-docker.xml": "afbfa04bd60a5bcb6731b4babe5f106cdd54ceb0df0e1ca0b38f83dc21e85527",
+    "final-linux.xml": "5a58237c676b0316c0fdc4795b10549560a50f214622d247027944857b5d8326",
+    "final-presentation.xml": "ed9c0f35c37ab5663bf4d8f60c1b6b3c88540f1f8cc872f2cbf0c9b27aa9a7a0",
+    "final-targeted-linux.xml": "d5d691488dc554e456f8e2d46ac77094fe6397eef08137191c620ed1af5b691f",
+    "legacy_compatibility.json": "e7c27f7398916830f7bca234b6331729978c3f5c28e5004cedb40cb7e0abdf3d",
+    "polished-windows.xml": "25158b6ac88903b3f205fddbec3385fb5de46cf40cb82f53dd1683006f0e59e0",
+    "polished_legacy_compatibility.json": "139ea6bb803cddcec4233239e9a544cdb8c31422aa8d3d6c98d313352b95b8c9",
+    "prior_bundle_compatibility.json": "1600aea00619c72b88488e291a26e7a2aa677ce8364ca2d097f670af10503929"
+  },
+  "source_sha256_lf_normalized": {
+    "harness/examples/collection_workbench.py": "3bc05d4ed32c09d02a80e8a5b2fbcdfe1a7dba9361ade2eb24a3a4a6dec78998",
+    "harness/src/harness/evaluation/artifacts.py": "23b89c433e43d4ae892801049ef0de4b0675e42a4290f442385ffd246627feb8",
+    "harness/src/harness/evaluation/review.py": "391b94f5a830e29e2ab2519501488714d8993fecfd8f56360db1bf2882e2a6ec",
+    "harness/src/harness/evaluation/seeds.py": "98ef589fec3efdd089c01d9c759028de5bcb2f4294d1527d9c94d1d8bdd6b2c4",
+    "harness/src/harness/workbench/__init__.py": "4ee55200d242873dfab93171e64c6b03a4ed48d8ad8aec7e6d752998e4b50fa1",
+    "harness/src/harness/workbench/analysis.py": "c760b35fee440226e751e24e48ed97814409c238fadd81f0fd65b242d9e4797b",
+    "harness/src/harness/workbench/checkpoints.py": "64ca56cf23fd0e9d5b58ec515d0214522c291efe53bd950f2041af6306b34f02",
+    "harness/src/harness/workbench/cli.py": "923680b812885b24ddf6e55b11b57e025aa5683c13256a33afdeea73dce4a408",
+    "harness/src/harness/workbench/derived.py": "0d1d25bb4b2931dad320d8d23635b80e37f9a5ffbac04ea038d29213d957fd55",
+    "harness/src/harness/workbench/export.py": "6d1fe00bffad1c6681dcb79df69b2d7b98e430f1765b993e84791f076e905c6e",
+    "harness/src/harness/workbench/presentation.py": "32daa8ce8774ae5b49453950e38868ce4ef4baa9d044c9e970046fb6afa4d7f2",
+    "harness/src/harness/workbench/records.py": "e7eea4c4edade4aaf5e506e6e896cecc23621f2a226651ec831f66f98479d9dd",
+    "harness/src/harness/workbench/report.py": "0c5dbb9562048495d54c1b6164c92693803f0cc1eb9483fe8f3ee7fd2f4df35b",
+    "harness/src/harness/workbench/review.py": "435fe49c57cea8b9d57a249eb66284f83913cd3b337da644890bab76bede298b",
+    "harness/src/harness/workbench/storage.py": "c61319da5a63d2ac5d4be739fc8cb46b2d51fd7e3655e115fda332519b0db7b7",
+    "harness/tests/workbench/__init__.py": "0081a81f71d27c749918681b834e0bd1a10f422c6def8cf531e30d61427896d4",
+    "harness/tests/workbench/helpers.py": "a37a652ea7d5db124abb23632d0497a33104552a61d2b71f2b68693bc521b5af",
+    "harness/tests/workbench/test_analysis.py": "973e3d48fb2ecd46e5d5adb128bb38eac3526ae0a53ddb5ea061f093e56eddd6",
+    "harness/tests/workbench/test_checkpoints.py": "060c3662c66f942b62149e8a8ba0cf4fcc639e49cf09ff21691f191b36d419d4",
+    "harness/tests/workbench/test_cli.py": "6a82a4f0bf02eea09bdb9a38ef4e35665ebfca8e9ceb6bfa5b2b634b8b3c1183",
+    "harness/tests/workbench/test_docker.py": "717b5467a472a6d5c79b1ecb494b82f80ee784bedafdb90dd569b3ec09745a18",
+    "harness/tests/workbench/test_export.py": "879b638d96978c1a9fa17529489af1b9be8b98dc7a290a846fab2c10a39a1dd2",
+    "harness/tests/workbench/test_presentation.py": "a4465ed14139da246b0411d41d07c41bf79a00b67c216f70cfcbd5748f2a46b4",
+    "harness/tests/workbench/test_report.py": "3f2ea5df8facbbff9b0bf201d8187ac924c676d024e790e79cb39c1037fceb0d",
+    "harness/tests/workbench/test_review.py": "1e0ef28973eff56590873f322d386e01437db6252435e55fecd65a0801885b08",
+    "harness/tests/workbench/test_storage.py": "c7efd58f03b861c7625801eb92af16674c7f746eda71c128ba94c18970ce17c0"
+  },
+  "training_labels_created": 0,
+  "training_runs": 0,
+  "validation_scope": {
+    "final_display_windows": "10698ab6b56b5ee98030bc550843b77acc74d585",
+    "final_targeted_linux": "10698ab6b56b5ee98030bc550843b77acc74d585",
+    "full_linux": "e1591a6 before final display polish",
+    "real_docker": "e1591a6; display-only changes do not alter collection or scoring",
+    "windows_workbench": "3a903b5"
+  }
+}
