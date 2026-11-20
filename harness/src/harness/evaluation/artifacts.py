@@ -101,4 +101,5 @@ def purpose_label(result):
         "fixture": "SYNTHETIC FIXTURE — not experimental evidence",
         "development": "Development data — not held-out evidence",
         "heldout": "Held-out saved outcomes",
+        "training": "Training collection — not held-out evidence",
     }[result["purpose"]]

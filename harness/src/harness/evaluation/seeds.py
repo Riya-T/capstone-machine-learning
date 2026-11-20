@@ -18,7 +18,15 @@ def _mean(values):
     return statistics.mean(values) if values else None
 
 
-def summarize_seeds(result):
+def summarize_seeds(result, *, metric_names=METRICS, completion_metric="change_completion"):
+    if (
+        not metric_names
+        or len(set(metric_names)) != len(metric_names)
+        or completion_metric not in metric_names
+    ):
+        raise EvaluationError(
+            "Checkpoint metrics must be unique and include the completion measure"
+        )
     coverage = None
     if "analysis_contract" in result:
         from .contract import check_contract
@@ -44,7 +52,7 @@ def summarize_seeds(result):
         families = {}
         for family in rows[0]["families"]:
             families[family] = {}
-            for metric in METRICS:
+            for metric in metric_names:
                 cells = [row["families"][family][metric] for row in rows]
                 # Keep the same observed checkpoints for each included family.
                 # An inapplicable seed is not silently replaced by a more favorable one.
@@ -54,7 +62,7 @@ def summarize_seeds(result):
                     unresolved=any(c["unresolved"] for c in cells),
                 )
         metrics = {}
-        for metric in METRICS:
+        for metric in metric_names:
             values = [
                 f[metric]["value"] for f in families.values() if f[metric]["value"] is not None
             ]
@@ -78,7 +86,7 @@ def summarize_seeds(result):
             )
         groups[group] = dict(members=members, families=families, metrics=metrics)
         for name, row in zip(members, rows, strict=True):
-            for metric in METRICS:
+            for metric in metric_names:
                 m = row["metrics"][metric]
                 seeds.append(
                     dict(
@@ -98,7 +106,7 @@ def summarize_seeds(result):
     for group, row in groups.items():
         if group == reference:
             continue
-        for metric in METRICS:
+        for metric in metric_names:
             a, b = row["families"], groups[reference]["families"]
             unresolved = any(a[k][metric]["unresolved"] or b[k][metric]["unresolved"] for k in a)
             values = [
@@ -125,10 +133,10 @@ def summarize_seeds(result):
                     coverage_complete=not unresolved,
                 )
             )
-        baseline = groups[reference]["metrics"]["change_completion"]["estimate"]
+        baseline = groups[reference]["metrics"][completion_metric]["estimate"]
         directions = dict(advantage=0, tie=0, disadvantage=0, unknown=0)
         for name in row["members"]:
-            value = result["methods"][name]["metrics"]["change_completion"]["estimate"]
+            value = result["methods"][name]["metrics"][completion_metric]["estimate"]
             label = (
                 "unknown"
                 if value is None or baseline is None

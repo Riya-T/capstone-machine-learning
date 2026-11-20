@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import csv
 import hashlib
+import io
 from collections import Counter, defaultdict
 from html import escape
 from pathlib import Path
@@ -128,6 +129,14 @@ def make_review_pack(directory, output, *, stores=None):
         cases=cases,
         training_labels=None,
     )
+    files = review_pack_files(payload)
+    return publish_bundle("review_pack", files, output, source_hash=source_hash)
+
+
+def review_pack_files(payload, *, case_fields=CASE_FIELDS):
+    """Render an immutable review payload, shared with native collection reviews."""
+    cases = payload["cases"]
+    result = payload
     template = [
         dict(
             case_id=c["case_id"],
@@ -162,6 +171,14 @@ def make_review_pack(directory, output, *, stores=None):
             f'<details id="case-{case["case_id"]}"><summary>{escape(title)}</summary>',
             f"<p>Case ID: <code>{case['case_id']}</code></p>",
         ]
+        if payload.get("kind") == "collection_review_cases":
+            html.append(
+                "<p>Original parent: <code>"
+                + escape(case.get("candidate_id") or "no parsed submission")
+                + "</code>; writer sample indices: "
+                + escape(str(case["sample_indices"]))
+                + ". Test counts and stop reasons are recorded outcomes, not inferred causes.</p>"
+            )
         for label in ("before", "after"):
             preview = case[label + "_preview"]
             html.append(f"<h3>{label.title()} source: {escape(preview['state'])}</h3>")
@@ -186,12 +203,12 @@ def make_review_pack(directory, output, *, stores=None):
     )
     files = {
         "cases.json": encoded(payload),
-        "cases.csv": csv_bytes([{k: c[k] for k in CASE_FIELDS} for c in cases], CASE_FIELDS),
+        "cases.csv": csv_bytes([{k: c[k] for k in case_fields} for c in cases], case_fields),
         "annotations.template.csv": csv_bytes(template, ANNOTATION_FIELDS),
         "review.html": "\n".join(html).encode("utf8"),
         "report.md": instructions.encode("utf8"),
     }
-    return publish_bundle("review_pack", files, output, source_hash=source_hash)
+    return files
 
 
 def compile_reviews(directory, annotation_paths, output):
@@ -199,6 +216,17 @@ def compile_reviews(directory, annotation_paths, output):
     if receipt["kind"] != "review_pack":
         raise EvaluationError("Annotations require an immutable review pack")
     payload = read_json((Path(directory) / "cases.json").read_bytes())
+    result, reviews = summarize_annotations(
+        payload, [Path(path).read_bytes() for path in annotation_paths]
+    )
+    files = review_summary_files(result, reviews)
+    return publish_bundle(
+        "review_summary", files, output, source_hash=payload["source_report_sha256"]
+    )
+
+
+def summarize_annotations(payload, annotation_inputs):
+    """Validate raw annotation bytes and preserve their order and disagreements."""
     if (
         not isinstance(payload, dict)
         or not isinstance(payload.get("cases"), list)
@@ -219,10 +247,9 @@ def compile_reviews(directory, annotation_paths, output):
     if len(known) != len(payload["cases"]):
         raise EvaluationError("Duplicate review cases")
     reviews, seen, inputs = [], set(), []
-    for path in annotation_paths:
-        path = Path(path)
-        inputs.append(hashlib.sha256(path.read_bytes()).hexdigest())
-        with path.open(encoding="utf-8-sig", newline="") as stream:
+    for raw in annotation_inputs:
+        inputs.append(hashlib.sha256(raw).hexdigest())
+        with io.StringIO(raw.decode("utf-8-sig"), newline="") as stream:
             reader = csv.DictReader(stream)
             if (
                 reader.fieldnames is None
@@ -294,6 +321,14 @@ def compile_reviews(directory, annotation_paths, output):
         note="Human assertions only. Evidence references were not opened or executed. "
         "Disagreements remain unresolved; no majority label or causal proof is inferred.",
     )
+    return result, reviews
+
+
+def review_summary_files(result, reviews):
+    """Render a compiled review without changing its scores or executing evidence."""
+    payload = result
+    known = {case["case_id"] for case in result["cases"]}
+    counts = result["case_counts"]
     files = {
         "analysis.json": encoded(result),
         "annotations.csv": csv_bytes(reviews, ANNOTATION_FIELDS),
@@ -302,6 +337,4 @@ def compile_reviews(directory, annotation_paths, output):
             f"{len(known)} cases; counts {dict(counts)}.\n\n{result['note']}\n"
         ).encode(),
     }
-    return publish_bundle(
-        "review_summary", files, output, source_hash=payload["source_report_sha256"]
-    )
+    return files
