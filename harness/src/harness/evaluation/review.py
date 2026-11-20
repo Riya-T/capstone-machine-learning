@@ -8,6 +8,7 @@ Usage:
 from __future__ import annotations
 
 import csv
+import difflib
 import hashlib
 import io
 from collections import Counter, defaultdict
@@ -79,6 +80,36 @@ def _preview(root, digest):
         files=previews,
         note="UTF-8 replacement decoding is for display only; original blob bytes stay unchanged.",
     )
+
+
+def preview_diff(before, after):
+    """Compare complete display previews only; never produce a replacement patch."""
+    if before["state"] != "available" or after["state"] != "available":
+        return "Diff unavailable: both saved sources are needed."
+    if any(f["truncated"] for p in (before, after) for f in p["files"]):
+        return "Diff unavailable: a source preview was truncated."
+    old = {f["path"]: f["text"].splitlines(True) for f in before["files"]}
+    new = {f["path"]: f["text"].splitlines(True) for f in after["files"]}
+    if sum(len(lines) for mapping in (old, new) for lines in mapping.values()) > 8000:
+        return "Diff unavailable: source previews exceed the display line limit."
+    parts = []
+    remaining = 65536
+    for name in sorted(old.keys() | new.keys()):
+        for line in difflib.unified_diff(
+            old.get(name, []), new.get(name, []), fromfile="before/" + name, tofile="after/" + name
+        ):
+            if len(line) > remaining:
+                return (
+                    "".join(parts) + "\n[Display diff truncated; source hashes remain unchanged.]"
+                )
+            parts.append(line)
+            remaining -= len(line)
+    return "".join(parts) or "No text differences in the available saved sources."
+
+
+def _test_count_text(case, prefix):
+    passed, total = case.get(prefix + "_pass"), case.get(prefix + "_total")
+    return "unavailable" if passed is None or total is None else f"{passed}/{total}"
 
 
 def make_review_pack(directory, output, *, stores=None):
@@ -162,6 +193,12 @@ def review_pack_files(payload, *, case_fields=CASE_FIELDS):
         "annotations.template.csv to your own CSV, and record your review there. "
         "The tool does not infer causes or assign training labels.</p>",
     ]
+    if payload.get("kind") == "collection_review_cases":
+        html.append(
+            '<p><a href="annotations.template.csv" download>Download annotation template</a> · '
+            '<a href="missing.csv">Missing or unselected work</a> · '
+            '<a href="cases.json">Full case evidence</a></p>'
+        )
     for case in cases:
         title = (
             f"{case['method']} / {case['task']} / {case['sequence']} / "
@@ -179,6 +216,17 @@ def review_pack_files(payload, *, case_fields=CASE_FIELDS):
                 + escape(str(case["sample_indices"]))
                 + ". Test counts and stop reasons are recorded outcomes, not inferred causes.</p>"
             )
+            html.append(
+                "<p>New tests: "
+                + escape(_test_count_text(case, "new"))
+                + "; preserved tests: "
+                + escape(_test_count_text(case, "existing"))
+                + "; stop reason: "
+                + escape(case.get("end_reason") or "not recorded")
+                + "; infrastructure: "
+                + escape(case.get("infra_cause") or "none recorded")
+                + ". Counts alone do not establish correctness or a failure cause.</p>"
+            )
         for label in ("before", "after"):
             preview = case[label + "_preview"]
             html.append(f"<h3>{label.title()} source: {escape(preview['state'])}</h3>")
@@ -191,6 +239,13 @@ def review_pack_files(payload, *, case_fields=CASE_FIELDS):
                 html.append(
                     f"<h4>{escape(file['path'])}{suffix}</h4><pre>{escape(file['text'])}</pre>"
                 )
+        if payload.get("kind") == "collection_review_cases":
+            html.append(
+                "<h3>Saved source differences</h3><p>Display only, with replacement decoding; "
+                "not an executable patch or a maintainability score.</p><pre>"
+                + escape(preview_diff(case["before_preview"], case["after_preview"]))
+                + "</pre>"
+            )
         html.append("</details>")
     html.append("</html>\n")
     instructions = (

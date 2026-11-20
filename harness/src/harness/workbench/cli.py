@@ -94,9 +94,51 @@ def main(argv=None):
     bundle.add_argument("--out", type=Path, required=True)
     verify = commands.add_parser("verify", help="Check hashes and recompute a published report")
     verify.add_argument("--report", type=Path, required=True)
+    checkpoints = commands.add_parser("checkpoints", help="Compare observed training checkpoints")
+    checkpoints.add_argument("--report", type=Path, required=True)
+    checkpoints.add_argument("--out", type=Path, required=True)
+    checkpoints.add_argument(
+        "--population", choices=("common-selected", "all-planned"), default="common-selected"
+    )
+    checkpoints.add_argument("--expect-seeds", action="append", default=[], metavar="GROUP=42,43")
+    review = commands.add_parser("review", help="Prepare or compile human failure investigation")
+    actions = review.add_subparsers(dest="review_action", required=True)
+    prepare_review = actions.add_parser("init")
+    prepare_review.add_argument("--report", type=Path, required=True)
+    prepare_review.add_argument("--out", type=Path, required=True)
+    prepare_review.add_argument("--store", action="append", default=[], metavar="METHOD=STORE")
+    compile_review = actions.add_parser("compile")
+    compile_review.add_argument("--pack", type=Path, required=True)
+    compile_review.add_argument("--annotations", type=Path, nargs="+", required=True)
+    compile_review.add_argument("--out", type=Path, required=True)
     args = parser.parse_args(argv)
     try:
-        if args.command == "export":
+        if args.command == "checkpoints":
+            from .checkpoints import run_summary
+
+            expected = {}
+            for value in args.expect_seeds:
+                group, separator, seeds = value.partition("=")
+                if not separator or group in expected:
+                    raise EvaluationError("Use unique GROUP=42,43 expected-seed declarations")
+                expected[group] = [int(seed.strip()) for seed in seeds.split(",")]
+            result = run_summary(
+                args.report, args.out, population=args.population, expected_seeds=expected
+            )
+        elif args.command == "review":
+            from .review import compile_pack, make_pack
+
+            if args.review_action == "compile":
+                result = compile_pack(args.pack, args.annotations, args.out)
+            else:
+                stores = {}
+                for value in args.store:
+                    method, separator, path = value.partition("=")
+                    if not separator or method in stores or not Path(path).is_dir():
+                        raise EvaluationError("Use unique METHOD=existing_store_root mappings")
+                    stores[method] = Path(path)
+                result = make_pack(args.report, args.out, stores=stores)
+        elif args.command == "export":
             cfg = load_config(args.config)
             if args.store is not None:
                 cfg = replace(cfg, runs_dir=args.store.resolve())
@@ -135,7 +177,14 @@ def main(argv=None):
         else:
             result = verify_report(args.report)
         print(encoded(result).decode(), end="")
-        return 3 if result.get("collection_complete") is False else 0
+        return (
+            3
+            if (
+                result.get("collection_complete") is False
+                or result.get("analysis_complete") is False
+            )
+            else 0
+        )
     except (ConfigError, OSError, ValueError, TypeError, KeyError) as exc:
         print(f"Collection workbench: {exc}", file=sys.stderr)
         return 2

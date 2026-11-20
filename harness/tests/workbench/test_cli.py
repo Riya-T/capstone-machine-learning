@@ -152,3 +152,92 @@ def test_export_cannot_publish_inside_its_source_store(tmp_path, capsys):
     )
     assert "outside the source store" in capsys.readouterr().err
     assert not output.exists()
+
+
+def test_investigation_commands_share_the_existing_review_and_checkpoint_workflows(
+    tmp_path, capsys
+):
+    from harness.workbench.report import write_report
+    from tests.workbench.test_checkpoints import example
+
+    source = tmp_path / "source"
+    write_report(example(tmp_path), source)
+    assert (
+        main(
+            [
+                "collection-workbench",
+                "checkpoints",
+                "--report",
+                str(source),
+                "--expect-seeds",
+                "trained=42,43",
+                "--out",
+                str(tmp_path / "seeds"),
+            ]
+        )
+        == 0
+    )
+    capsys.readouterr()
+    assert main(["collection-workbench", "verify", "--report", str(tmp_path / "seeds")]) == 0
+    capsys.readouterr()
+    assert (
+        main(
+            [
+                "collection-workbench",
+                "review",
+                "init",
+                "--report",
+                str(source),
+                "--out",
+                str(tmp_path / "pack"),
+            ]
+        )
+        == 0
+    )
+    capsys.readouterr()
+    template = tmp_path / "pack/annotations.template.csv"
+    assert (
+        main(
+            [
+                "collection-workbench",
+                "review",
+                "compile",
+                "--pack",
+                str(tmp_path / "pack"),
+                "--annotations",
+                str(template),
+                "--out",
+                str(tmp_path / "reviewed"),
+            ]
+        )
+        == 0
+    )
+    capsys.readouterr()
+    assert main(["collection-workbench", "verify", "--report", str(tmp_path / "reviewed")]) == 0
+    result = json.loads((tmp_path / "reviewed/analysis.json").read_bytes())
+    assert result["training_labels"] is None
+    assert result["case_counts"]["unreviewed"] > 0
+
+
+def test_missing_expected_checkpoint_creates_a_diagnostic_and_exit_three(tmp_path, capsys):
+    from harness.workbench.report import write_report
+    from tests.workbench.test_checkpoints import example
+
+    write_report(example(tmp_path), tmp_path / "source")
+    assert (
+        main(
+            [
+                "collection-workbench",
+                "checkpoints",
+                "--report",
+                str(tmp_path / "source"),
+                "--expect-seeds",
+                "trained=42,43,44",
+                "--out",
+                str(tmp_path / "incomplete"),
+            ]
+        )
+        == 3
+    )
+    assert not json.loads(capsys.readouterr().out)["analysis_complete"]
+    assert (tmp_path / "incomplete/analysis.json").exists()

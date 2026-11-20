@@ -119,3 +119,17 @@ def test_csv_strings_cannot_become_spreadsheet_formulas():
     text = table_csv([{"label": " =2+2", "difference": -0.5}], ["label", "difference"]).decode()
     assert "' =2+2" in text
     assert "-0.5" in text
+
+
+@pytest.mark.parametrize(
+    "manifest",
+    [
+        [],
+        {"schema_version": True},
+        {"schema_version": 1, "kind": "collection_report_manifest", "files": []},
+    ],
+)
+def test_malformed_manifest_shapes_produce_clear_errors(tmp_path, manifest):
+    (tmp_path / "manifest.json").write_bytes(encoded(manifest))
+    with pytest.raises(EvaluationError):
+        verify_report(tmp_path)

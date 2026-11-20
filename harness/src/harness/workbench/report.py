@@ -494,10 +494,19 @@ def write_report(result, out):
 def verify_report(out):
     out = Path(out)
     safe_destination(out)
+    safe_destination(out / "manifest.json")
     manifest = read_json((out / "manifest.json").read_bytes())
+    if not isinstance(manifest, dict):
+        raise EvaluationError("Expected a collection report manifest object")
+    from .derived import KINDS, verify
+
+    if isinstance(manifest.get("kind"), str) and manifest["kind"] in KINDS:
+        return verify(out)
     if (
-        manifest.get("schema_version") != 1
+        type(manifest.get("schema_version")) is not int
+        or manifest.get("schema_version") != 1
         or manifest.get("kind") != "collection_report_manifest"
+        or not isinstance(manifest.get("files"), dict)
         or set(manifest.get("files", {})) != FILES
     ):
         raise EvaluationError("Unexpected collection report manifest")
