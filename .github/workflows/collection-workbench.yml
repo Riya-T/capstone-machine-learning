@@ -51,7 +51,7 @@ jobs:
       - name: Test offline exports and reports
         # Config fingerprints use relative paths, which cannot span Windows drives.
         # Keep fixtures on the checkout drive instead of the runner's default temp drive.
-        run: uv run pytest tests/workbench --basetemp .pytest_cache/workbench-temp -m "not docker" -q
+        run: uv run pytest tests/workbench --basetemp .pytest-workbench-temp -m "not docker" -q
       - name: Check usage headers for this contribution
         run: uv run pytest tests/test_headers.py -k workbench -q
       - name: Check legacy review and seed-summary compatibility on Linux
