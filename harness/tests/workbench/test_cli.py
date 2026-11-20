@@ -5,6 +5,7 @@ Usage: python -m pytest tests/workbench/test_cli.py
 
 import json
 
+import pytest
 import yaml
 
 from harness.__main__ import main
@@ -68,6 +69,39 @@ def test_empty_manifest_and_unknown_fields_give_actionable_errors(tmp_path, caps
         )
         assert "Collection workbench:" in capsys.readouterr().err
         assert not (tmp_path / "out").exists()
+
+
+@pytest.mark.parametrize(
+    "content",
+    [
+        [],
+        None,
+        {"schema_version": True, "methods": [{"config": "unread.yaml"}]},
+        {"schema_version": 1, "methods": [None]},
+        {"schema_version": 1, "methods": [{"config": "unread.yaml"}], "analysis": []},
+        {
+            "schema_version": 1,
+            "methods": [{"config": "unread.yaml"}],
+            "analysis": {"unrecognized": 1},
+        },
+    ],
+)
+def test_malformed_build_manifest_is_rejected_before_config_or_store_access(
+    tmp_path, capsys, monkeypatch, content
+):
+    path = tmp_path / "manifest.json"
+    path.write_bytes(encoded(content))
+
+    def forbidden(*args, **kwargs):
+        pytest.fail("Malformed manifest must be rejected before opening a config or store")
+
+    monkeypatch.setattr("harness.workbench.cli.load_config", forbidden)
+    out = tmp_path / "not-created"
+    assert (
+        main(["collection-workbench", "build", "--manifest", str(path), "--out", str(out)]) == 2
+    )
+    assert "Collection workbench:" in capsys.readouterr().err
+    assert not out.exists()
 
 
 def test_incomplete_collection_is_saved_but_cli_returns_checkpoint_status(tmp_path, capsys):

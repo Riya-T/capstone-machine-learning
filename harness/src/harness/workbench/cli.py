@@ -23,6 +23,8 @@ def build(manifest_path, out):
     """A post-hoc input manifest describes saved evidence, not preregistration."""
     manifest_path = Path(manifest_path)
     manifest = read_json(manifest_path.read_bytes())
+    if not isinstance(manifest, dict):
+        raise EvaluationError("Expected a collection manifest object")
     if set(manifest) - {
         "schema_version",
         "purpose",
@@ -32,13 +34,22 @@ def build(manifest_path, out):
         "analysis",
     }:
         raise EvaluationError("Unknown collection manifest field")
-    if manifest.get("schema_version") != 1:
+    if type(manifest.get("schema_version")) is not int or manifest["schema_version"] != 1:
         raise EvaluationError("Unsupported collection manifest")
+    analysis = manifest.get("analysis", {})
+    if not isinstance(analysis, dict) or set(analysis) - {
+        "bootstrap_samples",
+        "bootstrap_seed",
+        "confidence",
+    }:
+        raise EvaluationError("Expected a supported collection analysis options object")
     methods = manifest["methods"]
     if not isinstance(methods, list) or not 1 <= len(methods) <= 32:
         raise EvaluationError("Manifest requires 1 to 32 checkpoints")
     datasets = []
     for method in methods:
+        if not isinstance(method, dict):
+            raise EvaluationError("Expected a checkpoint object")
         if set(method) - {"id", "config", "store", "method_group", "training_seed"}:
             raise EvaluationError("Unknown checkpoint field")
         cfg = load_config(manifest_path.parent / method["config"])
@@ -57,7 +68,7 @@ def build(manifest_path, out):
             )
         )
     result = compare_collections(
-        datasets, reference=manifest.get("reference"), **manifest.get("analysis", {})
+        datasets, reference=manifest.get("reference"), **analysis
     )
     return write_report(result, out)
 
