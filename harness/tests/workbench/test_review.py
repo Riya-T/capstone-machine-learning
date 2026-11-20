@@ -70,6 +70,8 @@ def test_cases_are_terminal_stops_and_missing_or_overcap_work_is_separate(tmp_pa
     assert len({c["case_id"] for c in payload["cases"]}) == 6
     assert payload["missing_work"][0]["reason"] == "not_scheduled_over_cap"
     assert all(c["step"] != 2 for c in payload["cases"])
+    html = (tmp_path / "pack/review.html").read_text()
+    assert "initial samples" in html and "rep None" not in html
     assert verify_report(tmp_path / "pack")["kind"] == "collection_review_pack"
 
 

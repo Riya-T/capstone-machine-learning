@@ -204,6 +204,12 @@ def review_pack_files(payload, *, case_fields=CASE_FIELDS):
             f"{case['method']} / {case['task']} / {case['sequence']} / "
             f"rep {case['rep']}: {case['status']}"
         )
+        if payload.get("kind") == "collection_review_cases" and case["stage"] == "initial":
+            # Initial submissions have no editing sequence or repetition number.
+            title = (
+                f"{case['method']} / {case['task']} / "
+                f"initial samples {case['sample_indices']}: {case['status']}"
+            )
         html += [
             f'<details id="case-{case["case_id"]}"><summary>{escape(title)}</summary>',
             f"<p>Case ID: <code>{case['case_id']}</code></p>",

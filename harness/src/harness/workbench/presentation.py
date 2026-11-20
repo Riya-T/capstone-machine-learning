@@ -20,7 +20,8 @@ def document(title, body):
         f"<title>{html.escape(title)}</title><style>"
         "body{font:16px/1.6 system-ui;max-width:1150px;margin:2rem auto;padding:1rem;"
         "color:#172b3a;background:#f5f8fb}table{border-collapse:collapse;width:100%;"
-        "background:white}th,td{padding:.55rem;text-align:left;border-bottom:1px solid #ccd;}"
+        "background:white}th,td{padding:.55rem;text-align:left;border-bottom:1px solid #ccd;"
+        "overflow-wrap:anywhere}"
         "th{background:#eaf2f8}.scroll{overflow:auto}code{overflow-wrap:anywhere}"
         "</style>" + body + "</html>"
     ).encode()
