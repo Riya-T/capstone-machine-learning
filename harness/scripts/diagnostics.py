@@ -20,6 +20,9 @@ task), it reports:
   program's mean score measures its program part with more sequences or
   reps. With --measures, the same for other measures of the first change
   (editor calls, reply tokens, lines changed, share of hidden tests passed).
+- With --fractional-score, compare the main measure with an exploratory
+  score that gives partial credit to tests passed on the first failed step.
+  Later steps after a failure were not run and are not imputed.
 
 Scores are changes done before the first failure, per sequence (the main
 measure averages the sequences). Intervals resample the tasks.
@@ -45,7 +48,7 @@ from harness.collection.scorer import Scorer, load_task_record
 from harness.config import load_config
 from harness.registry import build_writer_prompt, load_tasks, load_template
 from harness.sandbox.runner import make_runner
-from harness.store import Store, TrialKey
+from harness.store import Checkpoint, Store, TrialKey
 
 
 def load_records(cfg):
@@ -325,6 +328,82 @@ def first_change_measures(cfg, scores, records):
     return out
 
 
+def fractional_trial_score(steps: list[Checkpoint], length: int) -> float | None:
+    """Score completed steps plus balanced partial credit for the first test failure.
+
+    The mean of new-feature and existing-test pass shares gives the two test
+    groups equal weight. Budget exhaustion gets no partial credit; infra errors,
+    missing steps, and missing test counts are unscored.
+    """
+    by_step = {checkpoint.step: checkpoint for checkpoint in steps}
+    score = 0.0
+    for number in range(1, length + 1):
+        checkpoint = by_step.get(number)
+        if checkpoint is None or checkpoint.status == "infra_error":
+            return None
+        if checkpoint.status == "success":
+            score += 1.0
+            continue
+        if checkpoint.status == "budget_exhausted":
+            return score
+        if checkpoint.status not in {"fail_new", "fail_existing", "fail_both"}:
+            raise ValueError(f"unknown checkpoint status: {checkpoint.status}")
+
+        counts = (
+            checkpoint.new_pass,
+            checkpoint.new_total,
+            checkpoint.existing_pass,
+            checkpoint.existing_total,
+        )
+        if any(value is None for value in counts):
+            return None
+        new_pass, new_total, existing_pass, existing_total = counts
+        if new_total <= 0 or existing_total <= 0:
+            return None
+        if not (0 <= new_pass <= new_total and 0 <= existing_pass <= existing_total):
+            raise ValueError(f"invalid test counts at step {number}: {counts}")
+        return score + (new_pass / new_total + existing_pass / existing_total) / 2
+    return score
+
+
+def fractional_scores(cfg, records, eligible):
+    """Build per-sequence scores from stored checkpoints for eligible programs."""
+    image_id = make_runner(cfg, owner=sandbox_owner(cfg)).existing_image_id()
+    if image_id is None:
+        raise SystemExit("sandbox image not found; results are keyed by its id")
+    editor = Keys.of(cfg, image_id).editor
+    scorer = Scorer(cfg.scorer, cfg.editor.reps)
+    tasks = load_tasks(cfg.tasks)
+    out, unscored_trials = {}, 0
+    with Store(cfg.runs_dir) as store:
+        for record in records:
+            task = tasks[record.task_id]
+            for cid in eligible.get(record.task_id, {}):
+                per_sequence = []
+                complete = True
+                for sequence_id in record.sequence_ids:
+                    sequence = task.sequence(sequence_id)
+                    reps = []
+                    for rep in scorer.reps:
+                        trial = TrialKey(
+                            task.id, task.task_version, cid, sequence_id, rep, editor
+                        )
+                        value = fractional_trial_score(
+                            store.trial_steps(trial), len(sequence.steps)
+                        )
+                        if value is None:
+                            unscored_trials += 1
+                            complete = False
+                            break
+                        reps.append(value)
+                    if not complete:
+                        break
+                    per_sequence.append(tuple(reps))
+                if complete:
+                    out.setdefault(record.task_id, {})[cid] = tuple(per_sequence)
+    return out, unscored_trials
+
+
 def measure_lines(per_measure):
     lines = [
         "Variance components of other measures of the first change:",
@@ -347,12 +426,12 @@ def measure_lines(per_measure):
     return lines
 
 
-def report(scores, n, seed, pairs=None):
+def report(scores, n, seed, pairs=None, score_label="changes per sequence"):
     lines = []
     rows = headroom(scores)
     k = len(rows)
     lines += [
-        f"Headroom ({k} tasks with at least 2 programs; changes per sequence):",
+        f"Headroom ({k} tasks with at least 2 programs; {score_label}):",
         "",
         "| Picked by | Gain over the task average | 95% interval |",
         "|---|---:|---:|",
@@ -451,18 +530,46 @@ def main() -> None:
     parser.add_argument("--pairs", type=Path, help="a training file to split by sequence")
     parser.add_argument("--measures", action="store_true",
                         help="also other measures of the first change (one config)")  # fmt: skip
+    parser.add_argument(
+        "--fractional-score",
+        action="store_true",
+        help="compare an exploratory partial-test-credit score with the main score",
+    )
     parser.add_argument("--bootstrap", type=int, default=20000)
     parser.add_argument("--seed", type=int, default=20261105)
     args = parser.parse_args()
-    pooled = {}
+    pooled, fractional_pooled, unscored_trials = {}, {}, 0
     for path in args.config:
         cfg = load_config(path)
         scores, records, _ = scored_programs(cfg)
         for task_id, programs in scores.items():
             pooled.setdefault(task_id, {}).update(programs)
+        if args.fractional_score:
+            fractional, unscored = fractional_scores(cfg, records, scores)
+            unscored_trials += unscored
+            for task_id, programs in fractional.items():
+                fractional_pooled.setdefault(task_id, {}).update(programs)
     print(report(pooled, args.bootstrap, args.seed, args.pairs))
     if args.measures:
         print("\n" + "\n".join(measure_lines(first_change_measures(cfg, scores, records))))
+    if args.fractional_score:
+        print(
+            "\nExploratory fractional score: one point per fully passing step, plus "
+            "the equal-weight mean of new-feature and existing-test pass shares "
+            "on the first test-failing step. Later unattempted steps receive no "
+            f"credit; {unscored_trials} trial(s) were unscored."
+        )
+        if headroom(fractional_pooled):
+            print(
+                report(
+                    fractional_pooled,
+                    args.bootstrap,
+                    args.seed,
+                    score_label="fractional step credits per sequence",
+                )
+            )
+        else:
+            print("No tasks had enough complete fractional scores for held-out headroom.")
 
 
 if __name__ == "__main__":
