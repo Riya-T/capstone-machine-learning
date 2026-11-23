@@ -1,14 +1,16 @@
 """Editing scores of the history-suite eval writers within tasks and design classes.
 
 Reads the store only. For each writer of the history-suite eval (base, the
-prompted control, D with seeds 42, 43 and 44, the correctness-only control) it
+prompted control, D with seeds 42, 43 and 44, the second-round writer with
+seeds 42, 43 and 44, the correctness-only control) it
 puts each edited passing program in a design class (`design_classes.py`)
 and prints, per task, the mean score of each class (changes done before
 the first failure, mean over sequences and repetitions). Then it compares
 one writer's programs of one class with another writer's programs of a
 class, on the tasks where both have such programs, with the paired task
-bootstrap of `eval_compare.py`. Post hoc for seeds 42 and 43; fixed before
-the run for seed 44. See results/hist2_eval.md.
+bootstrap of `eval_compare.py`. Post hoc for seeds 42 and 43 of D; fixed
+before the run for D seed 44 and the second-round writers. See
+results/hist2_eval.md.
 
 Usage (from harness/scripts, inside WSL):
     PYTHONPATH=. ../.venv/bin/python hist2_design_within.py
@@ -29,19 +31,31 @@ WRITERS = {
     "d42": "_hist2_rpo_d",
     "d43": "_hist2_rpo_d_s43",
     "d44": "_hist2_rpo_d_s44",
+    "r2": "_hist2_r2a",
+    "r2s43": "_hist2_r2a_s43",
+    "r2s44": "_hist2_r2a_s44",
     "control": "_hist2_sft",
 }
 COMPARISONS = (
     ("d42", "plain", "base", "plain"),
     ("d43", "plain", "base", "plain"),
     ("d44", "plain", "base", "plain"),
+    ("r2", "plain", "base", "plain"),
+    ("r2s43", "plain", "base", "plain"),
+    ("r2s44", "plain", "base", "plain"),
     ("control", "plain", "base", "plain"),
     ("d42", "snapshot", "prompted", "snapshot"),
     ("d43", "snapshot", "prompted", "snapshot"),
     ("d44", "snapshot", "prompted", "snapshot"),
+    ("r2", "snapshot", "prompted", "snapshot"),
+    ("r2s43", "snapshot", "prompted", "snapshot"),
+    ("r2s44", "snapshot", "prompted", "snapshot"),
     ("d42", "plain", "prompted", "snapshot"),
     ("d43", "plain", "prompted", "snapshot"),
     ("d44", "plain", "prompted", "snapshot"),
+    ("r2", "plain", "prompted", "snapshot"),
+    ("r2s43", "plain", "prompted", "snapshot"),
+    ("r2s44", "plain", "prompted", "snapshot"),
     ("prompted", "snapshot", "base", "plain"),
 )
 

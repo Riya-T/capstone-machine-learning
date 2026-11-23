@@ -1,0 +1,9 @@
+# rtx5070_hist2_eval.yaml with the second-round writer (hist2_r2a: D trained
+# further by DPO+NLL on the pairs of rtx5070_hist_train_round2.yaml, setting A)
+# trained again with seed 44 (docs/progress_report.md, "Second-round seeds":
+# its comparisons are fixed before the run).
+extends: rtx5070_hist2_eval.yaml
+name: rtx5070-hist2-eval-hist2-r2a-s44
+writer:
+  backend:
+    model: writer-hist2_r2a_s44-ctx8k

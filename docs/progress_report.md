@@ -263,19 +263,24 @@ All five methods are done:
 
 ### What is running now
 
-The third training seed of D is done (finding 31), every foresight gate
-failed (finding 30), and the prompted control is done on all 10 eval tasks
-(finding 29).
+The second training round is done (finding 32), as are the third training
+seed of D (finding 31), the foresight gates, which all failed (finding
+30), and the prompted control on all 10 eval tasks (finding 29).
+
+**Seeds 43 and 44 of the second round** (`/home/pc/run_r2_seeds.sh`, unit
+`r2s`, started 12:10 on 11-23, about 10 hours): trained, exported, checked
+on dev and evaluated like `hist2_r2a`, then compared over seeds with D
+(see "Second-round seeds" below).
 
 **Training seeds of the original testbed** (`/home/pc/run_seeds.sh`, unit
-`seeds`, started 00:47 on 11-20). The proposal asks for three
-training seeds per trained method; only seed 42 exists on the original
-testbed. Seeds 2 and 3 of our DPO writer (dpo3), the correctness-only
-writer and the Radon writer, each trained on the same data with the same
-settings, served like the others and put through the full eval collection
-(`configs/rtx5070_eval_dpo3_s2.yaml` and so on), about 23 hours each, dpo3
-first. The script skips finished work and collections resume from the
-store, so it can be paused between writers for other runs.
+`seeds`, waiting for `r2s`). The proposal asks for three training seeds per
+trained method. Seeds 2 and 3 of our DPO writer (dpo3), the
+correctness-only writer and the Radon writer, each trained on the same
+data with the same settings, served like the others and put through the
+full eval collection (`configs/rtx5070_eval_dpo3_s2.yaml` and so on),
+about 23 hours each. dpo3 seed 2 is done; dpo3 seed 3 is trained and
+exported, and its eval collection resumes from the store. The script skips
+finished work, so it can be paused between writers for other runs.
 
 ### Words used in the rest of this report
 
@@ -1287,6 +1292,122 @@ results are in `harness/results/hist2_eval.md`.
   (−0.10 to +0.26). Pass rate on all 10 tasks 41% (base 58%, seed 42 38%,
   seed 43 48%). Per sample against base +0.14 (−0.05 to +0.34).
 
+### Second training round (2026-11-21, planned before the run)
+
+- **Why.** With three seeds, training does not beat the prompted control
+  on programs that pass (finding 31). But D's own plain-prompt samples
+  already differ in design (about half copy, half in place on eval), and
+  the editor scores its in-place programs higher. A second round trains D
+  further on the editor's ranking of D's own samples on the 16 train
+  tasks, so its pairs are drawn without any hint. If that writer beats the
+  prompted control, training on the editing outcomes adds something the
+  hint does not.
+- **Collection:** `rtx5070_hist_train_round2.yaml`: D seed 42 (the setting
+  chosen on dev; seeds 43 and 44 were not chosen on anything), plain
+  prompt, otherwise as the first round's collection (16 samples per task,
+  5 editor turns, 1 trial per sequence).
+- **Pairs:** every unequal pair of mean editing scores, length-fit, as for
+  D (`rtx5070_hist2_train_round2_aggregate.yaml`).
+- **Training:** DPO+NLL starting from D merged into the base weights, so
+  the reference model is D, with D's settings (lr 3e-5, 3 epochs, NLL
+  weight 1, seed 42): `hist2_r2`. The dev rule is D's: eligible if at least
+  20 dev programs pass (two thirds of the base writer's 30). If `hist2_r2`
+  is not eligible, setting A (lr 2e-5, 2 epochs) is trained as
+  `hist2_r2a`; the eligible one goes to the eval, or if neither is, the one
+  with more passing dev programs.
+- **Eval:** the 10 eval tasks with the files from before c066f99, the same
+  settings as every other history-suite writer.
+- **Comparisons, fixed now** (paired task bootstrap):
+  1. Second round − prompted, changes done before the first failure: does
+     it beat the prompt on programs that pass? (primary)
+  2. Second round − prompted, per writer sample.
+  3. Second round − D seed 42, changes done before the first failure: does
+     the second round add anything?
+  4. Second round − base writer, and − correctness-only control.
+- Script: `/home/pc/run_r2.sh` (unit `r2`). The original-testbed seeds are
+  paused (dpo3 seed 3 trained and exported, its eval collection 25 minutes
+  in) and resume after it.
+- **Progress (2026-11-23).**
+  - Train collection done (13:56 to 20:13 on 11-21, no infrastructure
+    errors): 117 of D's 256 samples pass the initial checks, 97 are
+    edited, and the pairing gives 171 pairs (the first round had 83).
+  - `hist2_r2` (D's settings): only 2 passing dev programs out of 64
+    samples (the rule asks for 20). Training D further at these settings
+    breaks correctness: both programs' log-probabilities fall (chosen −0.6,
+    rejected −7.6 nats from D). So setting A was trained (`hist2_r2a`).
+  - The machine restarted on 11-21 during `hist2_r2a`'s export, after its
+    training had finished. The script was relaunched at 07:59 on 11-23; it
+    skips what is done.
+  - `hist2_r2a` (setting A): 10 passing dev programs (D had 20), 6 of them
+    copy designs. Neither setting is eligible, so by the rule `hist2_r2a`,
+    with more passing programs, went to the eval.
+- **Result (2026-11-23).** Run 20261123T163249Z-c458bc (08:32 to 12:03,
+  172 editing steps, no infrastructure errors).
+  `harness/results/hist2_eval.md` ("Second training round").
+  - No passing sample on recipe_binder and spare_parts, so the planned
+    measure uses the other 8 tasks.
+  - 1. Against the prompted writer: −0.08 (−0.37 to +0.17). It does not
+       beat the prompt on programs that pass (0.85 against 0.93).
+    2. Per sample: +0.17 (−0.02 to +0.36), 0.31 against 0.14. Not
+       confirmed.
+    3. Against D seed 42: +0.36 (+0.18 to +0.58). But against seeds 43
+       and 44 +0.18 (−0.00 to +0.39) and +0.11 (−0.08 to +0.34), so the
+       gain over seed 42 is within the spread of D's seeds.
+    4. Against the base writer +0.56 (+0.34 to +0.77), the largest of any
+       history-suite writer; the whole sequence works on 11% of its
+       programs against 0% (+11 points, +5 to +17). Against the control
+       +0.52 (+0.32 to +0.71).
+  - 35% of its samples pass the initial checks on all 10 tasks (base 58%,
+    D seeds 38% to 48%). Two thirds of its passing programs are in-place
+    designs (D seed 42: half). They score 0.99 against the base writer's
+    0.28 on the same 6 tasks (+0.71, +0.31 to +1.10); its copy programs
+    score below the prompted writer's (−0.52, −0.69 to −0.34). In its own
+    train collection the two designs scored about their task's mean
+    (copy +0.06, in-place −0.04), so the pairs did not favor in-place
+    programs as a class.
+
+### Second-round seeds (2026-11-23, planned before the run)
+
+- **Why.** The second round's gain over D seed 42 (+0.36) is about the size
+  of the spread between D's three seeds, so one seed cannot say whether a
+  second round adds anything. Seeds 43 and 44 of `hist2_r2a` answer that.
+  The original-testbed seeds are paused again (dpo3 seed 3's eval was 3
+  minutes in) and resume after these.
+- **Writers:** `hist2_r2a_s43` and `hist2_r2a_s44`: the same pairs
+  (`hist2_r2.jsonl`), the same start (D seed 42 merged into the base
+  weights) and setting A (lr 2e-5, 2 epochs, NLL weight 1), with `--seed`
+  43 and 44. Dev check (`--until initial`) for the record only; the
+  setting is not chosen again.
+- **Eval:** the 10 eval tasks with the files from before c066f99, as for
+  every other history-suite writer.
+- **Comparisons, fixed now:**
+  1. Over seeds (`scripts/hist2_seed_pool.py`, each group's mean per task,
+     paired task bootstrap): the second round's three seeds − D's three
+     seeds, changes done before the first failure and per sample. Does a
+     second round add anything beyond seed variation? (primary)
+  2. Over seeds: the second round's three seeds − the prompted writer, both
+     measures.
+  3. Per seed, as for seed 42: − prompted (both measures), − D seed 42,
+     − base, − control.
+  4. Within designs (`scripts/hist2_design_within.py`): in-place − base
+     in-place; in-place − prompted copy.
+- **Computed before this plan, after D's results (post hoc):** D's three
+  seeds − the prompted writer over seeds: −0.30 (−0.52 to −0.09) on
+  programs that pass (8 tasks), +0.16 (+0.01 to +0.34) per sample.
+- Script: `/home/pc/run_r2_seeds.sh` (unit `r2s`); the original-testbed
+  seeds resume after it (`/home/pc/seeds_after_r2s.sh`).
+
+### Original-testbed seeds: dpo3 seed 2 (2026-11-21)
+
+- Run 20261121T013018Z-7db506 (01:33 on 11-20 to 06:17 on 11-21, paused
+  10:13 to 17:29 at the user's request and resumed from the store; 638
+  editing steps, no infrastructure errors). `harness/results/dpo3_eval.md`
+  ("Second training seed").
+- Against the base writer: +0.06 changes before the first failure (−0.03
+  to +0.14; seed 42 +0.02), first change works +6 points (+2 to +11), pass
+  rate +4 points (−0 to +10). The null result on the planned measure
+  holds with a second seed.
+
 ## Findings so far
 
 1. **No method changes how far the editor gets.** The five methods are
@@ -1510,7 +1631,21 @@ results are in `harness/results/hist2_eval.md`.
     the prompted writer it is −0.19 (−0.41 to −0.01) on programs that pass
     and +0.17 (−0.02 to +0.40) per sample. Over three seeds: +0.24, +0.43
     and +0.45 against base; −0.33, −0.03 and −0.19 against the prompt; per
-    sample against the prompt +0.09, +0.23 and +0.17.
+    sample against the prompt +0.09, +0.23 and +0.17. Averaged over the
+    three seeds per task (computed after the results): −0.30 (−0.52 to
+    −0.09) against the prompt on programs that pass, +0.16 (+0.01 to
+    +0.34) per sample.
+32. **A second round on D's own plain-prompt samples gets closest to the
+    prompt but does not pass it.** With 171 pairs from D's samples drawn
+    without the example, the milder setting (the first round's setting
+    broke correctness) gains +0.56 (+0.34 to +0.77) against the base
+    writer, the most of any writer, and the whole sequence works on 11% of
+    its programs. Against the prompted writer it is −0.08 (−0.37 to +0.17)
+    on programs that pass and +0.17 (−0.02 to +0.36) per sample. Against
+    D seed 42, its start, +0.36 (+0.18 to +0.58), but against seeds 43 and
+    44 the intervals reach 0. Only 35% of its samples pass, and it fell
+    short of the dev rule (10 passing programs, the rule asks for 20). One
+    seed; seeds 43 and 44 are running.
 
 - **Testbed (the main question):** the diagnostics say the current tasks
   cannot show an effect, because the editor's randomness swamps the
@@ -1526,9 +1661,10 @@ results are in `harness/results/hist2_eval.md`.
   wallet pilot in `docs/wallet_pair_pilot/` (two hand-written designs, no
   usable pair) proposes concrete test checks for such a pilot.
 - **Seeds and training settings:** the proposal asks for several seeds
-  for our writer. On the original testbed only seed 42 is done; seeds 2
-  and 3 of dpo3, sft and radon are queued after dpo_all's eval. On the
-  history suite, D has two seeds (finding 28).
+  for our writer. On the original testbed, dpo3 has seeds 42 and 2; its
+  seed 3 and seeds 2 and 3 of sft and radon run after the second-round
+  seeds. On the history suite, D has three seeds (findings 28 and 31) and
+  the second round one, with two more running.
 - **Protocol:** these results use the collection store's protocol: selected
   passing programs, at most 8 per task. `harness/docs/evaluation.md`
   describes a different one (one unselected first attempt per task and
@@ -1567,6 +1703,6 @@ results are in `harness/results/hist2_eval.md`.
 | Single-change program effects | `scripts/step_effects.py`; results in `harness/results/diagnostics.md` |
 | Label-noise control | `scripts/flip_pairs.py`, `scripts/static_ranking.py --score-noise`, `scripts/implicit_reward.py`; results in `harness/results/diagnostics.md` |
 | All-pairs editing writer | scorer rule `aggregate` (`harness/src/harness/collection/scorer.py`), `scripts/noise_ceiling.py`, `harness/configs/rtx5070_train_aggregate.yaml`, `rtx5070_dev_aggregate.yaml`, `rtx5070_eval_aggregate.yaml`, `rtx5070_eval_dpo_all.yaml`, `rtx5070_eval_radon_rel18_all.yaml` |
-| History suite | `harness/tasks/HISTORY_SUITE.md`, configs `rtx5070_hist*`, `train_dpo.py --nll-weight`, `scripts/design_classes.py`; results in `harness/results/hist2_eval.md` |
+| History suite | `harness/tasks/HISTORY_SUITE.md`, configs `rtx5070_hist*`, `train_dpo.py --nll-weight`, `scripts/design_classes.py`, `scripts/hist2_design_within.py`, `scripts/hist2_seed_pool.py`; results in `harness/results/hist2_eval.md` (second round: configs `rtx5070_hist_train_round2.yaml`, `rtx5070_hist2_train_round2_aggregate.yaml`, `rtx5070_hist2_*_hist2_r2*.yaml`) |
 | Controlled wallet pilot | `docs/wallet_pair_pilot/` |
 | Task checklist | `Task_list.md` |

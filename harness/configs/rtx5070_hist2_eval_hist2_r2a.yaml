@@ -1,0 +1,8 @@
+# rtx5070_hist2_eval.yaml with the second-round writer: D (hist2_rpo_d)
+# trained further by DPO+NLL on the pairs of rtx5070_hist_train_round2.yaml,
+# setting A (lr 2e-5, 2 epochs), the fallback if D's settings fail the dev rule.
+extends: rtx5070_hist2_eval.yaml
+name: rtx5070-hist2-eval-hist2-r2a
+writer:
+  backend:
+    model: writer-hist2_r2a-ctx8k

@@ -1,0 +1,19 @@
+# Second training round on the history suite: the train collection of
+# rtx5070_hist_train_hints2.yaml (16 train tasks, 16 samples each, 5 editor
+# turns, 1 trial per sequence), but the samples come from the trained
+# writer D (hist2_rpo_d, seed 42, the setting chosen on dev) with the plain
+# prompt and no hint. D's own samples already differ in design (about half
+# copy, half in place), so the editor's ranking of them gives pairs drawn
+# without any hint. A writer trained on them from D (hist2_r2) is compared
+# with the prompted control: does training on the editing outcomes go
+# beyond the hint the first round's samples were drawn with? Plan fixed
+# before the run in docs/progress_report.md (2026-11-21).
+#
+# Usage (from harness/, inside WSL):
+#     uv run python -m harness collect --config configs/rtx5070_hist_train_round2.yaml
+extends: rtx5070_hist_train_hints2.yaml
+name: rtx5070-hist-train-round2
+writer:
+  backend:
+    model: writer-hist2_rpo_d-ctx8k
+  design_hints: []

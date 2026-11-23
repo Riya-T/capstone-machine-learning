@@ -1,0 +1,12 @@
+# Pairs from the second-round train collection (rtx5070_hist_train_round2.yaml):
+# every unequal pair of mean editing scores per task, as for the first
+# round's pairs (rtx5070_hist2_train_aggregate.yaml).
+#
+# Usage (from harness/, inside WSL):
+#     uv run python -m harness report --config configs/rtx5070_hist2_train_round2_aggregate.yaml --out DIR
+extends: rtx5070_hist_train_round2.yaml
+name: rtx5070-hist2-train-round2-aggregate
+scorer:
+  rule: aggregate
+  per_task_cap: null
+  min_step_gap: 1

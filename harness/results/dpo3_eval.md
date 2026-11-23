@@ -106,6 +106,26 @@ Neither asking for maintainable code
 editing-outcome pairs makes the writer's programs measurably easier for
 the editor to change.
 
+## Second training seed
+
+`dpo3_s2` is dpo3 trained again with `--seed 2`, on the same 160 pairs
+with the same settings (`configs/rtx5070_eval_dpo3_s2.yaml`, run
+20261121T013018Z-7db506, 638 editing steps, no infrastructure errors; the
+collection was paused once and resumed from the store). Its training ends
+with reward accuracy 0.88 and a reward margin of 0.21.
+
+| Metric | Base | dpo3 (seed 42) | dpo3 (seed 2) | Seed 2 − base (95%) |
+|---|---:|---:|---:|---|
+| Changes done before first failure | 1.43 | 1.45 | 1.48 | +0.06 (−0.03 to +0.14) |
+| First change works | 67% | 71% | 73% | +6 pts (+2 to +11) |
+| Whole sequence works | 26% | 25% | 26% | −0 pts (−4 to +3) |
+| Writer samples passing the initial checks | 58% | 64% | 62% | +4 pts (−0 to +10) |
+
+The second seed repeats the first: no measurable gain on the planned
+measure (seed 42: +0.02, −0.11 to +0.19), and a few points more on the
+first change and on initial correctness. Those two are secondary metrics,
+and the first change's gain is too small to move the planned measure.
+
 ## Reproduce
 
 From `harness/`, inside WSL, after building `writer-dpo3-ctx8k` as in

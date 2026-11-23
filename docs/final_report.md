@@ -1,6 +1,6 @@
 # Training a Code Writer on Later-Edit Outcomes: A Controlled Study
 
-CMSC673 capstone, final report (draft of 2026-11-19). Results marked
+CMSC673 capstone, final report (draft of 2026-11-23). Results marked
 *pending* are still running; the rest are final.
 
 ## Abstract
@@ -42,8 +42,13 @@ programs without the editing outcomes, which itself gains nothing, it is
 correctness, about half of it shared with that control. The original writer shown the worked example at eval time does at
 least as well on programs that pass, but only by turning every program
 into the copy design, and 81% of its samples fail their tests. Per sample,
-it gains nothing. Our writer's gain comes mostly from in-place programs,
-which the example doesn't produce. We release the pipeline,
+it gains nothing, and averaged over its three seeds our writer scores
++0.16 above it (+0.01 to +0.34, computed after the results). Our writer's
+gain comes mostly from in-place programs, which the example doesn't
+produce. A second training round on the writer's own plain-prompt samples
+raises the gain over the original writer to +0.56 (one seed so far), but
+still does not beat the prompted writer on programs that pass (−0.08,
+−0.37 to +0.17). We release the pipeline,
 tasks, every preference pair, the diagnostics and the controls.
 
 ## 1. Introduction
@@ -591,12 +596,19 @@ other seeds.
   programs of the prompted writer are copy designs, against about half of
   ours. 81% of its samples fail the initial tests (42% for the original
   writer).
+- **A generic prompt does not.** The original writer told only to write
+  maintainable, easy-to-change code completes 0.31 changes on the same 9
+  tasks, the original writer's level. That run was on a different machine
+  (a cluster GPU with an Apptainer sandbox), so it is not matched and has
+  no interval (`harness/results/hist2_maintain_nexus.md`).
 - **Per sample, the prompt gains nothing, and our writer's gain over it is
   not established.** Counting failing samples as 0, the original writer
   scores 0.17 changes per sample, the prompted writer 0.14, and ours 0.23,
   0.37 and 0.31. Against the prompted writer that is +0.09 (−0.02 to
   +0.22), +0.23 (+0.05 to +0.43) and +0.17 (−0.02 to +0.40). The test
-  fixed for seed 44 does not exclude 0.
+  fixed for seed 44 does not exclude 0. Averaged over the three seeds per
+  task (computed after the results), it is +0.16 (+0.01 to +0.34); on
+  programs that pass, the same average is −0.30 (−0.52 to −0.09, 8 tasks).
 - **Our writer's gain comes from a different kind of program.** Within
   tasks, our writer's in-place programs score above the original writer's
   in-place programs: +0.47 (+0.24 to +0.70, 6 tasks), +0.60 (+0.22 to
@@ -612,8 +624,9 @@ one seed matches it and two fall short. Training gets there without the
 prompt at test time, with fewer failing samples, and through in-place
 programs that the prompt does not produce and that the editor extends as
 far as the prompted copy programs. Per writer sample, it does better than
-the prompt with every seed, but clearly with only one. Whether training
-can go beyond what a prompt gives is the question of §7.4.
+the prompt with every seed, but clearly with only one, or averaged over
+the three. Whether training can go beyond what a prompt gives is the
+question of §7.4 and §7.5.
 
 ### 7.4 Foresight instead of a hint
 
@@ -693,6 +706,65 @@ places), not just a record of the operations, and knowing the changes
 does not lead the writer to it; the worked example names it. We did not
 run the original testbed's gate, which has less design room.
 
+### 7.5 A second round on the writer's own samples
+
+Our writer's training pairs came from samples drawn with the worked
+example. Its own samples, drawn with the plain prompt, already differ in
+design: about half of its passing eval programs are copy designs and half
+are in-place. A second round trains on those alone:
+
+- **Samples:** seed 42 of our writer wrote 16 samples per train task with
+  the plain prompt and the first round's settings. 117 of 256 passed the
+  initial tests and 97 were edited.
+- **Pairs:** every unequal pair of mean editing scores, 171 pairs.
+- **Training:** DPO+NLL continued from our writer merged into the base
+  weights, so the reference model is our writer.
+
+The plan and its four comparisons were fixed before the run.
+
+At the first round's setting (lr 3e-5, 3 epochs), correctness collapses:
+2 of 64 dev samples pass, and the dev rule asks for 20. The milder setting
+(lr 2e-5, 2 epochs) passes 10. Neither meets the rule, so, as fixed
+beforehand, the one with more passing programs went to the eval. It has no
+passing sample on recipe_binder or spare_parts, so the comparisons on
+programs that pass use 8 tasks. On those, it completes 0.85 changes before
+the first failure, against 0.29 for the original writer and 0.93 for the
+prompted writer.
+
+| Second round − … (95% interval) | Changes before first failure | Whole sequence works | Samples passing initial tests | Per writer sample (10 tasks) |
+|---|---|---|---|---|
+| Original writer | +0.56 (+0.34 to +0.77) | +11 pts (+5 to +17) | −17 pts (−35 to +3) | +0.13 (−0.05 to +0.31) |
+| Correctness-only | +0.52 (+0.32 to +0.71) | +11 pts (+5 to +17) | −6 pts (−18 to +6) | +0.15 (−0.00 to +0.29) |
+| Prompted | −0.08 (−0.37 to +0.17) | −2 pts (−15 to +9) | +29 pts (+15 to +41) | +0.17 (−0.02 to +0.36) |
+| Ours, seed 42 (its start) | +0.36 (+0.18 to +0.58) | +8 pts (+3 to +12) | +0 pts (−10 to +12) | +0.08 (−0.03 to +0.19) |
+| Ours, seed 43 | +0.18 (−0.00 to +0.39) | +1 pt (−6 to +8) | −12 pts (−20 to −3) | – |
+| Ours, seed 44 | +0.11 (−0.08 to +0.34) | +1 pt (−10 to +10) | −8 pts (−16 to +3) | – |
+
+- **It still does not beat the prompt on programs that pass:** 0.85
+  against 0.93. That is closer than seeds 42 and 44 of the first round,
+  and about level with seed 43.
+- **Per sample, it scores the most of any writer:** 0.31 changes, against
+  0.14 for the prompted writer. But the interval of the difference
+  includes 0.
+- **It gains over its starting point, but no more than the first round's
+  seeds differ.** Seed 42 is the weakest of the three, and against seeds
+  43 and 44 the intervals reach 0. Seeds 43 and 44 of the second round
+  answer whether a second round adds anything (*pending*).
+- **Against the original writer, it has the largest gain of any writer**
+  (+0.56). The whole change sequence works on 11% of its programs, against
+  0%. But only 35% of its samples pass the initial tests on all 10 tasks
+  (original writer 58%, first round 38% to 48%).
+- **Two thirds of its passing programs are in-place designs** (half for
+  its start). They score 0.99 against the original writer's in-place 0.28
+  on the same 6 tasks (+0.71, +0.31 to +1.10). The pairs did not favor
+  in-place programs as a class: in the round's train collection, both
+  designs scored about their task's mean (copy +0.06, in-place −0.04).
+
+So a second round on the writer's own samples, with no worked example in
+its new pairs, gets furthest above the original writer and closest to the
+prompt on programs that pass. It still does not go beyond the prompt, and
+it costs more correctness.
+
 ## 8. Discussion
 
 **What the results say.** On the original testbed, preferences from
@@ -730,7 +802,10 @@ the design the example shows. Since we wrote the example, the
 method has so far learned roughly what we told it, in a different form.
 Foresight (§7.4) tried to replace what we told it with the future changes
 themselves, and failed its gate: knowing the changes did not give the
-writer programs the editor handles better.
+writer programs the editor handles better. A second round on the writer's
+own plain-prompt samples (§7.5), with no example in its new pairs, moved
+further from the original writer (+0.56) and closer to the prompt (−0.08).
+It did not pass the prompt, and it cost more correctness.
 
 **What the original result does not say.** It does not say that
 maintainability cannot be learned from downstream outcomes. Three
@@ -763,9 +838,10 @@ above 0.3.
 
 - **Scope:** one writer, one editor and one hardware budget, with small
   self-contained tasks.
-- **Seeds:** one training seed so far on the original testbed (two more
-  running). Three on the history suite, whose gains range from +0.24 to
-  +0.45.
+- **Seeds:** on the original testbed, two training seeds of our writer so
+  far (+0.02 and +0.06 against the original writer, neither interval
+  excluding 0) and one of each baseline, with more running. Three on the
+  history suite, whose gains range from +0.24 to +0.45.
 - **Selection:** up to 8 passing programs per task are edited, rather
   than a single unselected attempt.
 - **Noise control:** it uses a static signal (MI), whose learnability may
@@ -781,7 +857,11 @@ above 0.3.
   - no gain over the worked example given at eval time, on programs that
     pass (one seed level with it, two below); per sample, a gain over it
     for one seed of three, and not for the seed whose test was fixed in
-    advance.
+    advance. Averaged over the three seeds the per-sample gain is clear,
+    but that average was computed after the results;
+  - a second training round tested with one seed so far, at a setting
+    that failed the dev rule (10 passing dev programs, the rule asks for
+    20).
 
 ## 9. Conclusion
 
@@ -803,7 +883,10 @@ changes further. With three training seeds, that is +0.24, +0.43 and
 the editing outcomes. The cost is 11 to 22 points of initial correctness. The worked example the
 training samples were drawn with, given at eval time instead, does at
 least as well on programs that pass, but only through one design and with
-most of its samples failing.
+most of its samples failing. A second round of training on the writer's
+own samples, drawn without the example, raises the gain to +0.56 with one
+seed. On programs that pass, that is level with the example, not beyond
+it.
 
 ## Reproducibility and artifacts
 
@@ -813,7 +896,7 @@ most of its samples failing.
   `label-noise-v1`, `editing-all-v1`), with manifests and provenance.
 - Results pages: `harness/results/` (one per method, the comment
   ablation, `diagnostics.md` with every probe and control and their
-  reproduce commands, `hist2_eval.md` for §7.1 to §7.3, `foresight.md`
+  reproduce commands, `hist2_eval.md` for §7.1 to §7.3 and §7.5, `foresight.md`
   for §7.4); figures in
   `harness/results/figures/` (`scripts/report_figures.py`).
 - The history suite: tasks and the record of every decision in

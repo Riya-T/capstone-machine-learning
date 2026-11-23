@@ -266,6 +266,11 @@ Across the three seeds:
 The per-sample and in-place rows were computed after the results for seeds
 42 and 43, and fixed before the run for seed 44.
 
+Averaged over the three seeds per task (`scripts/hist2_seed_pool.py`,
+computed after all three results), D − prompted is −0.30 (−0.52 to −0.09)
+on programs that pass (the 8 tasks where every seed has an edited program)
+and +0.16 (+0.01 to +0.34) per sample (all 10 tasks).
+
 ## Prompted control
 
 D's training samples were drawn with a worked example of the copy design
@@ -353,3 +358,109 @@ changes as easily as the prompted copy programs and more easily than the
 base writer's; the correctness-only control doesn't produce these. Per
 writer sample, seed 43 does better than the prompted writer, and seed 42's
 difference doesn't exclude 0.
+
+## Second training round
+
+`hist2_r2a` is D trained further on the editor's ranking of D's own
+plain-prompt samples. The plan and its four comparisons were fixed before
+the run (`docs/progress_report.md`, "Second training round").
+
+- **Collection** (`configs/rtx5070_hist_train_round2.yaml`): D seed 42 wrote
+  16 samples per train task with the plain prompt, otherwise as in the first
+  round. 117 of 256 passed the initial checks and 97 were edited.
+- **Pairs:** every unequal pair of mean editing scores
+  (`configs/rtx5070_hist2_train_round2_aggregate.yaml`): 171 pairs.
+- **Training:** DPO+NLL (NLL weight 1, seed 42), starting from D merged into
+  the base weights, so the reference model is D.
+- **Dev rule:**
+  - At D's setting (lr 3e-5, 3 epochs; `hist2_r2`), 2 dev programs pass
+    out of 64 samples. The rule asks for 20, and both programs'
+    log-probabilities fall (chosen −0.6, rejected −7.6 nats from D).
+  - At setting A (lr 2e-5, 2 epochs; `hist2_r2a`), 10 pass: chosen +3.7
+    and rejected −0.4 nats. 6 of these 10 programs are copy designs.
+  - Neither is eligible, so by the rule the one with more passing programs
+    went to the eval.
+- **Eval:** `configs/rtx5070_hist2_eval_hist2_r2a.yaml`, run
+  20261123T163249Z-c458bc, 172 editing steps, no infrastructure errors. As
+  for the other writers, the 4 eval tasks use their files from before
+  c066f99.
+
+| Task | Initial pass (base → second round) | Changes done before first failure | First change works | Whole sequence works |
+|---|---|---|---|---|
+| bike_docks | 8/16 → 3/16 | 0.00 → 1.00 | 0% → 67% | 0% → 17% |
+| canal_locks | 13/16 → 7/16 | 0.12 → 0.14 | 12% → 14% | 0% → 0% |
+| coin_vaults | 11/16 → 4/16 | 0.12 → 0.38 | 12% → 12% | 0% → 12% |
+| grain_silos | 10/16 → 3/16 | 0.50 → 1.00 | 50% → 83% | 0% → 0% |
+| museum_galleries | 7/16 → 11/16 | 0.29 → 0.69 | 29% → 31% | 0% → 12% |
+| recipe_binder | 1/16 → 0/16 | 0.00 → – | – | – |
+| rehearsal_setlists | 5/16 → 9/16 | 0.50 → 1.12 | 50% → 81% | 0% → 0% |
+| server_racks | 10/16 → 10/16 | 0.50 → 1.38 | 50% → 81% | 0% → 25% |
+| spare_parts | 14/16 → 0/16 | 0.50 → – | – | – |
+| tour_itineraries | 14/16 → 9/16 | 0.25 → 1.06 | 25% → 56% | 0% → 19% |
+
+It has no passing sample on recipe_binder and spare_parts, so the
+comparisons on programs that pass use the other 8 tasks. On them it
+completes 0.85 changes before the first failure. On the same tasks, the
+other writers complete:
+
+| Writer | Changes before first failure |
+|---|---:|
+| Base writer | 0.29 |
+| Control | 0.32 |
+| Prompted | 0.93 |
+| D seed 42 | 0.48 |
+| D seed 43 | 0.66 |
+| D seed 44 | 0.73 |
+
+| Metric | − base | − control | − prompted | − D seed 42 | − D seed 43 | − D seed 44 |
+|---|---|---|---|---|---|---|
+| Changes done before first failure | +0.56 (+0.34 to +0.77) | +0.52 (+0.32 to +0.71) | −0.08 (−0.37 to +0.17) | +0.36 (+0.18 to +0.58) | +0.18 (−0.00 to +0.39) | +0.11 (−0.08 to +0.34) |
+| First change works | +25 pts (+12 to +41) | +23 pts (+10 to +36) | −5 pts (−22 to +13) | +15 pts (−1 to +34) | +10 pts (−4 to +25) | +7 pts (−6 to +21) |
+| Whole sequence works | +11 pts (+5 to +17) | +11 pts (+5 to +17) | −2 pts (−15 to +9) | +8 pts (+3 to +12) | +1 pt (−6 to +8) | +1 pt (−10 to +10) |
+| Writer samples passing the initial checks | −17 pts (−35 to +3) | −6 pts (−18 to +6) | +29 pts (+15 to +41) | +0 pts (−10 to +12) | −12 pts (−20 to −3) | −8 pts (−16 to +3) |
+
+- **Per sample (all 10 tasks, a task without an edited program counting
+  0):** it scores 0.31. Against the base writer that is +0.13 (−0.05 to
+  +0.31), against the control +0.15 (−0.00 to +0.29), against the prompted
+  writer +0.17 (−0.02 to +0.36) and against D seed 42 +0.08 (−0.03 to
+  +0.19).
+- **Pass rate on all 10 tasks:** 56 of 160 samples (35%), against 58% for
+  the base writer, 19% for the prompted writer and 38%, 48% and 41% for D's
+  seeds.
+- **Designs:** 37 of its 56 passing eval programs are in-place (66%; D
+  seed 42 52%). They score 1.11 on average and its copy programs 0.38.
+  Within tasks (`scripts/hist2_design_within.py`; these three comparisons
+  were not among the four fixed for this writer):
+  - its in-place programs against the base writer's in-place programs:
+    +0.71 (+0.31 to +1.10, 6 tasks; 0.99 against 0.28);
+  - its in-place programs against the prompted writer's copy programs:
+    +0.09 (−0.42 to +0.48);
+  - its copy programs against the prompted writer's: −0.52 (−0.69 to
+    −0.34).
+- **The pairs did not favor a design.** In the round's train collection,
+  D's copy programs scored +0.06 (−0.05 to +0.18) against their task's
+  mean and its in-place programs −0.04 (−0.10 to +0.04). So the move to
+  in-place programs is not the editor preferring that class; what the
+  pairs reinforced is not something our classifier captures.
+
+Of the four comparisons fixed before the run:
+
+1. **Against the prompted writer, planned measure: not beaten** (−0.08,
+   −0.37 to +0.17). That is closer than D seeds 42 and 44 (−0.33 and
+   −0.19) and about level with seed 43 (−0.03).
+2. **Against the prompted writer, per sample: not confirmed.** +0.17, with
+   an interval that includes 0 (−0.02 to +0.36).
+3. **Against D seed 42, its starting point: confirmed** (+0.36, +0.18 to
+   +0.58). But seed 42 is D's weakest seed. Against seeds 43 and 44, the
+   intervals reach 0 (+0.18 and +0.11). So one seed of the second round
+   cannot separate a second-round gain from D's seed spread. Seeds 43 and
+   44 of `hist2_r2a` are running, with comparisons fixed beforehand
+   (`docs/progress_report.md`, "Second-round seeds").
+4. **Against the base writer and the control: confirmed.** +0.56 and +0.52,
+   the largest gains of any history-suite writer. The whole sequence works
+   on 11% of its programs, against 0% for both.
+
+So a second round on D's own samples, with no example in its new pairs,
+gets furthest above the base writer and closest to the prompt on programs
+that pass. It still does not beat the prompt, and fewer of its samples
+pass the initial checks than any D seed's (35% against 38% to 48%).
