@@ -1,0 +1,7 @@
+# The four history-suite development tasks on Nexus, using the same writer
+# prompt, editor and sandbox settings as nexus_hist2_eval.yaml. Used only for
+# DPO setting selection; collect with `--until initial` (no editing trials).
+extends: nexus_hist2_eval.yaml
+name: nexus-hist2-dev
+tasks:
+  include: [seed_vault, choir_sections, tram_lines, photo_albums]

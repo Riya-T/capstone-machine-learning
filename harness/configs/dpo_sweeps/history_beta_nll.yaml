@@ -1,0 +1,26 @@
+# Controlled follow-up to the history-suite DPO+NLL setting D.
+# Keep learning rate and epochs fixed at D (3e-5, 3) while filling the beta
+# and NLL-weight gaps. The five configurations form two one-factor contrasts:
+# beta {0.05, 0.1, 0.2} at NLL weight 1, and NLL weight {0, 1, 2} at beta 0.1.
+name: hist2_beta_nll_dev
+base_eval_config: nexus_hist2_dev.yaml
+learning_rate: 3.0e-5
+epochs: 3
+seeds: [42, 43, 44]
+base_dev_passing_programs: 30
+candidate_settings:
+  - name: beta005_nll1
+    beta: 0.05
+    nll_weight: 1.0
+  - name: beta010_nll0
+    beta: 0.1
+    nll_weight: 0.0
+  - name: beta010_nll1
+    beta: 0.1
+    nll_weight: 1.0
+  - name: beta010_nll2
+    beta: 0.1
+    nll_weight: 2.0
+  - name: beta020_nll1
+    beta: 0.2
+    nll_weight: 1.0
