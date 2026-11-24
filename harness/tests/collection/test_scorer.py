@@ -15,6 +15,7 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
+from harness.collection.partial_credit import Counts, counts_key
 from harness.collection.scorer import (
     RULES,
     CandidateRecord,
@@ -30,7 +31,7 @@ from harness.collection.scorer import (
     weak_dominance,
     write_outputs,
 )
-from harness.config import ConfigError, ScorerConfig, load_config
+from harness.config import ConfigError, ScorerConfig, TiebreakConfig, load_config
 from harness.models.parser import parse_program
 from harness.registry import load_tasks
 from harness.store import Candidate, CandidateKey, Checkpoint, InitialCheck, Store, TrialKey
@@ -601,3 +602,116 @@ def test_programs_over_the_cap_are_counted_and_never_scored():
     assert report["samples"]["eligible"] == 1
     assert report["samples"]["over_program_cap"] == 1
     assert report["samples"]["incomplete"] == 0  # its missing trials don't count as unfinished
+
+
+# --- partial-credit tie-break -------------------------------------------------
+
+
+def credited(cid, s1, s2, shares):
+    """One rep per sequence, length 2; shares[(seq)] = (new_pass, existing_pass)
+    of 4 tests each for the failed step of that sequence."""
+    c = cand(cid, [s1], [s2])
+    counts = {}
+    for seq, score in (("s1", s1), ("s2", s2)):
+        if score < 2:
+            n, e = shares[seq]
+            counts[(seq, 0)] = {score + 1: Counts(n, 4, e, 4)}
+    return CandidateRecord(c.candidate_id, c.sample_indices, True, c.trials, c.call_keys,
+                           step_counts=counts)  # fmt: skip
+
+
+def tiebreak_build(cands, min_gap=0.25):
+    task = TaskRecord("t", "P", ("s1", "s2"), 2, (), tuple(cands))
+    cfg = ScorerConfig(rule="aggregate", pairing_mode="all_pairs",
+                       tiebreak=TiebreakConfig(min_gap=min_gap))  # fmt: skip
+    return Scorer(cfg, editor_reps=1).build([task], programs)
+
+
+def test_tiebreak_orders_ties_by_partial_credit_and_leaves_decided_pairs_alone():
+    # a and b both score 0 + 1 = 1. a's failed s1 step passes 3/4 new and
+    # 4/4 old tests: (3/4 + 2) / 3 = 11/12; b's passes 1/4 and 4/4: 9/12.
+    # Their s2 steps fail the same way (2/3 each), so a has 1 + 11/12 + 2/3
+    # = 31/12 and b 29/12. The gap, 1/6, is below 0.25: still a tie.
+    # c scores 2 + 1 = 3: the rule decides c over both, whatever the credit.
+    a = credited("a", 0, 1, {"s1": (3, 4), "s2": (0, 4)})
+    b = credited("b", 0, 1, {"s1": (1, 4), "s2": (0, 4)})
+    c = credited("c", 2, 1, {"s2": (0, 0)})
+    result = tiebreak_build([a, b, c])
+    combo = result.report["combinations"]["aggregate/all_pairs"]
+    assert combo["tiebroken"] == 0 and combo["tie"] == 1
+    assert {(p["chosen_id"], p["rejected_id"]) for p in result.pairs} == {("c", "a"), ("c", "b")}
+    assert not any(p["tiebroken"] for p in result.pairs)
+
+    # A smaller gap breaks the a-b tie: a has more credit.
+    result = tiebreak_build([a, b, c], min_gap=0.15)
+    combo = result.report["combinations"]["aggregate/all_pairs"]
+    assert combo["tiebroken"] == 1 and combo["tie"] == 0
+    broken = [p for p in result.pairs if p["tiebroken"]]
+    assert [(p["chosen_id"], p["rejected_id"]) for p in broken] == [("a", "b")]
+    assert broken[0]["chosen_credit"] == "31/12" and broken[0]["rejected_credit"] == "29/12"
+    assert "ties broken by partial credit: 1" in summary_table(result.report)
+
+
+def test_regressions_cost_more_than_unfinished_features():
+    # Same 3 of 4 tests short, but a broke an old test, b missed a new one.
+    a = credited("a", 0, 2, {"s1": (4, 3)})
+    b = credited("b", 0, 2, {"s1": (3, 4)})
+    pairs = tiebreak_build([a, b], min_gap=0.01).pairs
+    assert [(p["chosen_id"], p["rejected_id"]) for p in pairs] == [("b", "a")]
+
+
+def test_tiebreak_refuses_failed_steps_without_counts():
+    a = credited("a", 0, 2, {"s1": (1, 4)})
+    bare = cand("b", [0], [2])
+    with pytest.raises(ValueError, match="partial_credit.py backfill"):
+        tiebreak_build([a, bare])
+
+
+def test_without_tiebreak_nothing_changes():
+    a = credited("a", 0, 1, {"s1": (4, 4), "s2": (0, 4)})
+    b = credited("b", 0, 1, {"s1": (0, 4), "s2": (0, 4)})
+    task = TaskRecord("t", "P", ("s1", "s2"), 2, (), (a, b))
+    result = Scorer(ScorerConfig(rule="aggregate", pairing_mode="all_pairs"), 1).build(
+        [task], programs
+    )
+    assert result.pairs == []
+    assert result.report["combinations"]["aggregate/all_pairs"]["tie"] == 1
+    assert result.report["primary"]["tiebreak"] is None
+
+
+def test_tiebreak_config_is_validated():
+    with pytest.raises(ConfigError):
+        TiebreakConfig(min_gap=0)
+    with pytest.raises(ConfigError):
+        TiebreakConfig(min_gap=0.25, existing_weight=-1)
+
+
+def test_load_task_record_takes_counts_from_the_store_and_the_backfill(tmp_path):
+    from harness.registry import prompt_version
+
+    cfg = load_config(ROOT / "configs" / "mock.yaml")
+    task = load_tasks(cfg.tasks)["record_store"]
+    pv = prompt_version("P")
+    with Store(tmp_path / "runs") as store:
+        run = store.start_run(cfg)
+        cid = store.put_blob({"records.py": b"p\n"})
+        store.record_candidate(
+            Candidate(CandidateKey(task.id, pv, "w", 0), cid, None, 1, 1, 0.1, run)
+        )
+        store.record_initial_check(
+            InitialCheck(task.id, task.task_version, cid, "s", True, {}, run)
+        )
+        s1 = TrialKey(task.id, task.task_version, cid, "s1", 0, "e")
+        s2 = TrialKey(task.id, task.task_version, cid, "s2", 0, "e")
+        store.record_checkpoint(Checkpoint(s1, 1, "c", "fail_new", "out1", 2, 4, 3, 3, run_id=run))
+        store.record_checkpoint(Checkpoint(s2, 1, "c", "budget_exhausted", "out2", run_id=run))
+        extra = {counts_key(task.id, task.task_version, cid, "s2", 0, "e", 1, "out2"):
+                 Counts(1, 4, 2, 3)}  # fmt: skip
+        record = load_task_record(store, task, "P", writer_hash="w", sandbox_hash="s",
+                                  editor_hash="e", editor_reps=1, extra_counts=extra)  # fmt: skip
+        bare = load_task_record(store, task, "P", writer_hash="w", sandbox_hash="s",
+                                editor_hash="e", editor_reps=1)  # fmt: skip
+    counts = record.candidates[0].step_counts
+    assert counts[("s1", 0)] == {1: Counts(2, 4, 3, 3)}
+    assert counts[("s2", 0)] == {1: Counts(1, 4, 2, 3)}
+    assert ("s2", 0) not in bare.candidates[0].step_counts
