@@ -1,0 +1,11 @@
+# The prompted control (rtx5070_hist2_eval_hinted.yaml) with 32 samples per
+# task instead of 16, so its score on programs that pass rests on more
+# programs (docs/progress_report.md, "Larger prompted control"). A sample's
+# seed depends only on its index and samples_per_task is not in the writer
+# key, so samples 0 to 15 and their trials are the 16-sample run's; only
+# samples 16 to 31 are new. The first tasks.max_programs passing programs
+# per task are edited, as before.
+extends: rtx5070_hist2_eval_hinted.yaml
+name: rtx5070-hist2-eval-hinted32
+writer:
+  samples_per_task: 32

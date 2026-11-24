@@ -46,9 +46,13 @@ it gains nothing, and averaged over its three seeds our writer scores
 +0.16 above it (+0.01 to +0.34, computed after the results). Our writer's
 gain comes mostly from in-place programs, which the example doesn't
 produce. A second training round on the writer's own plain-prompt samples
-raises the gain over the original writer to +0.56 (one seed so far), but
-still does not beat the prompted writer on programs that pass (−0.08,
-−0.37 to +0.17). We release the pipeline,
+(three seeds) gains +0.56 to +0.64 over the original writer and adds +0.20
+(+0.01 to +0.43) to the first round. In tests fixed beforehand, it is
+level with the prompted writer on programs that pass (−0.11, −0.35 to
++0.09). Per sample it is ahead (+0.18, +0.02 to +0.35), because twice as
+many of its samples pass. Against a prompted control with twice the
+samples, that lead is the same size but borderline (+0.17, +0.00 to
++0.34). We release the pipeline,
 tasks, every preference pair, the diagnostics and the controls.
 
 ## 1. Introduction
@@ -725,45 +729,67 @@ The plan and its four comparisons were fixed before the run.
 At the first round's setting (lr 3e-5, 3 epochs), correctness collapses:
 2 of 64 dev samples pass, and the dev rule asks for 20. The milder setting
 (lr 2e-5, 2 epochs) passes 10. Neither meets the rule, so, as fixed
-beforehand, the one with more passing programs went to the eval. It has no
-passing sample on recipe_binder or spare_parts, so the comparisons on
-programs that pass use 8 tasks. On those, it completes 0.85 changes before
-the first failure, against 0.29 for the original writer and 0.93 for the
-prompted writer.
+beforehand, the one with more passing programs went to the eval. That one
+seed's gain over its starting point (+0.36) was about the size of the
+spread between the first round's seeds. So it was trained twice more, with
+seeds 43 and 44, with the comparisons fixed before those runs. Their dev
+checks pass 9 and 12 programs.
 
-| Second round − … (95% interval) | Changes before first failure | Whole sequence works | Samples passing initial tests | Per writer sample (10 tasks) |
-|---|---|---|---|---|
-| Original writer | +0.56 (+0.34 to +0.77) | +11 pts (+5 to +17) | −17 pts (−35 to +3) | +0.13 (−0.05 to +0.31) |
-| Correctness-only | +0.52 (+0.32 to +0.71) | +11 pts (+5 to +17) | −6 pts (−18 to +6) | +0.15 (−0.00 to +0.29) |
-| Prompted | −0.08 (−0.37 to +0.17) | −2 pts (−15 to +9) | +29 pts (+15 to +41) | +0.17 (−0.02 to +0.36) |
-| Ours, seed 42 (its start) | +0.36 (+0.18 to +0.58) | +8 pts (+3 to +12) | +0 pts (−10 to +12) | +0.08 (−0.03 to +0.19) |
-| Ours, seed 43 | +0.18 (−0.00 to +0.39) | +1 pt (−6 to +8) | −12 pts (−20 to −3) | – |
-| Ours, seed 44 | +0.11 (−0.08 to +0.34) | +1 pt (−10 to +10) | −8 pts (−16 to +3) | – |
+| Second round, per seed | Seed 42 (8 tasks) | Seed 43 (9 tasks) | Seed 44 (9 tasks) |
+|---|---|---|---|
+| Changes before first failure | 0.85 | 0.88 | 0.95 |
+| − original writer | +0.56 (+0.34 to +0.77) | +0.57 (+0.25 to +0.93) | +0.64 (+0.34 to +0.99) |
+| − correctness-only | +0.52 (+0.32 to +0.71) | +0.55 (+0.21 to +0.94) | +0.62 (+0.30 to +0.99) |
+| − prompted | −0.08 (−0.37 to +0.17) | −0.00 (−0.42 to +0.47) | +0.07 (−0.24 to +0.40) |
+| − ours seed 42 (its start) | +0.36 (+0.18 to +0.58) | +0.32 (+0.04 to +0.66) | +0.40 (+0.11 to +0.78) |
+| − prompted, per sample (10 tasks) | +0.17 (−0.02 to +0.36) | +0.16 (+0.01 to +0.30) | +0.21 (+0.04 to +0.43) |
+| Samples passing initial tests (10 tasks) | 35% | 40% | 38% |
 
-- **It still does not beat the prompt on programs that pass:** 0.85
-  against 0.93. That is closer than seeds 42 and 44 of the first round,
-  and about level with seed 43.
-- **Per sample, it scores the most of any writer:** 0.31 changes, against
-  0.14 for the prompted writer. But the interval of the difference
-  includes 0.
-- **It gains over its starting point, but no more than the first round's
-  seeds differ.** Seed 42 is the weakest of the three, and against seeds
-  43 and 44 the intervals reach 0. Seeds 43 and 44 of the second round
-  answer whether a second round adds anything (*pending*).
-- **Against the original writer, it has the largest gain of any writer**
-  (+0.56). The whole change sequence works on 11% of its programs, against
-  0%. But only 35% of its samples pass the initial tests on all 10 tasks
-  (original writer 58%, first round 38% to 48%).
-- **Two thirds of its passing programs are in-place designs** (half for
-  its start). They score 0.99 against the original writer's in-place 0.28
-  on the same 6 tasks (+0.71, +0.31 to +1.10). The pairs did not favor
-  in-place programs as a class: in the round's train collection, both
-  designs scored about their task's mean (copy +0.06, in-place −0.04).
+Averaged over each writer's three seeds per task:
+
+| Over three seeds (95% interval) | Programs that pass (8 tasks) | Per writer sample (10 tasks) |
+|---|---|---|
+| Second round − first round | +0.20 (+0.01 to +0.43) | +0.02 (−0.07 to +0.11) |
+| Second round − prompted | −0.11 (−0.35 to +0.09) | +0.18 (+0.02 to +0.35) |
+| First round − prompted (computed after the results) | −0.30 (−0.52 to −0.09) | +0.16 (+0.01 to +0.34) |
+
+- **A second round adds to the first on programs that pass:** +0.20 over
+  three seeds each, with an interval just clear of 0. Per sample it adds
+  nothing: its programs score higher, but slightly fewer of its samples
+  pass (38% against 42% on average).
+- **On programs that pass, it reaches the prompt.** All three seeds are
+  level with the prompted writer (−0.08, −0.00, +0.07), where the first
+  round had one level and two below.
+- **Per writer sample, it is ahead of the prompt.** Over seeds +0.18
+  (+0.02 to +0.35), and seeds 43 and 44 each with intervals that exclude 0
+  (16-sample control). It is ahead because about twice as many of its
+  samples pass the initial tests (38% against 19%), at about the same
+  score per passing program.
+- **Against the original writer, it gains +0.56 to +0.64.** Only 35% to
+  40% of its samples pass the initial tests (original writer 58%).
+- **About half of its passing programs are in-place designs.** On seed
+  42, two thirds were, but seeds 43 and 44 did not repeat that. Within
+  tasks, its in-place programs score well above the original writer's
+  (+0.54 to +0.71) and as well as the prompted writer's copy programs.
+  The pairs did not favor either design as a class: in the round's train
+  collection, both scored about their task's mean (copy +0.06, in-place
+  −0.04).
+
+These comparisons use the prompted control's 16 samples per task, which
+gave it only 1 to 3 passing programs on most tasks. So the control was
+rerun with 32 samples per task, its first 16 the same, with the
+comparisons fixed beforehand. The new samples pass about as often (21%),
+and every estimate moves by 0.03 or less. Over seeds, the second round
+against the 32-sample control is −0.08 (−0.39 to +0.22) on programs that
+pass and +0.17 (+0.00 to +0.34) per sample; seed 44 alone is +0.20 (+0.02
+to +0.43) per sample.
 
 So a second round on the writer's own samples, with no worked example in
-its new pairs, gets furthest above the original writer and closest to the
-prompt on programs that pass. It still does not go beyond the prompt, and
-it costs more correctness.
+its new pairs, brings the programs that pass up to the prompt's level. Per
+writer sample, it is ahead of the prompt by about 0.17 changes with both
+controls. That beat the planned test against the 16-sample control, but
+against the 32-sample one the interval starts at 0, so the lead is
+borderline. It does not go beyond the prompt on programs that pass.
 
 ## 8. Discussion
 
@@ -803,9 +829,14 @@ method has so far learned roughly what we told it, in a different form.
 Foresight (§7.4) tried to replace what we told it with the future changes
 themselves, and failed its gate: knowing the changes did not give the
 writer programs the editor handles better. A second round on the writer's
-own plain-prompt samples (§7.5), with no example in its new pairs, moved
-further from the original writer (+0.56) and closer to the prompt (−0.08).
-It did not pass the prompt, and it cost more correctness.
+own plain-prompt samples (§7.5), with no example in its new pairs, did
+help. Over three seeds, its programs that pass reach the prompt's level,
+and per writer sample it is ahead of the prompt by about 0.17 changes:
+clear against the planned 16-sample control, borderline against one with
+twice the samples. So training on the editing outcomes of the writer's own
+programs probably adds something the example alone does not: the
+example's design benefit without most of its failing samples. It does not
+find a design better than the one we wrote.
 
 **What the original result does not say.** It does not say that
 maintainability cannot be learned from downstream outcomes. Three
@@ -859,9 +890,11 @@ above 0.3.
     for one seed of three, and not for the seed whose test was fixed in
     advance. Averaged over the three seeds the per-sample gain is clear,
     but that average was computed after the results;
-  - a second training round tested with one seed so far, at a setting
-    that failed the dev rule (10 passing dev programs, the rule asks for
-    20).
+  - a second training round at a setting that failed the dev rule (9 to
+    12 passing dev programs, where the rule asks for 20);
+  - a per-sample gain over the prompt that comes from the pass rate, not
+    from better programs, and whose interval starts at 0 against the
+    32-sample prompted control.
 
 ## 9. Conclusion
 
@@ -884,9 +917,11 @@ the editing outcomes. The cost is 11 to 22 points of initial correctness. The wo
 training samples were drawn with, given at eval time instead, does at
 least as well on programs that pass, but only through one design and with
 most of its samples failing. A second round of training on the writer's
-own samples, drawn without the example, raises the gain to +0.56 with one
-seed. On programs that pass, that is level with the example, not beyond
-it.
+own samples, drawn without the example, raises the gain to +0.56 to +0.64
+with three seeds. On programs that pass, that is level with the example,
+not beyond it. Per writer sample, it is ahead of the example, because
+twice as many of its samples pass, but against the larger control only
+borderline.
 
 ## Reproducibility and artifacts
 

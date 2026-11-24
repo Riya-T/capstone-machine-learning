@@ -263,17 +263,13 @@ All five methods are done:
 
 ### What is running now
 
-The second training round is done (finding 32), as are the third training
-seed of D (finding 31), the foresight gates, which all failed (finding
-30), and the prompted control on all 10 eval tasks (finding 29).
-
-**Seeds 43 and 44 of the second round** (`/home/pc/run_r2_seeds.sh`, unit
-`r2s`, started 12:10 on 11-23, about 10 hours): trained, exported, checked
-on dev and evaluated like `hist2_r2a`, then compared over seeds with D
-(see "Second-round seeds" below).
+The second training round, its seeds 43 and 44 and the 32-sample prompted
+control are done (findings 32 to 34), as are the third training seed of D
+(finding 31), the foresight gates, which all failed (finding 30), and the
+prompted control on all 10 eval tasks (finding 29).
 
 **Training seeds of the original testbed** (`/home/pc/run_seeds.sh`, unit
-`seeds`, waiting for `r2s`). The proposal asks for three training seeds per
+`seeds`, resumed at 11:25 on 11-24). The proposal asks for three training seeds per
 trained method. Seeds 2 and 3 of our DPO writer (dpo3), the
 correctness-only writer and the Radon writer, each trained on the same
 data with the same settings, served like the others and put through the
@@ -1395,7 +1391,79 @@ results are in `harness/results/hist2_eval.md`.
   seeds − the prompted writer over seeds: −0.30 (−0.52 to −0.09) on
   programs that pass (8 tasks), +0.16 (+0.01 to +0.34) per sample.
 - Script: `/home/pc/run_r2_seeds.sh` (unit `r2s`); the original-testbed
-  seeds resume after it (`/home/pc/seeds_after_r2s.sh`).
+  seeds resume after it and the larger prompted control below
+  (`/home/pc/seeds_after_h32.sh`).
+- **Result (2026-11-23).**
+  - Runs 20261123T223358Z-2b3c12 (seed 43) and 20261124T015414Z-3498f2
+    (seed 44), 12:10 to 21:35, no infrastructure errors.
+  - Dev: 9 and 12 passing programs.
+  - `harness/results/hist2_eval.md` ("Second-round seeds").
+  - 1. Over seeds, second round − D: +0.20 (+0.01 to +0.43) on programs
+       that pass (8 tasks); per sample +0.02 (−0.07 to +0.11). A second
+       round adds to D on programs that pass, just clear of 0.
+    2. Over seeds, second round − prompted: −0.11 (−0.35 to +0.09) on
+       programs that pass, +0.18 (+0.02 to +0.35) per sample.
+    3. Per seed (43, 44):
+       - − prompted: −0.00 and +0.07; per sample +0.16 (+0.01 to +0.30)
+         and +0.21 (+0.04 to +0.43);
+       - − D seed 42: +0.32 and +0.40;
+       - − base: +0.57 and +0.64;
+       - − control: +0.55 and +0.62.
+    4. In-place − base in-place: +0.54 (+0.17 to +0.96) and +0.71 (+0.39
+       to +1.07). In-place − prompted copy: −0.03 and +0.12.
+  - Seed 42's two thirds in-place did not replicate: 52% and 56%.
+  - 40% and 38% of samples pass the initial checks.
+
+### Larger prompted control (2026-11-23, planned before the run)
+
+- **Why.** Every trained writer is compared with the prompted writer, but
+  its score on programs that pass rests on few programs: 1 passing sample
+  on canal_locks, coin_vaults, rehearsal_setlists and recipe_binder, 2 or
+  3 on four more tasks (31 in all). Our writers have three seeds each; the
+  control has one run of 16 samples. Its own sampling noise is not
+  measured.
+- **Run:** `rtx5070_hist2_eval_hinted32.yaml`: the prompted writer with 32
+  samples per task instead of 16. A sample's seed depends only on its
+  index, so samples 0 to 15 and their trials are the ones already
+  reported, and only samples 16 to 31 are new. As before, the first 8
+  passing programs per task are edited, and the 4 eval tasks use their
+  files from before c066f99.
+- **Comparisons, fixed now** (paired task bootstrap; changes done before
+  the first failure, and per sample):
+  1. Each writer − the 32-sample control: D seeds 42, 43 and 44, the
+     second round's seeds, the correctness-only control; and the
+     32-sample control − the base writer.
+  2. Over seeds (`scripts/hist2_seed_pool.py`): D's three seeds and the
+     second round's three seeds − the 32-sample control.
+- The 16-sample results stay as reported; the 32-sample ones are reported
+  next to them, whichever way they go.
+- Script: `/home/pc/run_hinted32.sh`, run after `r2s` and before the
+  original-testbed seeds.
+- **Result (2026-11-24).**
+  - Runs 20261124T053648Z-c4564b and 20261124T183906Z-2d1feb. The machine
+    restarted at about 22:30 on 11-23, and the run resumed from the store
+    at 10:38 on 11-24. No infrastructure errors.
+  - `harness/results/hist2_eval.md` ("Larger prompted control").
+  - The new samples pass as often as the old ones: 34 of 160 (21%), 65 of
+    320 in all, every passing one a copy design. On programs that pass,
+    0.82 changes (16 samples: 0.84); per sample 0.15 (0.14).
+  - 1. Each writer − the 32-sample control moves by 0.03 or less from the
+       16-sample numbers. Second round seeds 42, 43 and 44: −0.05, +0.02
+       and +0.10 on programs that pass. Per sample:
+       - seed 42: +0.16 (−0.03 to +0.35);
+       - seed 43: +0.15 (−0.01 to +0.31);
+       - seed 44: +0.20 (+0.02 to +0.43).
+       The 32-sample control − base is +0.54 (+0.31 to +0.78).
+    2. Over seeds:
+       - second round − 32-sample control: −0.08 (−0.39 to +0.22) on
+         programs that pass, +0.17 (+0.00 to +0.34) per sample;
+       - D − 32-sample control: −0.27 (−0.57 to +0.04) and +0.15 (−0.02
+         to +0.35).
+  - **Store reads fixed.** The readers took every stored sample under a
+    writer key, so after this run the 16-sample config read all 32. They
+    now read only the config's `samples_per_task` samples, and the
+    16-sample config again gives its reported numbers. No other reported
+    result used a key with extra samples.
 
 ### Original-testbed seeds: dpo3 seed 2 (2026-11-21)
 
@@ -1644,8 +1712,23 @@ results are in `harness/results/hist2_eval.md`.
     on programs that pass and +0.17 (−0.02 to +0.36) per sample. Against
     D seed 42, its start, +0.36 (+0.18 to +0.58), but against seeds 43 and
     44 the intervals reach 0. Only 35% of its samples pass, and it fell
-    short of the dev rule (10 passing programs, the rule asks for 20). One
-    seed; seeds 43 and 44 are running.
+    short of the dev rule (10 passing programs, the rule asks for 20).
+33. **With three seeds, the second round adds to D and beats the prompt per
+    sample, in tests fixed beforehand.** Averaged over each group's three
+    seeds, the second round − D is +0.20 (+0.01 to +0.43) on programs that
+    pass. Against the prompted writer, it is level on programs that pass
+    (−0.11, −0.35 to +0.09) and ahead per sample (+0.18, +0.02 to +0.35);
+    seeds 43 and 44 are each ahead per sample with intervals that exclude
+    0. The per-sample gain comes from the pass rate (38% against 19%), not
+    from better programs.
+34. **A prompted control with twice the samples changes little, but makes
+    the per-sample gain borderline.** With 32 samples per task, the
+    prompted writer passes as often (20%) and scores about the same (0.82
+    against 0.84; per sample 0.15 against 0.14). Every comparison moves by
+    0.03 or less. Over seeds, the second round is −0.08 (−0.39 to +0.22)
+    against it on programs that pass and +0.17 (+0.00 to +0.34) per
+    sample, so the per-sample lead keeps its size but its interval now
+    starts at 0.
 
 - **Testbed (the main question):** the diagnostics say the current tasks
   cannot show an effect, because the editor's randomness swamps the
@@ -1663,8 +1746,8 @@ results are in `harness/results/hist2_eval.md`.
 - **Seeds and training settings:** the proposal asks for several seeds
   for our writer. On the original testbed, dpo3 has seeds 42 and 2; its
   seed 3 and seeds 2 and 3 of sft and radon run after the second-round
-  seeds. On the history suite, D has three seeds (findings 28 and 31) and
-  the second round one, with two more running.
+  seeds. On the history suite, D and the second round have three seeds
+  each (findings 28, 31 and 33).
 - **Protocol:** these results use the collection store's protocol: selected
   passing programs, at most 8 per task. `harness/docs/evaluation.md`
   describes a different one (one unselected first attempt per task and

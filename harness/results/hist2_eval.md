@@ -454,8 +454,7 @@ Of the four comparisons fixed before the run:
    +0.58). But seed 42 is D's weakest seed. Against seeds 43 and 44, the
    intervals reach 0 (+0.18 and +0.11). So one seed of the second round
    cannot separate a second-round gain from D's seed spread. Seeds 43 and
-   44 of `hist2_r2a` are running, with comparisons fixed beforehand
-   (`docs/progress_report.md`, "Second-round seeds").
+   44 of `hist2_r2a` answer that (next section).
 4. **Against the base writer and the control: confirmed.** +0.56 and +0.52,
    the largest gains of any history-suite writer. The whole sequence works
    on 11% of its programs, against 0% for both.
@@ -464,3 +463,179 @@ So a second round on D's own samples, with no example in its new pairs,
 gets furthest above the base writer and closest to the prompt on programs
 that pass. It still does not beat the prompt, and fewer of its samples
 pass the initial checks than any D seed's (35% against 38% to 48%).
+
+## Second-round seeds
+
+`hist2_r2a_s43` and `hist2_r2a_s44` are the second-round writer trained
+again with seeds 43 and 44: the same 171 pairs, the same start (D seed 42
+merged into the base weights) and setting A. Their comparisons were fixed
+before the run (`docs/progress_report.md`, "Second-round seeds").
+
+- **Configs:** `configs/rtx5070_hist2_eval_hist2_r2a_s43.yaml` and
+  `_s44.yaml`.
+- **Runs:**
+  - Seed 43: 20261123T223358Z-2b3c12, 164 editing steps.
+  - Seed 44: 20261124T015414Z-3498f2, 180 editing steps.
+  - Neither had infrastructure errors. As for the other writers, the 4 eval
+    tasks use their files from before c066f99.
+- **Training** ends like seed 42's:
+  - Seed 43: reward accuracy 0.83, chosen +3.3 and rejected −0.2 nats
+    from D.
+  - Seed 44: reward accuracy 1.0, chosen +5.5 and rejected +0.6 nats.
+- **Dev:** 9 and 12 passing programs (seed 42: 10). The setting was not
+  chosen again.
+
+Neither new seed has a passing sample on recipe_binder, so their
+comparisons use 9 tasks.
+
+| Task | Initial pass, base → seed 43 → seed 44 | Changes done before first failure | Whole sequence works |
+|---|---|---|---|
+| bike_docks | 8/16 → 2/16 → 4/16 | 0.00 → 0.25 → 0.50 | 0% → 0% → 0% |
+| canal_locks | 13/16 → 9/16 → 8/16 | 0.12 → 0.19 → 0.19 | 0% → 0% → 0% |
+| coin_vaults | 11/16 → 6/16 → 5/16 | 0.12 → 0.25 → 0.30 | 0% → 0% → 0% |
+| grain_silos | 10/16 → 4/16 → 3/16 | 0.50 → 1.88 → 2.17 | 0% → 50% → 50% |
+| museum_galleries | 7/16 → 12/16 → 11/16 | 0.29 → 0.75 → 0.62 | 0% → 0% → 12% |
+| recipe_binder | 1/16 → 0/16 → 0/16 | 0.00 → – → – | – |
+| rehearsal_setlists | 5/16 → 12/16 → 9/16 | 0.50 → 0.88 → 0.94 | 0% → 0% → 0% |
+| server_racks | 10/16 → 12/16 → 12/16 | 0.50 → 0.62 → 1.69 | 0% → 6% → 31% |
+| spare_parts | 14/16 → 1/16 → 3/16 | 0.50 → 2.00 → 1.50 | 0% → 50% → 33% |
+| tour_itineraries | 14/16 → 7/16 → 6/16 | 0.25 → 1.07 → 0.67 | 0% → 21% → 8% |
+
+Per seed (changes done before the first failure unless marked; seed 42 on
+8 tasks, seeds 43 and 44 on 9):
+
+| Comparison | Seed 42 | Seed 43 | Seed 44 |
+|---|---|---|---|
+| − base | +0.56 (+0.34 to +0.77) | +0.57 (+0.25 to +0.93) | +0.64 (+0.34 to +0.99) |
+| − control | +0.52 (+0.32 to +0.71) | +0.55 (+0.21 to +0.94) | +0.62 (+0.30 to +0.99) |
+| − prompted | −0.08 (−0.37 to +0.17) | −0.00 (−0.42 to +0.47) | +0.07 (−0.24 to +0.40) |
+| − D seed 42 | +0.36 (+0.18 to +0.58) | +0.32 (+0.04 to +0.66) | +0.40 (+0.11 to +0.78) |
+| − prompted, per sample (10 tasks) | +0.17 (−0.02 to +0.36) | +0.16 (+0.01 to +0.30) | +0.21 (+0.04 to +0.43) |
+| − base, per sample | +0.13 (−0.05 to +0.31) | +0.12 (−0.02 to +0.26) | +0.17 (+0.02 to +0.38) |
+| − control, per sample | +0.15 (−0.00 to +0.29) | +0.14 (+0.02 to +0.26) | +0.19 (+0.06 to +0.37) |
+| In-place − base in-place | +0.71 (+0.31 to +1.10) | +0.54 (+0.17 to +0.96) | +0.71 (+0.39 to +1.07) |
+| In-place − prompted copy | +0.09 (−0.42 to +0.48) | −0.03 (−0.50 to +0.49) | +0.12 (−0.22 to +0.46) |
+| Changes before first failure | 0.85 | 0.88 | 0.95 |
+| Per sample | 0.31 | 0.30 | 0.35 |
+| Samples passing, all 10 tasks | 35% | 40% | 38% |
+| Passing programs that are in-place | 66% | 52% | 56% |
+
+Over seeds (`scripts/hist2_seed_pool.py`: each group's mean per task over
+its three seeds, paired task bootstrap; programs that pass on the 8 tasks
+where every writer has an edited program, per sample on all 10):
+
+| Over seeds | Programs that pass | Per sample |
+|---|---|---|
+| Second round − D (fixed) | +0.20 (+0.01 to +0.43); 0.82 against 0.63 | +0.02 (−0.07 to +0.11); 0.32 against 0.30 |
+| Second round − prompted (fixed) | −0.11 (−0.35 to +0.09); 0.82 against 0.93 | +0.18 (+0.02 to +0.35); 0.32 against 0.14 |
+| Second round − base | +0.54 (+0.32 to +0.77) | +0.14 (−0.01 to +0.29) |
+| Second round − control | +0.50 (+0.28 to +0.74) | +0.16 (+0.04 to +0.28) |
+| D − prompted (post hoc) | −0.30 (−0.52 to −0.09) | +0.16 (+0.01 to +0.34) |
+| D − base | +0.34 (+0.17 to +0.53) | +0.13 (−0.00 to +0.28) |
+| D − control | +0.30 (+0.14 to +0.49) | +0.14 (+0.03 to +0.28) |
+
+Only the two rows marked "fixed" were among the comparisons fixed before
+the run. The others were computed with them; the D rows use only results
+that were already known.
+
+Of the comparisons fixed before the run:
+
+1. **The second round adds to D on programs that pass, over seeds:** +0.20
+   (+0.01 to +0.43), just clear of 0. Per sample it adds nothing (+0.02):
+   its programs score higher, but fewer of its samples pass.
+2. **Against the prompted writer, over seeds:**
+   - On programs that pass, it is level (−0.11, −0.35 to +0.09).
+   - Per sample, it is ahead: +0.18 (+0.02 to +0.35).
+3. **Per seed:**
+   - Seeds 43 and 44 are level with the prompt on programs that pass
+     (−0.00 and +0.07).
+   - Per sample, both are ahead of it, with intervals that exclude 0
+     (+0.16 and +0.21).
+   - Both beat D seed 42, the base writer and the control.
+4. **Within designs:**
+   - The in-place programs of both new seeds score above the base writer's
+     in-place programs (+0.54 and +0.71).
+   - They score as well as the prompted writer's copy programs.
+
+Seed 42's larger share of in-place programs did not replicate. Seeds 43
+and 44 have about half, like D.
+
+So the second round's programs are level with the prompt's on programs
+that pass, with three seeds instead of one level and two below. Per writer
+sample, the second round beats the prompt in the test fixed beforehand,
+because about twice as many of its samples pass (38% against 19%). These
+comparisons use the 16-sample prompted control; the next section repeats
+them with 32 samples.
+
+## Larger prompted control
+
+The prompted control's score on programs that pass rested on 31 programs,
+1 on four tasks and 2 or 3 on four more, while each trained writer has
+three seeds. So it was rerun with 32 samples per task. A sample's seed
+depends only on its index, so samples 0 to 15 and their trials are the
+16-sample run's, and only samples 16 to 31 are new. The comparisons were
+fixed before the run (`docs/progress_report.md`, "Larger prompted
+control").
+
+- **Config:** `configs/rtx5070_hist2_eval_hinted32.yaml`.
+- **Runs:** 20261124T053648Z-c4564b (stopped by a machine restart at about
+  22:30 on 11-23) and 20261124T183906Z-2d1feb (resumed from the store), no
+  infrastructure errors. As before, the first 8 passing programs per task
+  are edited, and the 4 eval tasks use their files from before c066f99.
+- **The new samples pass about as often:** 34 of 160 (21%), against 31 of
+  160 before. In all, 65 of 320 samples pass (20%), and all 65 passing
+  programs are copy designs.
+
+| Task | Initial pass (base → prompted, 32) | Changes done before first failure | First change works | Whole sequence works |
+|---|---|---|---|---|
+| bike_docks | 8/16 → 10/32 | 0.00 → 1.06 | 0% → 62% | 0% → 19% |
+| canal_locks | 13/16 → 1/32 | 0.12 → 1.00 | 12% → 50% | 0% → 0% |
+| coin_vaults | 11/16 → 1/32 | 0.12 → 0.50 | 12% → 50% | 0% → 0% |
+| grain_silos | 10/16 → 5/32 | 0.50 → 1.30 | 50% → 70% | 0% → 30% |
+| museum_galleries | 7/16 → 14/32 | 0.29 → 0.50 | 29% → 50% | 0% → 0% |
+| recipe_binder | 1/16 → 3/32 | 0.00 → 0.50 | 0% → 50% | 0% → 0% |
+| rehearsal_setlists | 5/16 → 3/32 | 0.50 → 0.83 | 50% → 67% | 0% → 0% |
+| server_racks | 10/16 → 4/32 | 0.50 → 1.62 | 50% → 62% | 0% → 50% |
+| spare_parts | 14/16 → 20/32 | 0.50 → 0.50 | 50% → 38% | 0% → 6% |
+| tour_itineraries | 14/16 → 4/32 | 0.25 → 0.38 | 25% → 25% | 0% → 0% |
+
+Changes before the first failure, 32 samples against 16:
+- on all 10 tasks: 0.82 against 0.84;
+- on the second round's 8 tasks: 0.90 against 0.93.
+
+Per sample, 0.15 against 0.14. Against the base writer, the 32-sample
+control gains +0.54 (+0.31 to +0.78) on programs that pass (16 samples:
++0.56). Per sample it is −0.03 (−0.10 to +0.07).
+
+| Against the prompted control | Programs that pass, 32 samples | 16 samples | Per sample, 32 samples | 16 samples |
+|---|---|---|---|---|
+| D seed 42 (9 tasks) | −0.30 (−0.66 to +0.07) | −0.33 (−0.62 to −0.00) | +0.08 (−0.06 to +0.22) | +0.09 (−0.02 to +0.22) |
+| D seed 43 (10 tasks) | −0.01 (−0.39 to +0.40) | −0.03 (−0.38 to +0.35) | +0.22 (+0.03 to +0.43) | +0.23 (+0.05 to +0.43) |
+| D seed 44 (8 tasks) | −0.17 (−0.46 to +0.11) | −0.19 (−0.41 to −0.01) | +0.16 (−0.05 to +0.40) | +0.17 (−0.02 to +0.40) |
+| Second round, seed 42 (8 tasks) | −0.05 (−0.35 to +0.24) | −0.08 (−0.37 to +0.17) | +0.16 (−0.03 to +0.35) | +0.17 (−0.02 to +0.36) |
+| Second round, seed 43 (9 tasks) | +0.02 (−0.47 to +0.55) | −0.00 (−0.42 to +0.47) | +0.15 (−0.01 to +0.31) | +0.16 (+0.01 to +0.30) |
+| Second round, seed 44 (9 tasks) | +0.10 (−0.27 to +0.47) | +0.07 (−0.24 to +0.40) | +0.20 (+0.02 to +0.43) | +0.21 (+0.04 to +0.43) |
+| Control (9 tasks) | −0.53 (−0.78 to −0.28) | −0.55 (−0.76 to −0.36) | +0.01 (−0.08 to +0.09) | +0.02 (−0.03 to +0.08) |
+| D, over seeds | −0.27 (−0.57 to +0.04) | −0.30 (−0.52 to −0.09) | +0.15 (−0.02 to +0.35) | +0.16 (+0.01 to +0.34) |
+| Second round, over seeds | −0.08 (−0.39 to +0.22) | −0.11 (−0.35 to +0.09) | +0.17 (+0.00 to +0.34) | +0.18 (+0.02 to +0.35) |
+
+The larger control moves every estimate by 0.03 or less. Its intervals
+are a little wider, because the new programs vary more within tasks (bike_docks
+now scores 1.06 on 8 programs instead of 0.67 on 3). So:
+
+- **On programs that pass, nothing changes:**
+  - Every second-round seed is level with the prompt.
+  - D is below it on average, now with an interval that includes 0.
+- **Per sample, the second round's lead is the same size:** +0.17 against
+  +0.18. But its interval now starts at 0 (+0.00 to +0.34). It is a
+  borderline result, not a clear one.
+
+**Reading the store.** `samples_per_task` is not in the writer key, so
+after this run the store holds 32 samples under the prompted writer's key.
+Until 11-24, the readers took every stored sample. From then on, `rtx5070_hist2_eval_hinted.yaml`
+would have read all 32. They now read only the config's `samples_per_task`
+samples (`Store.candidates(limit=...)`), so that config again gives the
+16-sample numbers above. The only other configs whose key holds more
+samples than they ask for are `evaluation_original.yaml` and
+`evaluation_maintainability.yaml` (1 sample each, a protocol that was
+not run), so no reported result changes.
