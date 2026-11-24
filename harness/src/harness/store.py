@@ -477,12 +477,22 @@ class Store:
         values = _columns(row, exclude=asdict(key))
         return Candidate(key=key, **values)
 
-    def candidates(self, task_id: str, prompt_version: str, writer_hash: str) -> list[Candidate]:
-        rows = self._db.execute(
+    def candidates(
+        self, task_id: str, prompt_version: str, writer_hash: str, limit: int | None = None
+    ) -> list[Candidate]:
+        """The stored samples of one task and writer, in sample order. With
+        `limit`, only samples 0 to limit - 1: samples_per_task is not in the
+        writer key, so a config asking for fewer samples than another with the
+        same key has stored must pass its own count to see only its samples."""
+        query = (
             "SELECT sample_idx FROM candidates WHERE task_id = ? AND prompt_version = ? "
-            "AND writer_cfg_hash = ? ORDER BY sample_idx",
-            (task_id, prompt_version, writer_hash),
-        ).fetchall()
+            "AND writer_cfg_hash = ?"
+        )
+        params: tuple = (task_id, prompt_version, writer_hash)
+        if limit is not None:
+            query += " AND sample_idx < ?"
+            params += (limit,)
+        rows = self._db.execute(query + " ORDER BY sample_idx", params).fetchall()
         return [
             self.get_candidate(CandidateKey(task_id, prompt_version, writer_hash, r[0]))
             for r in rows

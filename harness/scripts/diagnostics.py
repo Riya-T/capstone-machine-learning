@@ -71,6 +71,7 @@ def load_records(cfg):
                 editor_reps=cfg.editor.reps,
                 max_sequences=cfg.tasks.max_sequences,
                 max_programs=cfg.tasks.max_programs,
+                max_samples=cfg.writer.samples_per_task,
             )
             records.append(record)
             for c in record.candidates:

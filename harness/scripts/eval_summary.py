@@ -59,6 +59,7 @@ def task_results(cfg):
                 editor_reps=cfg.editor.reps,
                 max_sequences=cfg.tasks.max_sequences,
                 max_programs=cfg.tasks.max_programs,
+                max_samples=cfg.writer.samples_per_task,
             )
             length = record.sequence_length
             samples = len(record.parse_failures) + sum(

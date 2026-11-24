@@ -165,15 +165,17 @@ def load_task_record(
     max_sequences: int | None = None,
     max_programs: int | None = None,
     extra_counts: Mapping[tuple, Counts] | None = None,
+    max_samples: int | None = None,
 ) -> TaskRecord:
     """Gather a task's candidates, initial checks and trials from the store.
-    Only the first `max_sequences` sequences are used (None: all), and only
-    the first `max_programs` passing programs in sample order; later passing
-    programs are marked over_program_cap. extra_counts: backfilled
-    hidden-test counts (partial_credit.read_counts) for failed steps the
-    store has none for."""
+    Only the first `max_samples` writer samples are read (the config's
+    samples_per_task; None: every stored sample), only the first
+    `max_sequences` sequences are used (None: all), and only the first
+    `max_programs` passing programs in sample order; later passing programs
+    are marked over_program_cap. extra_counts: backfilled hidden-test counts
+    (partial_credit.read_counts) for failed steps the store has none for."""
     sequences = task.sequences[:max_sequences]
-    samples = store.candidates(task.id, prompt_version(prompt), writer_hash)
+    samples = store.candidates(task.id, prompt_version(prompt), writer_hash, limit=max_samples)
     by_program: dict[str, list] = {}
     parse_failures = []
     for sample in samples:

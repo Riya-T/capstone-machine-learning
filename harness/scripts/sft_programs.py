@@ -71,7 +71,10 @@ def main() -> None:
         for task in tasks.values():
             prompt = build_writer_prompt(task.writer_view(), template)
             seen, kept = set(), 0
-            for sample in store.candidates(task.id, prompt_version(prompt), keys.writer):
+            limit = cfg.writer.samples_per_task
+            for sample in store.candidates(
+                task.id, prompt_version(prompt), keys.writer, limit=limit
+            ):
                 candidate_id = sample.candidate_id
                 if candidate_id is None or candidate_id in seen:
                     continue

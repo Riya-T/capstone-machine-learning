@@ -160,7 +160,9 @@ def build_preferences(
     with Store(cfg.runs_dir) as store:
         for task_id, task in tasks.items():
             prompt = build_writer_prompt(task.writer_view(), template)
-            samples = store.candidates(task.id, prompt_version(prompt), keys.writer)
+            samples = store.candidates(
+                task.id, prompt_version(prompt), keys.writer, limit=cfg.writer.samples_per_task
+            )
             if not samples:
                 raise RuntimeError(
                     f"{task.id}: no writer samples in {cfg.runs_dir}; "

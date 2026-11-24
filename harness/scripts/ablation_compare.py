@@ -66,6 +66,7 @@ def compare_pair(normal_cfg, ablation_cfg):
                 editor_reps=normal_cfg.editor.reps,
                 max_sequences=normal_cfg.tasks.max_sequences,
                 max_programs=normal_cfg.tasks.max_programs,
+                max_samples=normal_cfg.writer.samples_per_task,
             )
             for cand in record.candidates:
                 if not cand.initially_passed or cand.over_program_cap:

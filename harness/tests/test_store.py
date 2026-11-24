@@ -316,6 +316,16 @@ def test_candidates_round_trip_in_sample_order(store, run_id):
     assert store.get_candidate(CandidateKey("t", "pv", "other", 0)) is None
 
 
+def test_candidates_limit_keeps_a_smaller_configs_samples(store, run_id):
+    # samples_per_task is not in the writer key: after a 4-sample run, a
+    # 2-sample config with the same key must still see only samples 0 and 1.
+    for idx in range(4):
+        store.record_candidate(candidate(run_id, idx, cid=f"c{idx}"))
+    assert [c.candidate_id for c in store.candidates("t", "pv", "wh", limit=2)] == ["c0", "c1"]
+    assert len(store.candidates("t", "pv", "wh", limit=8)) == 4
+    assert len(store.candidates("t", "pv", "wh")) == 4
+
+
 def test_unparseable_candidate_is_recorded_without_an_id(store, run_id):
     store.record_candidate(candidate(run_id, cid=None, parse_error="no code block"))
     assert store.get_candidate(CandidateKey("t", "pv", "wh", 0)).parse_error == "no code block"

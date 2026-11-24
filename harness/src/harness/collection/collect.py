@@ -131,7 +131,7 @@ def collect(cfg: ExperimentConfig, until: str = "edit") -> CollectStats:
             _write_samples(cfg, store, task, prompt, keys, stats)
             if until == "writer":
                 continue
-            programs = _distinct_programs(store, task, prompt, keys)
+            programs = _distinct_programs(store, task, prompt, keys, cfg.writer.samples_per_task)
             passed = _initial_checks(store, evaluator, task, programs, keys, stats)
             log.info(
                 "%s: %d distinct programs, %d passed initially", task.id, len(programs), len(passed)
@@ -205,6 +205,7 @@ def score(
             max_sequences=cfg.tasks.max_sequences,
             max_programs=cfg.tasks.max_programs,
             extra_counts=extra,
+            max_samples=cfg.writer.samples_per_task,
         )
         for task in tasks.values()
     ]
@@ -276,10 +277,13 @@ def _ask(backend: CachedBackend, sent: str, task: Task):
     return parse_program(answer, task.entry_files, usage.finish_reason if usage else None)
 
 
-def _distinct_programs(store: Store, task: Task, prompt: str, keys: Keys) -> list[str]:
-    """Parsed candidate ids, each once, in order of first sample."""
+def _distinct_programs(
+    store: Store, task: Task, prompt: str, keys: Keys, limit: int | None = None
+) -> list[str]:
+    """Parsed candidate ids, each once, in order of first sample, among the
+    first `limit` samples (the config's samples_per_task; None: all stored)."""
     seen: list[str] = []
-    for c in store.candidates(task.id, prompt_version_of(prompt), keys.writer):
+    for c in store.candidates(task.id, prompt_version_of(prompt), keys.writer, limit=limit):
         if c.candidate_id is not None and c.candidate_id not in seen:
             seen.append(c.candidate_id)
     return seen

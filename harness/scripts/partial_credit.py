@@ -146,6 +146,7 @@ def iter_trials(cfg, store: Store, keys: Keys) -> Iterator[Trial]:
             editor_reps=cfg.editor.reps,
             max_sequences=cfg.tasks.max_sequences,
             max_programs=cfg.tasks.max_programs,
+            max_samples=cfg.writer.samples_per_task,
         )
         for cand in record.candidates:
             if not cand.initially_passed or cand.over_program_cap:
