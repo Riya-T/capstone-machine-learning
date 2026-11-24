@@ -118,41 +118,33 @@ full training command is in the main README, "DPO training").
 
 ## Joining pairs from several people
 
-Pairs are only ever made within one task, so pairs from different stores
-can be put in one file. One person joins everyone's datasets and filters
-the result once, with the same settings as before:
+Pairs are only ever made within one task, so compatible preference files can
+be joined. Validate first, then merge to a scratch file and run the usual
+filter once:
 
 ```bash
-cat data/train-v1/pairs_cap8_all.jsonl data/pairs-*-v1/preferences.jsonl \
-    > runs/combined.jsonl
+.venv/bin/python -m harness.datasets validate \
+    --legacy-config configs/rtx5070_train.yaml \
+    data/train-v1/pairs_cap8_all.jsonl data/pairs-*/preferences.jsonl
+.venv/bin/python -m harness.datasets merge --out runs/combined.jsonl \
+    --legacy-config configs/rtx5070_train.yaml \
+    data/train-v1/pairs_cap8_all.jsonl data/pairs-*/preferences.jsonl
 .venv/bin/python scripts/filter_pairs.py runs/combined.jsonl --dataset train-v2 \
     --min-rep-wins 2 --drop-cosmetic
 ```
 
-`train-v2` then holds the joined file as `pairs_unfiltered.jsonl` and the
-training pairs as `pairs.jsonl`.
+`--legacy-config` explicitly maps source-less historical rows (such as
+`train-v1`) to the settings hash of the config that produced them. Rows with
+source metadata are checked against that hash. Both commands reject mixed
+settings, malformed pairs, repeated or oppositely labeled comparisons, and
+task/prompt version mismatches. By default they also enforce the scorer's
+per-task cap of 8; use `--per-task-cap N` to select another cap or
+`--no-per-task-cap` only when intentionally combining uncapped results.
+`merge` does not silently deduplicate or trim pairs: resolve reported
+conflicts before training.
 
-**Check before joining.** `cat` only puts the files together. Until a
-`merge` command does these checks (planned for when all the data is in):
-
-- Every file should have the same `settings_hash`. Rows without a `source`
-  (`train-v1`) can't be checked: they were made with
-  `configs/rtx5070_train.yaml`.
-- If two people collected the same task, the joined file can hold the same
-  pair twice, and more pairs for that task than the scorer's per-task cap
-  (8). Such a task then weighs more in training.
-
-To list each file's settings hash and pairs per task:
-
-```bash
-for f in data/pairs-*/preferences.jsonl; do
-  echo "$f"
-  .venv/bin/python -c 'import json, sys, collections
-rows = [json.loads(l) for l in open(sys.argv[1]) if l.strip()]
-print(" settings:", sorted({r.get("source", {}).get("settings_hash", "none")[:12] for r in rows}))
-print(" pairs per task:", dict(collections.Counter(r["task_id"] for r in rows)))' "$f"
-done
-```
+The merge output stays in `runs/`; `filter_pairs.py --dataset` adds the
+unfiltered input and filtered training pairs to the tracked dataset.
 
 ## The first training set: train-v1
 

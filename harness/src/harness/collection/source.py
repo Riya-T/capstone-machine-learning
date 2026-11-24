@@ -66,6 +66,11 @@ def settings(cfg: ExperimentConfig) -> dict[str, Any]:
     )
     sandbox = canonical(cfg.sandbox, base)
     tasks = canonical(cfg.tasks, base)
+    scorer = canonical(cfg.scorer, base)
+    # Omit unset rules so new defaults retain hashes from before those rules existed.
+    for key in ("tiebreak", "partial_credit"):
+        if scorer.get(key) is None:
+            scorer.pop(key, None)
     return {
         "writer": {
             "backend": _backend(cfg.writer.backend, base),
@@ -73,7 +78,7 @@ def settings(cfg: ExperimentConfig) -> dict[str, Any]:
         },
         "editor": editor,
         "sandbox": {k: v for k, v in sandbox.items() if k not in ("image", "build_context")},
-        "scorer": canonical(cfg.scorer, base),
+        "scorer": scorer,
         "tasks": {k: v for k, v in tasks.items() if k not in ("dir", "include")},
     }
 

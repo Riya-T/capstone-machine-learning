@@ -5,6 +5,9 @@ Usage:
     uv run pytest tests/collection/test_source.py
 """
 
+import json
+from pathlib import Path
+
 import pytest
 
 from harness.collection.collect import Keys
@@ -12,6 +15,8 @@ from harness.collection.source import pair_source, run_source, settings, setting
 from harness.config import load_config
 
 from ..helpers import minimal, write
+
+ROOT = Path(__file__).resolve().parents[2]
 
 
 def _hash(tmp_path, change=None, name="exp.yaml"):
@@ -81,6 +86,13 @@ def test_machine_details_and_task_choice_leave_the_settings_alone(tmp_path, chan
 )
 def test_experiment_settings_change_the_hash(tmp_path, change):
     assert _hash(tmp_path / "a") != _hash(tmp_path / "b", change)
+
+
+def test_default_train_settings_keep_the_existing_pair_source_hash():
+    cfg = load_config(ROOT / "configs" / "rtx5070_train.yaml")
+    pair = json.loads((ROOT / "data" / "pairs-karin-v1" / "rtx5070_train.jsonl")
+                      .read_text(encoding="utf-8").splitlines()[0])
+    assert settings_hash(settings(cfg)) == pair["source"]["settings_hash"]
 
 
 def test_a_prompt_template_counts_by_content_not_path(tmp_path):
