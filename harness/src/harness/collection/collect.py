@@ -59,6 +59,7 @@ from ..store import (
     writer_cfg_hash,
 )
 from .editor import Editor
+from .partial_credit import counts_path, read_counts
 from .scorer import Scorer, ScoreResult, load_task_record, summary_table, write_outputs
 from .source import pair_source, run_source
 
@@ -186,6 +187,8 @@ def score(
 ):
     scorer = scorer or Scorer(cfg.scorer, cfg.editor.reps)
     template = load_template(cfg.writer.prompt_template)
+    # Backfilled hidden-test counts, for the partial-credit tie-break only.
+    extra = read_counts(counts_path(cfg.runs_dir, keys.sandbox)) if cfg.scorer.tiebreak else None
     records = [
         load_task_record(
             store,
@@ -197,6 +200,7 @@ def score(
             editor_reps=cfg.editor.reps,
             max_sequences=cfg.tasks.max_sequences,
             max_programs=cfg.tasks.max_programs,
+            extra_counts=extra,
         )
         for task in tasks.values()
     ]

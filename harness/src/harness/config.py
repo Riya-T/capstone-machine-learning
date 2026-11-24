@@ -255,6 +255,21 @@ class SandboxConfig:
 
 
 @dataclass(frozen=True)
+class TiebreakConfig:
+    """Partial credit breaks ties of the rule (collection/partial_credit.py):
+    two programs the rule ties are paired if their partial-credit totals,
+    summed over sequences and reps, differ by at least min_gap."""
+
+    min_gap: float
+    # Existing-behaviour tests count this many times as much as new-feature ones.
+    existing_weight: float = 2.0
+
+    def __post_init__(self) -> None:
+        _require_positive(self.min_gap, "tiebreak.min_gap")
+        _require_positive(self.existing_weight, "tiebreak.existing_weight")
+
+
+@dataclass(frozen=True)
 class ScorerConfig:
     # Validated against the scorer's rule registry when the scorer is built,
     # not here, so adding a rule never requires touching the config schema.
@@ -268,6 +283,8 @@ class ScorerConfig:
     # Ablations computed from stored results without new model calls:
     max_changes: int | None = None  # truncate trial scores to this many changes
     reps: tuple[int, ...] | None = None  # use only these rep indices
+    # None: ties give no pair. Needs every failed step's hidden-test counts.
+    tiebreak: TiebreakConfig | None = None
 
     def __post_init__(self) -> None:
         _require_positive(self.min_step_gap, "min_step_gap")
