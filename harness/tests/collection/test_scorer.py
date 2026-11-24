@@ -31,7 +31,13 @@ from harness.collection.scorer import (
     weak_dominance,
     write_outputs,
 )
-from harness.config import ConfigError, ScorerConfig, TiebreakConfig, load_config
+from harness.config import (
+    ConfigError,
+    PartialCreditConfig,
+    ScorerConfig,
+    TiebreakConfig,
+    load_config,
+)
 from harness.models.parser import parse_program
 from harness.registry import load_tasks
 from harness.store import Candidate, CandidateKey, Checkpoint, InitialCheck, Store, TrialKey
@@ -684,6 +690,72 @@ def test_tiebreak_config_is_validated():
         TiebreakConfig(min_gap=0)
     with pytest.raises(ConfigError):
         TiebreakConfig(min_gap=0.25, existing_weight=-1)
+
+
+def partial_build(cands, min_gap=0.8):
+    task = TaskRecord("t", "P", ("s1", "s2"), 2, (), tuple(cands))
+    cfg = ScorerConfig(
+        rule="partial_credit",
+        pairing_mode="all_pairs",
+        partial_credit=PartialCreditConfig(min_gap=min_gap),
+    )
+    return Scorer(cfg, editor_reps=1).build([task], programs)
+
+
+def test_full_partial_credit_can_reverse_the_coarse_preference():
+    # a has one completed change; b has none, but scores 11/12 on both
+    # failed changes. Full partial credit prefers b (11/6 > 1).
+    a = credited("a", 1, 0, {"s1": (0, 0), "s2": (0, 0)})
+    b = credited("b", 0, 0, {"s1": (3, 4), "s2": (3, 4)})
+    result = partial_build([a, b])
+    assert [(p["chosen_id"], p["rejected_id"]) for p in result.pairs] == [("b", "a")]
+    pair = result.pairs[0]
+    assert pair["chosen_scores"] == [[pytest.approx(11 / 12)], [pytest.approx(11 / 12)]]
+    assert pair["chosen_coarse_scores"] == [[0], [0]]
+    assert pair["rejected_coarse_scores"] == [[1], [0]]
+    assert pair["chosen_partial_credit_total"] == "11/6"
+    assert result.report["primary"]["partial_credit"] == {
+        "min_gap": 0.8,
+        "existing_weight": 2.0,
+    }
+
+
+def test_full_partial_credit_uses_its_own_margin_and_requires_counts():
+    a = credited("a", 1, 0, {"s1": (0, 0), "s2": (0, 0)})
+    b = credited("b", 0, 0, {"s1": (3, 4), "s2": (3, 4)})
+    result = partial_build([a, b], min_gap=0.9)
+    assert result.pairs == []
+    assert result.report["combinations"]["partial_credit/all_pairs"]["too_close"] == 1
+
+    bare = cand("c", [0], [2])
+    with pytest.raises(ValueError, match="partial_credit.py backfill"):
+        partial_build([bare])
+
+
+def test_partial_credit_rule_config_is_validated():
+    with pytest.raises(ConfigError, match="required"):
+        Scorer(ScorerConfig(rule="partial_credit", pairing_mode="all_pairs"), 1)
+    with pytest.raises(ConfigError, match="only valid"):
+        Scorer(
+            ScorerConfig(
+                rule="aggregate",
+                pairing_mode="all_pairs",
+                partial_credit=PartialCreditConfig(min_gap=0.25),
+            ),
+            1,
+        )
+    with pytest.raises(ConfigError, match="cannot be combined"):
+        Scorer(
+            ScorerConfig(
+                rule="partial_credit",
+                pairing_mode="all_pairs",
+                partial_credit=PartialCreditConfig(min_gap=0.25),
+                tiebreak=TiebreakConfig(min_gap=0.25),
+            ),
+            1,
+        )
+    with pytest.raises(ConfigError):
+        PartialCreditConfig(min_gap=0)
 
 
 def test_load_task_record_takes_counts_from_the_store_and_the_backfill(tmp_path):

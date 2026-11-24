@@ -270,6 +270,18 @@ class TiebreakConfig:
 
 
 @dataclass(frozen=True)
+class PartialCreditConfig:
+    """Settings for ranking pairs by the full partial-credit score."""
+
+    min_gap: float
+    existing_weight: float = 2.0
+
+    def __post_init__(self) -> None:
+        _require_positive(self.min_gap, "partial_credit.min_gap")
+        _require_positive(self.existing_weight, "partial_credit.existing_weight")
+
+
+@dataclass(frozen=True)
 class ScorerConfig:
     # Validated against the scorer's rule registry when the scorer is built,
     # not here, so adding a rule never requires touching the config schema.
@@ -285,6 +297,8 @@ class ScorerConfig:
     reps: tuple[int, ...] | None = None  # use only these rep indices
     # None: ties give no pair. Needs every failed step's hidden-test counts.
     tiebreak: TiebreakConfig | None = None
+    # Full partial-credit ranking; opt-in and separate from the coarse gap.
+    partial_credit: PartialCreditConfig | None = None
 
     def __post_init__(self) -> None:
         _require_positive(self.min_step_gap, "min_step_gap")

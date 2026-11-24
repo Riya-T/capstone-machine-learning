@@ -7,6 +7,7 @@ Usage:
 """
 
 import dataclasses
+import importlib
 import re
 from pathlib import Path
 
@@ -20,8 +21,9 @@ from harness.collection.collect import (
     _run_trial,
     _write_samples,
 )
+from harness.collection.collect import score as score_collection
 from harness.collection.editor import Editor
-from harness.config import BackendConfig, load_config
+from harness.config import BackendConfig, PartialCreditConfig, ScorerConfig, load_config
 from harness.foresight import later_change_names, prune_program
 from harness.models.parser import render_program
 from harness.registry import build_writer_prompt, load_tasks, load_template
@@ -37,6 +39,26 @@ S1 = TASK.sequence("s1")
 
 def category(status, passed, total):
     return CategoryResult("x", status, passed, total, (), "ok")
+
+
+def test_score_loads_backfilled_counts_for_full_partial_credit(tmp_path, monkeypatch):
+    module = importlib.import_module("harness.collection.collect")
+    scorer = ScorerConfig(
+        rule="partial_credit",
+        pairing_mode="all_pairs",
+        partial_credit=PartialCreditConfig(min_gap=0.25),
+    )
+    cfg = dataclasses.replace(CFG, runs_dir=tmp_path / "runs", scorer=scorer)
+    keys = Keys("writer", "editor", "sandbox")
+    loaded = []
+    monkeypatch.setattr(module, "read_counts", lambda path: loaded.append(path) or {})
+    monkeypatch.setattr(module, "run_source", lambda *args, **kwargs: {})
+    monkeypatch.setattr(module, "write_outputs", lambda *args: None)
+
+    with Store(cfg.runs_dir) as store:
+        score_collection(cfg, store, {}, keys, tmp_path / "out")
+
+    assert loaded == [module.counts_path(cfg.runs_dir, keys.sandbox)]
 
 
 class StubEvaluator:

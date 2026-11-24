@@ -187,8 +187,12 @@ def score(
 ):
     scorer = scorer or Scorer(cfg.scorer, cfg.editor.reps)
     template = load_template(cfg.writer.prompt_template)
-    # Backfilled hidden-test counts, for the partial-credit tie-break only.
-    extra = read_counts(counts_path(cfg.runs_dir, keys.sandbox)) if cfg.scorer.tiebreak else None
+    # Backfilled hidden-test counts for either partial-credit scoring mode.
+    extra = (
+        read_counts(counts_path(cfg.runs_dir, keys.sandbox))
+        if cfg.scorer.tiebreak or cfg.scorer.partial_credit
+        else None
+    )
     records = [
         load_task_record(
             store,

@@ -21,6 +21,10 @@ tiebreak.min_gap. Pairs the rule decides are never changed. Partial credit
 needs the hidden-test counts of every failed step, backfilled for steps
 that ran out of turns (load_task_record's extra_counts).
 
+Setting scorer.rule to "partial_credit" instead ranks candidates by their
+full weighted score, with its own scorer.partial_credit.min_gap. The default
+coarse rules and tie-break behavior are unchanged.
+
 Pairing modes: all_pairs (every comparison) or best_vs_worst (the best
 program against the worst, per task). A per-task cap keeps the pairs with
 the biggest score gaps. Every rule and mode is computed for the report;
@@ -107,6 +111,7 @@ RULES: dict[str, Callable[[Sequence[Fraction], Sequence[Fraction]], Verdict]] = 
     "strict": strict,
     "weak_dominance": weak_dominance,
     "aggregate": aggregate,
+    "partial_credit": aggregate,
 }
 
 
@@ -266,7 +271,9 @@ def trial_score(steps: Mapping[int, str], length: int) -> TrialScore:
 class CandidateScores:
     candidate_id: str
     rep_scores: tuple[tuple[int, ...], ...]  # per sequence, per rep
-    # Partial-credit total over every trial (scorer.tiebreak only).
+    # Full partial scores, present only for the partial_credit rule.
+    partial_rep_scores: tuple[tuple[Fraction, ...], ...] | None = None
+    # Partial-credit total over every trial (tie-break or full-score rule).
     credit_total: Fraction | None = None
 
     @property
@@ -276,12 +283,26 @@ class CandidateScores:
 
     @property
     def aggregate(self) -> Fraction:
-        means = self.means
+        return self.aggregate_for("aggregate")
+
+    def means_for(self, rule: str) -> tuple[Fraction, ...]:
+        scores = self.scores_for(rule)
+        return tuple(Fraction(sum(reps), len(reps)) for reps in scores)
+
+    def scores_for(self, rule: str) -> tuple[tuple[int | Fraction, ...], ...]:
+        if rule == "partial_credit":
+            if self.partial_rep_scores is None:
+                raise ValueError("partial-credit scores were not computed")
+            return self.partial_rep_scores
+        return self.rep_scores
+
+    def aggregate_for(self, rule: str) -> Fraction:
+        means = self.means_for(rule)
         return sum(means, Fraction(0)) / len(means)
 
-    def agreement(self) -> list[float]:
+    def agreement(self, rule: str = "aggregate") -> list[float]:
         """Per sequence: the share of reps that got the most common score."""
-        return [max(Counter(reps).values()) / len(reps) for reps in self.rep_scores]
+        return [max(Counter(reps).values()) / len(reps) for reps in self.scores_for(rule)]
 
 
 @dataclass(frozen=True)
@@ -290,17 +311,26 @@ class Comparison:
     b: CandidateScores
     verdict: Verdict
     tiebroken: bool = False  # a tie of the rule, decided by partial credit
+    rule: str = "aggregate"
 
     @property
     def margin(self) -> Fraction:
         return sum(
-            (abs(x - y) for x, y in zip(self.a.means, self.b.means, strict=True)), Fraction(0)
+            (
+                abs(x - y)
+                for x, y in zip(
+                    self.a.means_for(self.rule), self.b.means_for(self.rule), strict=True
+                )
+            ),
+            Fraction(0),
         )
 
     @property
-    def step_gap(self) -> int:
-        """Changes completed, summed over reps, apart in each sequence; summed
-        over sequences. Equals margin times the number of reps."""
+    def step_gap(self) -> int | Fraction:
+        """Absolute total-score gap for partial credit; coarse change-count gap otherwise."""
+        if self.rule == "partial_credit":
+            assert self.a.credit_total is not None and self.b.credit_total is not None
+            return abs(self.a.credit_total - self.b.credit_total)
         return sum(
             abs(sum(x) - sum(y)) for x, y in zip(self.a.rep_scores, self.b.rep_scores, strict=True)
         )
@@ -321,10 +351,22 @@ class Scorer:
             raise ConfigError(f"scorer.reps: {reps} must be rep indices below {editor_reps}")
         self.cfg = cfg
         self.reps = tuple(reps)
+        if cfg.rule == "partial_credit" and cfg.partial_credit is None:
+            raise ConfigError("scorer.partial_credit: required when scorer.rule is partial_credit")
+        if cfg.rule != "partial_credit" and cfg.partial_credit is not None:
+            raise ConfigError(
+                "scorer.partial_credit: only valid when scorer.rule is partial_credit"
+            )
+        if cfg.rule == "partial_credit" and cfg.tiebreak is not None:
+            raise ConfigError("scorer.tiebreak: cannot be combined with the partial_credit rule")
         tb = cfg.tiebreak
         # Exact, so a total equal to the gap counts as reaching it.
         self.tiebreak = None if tb is None else (
             Fraction(str(tb.min_gap)), Fraction(str(tb.existing_weight))
+        )  # fmt: skip
+        pc = cfg.partial_credit
+        self.partial_credit = None if pc is None else (
+            Fraction(str(pc.min_gap)), Fraction(str(pc.existing_weight))
         )  # fmt: skip
 
     # -- per task --
@@ -373,8 +415,22 @@ class Scorer:
             elif "incomplete" in flat:
                 excluded["incomplete"] += 1
             else:
-                total = None if self.tiebreak is None else self._credit_total(c, task, length)
-                eligible.append(CandidateScores(c.candidate_id, tuple(map(tuple, scores)), total))
+                partial_scores = None
+                total = None
+                if self.partial_credit is not None:
+                    partial_scores = self._partial_score_grid(
+                        c, task, length, self.partial_credit[1]
+                    )
+                    total = sum(
+                        (score for reps in partial_scores for score in reps), Fraction(0)
+                    )
+                elif self.tiebreak is not None:
+                    total = self._credit_total(c, task, length)
+                eligible.append(
+                    CandidateScores(
+                        c.candidate_id, tuple(map(tuple, scores)), partial_scores, total
+                    )
+                )
                 detail.update(self._step_endings(c, task, length))
         return eligible, excluded, detail
 
@@ -384,22 +440,34 @@ class Scorer:
         tie-break would otherwise depend on which steps were backfilled."""
         assert self.tiebreak is not None
         weight = self.tiebreak[1]
-        total = Fraction(0)
+        return sum(
+            (score for reps in self._partial_score_grid(c, task, length, weight) for score in reps),
+            Fraction(0),
+        )
+
+    def _partial_score_grid(
+        self, c: CandidateRecord, task: TaskRecord, length: int, weight: Fraction
+    ) -> tuple[tuple[Fraction, ...], ...]:
+        """Completed changes plus credit on the first failed change."""
+        grid = []
         for seq in task.sequence_ids:
+            sequence_scores = []
             for rep in self.reps:
                 done = trial_score(c.trials[(seq, rep)], length)
                 assert isinstance(done, int)  # unresolved trials were excluded
-                total += done
+                score = Fraction(done)
                 if done < length:
                     counts = c.step_counts.get((seq, rep), {}).get(done + 1)
                     if counts is None:
                         raise ValueError(
                             f"{task.task_id} {c.candidate_id[:12]} {seq} rep {rep} step "
-                            f"{done + 1}: no hidden-test counts for the tie-break; run "
+                            f"{done + 1}: no hidden-test counts for partial scoring; run "
                             "scripts/partial_credit.py backfill"
                         )
-                    total += credit(*counts.shares(), weight)
-        return total
+                    score += credit(*counts.shares(), weight)
+                sequence_scores.append(score)
+            grid.append(tuple(sequence_scores))
+        return tuple(grid)
 
     def _step_endings(self, c: CandidateRecord, task: TaskRecord, length: int) -> Counter:
         """How each scored step ended, keyed "step_endings/<ending>": the step
@@ -435,17 +503,20 @@ class Scorer:
         elif mode == "best_vs_worst":
             if len(ordered) < 2:
                 return []
-            best = min(ordered, key=lambda s: (-s.aggregate, s.candidate_id))
+            best = min(ordered, key=lambda s: (-s.aggregate_for(rule), s.candidate_id))
             rest = [s for s in ordered if s is not best]
-            worst = min(rest, key=lambda s: (s.aggregate, s.candidate_id))
+            worst = min(rest, key=lambda s: (s.aggregate_for(rule), s.candidate_id))
             chosen = [(best, worst)]
         else:
             raise ValueError(f"unknown pairing mode {mode!r}")
-        return [Comparison(a, b, decide(a.means, b.means)) for a, b in chosen]
+        return [
+            Comparison(a, b, decide(a.means_for(rule), b.means_for(rule)), rule=rule)
+            for a, b in chosen
+        ]
 
     def labeled(self, comparisons: list[Comparison]) -> tuple[list[Comparison], Counter]:
         """Keep decided comparisons (chosen first) won by at least
-        min_step_gap, and ties broken by partial credit (scorer.tiebreak);
+        the active rule's gap, and ties broken by partial credit (scorer.tiebreak);
         apply the per-task cap by largest margin (a tie-broken pair keeps the
         rule's margin); and count what was dropped, and the tie-broken pairs."""
         dropped: Counter = Counter()
@@ -462,10 +533,17 @@ class Scorer:
                     dropped["tie"] += 1
             elif c.verdict in ("tie", "inconsistent"):
                 dropped[c.verdict] += 1
-            elif c.step_gap < self.cfg.min_step_gap:
-                dropped["too_close"] += 1
             else:
-                decided.append(c if c.verdict == "a" else Comparison(c.b, c.a, "a"))
+                min_gap = self.cfg.min_step_gap
+                if c.rule == "partial_credit":
+                    assert self.partial_credit is not None
+                    min_gap = self.partial_credit[0]
+                if c.step_gap < min_gap:
+                    dropped["too_close"] += 1
+                else:
+                    decided.append(
+                        c if c.verdict == "a" else Comparison(c.b, c.a, "a", rule=c.rule)
+                    )
         decided.sort(key=lambda c: (-c.margin, c.a.candidate_id, c.b.candidate_id))
         cap = self.cfg.per_task_cap
         if cap is not None and len(decided) > cap:
@@ -489,6 +567,12 @@ class Scorer:
                     "min_gap": self.cfg.tiebreak.min_gap,
                     "existing_weight": self.cfg.tiebreak.existing_weight,
                 },  # fmt: skip
+                "partial_credit": None
+                if self.cfg.partial_credit is None
+                else {
+                    "min_gap": self.cfg.partial_credit.min_gap,
+                    "existing_weight": self.cfg.partial_credit.existing_weight,
+                },
             },
             "ablation": {"max_changes": self.cfg.max_changes, "reps": list(self.reps)},
             "samples": Counter(),
@@ -513,7 +597,7 @@ class Scorer:
             report["samples_detail"].update(detail)
             report["step_endings"].update(endings)
             report["samples"]["eligible"] += len(scored)
-            agreements += [a for s in scored for a in s.agreement()]
+            agreements += [a for s in scored for a in s.agreement(self.cfg.rule)]
             report["tasks"][task.task_id] = {
                 "eligible": len(scored),
                 "excluded": {reason: excluded[reason] for reason in SAMPLE_FATES[1:]},
@@ -525,7 +609,10 @@ class Scorer:
             report["candidates"][task.task_id] = candidate_stats(task, load_program)
 
         pairs: list[dict] = []
-        for rule in RULES:
+        rules = RULES if self.cfg.rule == "partial_credit" else {
+            name: decide for name, decide in RULES.items() if name != "partial_credit"
+        }
+        for rule in rules:
             for mode in PAIRING_MODES:
                 counts: Counter = Counter()
                 for task, scored in per_task:
@@ -569,9 +656,9 @@ class Scorer:
             "rejected_id": c.b.candidate_id,
             "rule": self.cfg.rule,
             "pairing_mode": self.cfg.pairing_mode,
-            "strict_subset": strict(c.a.means, c.b.means) == "a",
-            "chosen_scores": [list(r) for r in c.a.rep_scores],
-            "rejected_scores": [list(r) for r in c.b.rep_scores],
+            "strict_subset": strict(c.a.means_for(c.rule), c.b.means_for(c.rule)) == "a",
+            "chosen_scores": _json_scores(c.a.scores_for(c.rule)),
+            "rejected_scores": _json_scores(c.b.scores_for(c.rule)),
             "margin": str(c.margin),
             # The recorded writer answers behind each program (model_calls keys).
             "chosen_call_keys": list(records[c.a.candidate_id].call_keys),
@@ -581,7 +668,22 @@ class Scorer:
             pair["tiebroken"] = c.tiebroken
             pair["chosen_credit"] = str(c.a.credit_total)
             pair["rejected_credit"] = str(c.b.credit_total)
+        if c.rule == "partial_credit":
+            pair["chosen_coarse_scores"] = [list(r) for r in c.a.rep_scores]
+            pair["rejected_coarse_scores"] = [list(r) for r in c.b.rep_scores]
+            pair["chosen_partial_credit_total"] = str(c.a.credit_total)
+            pair["rejected_partial_credit_total"] = str(c.b.credit_total)
         return pair
+
+
+def _json_scores(scores: Sequence[Sequence[int | Fraction]]) -> list[list[int | float]]:
+    return [
+        [
+            float(score) if isinstance(score, Fraction) and score.denominator != 1 else int(score)
+            for score in reps
+        ]
+        for reps in scores
+    ]
 
 
 def _nest(detail: Counter) -> dict[str, dict[str, int]]:
@@ -686,7 +788,14 @@ def summary_table(report: dict) -> str:
     samples = ", ".join(f"{k} {v}" for k, v in report["samples"].items())
     out += ["", f"Samples: {samples}"]
 
-    primary = "{rule}/{pairing_mode}, min step gap {min_step_gap}".format(**report["primary"])
+    primary_cfg = report["primary"]
+    if primary_cfg["rule"] == "partial_credit":
+        primary = (
+            f"{primary_cfg['rule']}/{primary_cfg['pairing_mode']}, min partial-credit gap "
+            f"{primary_cfg['partial_credit']['min_gap']:g}"
+        )
+    else:
+        primary = "{rule}/{pairing_mode}, min step gap {min_step_gap}".format(**primary_cfg)
     out += ["", f"Preference pairs (primary: {primary})"]
     out.append(
         f"  {'rule/pairing':<30}{'pairs':>6}{'compared':>9}{'tie rate':>10}{'inconsistent':>13}"
@@ -710,6 +819,11 @@ def summary_table(report: dict) -> str:
         out.append(
             f"  primary pairs from ties broken by partial credit: {broken} "
             f"(min gap {tiebreak['min_gap']:g}, existing tests x{tiebreak['existing_weight']:g})"
+        )
+    elif primary_cfg["rule"] == "partial_credit":
+        partial = primary_cfg["partial_credit"]
+        out.append(
+            f"  full partial-credit score (existing tests x{partial['existing_weight']:g})"
         )
     agreement = report["rep_agreement"]
     out += ["", f"Rep agreement: {'-' if agreement is None else f'{agreement:.2f}'}"]

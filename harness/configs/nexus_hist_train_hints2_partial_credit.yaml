@@ -1,0 +1,14 @@
+# Opt-in full partial-credit scoring for the hint2 train collection.
+# Unlike the tiebreak config, fractional scores decide every comparison.
+# min_gap is measured in total weighted score across sequences and reps.
+#
+# Usage (from harness/, on a compute node):
+#     uv run python -m harness report --config configs/nexus_hist_train_hints2_partial_credit.yaml \
+#         --out runs/nexus_hist/pairs_partial_credit
+extends: nexus_hist_train_hints2_aggregate.yaml
+name: nexus-hist-train-hints2-partial-credit
+scorer:
+  rule: partial_credit
+  partial_credit:
+    min_gap: 0.25
+    existing_weight: 2
