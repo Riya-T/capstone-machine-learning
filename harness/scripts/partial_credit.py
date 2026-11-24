@@ -57,6 +57,8 @@ from itertools import combinations
 from pathlib import Path
 
 from harness.collection.collect import Keys, sandbox_owner
+from harness.collection.partial_credit import Counts, counts_key, counts_path, read_counts
+from harness.collection.partial_credit import credit as mean_credit
 from harness.collection.scorer import load_task_record
 from harness.config import load_config
 from harness.registry import Task, build_writer_prompt, load_tasks, load_template
@@ -71,28 +73,14 @@ EPS = 1e-9  # fine scores are floats; closer than this is a tie
 # --- scoring ------------------------------------------------------------------
 
 
-@dataclass(frozen=True)
-class Counts:
-    """Hidden-test results of one step."""
-
-    new_pass: int
-    new_total: int
-    existing_pass: int
-    existing_total: int
-
-    def shares(self) -> tuple[float, float]:
-        new = self.new_pass / self.new_total if self.new_total else 1.0
-        existing = self.existing_pass / self.existing_total if self.existing_total else 1.0
-        return new, existing
-
-
 def credit(new: float, existing: float, weight: float, formula: str) -> float:
     """Credit in [0, 1] for a failed step from the shares of its hidden
-    new-feature and existing-behaviour tests that pass."""
+    new-feature and existing-behaviour tests that pass. mean is the form the
+    scorer's tie-break uses (collection/partial_credit.py)."""
     if formula == "mean":
-        return (new + weight * existing) / (1 + weight)
+        return float(mean_credit(new, existing, weight))
     if formula == "product":
-        return new * existing**weight
+        return float(new * existing**weight)
     raise ValueError(f"unknown formula {formula!r}; known: {FORMULAS}")
 
 
@@ -171,21 +159,15 @@ def iter_trials(cfg, store: Store, keys: Keys) -> Iterator[Trial]:
 
 
 def sidecar_path(cfg, keys: Keys) -> Path:
-    return Path(cfg.runs_dir) / "partial_credit" / f"{keys.sandbox[:16]}.jsonl"
+    return counts_path(cfg.runs_dir, keys.sandbox)
 
 
 def sidecar_key(trial: Trial, c: Checkpoint, editor_hash: str) -> tuple:
-    return (trial.task.id, trial.task.task_version, trial.candidate_id, trial.sequence_id,
-            trial.rep, editor_hash, c.step, c.output_blob)  # fmt: skip
+    return counts_key(trial.task.id, trial.task.task_version, trial.candidate_id,
+                      trial.sequence_id, trial.rep, editor_hash, c.step, c.output_blob)  # fmt: skip
 
 
-def read_sidecar(path: Path) -> dict[tuple, Counts]:
-    rows = {}
-    if path.exists():
-        for line in path.read_text(encoding="utf-8").splitlines():
-            row = json.loads(line)
-            rows[tuple(row["key"])] = Counts(**row["counts"])
-    return rows
+read_sidecar = read_counts
 
 
 def needs_counts(c: Checkpoint) -> bool:

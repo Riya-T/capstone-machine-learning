@@ -1,0 +1,15 @@
+# Pairs from the cluster's hint2 train collection (nexus_hist_train_hints2.yaml,
+# rep 0) by D's rule (rtx5070_hist2_train_aggregate.yaml): every pair of
+# programs of a task whose mean editing scores differ, by at least one
+# change. The coarse pairs of the partial-credit comparison; the tie-break
+# version is nexus_hist_train_hints2_tiebreak.yaml.
+#
+# Usage (from harness/, on a compute node):
+#     uv run python -m harness report --config configs/nexus_hist_train_hints2_aggregate.yaml \
+#         --out runs/nexus_hist/pairs_aggregate
+extends: nexus_hist_train_hints2.yaml
+name: nexus-hist-train-hints2-aggregate
+scorer:
+  rule: aggregate
+  per_task_cap: null
+  min_step_gap: 1

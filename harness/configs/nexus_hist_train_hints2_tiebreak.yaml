@@ -1,0 +1,24 @@
+# D's rule on the cluster's hint2 train collection (rep 0), plus pairs from
+# its ties: two programs with the same editing score are paired when their
+# partial credit differs by at least 0.25 (collection/partial_credit.py:
+# the failed step's hidden tests, existing-behaviour tests weighing twice
+# as much). Every pair of nexus_hist_train_hints2_aggregate.yaml is kept
+# as it is.
+#
+# The gap was chosen on rep 1, which no pair uses: at 0.25, rep 0's ties
+# gave 42 new pairs agreeing with rep 1's editing score 60% of the time
+# (9 against 6), against 75% for the coarse pairs; 0.5 gave 13, 1.0 one.
+#
+# Needs the backfilled hidden-test counts of the steps that ran out of
+# turns (scripts/partial_credit.py backfill, run by
+# scripts/partial_credit_nexus.sbatch).
+#
+# Usage (from harness/, on a compute node):
+#     uv run python -m harness report --config configs/nexus_hist_train_hints2_tiebreak.yaml \
+#         --out runs/nexus_hist/pairs_tiebreak
+extends: nexus_hist_train_hints2_aggregate.yaml
+name: nexus-hist-train-hints2-tiebreak
+scorer:
+  tiebreak:
+    min_gap: 0.25
+    existing_weight: 2
