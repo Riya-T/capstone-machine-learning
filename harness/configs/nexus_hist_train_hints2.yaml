@@ -1,0 +1,31 @@
+# The hint2 train collection of the history suite (rtx5070_hist_train_hints2.yaml:
+# 16 train tasks, 16 samples, three quarters shown the copy-of-state example,
+# editor_v3.md with 5 turns) on the UMIACS Nexus cluster, with the cluster's
+# Ollama and Apptainer sandbox as in nexus_hist2_eval.yaml.
+#
+# Two reps per sequence instead of one, for the partial-credit check
+# (scripts/partial_credit.py): its rep 0 / rep 1 split tests whether partial
+# credit on one trial predicts the 0-3 score on another. Training pairs use
+# rep 0 only (scorer.reps), the design of the PC collection that
+# hist2_rpo_d was trained on. Reps are not in the editor key, so rep 0 is the
+# same trial whatever editor.reps says.
+#
+# Usage (from harness/, on the submission node):
+#     sbatch --time=24:00:00 \
+#         --export=ALL,OLLAMA_FLASH_ATTENTION=1,OLLAMA_KV_CACHE_TYPE=q8_0 \
+#         scripts/collect_nexus.sbatch configs/nexus_hist_train_hints2.yaml
+#     sbatch scripts/partial_credit_nexus.sbatch configs/nexus_hist_train_hints2.yaml
+extends: rtx5070_hist_train_hints2.yaml
+name: nexus-hist-train-hints2
+runs_dir: ../runs/nexus_hist   # the cluster's history-suite store, as nexus_hist2_eval.yaml
+writer:
+  backend:
+    request_timeout_s: 600     # as in nexus.yaml
+editor:
+  reps: 2
+scorer:
+  reps: [0]
+execution:
+  sandbox_runtime: apptainer
+  apptainer_image: ../runs/images/harness-sandbox_py3.11-v1.sif   # as in nexus.yaml
+  sandbox_workers: 6           # the job has 8 CPUs; Ollama and the harness need the rest
