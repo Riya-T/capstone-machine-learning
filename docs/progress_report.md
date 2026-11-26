@@ -263,20 +263,22 @@ All five methods are done:
 
 ### What is running now
 
-The second training round, its seeds 43 and 44 and the 32-sample prompted
+dpo3's training seeds 2 and 3 on the original testbed are done (finding
+35). The second training round, its seeds 43 and 44 and the 32-sample prompted
 control are done (findings 32 to 34), as are the third training seed of D
 (finding 31), the foresight gates, which all failed (finding 30), and the
 prompted control on all 10 eval tasks (finding 29).
 
 **Training seeds of the original testbed** (`/home/pc/run_seeds.sh`, unit
-`seeds`, resumed at 11:25 on 11-24). The proposal asks for three training seeds per
+`seeds`, resumed at 08:07 on 11-25). The proposal asks for three training seeds per
 trained method. Seeds 2 and 3 of our DPO writer (dpo3), the
 correctness-only writer and the Radon writer, each trained on the same
 data with the same settings, served like the others and put through the
 full eval collection (`configs/rtx5070_eval_dpo3_s2.yaml` and so on),
-about 23 hours each. dpo3 seed 2 is done; dpo3 seed 3 is trained and
-exported, and its eval collection resumes from the store. The script skips
-finished work, so it can be paused between writers for other runs.
+about 23 hours each. Both dpo3 seeds are done; the correctness-only
+writer's seed 2 started training at 20:31 on 11-25, then its seed 3 and
+Radon's two. The script skips finished work, so it can be paused between
+writers for other runs.
 
 ### Words used in the rest of this report
 
@@ -1476,6 +1478,21 @@ results are in `harness/results/hist2_eval.md`.
   rate +4 points (−0 to +10). The null result on the planned measure
   holds with a second seed.
 
+### Original-testbed seeds: dpo3 seed 3 (2026-11-25)
+
+- Trained on 11-21 (reward accuracy 1.00, margin 0.32). Eval paused three
+  times for other runs (the second round, its seeds, and once at the
+  user's request) and resumed from the store; last run
+  20261125T160728Z-0b5ac2, finished 20:31 on 11-25, 649 editing steps, no
+  infrastructure errors. `harness/results/dpo3_eval.md` ("Third training
+  seed").
+- Against the base writer: +0.00 changes before the first failure (−0.11
+  to +0.13), first change works +3 points (−1 to +9), pass rate +5 points
+  (−3 to +14). 6 tasks up, 10 down; race_telemetry again gains the most.
+- Mean over the three seeds per task (after the results, with
+  `hist2_seed_pool.py --config`): +0.03 (−0.06 to +0.14); per sample +0.06
+  (−0.04 to +0.17).
+
 ## Findings so far
 
 1. **No method changes how far the editor gets.** The five methods are
@@ -1729,6 +1746,11 @@ results are in `harness/results/hist2_eval.md`.
     against it on programs that pass and +0.17 (+0.00 to +0.34) per
     sample, so the per-sample lead keeps its size but its interval now
     starts at 0.
+35. **Three training seeds of our writer on the original testbed: still no
+    gain.** Seeds 42, 2 and 3 give +0.02, +0.06 and +0.00 changes before
+    the first failure against the base writer, each interval including 0;
+    over the three seeds +0.03 (−0.06 to +0.14). Every seed passes the
+    initial checks 4 to 6 points more often.
 
 - **Testbed (the main question):** the diagnostics say the current tasks
   cannot show an effect, because the editor's randomness swamps the
@@ -1744,9 +1766,9 @@ results are in `harness/results/hist2_eval.md`.
   wallet pilot in `docs/wallet_pair_pilot/` (two hand-written designs, no
   usable pair) proposes concrete test checks for such a pilot.
 - **Seeds and training settings:** the proposal asks for several seeds
-  for our writer. On the original testbed, dpo3 has seeds 42 and 2; its
-  seed 3 and seeds 2 and 3 of sft and radon run after the second-round
-  seeds. On the history suite, D and the second round have three seeds
+  for our writer. On the original testbed, dpo3 has seeds 42, 2 and 3
+  (finding 35); seeds 2 and 3 of sft and radon are running. On the history
+  suite, D and the second round have three seeds
   each (findings 28, 31 and 33).
 - **Protocol:** these results use the collection store's protocol: selected
   passing programs, at most 8 per task. `harness/docs/evaluation.md`

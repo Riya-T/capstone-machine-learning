@@ -1,6 +1,6 @@
 # Training a Code Writer on Later-Edit Outcomes: A Controlled Study
 
-CMSC673 capstone, final report (draft of 2026-11-23). Results marked
+CMSC673 capstone, final report (draft of 2026-11-25). Results marked
 *pending* are still running; the rest are final.
 
 ## Abstract
@@ -17,7 +17,9 @@ controls (the original writer, a maintainability prompt, DPO on Radon
 maintainability rankings, fine-tuning on correct programs only) changes
 how many changes the editor completes before its first failure: all
 five lie within 0.12 of each other (1.35 to 1.47 of 3), and every
-interval against the original writer includes 0. Diagnostics explain
+interval against the original writer includes 0. Two more training seeds
+of our writer give +0.06 and +0.00 (over its three seeds, +0.03, −0.06 to
++0.14). Diagnostics explain
 why: within a task, 95% of the variance of a trial's score is the
 editor's randomness and 4% the program, so a program's mean over its six
 trials has a reliability of 0.18. A label-noise control shows this noise
@@ -233,8 +235,25 @@ original writer's steps: 944 successes, 331 out of budget, 142 new-feature
 failures, 12 earlier-behaviour failures, 5 both); most failures are the
 editor running out of turns.
 
-*Pending:* training seeds 2 and 3 of dpo3, correctness-only and Radon
-(the proposal's three seeds per trained method), queued.
+**Training seeds.** The proposal asks for three training seeds per
+trained method. Our writer was trained twice more with the same pairs and
+settings (seeds 2 and 3) and put through the same eval collection:
+
+| Ours (dpo3), against the original writer | Changes before first failure | First change works | Whole sequence works | Samples passing initial tests |
+|---|---|---|---|---|
+| Seed 42 | +0.02 (−0.11 to +0.19) | +4 pts (+0 to +9) | −1 pt (−6 to +5) | +6 pts (+2 to +12) |
+| Seed 2 | +0.06 (−0.03 to +0.14) | +6 pts (+2 to +11) | −0 pts (−4 to +3) | +4 pts (−0 to +10) |
+| Seed 3 | +0.00 (−0.11 to +0.13) | +3 pts (−1 to +9) | −2 pts (−6 to +3) | +5 pts (−3 to +14) |
+| Mean over the three seeds per task | +0.03 (−0.06 to +0.14) | | | |
+
+No seed changes how far the editor gets. Every seed's first version
+passes the initial tests a few points more often, and its first change
+works a few points more often. race_telemetry, the task behind seed 42's
+small gain, goes up with every seed (+1.03, +0.28 and +0.63); most other
+tasks go both ways. The mean over seeds was computed after the results,
+with the pooling used on the history suite (§7.5).
+
+*Pending:* seeds 2 and 3 of correctness-only and Radon, running.
 
 ### 4.2 Comments
 
@@ -869,10 +888,10 @@ above 0.3.
 
 - **Scope:** one writer, one editor and one hardware budget, with small
   self-contained tasks.
-- **Seeds:** on the original testbed, two training seeds of our writer so
-  far (+0.02 and +0.06 against the original writer, neither interval
-  excluding 0) and one of each baseline, with more running. Three on the
-  history suite, whose gains range from +0.24 to +0.45.
+- **Seeds:** on the original testbed, three training seeds of our writer
+  (+0.02, +0.06 and +0.00 against the original writer, no interval
+  excluding 0) and so far one of each trained baseline, with more running.
+  Three on the history suite, whose gains range from +0.24 to +0.45.
 - **Selection:** up to 8 passing programs per task are edited, rather
   than a single unselected attempt.
 - **Noise control:** it uses a static signal (MI), whose learnability may

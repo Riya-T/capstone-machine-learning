@@ -126,6 +126,62 @@ measure (seed 42: +0.02, −0.11 to +0.19), and a few points more on the
 first change and on initial correctness. Those two are secondary metrics,
 and the first change's gain is too small to move the planned measure.
 
+## Third training seed
+
+`dpo3_s3` is dpo3 trained again with `--seed 3`, on the same pairs with the
+same settings (`configs/rtx5070_eval_dpo3_s3.yaml`; the collection was
+paused three times for other runs and resumed from the store, last run
+20261125T160728Z-0b5ac2, finished 2026-11-25, 649 editing steps, no
+infrastructure errors). Its training ends with reward accuracy 1.00 and a
+reward margin of 0.32.
+
+Per task, base writer → dpo3 seed 3:
+
+| Task | Initial pass | Changes done before first failure | First change works | Whole sequence works |
+|---|---|---|---|---|
+| aging_inventory | 9/16 → 12/16 | 0.55 → 0.46 | 38% → 31% | 0% → 0% |
+| auction_house | 6/16 → 9/16 | 2.31 → 2.04 | 83% → 79% | 64% → 54% |
+| document_versions | 16/16 → 16/16 | 1.73 → 1.69 | 85% → 81% | 12% → 12% |
+| elevator_dispatch | 9/16 → 11/16 | 0.79 → 1.00 | 44% → 56% | 2% → 4% |
+| light_grid | 14/16 → 15/16 | 1.98 → 1.75 | 79% → 75% | 50% → 46% |
+| locker_room | 8/16 → 8/16 | 2.25 → 2.40 | 85% → 86% | 67% → 74% |
+| meeting_rooms | 9/16 → 5/16 | 1.31 → 1.20 | 71% → 70% | 23% → 20% |
+| race_telemetry | 5/16 → 13/16 | 1.20 → 1.83 | 67% → 85% | 13% → 35% |
+| rover_fleet | 6/16 → 6/16 | 0.78 → 0.75 | 33% → 42% | 19% → 11% |
+| scoreboard | 16/16 → 16/16 | 2.08 → 1.81 | 94% → 90% | 38% → 29% |
+| seat_reservation | 3/16 → 5/16 | 1.00 → 1.40 | 39% → 67% | 28% → 33% |
+| social_feed | 6/16 → 4/16 | 1.78 → 1.88 | 78% → 83% | 36% → 38% |
+| spending_alerts | 8/16 → 11/16 | 0.83 → 0.81 | 58% → 60% | 0% → 2% |
+| subscription_billing | 13/16 → 11/16 | 0.46 → 0.33 | 42% → 33% | 2% → 0% |
+| task_board | 5/16 → 4/16 | 2.07 → 1.79 | 87% → 88% | 37% → 21% |
+| time_clock | 15/16 → 14/16 | 1.69 → 1.71 | 81% → 94% | 29% → 12% |
+
+| Metric | Base | Seed 42 | Seed 2 | Seed 3 | Seed 3 − base (95%) |
+|---|---:|---:|---:|---:|---|
+| Changes done before first failure | 1.43 | 1.45 | 1.48 | 1.43 | +0.00 (−0.11 to +0.13) |
+| First change works | 67% | 71% | 73% | 70% | +3 pts (−1 to +9) |
+| Whole sequence works | 26% | 25% | 26% | 25% | −2 pts (−6 to +3) |
+| Writer samples passing the initial checks | 58% | 64% | 62% | 62% | +5 pts (−3 to +14) |
+
+The third seed repeats the other two: no gain on the planned measure. Six
+tasks go up and ten down; race_telemetry again gains the most (+0.63), and
+without it the mean difference is −0.04. Its first versions pass the
+initial checks a few points more often (160 of 256 against 148), as with
+the other seeds.
+
+Mean over the three seeds per task, dpo3 minus base (paired task bootstrap
+as above; computed after the results with `scripts/hist2_seed_pool.py
+--config '../configs/rtx5070_eval{}.yaml' --group base=base
+--group dpo3=_dpo3,_dpo3_s2,_dpo3_s3`):
+
+| Metric | Base | dpo3, three seeds | Difference | 95% interval |
+|---|---:|---:|---:|---:|
+| Changes done before first failure | 1.43 | 1.45 | +0.03 | −0.06 to +0.14 |
+| Per writer sample (a sample failing the initial checks counts 0) | 0.85 | 0.91 | +0.06 | −0.04 to +0.17 |
+
+With three seeds, training on 160 editing-outcome pairs does not change how
+far the editor gets on the original testbed.
+
 ## Reproduce
 
 From `harness/`, inside WSL, after building `writer-dpo3-ctx8k` as in

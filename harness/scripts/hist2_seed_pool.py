@@ -13,6 +13,10 @@ Usage (from harness/scripts, inside WSL):
     PYTHONPATH=. ../.venv/bin/python hist2_seed_pool.py \
         --group r2=_hist2_r2a,_hist2_r2a_s43,_hist2_r2a_s44 \
         --group d=_hist2_rpo_d,_hist2_rpo_d_s43,_hist2_rpo_d_s44
+
+With --config ../configs/rtx5070_eval{}.yaml the same pooling runs on the
+original testbed's eval writers (e.g. --group base=base
+--group dpo3=_dpo3,_dpo3_s2,_dpo3_s3).
 """
 
 import argparse
@@ -30,9 +34,9 @@ def per_sample(row):
     return row["passing_samples"] / row["samples"] * row["mean"]
 
 
-def load(suffixes):
+def load(suffixes, config=CONFIG):
     return [
-        {r["task_id"]: r for r in task_results(load_config(CONFIG.format(s)))[0]} for s in suffixes
+        {r["task_id"]: r for r in task_results(load_config(config.format(s)))[0]} for s in suffixes
     ]
 
 
@@ -52,13 +56,17 @@ def main() -> None:
     parser.add_argument("--group", action="append", required=True, help="NAME=suffix,suffix,...")
     parser.add_argument("--bootstrap", type=int, default=20000)
     parser.add_argument("--seed", type=int, default=20261105)
+    parser.add_argument(
+        "--config", default=CONFIG, help="config path pattern; {} takes each suffix"
+    )
     args = parser.parse_args()
     if len(args.group) != 2:
         parser.error("give exactly two groups: --group FIRST=... --group SECOND=...")
     groups = []
     for g in args.group:
         name, suffixes = g.split("=", 1)
-        groups.append((name, load(["" if s == "base" else s for s in suffixes.split(",")])))
+        suffixes = ["" if s == "base" else s for s in suffixes.split(",")]
+        groups.append((name, load(suffixes, args.config)))
     tasks = sorted(set().union(*(rows.keys() for _, g in groups for rows in g)))
     edited, sample = [], []
     for t in tasks:
