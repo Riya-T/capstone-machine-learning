@@ -253,7 +253,14 @@ small gain, goes up with every seed (+1.03, +0.28 and +0.63); most other
 tasks go both ways. The mean over seeds was computed after the results,
 with the pooling used on the history suite (§7.5).
 
-*Pending:* seeds 2 and 3 of correctness-only and Radon, running.
+The correctness-only writer's second seed is no clearer: +0.10 (−0.04 to
++0.24) against the original writer and +0.07 (−0.03 to +0.19) against our
+writer's seed 42, with first versions passing 7 points more often. Over
+seeds per task (correctness-only seeds 42 and 2, ours 42, 2 and 3; after
+the results), correctness-only minus ours is +0.05 (−0.02 to +0.12): the
+two still cannot be told apart.
+
+*Pending:* seed 3 of correctness-only and seeds 2 and 3 of Radon, running.
 
 ### 4.2 Comments
 
@@ -890,7 +897,8 @@ above 0.3.
   self-contained tasks.
 - **Seeds:** on the original testbed, three training seeds of our writer
   (+0.02, +0.06 and +0.00 against the original writer, no interval
-  excluding 0) and so far one of each trained baseline, with more running.
+  excluding 0), two of the correctness-only writer and so far one of the
+  Radon writer, with more running.
   Three on the history suite, whose gains range from +0.24 to +0.45.
 - **Selection:** up to 8 passing programs per task are edited, rather
   than a single unselected attempt.

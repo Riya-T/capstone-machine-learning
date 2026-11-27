@@ -135,6 +135,54 @@ None of the five makes the programs measurably easier for the editor to
 change, and DPO on 160 editing-outcome pairs does no better than plain
 fine-tuning on the same programs.
 
+## Second training seed
+
+`sft_s2` is the correctness-only writer trained again with `--seed 2`, on
+the same programs with the same settings (`configs/rtx5070_eval_sft_s2.yaml`,
+run 20261126T050807Z-5c2c6c, 21:08 on 11-25 to 17:20 on 11-26, 1,114
+editing steps, no infrastructure errors). Its training ends at loss 0.042.
+
+Per task, base writer → correctness-only seed 2:
+
+| Task | Initial pass | Changes done before first failure | First change works | Whole sequence works |
+|---|---|---|---|---|
+| aging_inventory | 9/16 → 11/16 | 0.55 → 0.57 | 38% → 40% | 0% → 0% |
+| auction_house | 6/16 → 6/16 | 2.31 → 2.47 | 83% → 89% | 64% → 78% |
+| document_versions | 16/16 → 15/16 | 1.73 → 1.85 | 85% → 90% | 12% → 12% |
+| elevator_dispatch | 9/16 → 10/16 | 0.79 → 0.60 | 44% → 33% | 2% → 2% |
+| light_grid | 14/16 → 15/16 | 1.98 → 2.46 | 79% → 92% | 50% → 65% |
+| locker_room | 8/16 → 8/16 | 2.25 → 2.26 | 85% → 83% | 67% → 69% |
+| meeting_rooms | 9/16 → 16/16 | 1.31 → 1.23 | 71% → 77% | 23% → 17% |
+| race_telemetry | 5/16 → 7/16 | 1.20 → 1.90 | 67% → 86% | 13% → 45% |
+| rover_fleet | 6/16 → 9/16 | 0.78 → 0.98 | 33% → 45% | 19% → 19% |
+| scoreboard | 16/16 → 16/16 | 2.08 → 2.00 | 94% → 90% | 38% → 38% |
+| seat_reservation | 3/16 → 1/16 | 1.00 → 1.50 | 39% → 50% | 28% → 50% |
+| social_feed | 6/16 → 8/16 | 1.78 → 2.17 | 78% → 90% | 36% → 50% |
+| spending_alerts | 8/16 → 8/16 | 0.83 → 0.85 | 58% → 65% | 0% → 0% |
+| subscription_billing | 13/16 → 16/16 | 0.46 → 0.29 | 42% → 29% | 2% → 0% |
+| task_board | 5/16 → 3/16 | 2.07 → 1.94 | 87% → 89% | 37% → 22% |
+| time_clock | 15/16 → 16/16 | 1.69 → 1.27 | 81% → 73% | 29% → 10% |
+
+| Metric | Base | Seed 42 | Seed 2 | Seed 2 − base (95%) | Seed 2 − dpo3 seed 42 (95%) |
+|---|---:|---:|---:|---|---|
+| Changes done before first failure | 1.43 | 1.47 | 1.52 | +0.10 (−0.04 to +0.24) | +0.07 (−0.03 to +0.19) |
+| First change works | 67% | 72% | 70% | +4 pts (−1 to +8) | −1 pt (−5 to +3) |
+| Whole sequence works | 26% | 25% | 30% | +4 pts (−2 to +10) | +4 pts (+0 to +10) |
+| Writer samples passing the initial checks | 58% | 66% | 64% | +7 pts (+0 to +14) | +0 pts (−6 to +7) |
+
+The second seed repeats the first: no clear gain on the planned measure.
+Ten tasks go up and six down; the largest gains are race_telemetry
+(+0.70 on 7 programs) and seat_reservation (+0.50 on its one passing
+program). Its first versions again pass the initial checks more often
+(165 of 256 against 148).
+
+Mean over seeds per task, correctness-only (seeds 42 and 2) minus dpo3
+(seeds 42, 2 and 3), computed after the results with
+`scripts/hist2_seed_pool.py --config '../configs/rtx5070_eval{}.yaml'`:
++0.05 (−0.02 to +0.12) on the planned measure, +0.05 (−0.05 to +0.16) per
+writer sample. Our writer and the correctness-only writer still cannot be
+told apart.
+
 ## Reproduce
 
 From `harness/`, inside WSL, after building `writer-sft-ctx8k` from the
