@@ -133,6 +133,68 @@ Training on Radon's ranking moves the Radon score about as much as asking
 for maintainable code does, and neither makes the programs easier for the
 editor to change.
 
+## Second training seed
+
+`radon_s2` is the Radon writer trained again with `--seed 2`, on the same
+160 pairs with the same settings (`configs/rtx5070_eval_radon_s2.yaml`, run
+20261127T185727Z-e6e4f0, 10:57 on 11-27 to 04:18 on 11-28, 870 editing
+steps, no infrastructure errors). Its training ends with reward accuracy
+1.00 and a reward margin of 0.41.
+
+None of its 16 auction_house samples passes the initial checks, so that
+task has no edited program and drops out of the comparisons below (15
+tasks; the base writer's mean on them is 1.37).
+
+Per task, base writer → Radon seed 2:
+
+| Task | Initial pass | Changes done before first failure | First change works | Whole sequence works |
+|---|---|---|---|---|
+| aging_inventory | 9/16 → 10/16 | 0.55 → 0.67 | 38% → 46% | 0% → 2% |
+| auction_house | 6/16 → 0/16 | 2.31 → – | 83% → – | 64% → – |
+| document_versions | 16/16 → 14/16 | 1.73 → 1.79 | 85% → 85% | 12% → 19% |
+| elevator_dispatch | 9/16 → 9/16 | 0.79 → 0.58 | 44% → 42% | 2% → 2% |
+| light_grid | 14/16 → 3/16 | 1.98 → 2.72 | 79% → 100% | 50% → 72% |
+| locker_room | 8/16 → 8/16 | 2.25 → 1.98 | 85% → 77% | 67% → 58% |
+| meeting_rooms | 9/16 → 8/16 | 1.31 → 1.10 | 71% → 67% | 23% → 17% |
+| race_telemetry | 5/16 → 6/16 | 1.20 → 1.19 | 67% → 64% | 13% → 22% |
+| rover_fleet | 6/16 → 5/16 | 0.78 → 0.60 | 33% → 30% | 19% → 10% |
+| scoreboard | 16/16 → 16/16 | 2.08 → 1.98 | 94% → 92% | 38% → 31% |
+| seat_reservation | 3/16 → 1/16 | 1.00 → 1.00 | 39% → 50% | 28% → 17% |
+| social_feed | 6/16 → 5/16 | 1.78 → 1.80 | 78% → 83% | 36% → 30% |
+| spending_alerts | 8/16 → 11/16 | 0.83 → 0.79 | 58% → 58% | 0% → 2% |
+| subscription_billing | 13/16 → 13/16 | 0.46 → 0.31 | 42% → 27% | 2% → 2% |
+| task_board | 5/16 → 1/16 | 2.07 → 2.50 | 87% → 100% | 37% → 50% |
+| time_clock | 15/16 → 16/16 | 1.69 → 1.52 | 81% → 81% | 29% → 17% |
+
+| Metric (15 tasks) | Base | Seed 2 | Seed 2 − base (95%) | Seed 2 − dpo3 seed 42 (95%) |
+|---|---:|---:|---|---|
+| Changes done before first failure | 1.37 | 1.37 | +0.00 (−0.11 to +0.15) | −0.02 (−0.21 to +0.13) |
+| First change works | 65% | 67% | +1 pt (−3 to +6) | −3 pts (−8 to +1) |
+| Whole sequence works | 24% | 23% | −0 pts (−5 to +5) | +1 pt (−5 to +6) |
+| Writer samples passing the initial checks | 59% | 52% | −7 pts (−18 to +2) | −12 pts (−23 to −4) |
+
+The second seed is level with the base writer on the planned measure (seed
+42: −0.08, −0.23 to +0.08). Five tasks go up, nine down and one stays the
+same; the two largest gains are light_grid (+0.74 on 3 programs) and
+task_board (+0.43 on 1), and without those two the mean difference is
+−0.09. As with seed 42, fewer of its samples pass: on all 16 tasks 126 of
+256 (seed 42: 128, base 148), and light_grid again drops from 14 to 3 of
+16.
+
+Computed after the results, with `scripts/hist2_seed_pool.py --config
+'../configs/rtx5070_eval{}.yaml'`:
+
+| Comparison | Changes done before first failure | Per writer sample (a sample failing the initial checks counts 0) |
+|---|---|---|
+| Radon seed 42 − base | | −0.19 (−0.38 to −0.04), 16 tasks |
+| Radon seed 2 − base | | −0.22 (−0.40 to −0.07), 16 tasks |
+| Radon (2 seeds) − base | −0.02 (−0.13 to +0.10), 15 tasks | −0.21 (−0.39 to −0.06), 16 tasks |
+| Radon (2 seeds) − dpo3 (3 seeds) | −0.05 (−0.21 to +0.09), 15 tasks | −0.27 (−0.49 to −0.08), 16 tasks |
+
+On the programs that pass, the Radon writer and the base writer cannot be
+told apart. Per writer sample it does worse, with both seeds, because
+fewer of its samples pass.
+
 ## Reproduce
 
 From `harness/`, inside WSL, after building `writer-radon-ctx8k` from the

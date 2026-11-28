@@ -253,14 +253,31 @@ small gain, goes up with every seed (+1.03, +0.28 and +0.63); most other
 tasks go both ways. The mean over seeds was computed after the results,
 with the pooling used on the history suite (§7.5).
 
-The correctness-only writer's second seed is no clearer: +0.10 (−0.04 to
-+0.24) against the original writer and +0.07 (−0.03 to +0.19) against our
-writer's seed 42, with first versions passing 7 points more often. Over
-seeds per task (correctness-only seeds 42 and 2, ours 42, 2 and 3; after
-the results), correctness-only minus ours is +0.05 (−0.02 to +0.12): the
-two still cannot be told apart.
+The correctness-only writer, trained the same way with seeds 2 and 3:
 
-*Pending:* seed 3 of correctness-only and seeds 2 and 3 of Radon, running.
+| Correctness-only, against the original writer | Changes before first failure | First change works | Whole sequence works | Samples passing initial tests |
+|---|---|---|---|---|
+| Seed 42 | +0.05 (−0.09 to +0.22) | +5 pts (+1 to +10) | −1 pt (−7 to +6) | +8 pts (+1 to +15) |
+| Seed 2 | +0.10 (−0.04 to +0.24) | +4 pts (−1 to +8) | +4 pts (−2 to +10) | +7 pts (+0 to +14) |
+| Seed 3 (15 tasks) | −0.01 (−0.11 to +0.12) | +2 pts (−2 to +6) | −2 pts (−8 to +4) | +5 pts (−2 to +13) |
+| Mean over the three seeds per task | +0.04 (−0.07 to +0.18) | | | |
+
+Seed 3 has no passing program on seat_reservation, so that task drops out
+of its comparisons and of the mean over seeds. Over three seeds each,
+correctness-only minus ours is +0.03 (−0.03 to +0.08) on the planned
+measure and +0.01 (−0.07 to +0.12) per writer sample: the two still cannot
+be told apart, and the editing outcomes add nothing to training on the
+same programs.
+
+The Radon writer's second seed is level with the original writer on the
+planned measure: +0.00 (−0.11 to +0.15, 15 tasks: none of its
+auction_house samples passes; seed 42: −0.08). Again fewer of its samples
+pass (126 of 256, seed 42 128, original writer 148). Per writer sample,
+with a failing sample counted as 0 (after the results), both Radon seeds
+do worse than the original writer: −0.19 (−0.38 to −0.04) and −0.22
+(−0.40 to −0.07).
+
+*Pending:* seed 3 of Radon, running.
 
 ### 4.2 Comments
 
@@ -897,8 +914,8 @@ above 0.3.
   self-contained tasks.
 - **Seeds:** on the original testbed, three training seeds of our writer
   (+0.02, +0.06 and +0.00 against the original writer, no interval
-  excluding 0), two of the correctness-only writer and so far one of the
-  Radon writer, with more running.
+  excluding 0), three of the correctness-only writer and so far two of the
+  Radon writer, with the third running.
   Three on the history suite, whose gains range from +0.24 to +0.45.
 - **Selection:** up to 8 passing programs per task are edited, rather
   than a single unselected attempt.

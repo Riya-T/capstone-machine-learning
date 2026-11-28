@@ -183,6 +183,60 @@ Mean over seeds per task, correctness-only (seeds 42 and 2) minus dpo3
 writer sample. Our writer and the correctness-only writer still cannot be
 told apart.
 
+## Third training seed
+
+`sft_s3` is the correctness-only writer trained again with `--seed 3`
+(`configs/rtx5070_eval_sft_s3.yaml`, run 20261127T015636Z-186c5f, 17:56 on
+11-26 to 10:08 on 11-27, 868 editing steps, no infrastructure errors). Its
+training ends at loss 0.019.
+
+None of its 16 seat_reservation samples passes the initial checks, so that
+task has no edited program and drops out of the comparisons below (15
+tasks; the base writer's mean on them is 1.45).
+
+Per task, base writer → correctness-only seed 3:
+
+| Task | Initial pass | Changes done before first failure | First change works | Whole sequence works |
+|---|---|---|---|---|
+| aging_inventory | 9/16 → 13/16 | 0.55 → 0.46 | 38% → 31% | 0% → 0% |
+| auction_house | 6/16 → 6/16 | 2.31 → 2.39 | 83% → 86% | 64% → 72% |
+| document_versions | 16/16 → 14/16 | 1.73 → 1.75 | 85% → 90% | 12% → 6% |
+| elevator_dispatch | 9/16 → 11/16 | 0.79 → 0.81 | 44% → 46% | 2% → 4% |
+| light_grid | 14/16 → 15/16 | 1.98 → 1.94 | 79% → 81% | 50% → 46% |
+| locker_room | 8/16 → 9/16 | 2.25 → 2.11 | 85% → 83% | 67% → 61% |
+| meeting_rooms | 9/16 → 16/16 | 1.31 → 1.21 | 71% → 71% | 23% → 19% |
+| race_telemetry | 5/16 → 8/16 | 1.20 → 1.98 | 67% → 92% | 13% → 42% |
+| rover_fleet | 6/16 → 8/16 | 0.78 → 0.48 | 33% → 26% | 19% → 7% |
+| scoreboard | 16/16 → 15/16 | 2.08 → 2.12 | 94% → 94% | 38% → 40% |
+| seat_reservation | 3/16 → 0/16 | 1.00 → – | 39% → – | 28% → – |
+| social_feed | 6/16 → 3/16 | 1.78 → 1.78 | 78% → 89% | 36% → 17% |
+| spending_alerts | 8/16 → 8/16 | 0.83 → 0.78 | 58% → 61% | 0% → 0% |
+| subscription_billing | 13/16 → 14/16 | 0.46 → 0.29 | 42% → 29% | 2% → 0% |
+| task_board | 5/16 → 5/16 | 2.07 → 2.10 | 87% → 90% | 37% → 33% |
+| time_clock | 15/16 → 13/16 | 1.69 → 1.42 | 81% → 85% | 29% → 10% |
+
+| Metric (15 tasks) | Base | Seed 3 | Seed 3 − base (95%) | Seed 3 − dpo3 seed 42 (95%) |
+|---|---:|---:|---|---|
+| Changes done before first failure | 1.45 | 1.44 | −0.01 (−0.11 to +0.12) | −0.04 (−0.14 to +0.06) |
+| First change works | 68% | 70% | +2 pts (−2 to +6) | −1 pt (−5 to +2) |
+| Whole sequence works | 26% | 24% | −2 pts (−8 to +4) | −2 pts (−6 to +2) |
+| Writer samples passing the initial checks | 60% | 66% | +5 pts (−2 to +13) | −2 pts (−8 to +5) |
+
+On all 16 tasks its first versions pass 158 of 256 times (base 148). Six
+tasks go up, eight down and one stays the same; race_telemetry again gains
+the most (+0.78), and without it the mean difference is −0.07.
+
+Mean over the three seeds per task (after the results, as above; tasks
+where any writer has no edited program drop out of the first measure):
+
+| Comparison | Changes done before first failure | Per writer sample |
+|---|---|---|
+| Correctness-only (3 seeds) − base | +0.04 (−0.07 to +0.18), 15 tasks | +0.07 (−0.02 to +0.18), 16 tasks |
+| Correctness-only (3 seeds) − dpo3 (3 seeds) | +0.03 (−0.03 to +0.08), 15 tasks | +0.01 (−0.07 to +0.12), 16 tasks |
+
+With three seeds each, neither writer changes how far the editor gets, and
+the two cannot be told apart.
+
 ## Reproduce
 
 From `harness/`, inside WSL, after building `writer-sft-ctx8k` from the

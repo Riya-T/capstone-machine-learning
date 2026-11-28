@@ -263,8 +263,9 @@ All five methods are done:
 
 ### What is running now
 
-dpo3's training seeds 2 and 3 and the correctness-only writer's seed 2 on
-the original testbed are done (finding 35). The second training round, its seeds 43 and 44 and the 32-sample prompted
+Training seeds 2 and 3 of dpo3 and of the correctness-only writer, and
+seed 2 of the Radon writer, on the original testbed are done (finding 35).
+The second training round, its seeds 43 and 44 and the 32-sample prompted
 control are done (findings 32 to 34), as are the third training seed of D
 (finding 31), the foresight gates, which all failed (finding 30), and the
 prompted control on all 10 eval tasks (finding 29).
@@ -275,9 +276,9 @@ trained method. Seeds 2 and 3 of our DPO writer (dpo3), the
 correctness-only writer and the Radon writer, each trained on the same
 data with the same settings, served like the others and put through the
 full eval collection (`configs/rtx5070_eval_dpo3_s2.yaml` and so on),
-about 23 hours each. Both dpo3 seeds and the correctness-only writer's
-seed 2 are done; its seed 3 started training at 17:20 on 11-26, then
-Radon's two. The script skips finished work, so it can be paused between
+about 23 hours each. Both seeds of dpo3 and of the correctness-only
+writer and Radon's seed 2 are done; Radon's seed 3, the last, started
+training at 04:18 on 11-28. The script skips finished work, so it can be paused between
 writers for other runs.
 
 ### Words used in the rest of this report
@@ -1505,6 +1506,33 @@ results are in `harness/results/hist2_eval.md`.
   (after the results), correctness-only minus dpo3: +0.05 (−0.02 to
   +0.12); per sample +0.05 (−0.05 to +0.16).
 
+### Original-testbed seeds: correctness-only seed 3 (2026-11-27)
+
+- Trained at 17:20 on 11-26 (loss 0.019); run 20261127T015636Z-186c5f,
+  17:56 on 11-26 to 10:08 on 11-27, 868 editing steps, no infrastructure
+  errors. `harness/results/sft_eval.md` ("Third training seed").
+- None of its 16 seat_reservation samples passes, so that task drops out
+  (15 tasks). Against the base writer: −0.01 (−0.11 to +0.12); against
+  dpo3 seed 42: −0.04 (−0.14 to +0.06). Pass rate 158 of 256 (base 148).
+- Over three seeds each (after the results): correctness-only − base
+  +0.04 (−0.07 to +0.18), 15 tasks; correctness-only − dpo3 +0.03 (−0.03
+  to +0.08), 15 tasks, and per sample +0.01 (−0.07 to +0.12), 16 tasks.
+
+### Original-testbed seeds: Radon seed 2 (2026-11-28)
+
+- Trained at 10:08 on 11-27 (reward accuracy 1.00, margin 0.41); run
+  20261127T185727Z-e6e4f0, 10:57 on 11-27 to 04:18 on 11-28, 870 editing
+  steps, no infrastructure errors. `harness/results/radon_eval.md`
+  ("Second training seed").
+- None of its 16 auction_house samples passes, so that task drops out (15
+  tasks). Against the base writer: +0.00 (−0.11 to +0.15; seed 42 −0.08);
+  against dpo3 seed 42: −0.02 (−0.21 to +0.13). Pass rate 126 of 256
+  (seed 42 128, base 148); light_grid again drops to 3 of 16.
+- After the results: over seeds 42 and 2, −0.02 (−0.13 to +0.10) against
+  base on programs that pass. Per writer sample both seeds do worse than
+  the base writer (−0.19, −0.38 to −0.04; −0.22, −0.40 to −0.07), from the
+  lower pass rate.
+
 ## Findings so far
 
 1. **No method changes how far the editor gets.** The five methods are
@@ -1763,8 +1791,12 @@ results are in `harness/results/hist2_eval.md`.
     the first failure against the base writer, each interval including 0;
     over the three seeds +0.03 (−0.06 to +0.14). Every seed passes the
     initial checks 4 to 6 points more often. The correctness-only writer's
-    second seed is no clearer (+0.10, −0.04 to +0.24), and over seeds it
-    and our writer still cannot be told apart (+0.05, −0.02 to +0.12).
+    seeds give +0.05, +0.10 and −0.01 (+0.04 over seeds, −0.07 to +0.18),
+    and over three seeds each it and our writer still cannot be told apart
+    (+0.03, −0.03 to +0.08). The Radon writer's seed 2 is level with the
+    base writer on programs that pass (+0.00; seed 42 −0.08), but per
+    writer sample both its seeds do worse (about −0.2), because fewer of
+    their samples pass.
 
 - **Testbed (the main question):** the diagnostics say the current tasks
   cannot show an effect, because the editor's randomness swamps the
@@ -1781,8 +1813,9 @@ results are in `harness/results/hist2_eval.md`.
   usable pair) proposes concrete test checks for such a pilot.
 - **Seeds and training settings:** the proposal asks for several seeds
   for our writer. On the original testbed, dpo3 has seeds 42, 2 and 3
-  (finding 35) and sft seeds 42 and 2; sft seed 3 and radon seeds 2 and 3
-  are running. On the history
+  and sft seeds 42, 2 and 3, and radon seeds 42 and 2 (finding 35); radon
+  seed 3 is running.
+  On the history
   suite, D and the second round have three seeds
   each (findings 28, 31 and 33).
 - **Protocol:** these results use the collection store's protocol: selected
